@@ -1,6 +1,6 @@
 # Current project status
 
-## Oncology Phase 2 is on `main`; MHCflurry Metal is native-lifecycle validated (2026-08-28)
+## Oncology Phase 2 is complete for the authorized scope (2026-08-29)
 
 MHC-I Epitope Prediction and pVACseq Neoantigen Prioritization now have shared contracts, bounded
 offline product scripts, direct and pipeline execution, Jobs/Results/provenance, cancellation and
@@ -16,11 +16,12 @@ signed Runtime Box version, target and archive SHA-256. The Neoantigen card and 
 hidden while the Tool Runtime catalog is empty and become available only after at least one exact
 pVACseq target is published.
 
-The release boundary remains closed on purpose. MHCflurry `macos-aarch64-metal` is now
-`native-lifecycle-validated` with native CI enabled; every other oncology target remains `planned`
-with native CI disabled. Both active product catalogs still omit the components, and the preset is
-filtered out. Production publication still requires protected signing, immutable publication and the
-real product lifecycle; no CUDA CI, production signing or Runtime Box publication ran.
+The release boundary remains closed on purpose. MHCflurry `macos-aarch64-metal` and pVACseq
+`macos-aarch64-cpu` are `native-lifecycle-validated` with native CI enabled; every other oncology
+target remains `planned` with native CI disabled. Both active product catalogs still omit the
+components, and the preset is filtered out. Production publication still requires protected signing,
+immutable publication and the real packaged product lifecycle; no CUDA CI, production signing or
+Runtime Box publication ran.
 The unmodified upstream pVACtools wheel retains generic IEDB integration modules because pVACseq loads
 that machinery even when it executes the local MHCflurry predictor. Liatir exposes only
 MHCflurry/MHCflurryEL, sets IEDB retries to zero and denies network access to the parent and child
@@ -69,6 +70,35 @@ predictions; repeated CPU ranking and Metal parity passed at absolute/relative t
 maximum absolute difference 0.0014372563091455959. Compact evidence artifact `9683966329` has digest
 `sha256:3c7a180df1d584ba4f8b188bc11877d5d020b40b982dbd6df2fc26cdb1531e54`. Cleanup passed, the runner
 deregistered, its marked root was removed and the repository runner inventory returned to zero.
+
+The pVACseq correction is on `origin/main` as clean commit
+`ac44d6a70dafff60b144fec6fedaa9a80fc360db`. It prevents Python multiprocessing children from
+re-entering the stdin runner, permits only local Unix-domain sockets for process coordination,
+retains the anchor/report resources pVACseq actually needs, and uses the reviewed 0.001
+absolute/relative score tolerance. A fresh local box passed self-test and the official reduced
+pVACseq fixture; the final `npm run test:verify` passed 70 files / 479 tests. Rust passed 92 tests
+with 2 heavy fixtures ignored and Clippy completed without errors. Automatic preflight run
+`33226907559` passed; artifact `9707173508` has digest
+`sha256:277af6af86c03f6056ce92a4797ebef0ccc39a57dce5c8e94377fa1e434fbd02`.
+
+Manual native-lifecycle run `33227035747` passed on ephemeral runner
+`liatir-macos-heavy-1787967600-24204`: clean build, development signature/archive/layout/self-test,
+official-fixture scientific parity and 23 Rust Runtime Box lifecycle tests (2 heavy fixtures
+ignored). The 994,583,880-byte archive had SHA-256
+`1d36f172182ed940ad413a19791defca527e6866a803208aef231eee04c9b706` and installed size
+3,598,150,920 bytes. The scientific run produced 540 all-epitope rows, 3 filtered rows and 11
+aggregates, compared 2,160 finite scores and stayed within 0.001 absolute/relative tolerance;
+maximum absolute difference was 0.007866887946875067. Compact evidence artifact `9707342686` has
+digest `sha256:56925fdfad59a98fffa48ea3e7cee3f36657cac370de43286f42b99ae095c7b9`.
+Cleanup passed, the runner deregistered, its marked root was removed and repository runner inventory
+returned to zero.
+
+The public MHC source mirror was independently read again on 2026-08-29: HTTP 200,
+135,602,727 bytes and SHA-256
+`44784a00d480298b66bfc232e2d1bb1a2df5e564f894a2fcc15d29fbd83f0d1e`. Phase 2 is complete for the
+authorized implementation and first-native-target scope. This is not a publication claim: both
+components remain absent from active catalogs until separately authorized protected signing,
+immutable publication and packaged-product lifecycle evidence exist.
 
 ## Runtime Components and scientific contracts are ready for model-specific phases (2026-08-25)
 

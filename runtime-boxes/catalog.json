@@ -743,7 +743,7 @@
           "hostEnvironments": ["native"],
           "recipeId": "pvactools-pvacseq-macos-aarch64-cpu",
           "runnerProfileId": "macos-arm64-heavy",
-          "status": "planned",
+          "status": "native-lifecycle-validated",
           "validationModes": ["build", "scientific", "native-lifecycle"],
           "timeoutMinutes": 180,
           "requiredBuildDiskBytes": 10737418240,

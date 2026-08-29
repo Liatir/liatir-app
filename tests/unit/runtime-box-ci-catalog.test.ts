@@ -52,7 +52,7 @@ describe('Runtime Box CI catalog', () => {
       (component) => component.componentId === 'griffithlab-pvactools-pvacseq',
     );
     expect(pvactools?.targets.find((target) => target.targetId === 'macos-aarch64-cpu'))
-      .toMatchObject({ status: 'planned', nativeCiEnabled: true });
+      .toMatchObject({ status: 'native-lifecycle-validated', nativeCiEnabled: true });
     expect(pvactools?.targets.find((target) => target.targetId === 'linux-x86_64-cpu'))
       .toMatchObject({ status: 'planned', nativeCiEnabled: false });
     for (const component of catalog.components.filter((entry) => oncologyIds.has(entry.componentId))) {

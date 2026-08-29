@@ -119,7 +119,7 @@ release; it does not invalidate the local Phase 1 functional gates above.
 - MHCflurry standalone verificato su peptidi noti: valori finiti, ranking stabile e parità CPU/CUDA/MPS entro tolleranza.
 - Test di VCF non annotato, allele sconosciuto, campione assente, output vuoto, cancellazione e ripresa della navigazione.
 
-### Implementation status — prepared locally, reviewed mirror public (2026-08-28)
+### Implementation status — complete for the authorized Phase 2 scope (2026-08-29)
 
 - The standalone MHCflurry 2.2.1 component has exact Scrollcase recipes and Pixi locks for Apple
   silicon Metal, Linux and Windows CPU, and Linux and Windows CUDA. The pVACseq component has exact
@@ -174,11 +174,10 @@ repack, restricted multipart upload, public byte/hash verification and receipt u
 public download confirmed 135,602,727 bytes, SHA-256
 `44784a00d480298b66bfc232e2d1bb1a2df5e564f894a2fcc15d29fbd83f0d1e`, and 45 entries limited to
 `models/` plus `LIATIR_SOURCE.json`. Receipt artifact `9681436581` has digest
-`sha256:2047147d0330adb7154edd4309e014b1fc50cde2fc11f050b52703c15cee34c9`. Next, run build, scientific
-and native lifecycle validation on intended targets, create evidence and signed releases, change only
-proven targets to `published`, and
-add only those targets to active product catalogs. CPU/CUDA/MPS parity is not claimed until those
-native validators pass.
+`sha256:2047147d0330adb7154edd4309e014b1fc50cde2fc11f050b52703c15cee34c9`. This completed the restricted
+source-mirror boundary, not Runtime Box publication. Only targets with their own native evidence may
+advance beyond `planned`; production signing, publication and active product-catalog exposure remain
+separate release actions.
 
 The implementation commit `e7a7a7b16bbfb37f322db13bda55c6f91ed55e2b` was pushed to `main` after
 the local gates. Automatic catalog-only preflights passed for MHCflurry in run `33161230745`
@@ -200,6 +199,38 @@ The Rust lifecycle passed 23 tests with 2 heavy fixtures ignored. Compact eviden
 `sha256:3c7a180df1d584ba4f8b188bc11877d5d020b40b982dbd6df2fc26cdb1531e54`. Cleanup deregistered the
 runner and removed its marked root. This proves the first native target, but does not prove CUDA,
 production signing/publication or the real product lifecycle; those gates remain separate.
+
+The first pVACseq native attempt, run `33197657605`, built and self-tested the box but exposed two
+real product defects before the scientific result could pass: Python `spawn` re-entered the stdin
+runner, and the broad pVACview prune removed anchor tables and report support files that pVACseq
+itself uses. Commit `ac44d6a70dafff60b144fec6fedaa9a80fc360db` added guarded Python entry points,
+kept Unix-domain sockets for local multiprocessing while continuing to reject network sockets,
+retained and self-tested only the required pVACview data/support subset, and aligned score parity
+with the reviewed 0.001 absolute/relative MHCflurry tolerance. A fresh local box then passed its
+self-test and the official reduced pVACseq fixture: 540 all-epitope rows, 3 filtered rows, 11
+aggregates, 10 candidate peptides and 2,160 score comparisons, with maximum absolute difference
+0.007866887946875067. `npm run test:verify` passed 70 files / 479 tests; Rust passed 92 tests with 2
+heavy fixtures ignored, and Clippy completed without errors. Automatic preflight run `33226907559`
+passed for the clean commit; artifact `9707173508` has digest
+`sha256:277af6af86c03f6056ce92a4797ebef0ccc39a57dce5c8e94377fa1e434fbd02`.
+
+Manual native-lifecycle run `33227035747` then passed on exact ephemeral runner
+`liatir-macos-heavy-1787967600-24204`. It built and independently verified the 994,583,880-byte
+archive (SHA-256 `1d36f172182ed940ad413a19791defca527e6866a803208aef231eee04c9b706`),
+installed size 3,598,150,920 bytes, exact dependency lock and local development signature. The remote
+scientific validator reproduced the same 540 / 3 / 11 output counts and 2,160 finite score
+comparisons against the official fixture within the declared tolerance. The Rust lifecycle passed
+23 tests with 2 heavy fixtures ignored. Compact evidence artifact `9707342686` has digest
+`sha256:56925fdfad59a98fffa48ea3e7cee3f36657cac370de43286f42b99ae095c7b9`.
+Workflow cleanup passed, the runner deregistered, its marked root was removed and repository runner
+inventory returned to zero.
+
+Phase 2 is therefore complete at the authorized implementation and first-native-target scope:
+MHCflurry Apple Metal and pVACseq macOS CPU are `native-lifecycle-validated`; all other oncology
+targets remain `planned`, and no CUDA claim is made. Both active product catalogs still omit these
+unpublished components. Production signing, immutable Runtime Box publication and the real packaged
+product release lifecycle were not authorized here and remain explicit release gates rather than
+hidden Phase 2 claims.
 
 ## Fase 3 — Strutture, affinità e simulazione
 
