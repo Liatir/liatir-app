@@ -47,6 +47,17 @@ was not promoted. Those gates now pass: 78 focused tests, then all 70 test files
 type regeneration, Core/frontend builds and bridge compilation. The bounded retry is permitted after
 the clean fix commit is pushed and the runner preflight passes again.
 
+Retry `33262145841` proved the shared file-picker correction: candidate visibility, file selection,
+signing, native self-test, scientific parity, immutable publication and the real app build all passed.
+The lifecycle then reached its Run-button readiness check and exposed one more missing operation in
+Liatir's intentionally small WebDriver client: both oncology specs call `isEnabled()`, but the client
+did not implement the standard element-enabled endpoint. The complete MHCflurry and pVACseq specs
+were audited and use no other missing element methods. Add that endpoint with a regression tied to
+both routed specs, repeat focused checks and `test:verify`, then permit one new bounded MHCflurry
+attempt; another failure requires a fresh diagnosis before any retry. Promotion did not run. The
+endpoint regression and all routed-spec checks now pass (79 focused tests), followed by the full 70
+test files and 484 tests, SDK regeneration, Core/frontend builds and bridge compilation.
+
 ## Oncology Phase 2 is complete for the authorized scope (2026-08-29)
 
 MHC-I Epitope Prediction and pVACseq Neoantigen Prioritization now have shared contracts, bounded

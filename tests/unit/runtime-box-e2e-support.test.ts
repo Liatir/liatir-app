@@ -1,4 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 import {
   activateCleanSandbox,
@@ -25,6 +27,17 @@ afterEach(() => {
 });
 
 describe('Runtime Box product E2E support', () => {
+  it('implements every element-state command used by the oncology product lifecycles', () => {
+    const runner = readFileSync(resolve('tests/e2e/run-tauri-e2e.mjs'), 'utf8');
+    const mhc = readFileSync(resolve('tests/e2e/specs/runtime-box-mhcflurry-native.e2e.mjs'), 'utf8');
+    const pvac = readFileSync(resolve('tests/e2e/specs/runtime-box-pvactools-native.e2e.mjs'), 'utf8');
+
+    expect(mhc).toContain('runButton.isEnabled()');
+    expect(pvac).toContain('runButton.isEnabled()');
+    expect(runner).toContain('async isEnabled()');
+    expect(runner).toContain("`/element/${await this.resolveId()}/enabled`");
+  });
+
   it('exposes only an exact checked release candidate to the non-distributable test app', () => {
     expect(resolveRuntimeBoxReleaseCandidate(null)).toBeNull();
     expect(resolveRuntimeBoxReleaseCandidate('openvax-mhcflurry-class1-presentation'))

@@ -258,6 +258,11 @@ class WebDriverElement {
     return this.client.request('GET', `/element/${await this.resolveId()}/displayed`);
   }
 
+  async isEnabled() {
+    if (!(await this.isExisting())) return false;
+    return this.client.request('GET', `/element/${await this.resolveId()}/enabled`);
+  }
+
   async waitForDisplayed(options = {}) {
     await this.client.waitUntil(
       async () => this.isDisplayed(),
