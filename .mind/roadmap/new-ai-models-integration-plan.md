@@ -230,7 +230,10 @@ MHCflurry Apple Metal and pVACseq macOS CPU are `native-lifecycle-validated`; al
 targets remain `planned`, and no CUDA claim is made. Both active product catalogs still omit these
 unpublished components. Production signing, immutable Runtime Box publication and the real packaged
 product release lifecycle were not authorized here and remain explicit release gates rather than
-hidden Phase 2 claims.
+hidden Phase 2 claims. The final catalog/status commit
+`028105fa9fc8c279ad5597801b35923eb9862a33` passed automatic preflight run `33227635616`; artifact
+`9707405477` has digest
+`sha256:6511f0cdb29247f2d13f4465d23a189873d5aaed1e9e6151d3f0eba3d3a2d1ba`.
 
 ## Fase 3 — Strutture, affinità e simulazione
 

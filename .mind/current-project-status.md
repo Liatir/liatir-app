@@ -98,7 +98,10 @@ The public MHC source mirror was independently read again on 2026-08-29: HTTP 20
 `44784a00d480298b66bfc232e2d1bb1a2df5e564f894a2fcc15d29fbd83f0d1e`. Phase 2 is complete for the
 authorized implementation and first-native-target scope. This is not a publication claim: both
 components remain absent from active catalogs until separately authorized protected signing,
-immutable publication and packaged-product lifecycle evidence exist.
+immutable publication and packaged-product lifecycle evidence exist. The final catalog/status commit
+`028105fa9fc8c279ad5597801b35923eb9862a33` passed automatic preflight run `33227635616`; artifact
+`9707405477` has digest
+`sha256:6511f0cdb29247f2d13f4465d23a189873d5aaed1e9e6151d3f0eba3d3a2d1ba`.
 
 ## Runtime Components and scientific contracts are ready for model-specific phases (2026-08-25)
 
