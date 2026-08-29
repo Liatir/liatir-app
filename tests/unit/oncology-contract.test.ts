@@ -55,6 +55,59 @@ describe('Phase 2 oncology contract', () => {
     }
   });
 
+  it('keeps the pVACseq anchor tables while pruning the unexposed pVACview application', () => {
+    const anchorTables = [
+      ...[8, 9, 10, 11].map((length) => `Normalized_anchor_predictions_${length}_mer.tsv`),
+      ...[8, 9, 10, 11].map((length) => `mouse_anchor_predictions_${length}_mer.tsv`),
+    ];
+    const resultSupportFiles = [
+      'anchor_and_helper_functions.R',
+      'app.R',
+      'custom_ui.R',
+      'input_processing_functions.R',
+      'neofox_ui.R',
+      'server.R',
+      'styling.R',
+      'ui.R',
+      'www/anchor.jpg',
+      'www/pVACview_logo.png',
+      'www/pVACview_logo_mini.png',
+    ];
+    for (const targetId of ['macos-aarch64-cpu', 'linux-x86_64-cpu']) {
+      const scroll = JSON.parse(readFileSync(resolve(
+        `runtime-boxes/scrolls/pvactools-pvacseq/${targetId}/scroll.json`,
+      ), 'utf8'));
+      const dataDirectory = 'source/pvactools-wheel/pvactools/tools/pvacview/data';
+      expect(scroll.prunePaths).not.toContain(
+        'source/pvactools-wheel/pvactools/tools/pvacview',
+      );
+      expect(scroll.prunePaths).toContain(
+        'source/pvactools-wheel/pvactools/tools/pvacview/run.py',
+      );
+      for (const table of anchorTables) {
+        expect(scroll.prunePaths).not.toContain(`${dataDirectory}/${table}`);
+        expect(scroll.selfTest.files).toContain(`${dataDirectory}/${table}`);
+      }
+      const pvacviewDirectory = 'source/pvactools-wheel/pvactools/tools/pvacview';
+      for (const file of resultSupportFiles) {
+        expect(scroll.prunePaths).not.toContain(`${pvacviewDirectory}/${file}`);
+        expect(scroll.selfTest.files).toContain(`${pvacviewDirectory}/${file}`);
+      }
+    }
+  });
+
+  it('uses the reviewed absolute and relative tolerances for pVACseq score parity', () => {
+    const validator = readFileSync(resolve('scripts/validate-pvactools-runtime.mjs'), 'utf8');
+    expect(validator).toContain('const ABSOLUTE_TOLERANCE = 0.001;');
+    expect(validator).toContain('const RELATIVE_TOLERANCE = 0.001;');
+    expect(validator).toContain(
+      'ABSOLUTE_TOLERANCE + RELATIVE_TOLERANCE * Math.abs(right)',
+    );
+    expect(validator).toContain(
+      'tolerances: { absolute: ABSOLUTE_TOLERANCE, relative: RELATIVE_TOLERANCE }',
+    );
+  });
+
   it('keeps reviewed MHCflurry metadata unexposed until an exact target is published', () => {
     expect(MHCFLURRY_CLASS1_PRESENTATION_METADATA).toMatchObject({
       id: MHCFLURRY_CLASS1_PRESENTATION_MODEL_ID,

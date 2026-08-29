@@ -123,14 +123,18 @@ import pathlib
 import runpy
 import sys
 
-input_path = pathlib.Path(sys.argv[1])
-script_path = pathlib.Path(sys.argv[2])
-script_args = sys.argv[3:]
+def main():
+    input_path = pathlib.Path(sys.argv[1])
+    script_path = pathlib.Path(sys.argv[2])
+    script_args = sys.argv[3:]
 
-sys.argv = [str(script_path), *script_args]
-sys.path.insert(0, str(script_path.parent))
-sys.stdin = io.StringIO(input_path.read_text(encoding="utf-8"))
-runpy.run_path(str(script_path), run_name="__main__")
+    sys.argv = [str(script_path), *script_args]
+    sys.path.insert(0, str(script_path.parent))
+    sys.stdin = io.StringIO(input_path.read_text(encoding="utf-8"))
+    runpy.run_path(str(script_path), run_name="__main__")
+
+if __name__ == "__main__":
+    main()
 "#;
 
 const PYTHON_BOOTSTRAP_REQUIREMENTS: &[&str] = &[
@@ -1353,6 +1357,53 @@ mod tests {
         // an empty map is dropped by the spawn path and would take the flag with it.
         assert!(!env.contains_key("PYTHONPATH"));
         assert!(!env.is_empty());
+    }
+
+    #[test]
+    fn python_job_runner_allows_spawned_child_processes() {
+        let Some(python) = python_candidates()
+            .into_iter()
+            .find(|candidate| command_stdout(candidate, &["--version"]).is_some())
+        else {
+            return;
+        };
+        let root = std::env::temp_dir().join(format!(
+            "liatir-python-job-runner-spawn-{}",
+            uuid::Uuid::new_v4()
+        ));
+        std::fs::create_dir_all(&root).expect("create Python runner fixture directory");
+        let runner = root.join("runner.py");
+        let script = root.join("script.py");
+        let input = root.join("input.json");
+        std::fs::write(&runner, PYTHON_JOB_RUNNER).expect("write Python job runner");
+        std::fs::write(&input, "{}").expect("write Python runner input");
+        std::fs::write(
+            &script,
+            r#"import multiprocessing
+
+def main():
+    multiprocessing.set_start_method("spawn", force=True)
+    with multiprocessing.Manager() as manager:
+        print(manager.dict({"ok": True})["ok"])
+
+if __name__ == "__main__":
+    main()
+"#,
+        )
+        .expect("write spawned Python fixture");
+
+        let output = Command::new(python)
+            .args([&runner, &input, &script])
+            .output()
+            .expect("run spawned Python fixture");
+        let _ = std::fs::remove_dir_all(&root);
+
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert_eq!(String::from_utf8_lossy(&output.stdout).trim(), "True");
     }
 
     #[test]

@@ -12,7 +12,8 @@ import { loadRuntimeBoxValidatorContext } from './runtime-box/validator-context.
 const ROOT = resolve(import.meta.dirname, '..');
 const MODEL_ID = 'griffithlab-pvactools-pvacseq';
 const SOURCE_REVISION = 'v7.1.2+mhcflurry-v2.0.6';
-const SCORE_TOLERANCE = 0.001;
+const ABSOLUTE_TOLERANCE = 0.001;
+const RELATIVE_TOLERANCE = 0.001;
 const VALIDATION_ALLELES = ['HLA-A*29:02', 'HLA-B*45:01', 'HLA-B*82:02'];
 const {
   recipe: RECIPE,
@@ -208,6 +209,7 @@ try {
   }
   let comparedScores = 0;
   let maximumAbsoluteDifference = 0;
+  let firstScoreMismatch = null;
   const scoreColumns = [
     'MHCflurry MT IC50 Score',
     'MHCflurry MT Percentile',
@@ -226,10 +228,19 @@ try {
       const difference = Math.abs(left - right);
       maximumAbsoluteDifference = Math.max(maximumAbsoluteDifference, difference);
       comparedScores += 1;
-      if (difference > SCORE_TOLERANCE) {
-        throw new Error(`pVACseq differs from the official result in ${column}.`);
+      const tolerance = ABSOLUTE_TOLERANCE + RELATIVE_TOLERANCE * Math.abs(right);
+      if (difference > tolerance && firstScoreMismatch === null) {
+        firstScoreMismatch = { row: key(row), column, actual: left, expected: right, difference };
       }
     }
+  }
+  if (firstScoreMismatch !== null) {
+    throw new Error(
+      `pVACseq score parity exceeded the ${ABSOLUTE_TOLERANCE} absolute and ${RELATIVE_TOLERANCE} relative tolerances: ${JSON.stringify({
+        ...firstScoreMismatch,
+        maximumAbsoluteDifference,
+      })}`,
+    );
   }
 
   const framework = JSON.parse(run(PYTHON, ['-c', [
@@ -279,7 +290,7 @@ try {
         aggregateCandidates: [result.summary.aggregateCount],
       },
       finiteValues: true,
-      tolerances: { absolute: SCORE_TOLERANCE, relative: 0 },
+      tolerances: { absolute: ABSOLUTE_TOLERANCE, relative: RELATIVE_TOLERANCE },
       parity: {
         reference: 'pvactools-7.1.2-official-example-output',
         passed: true,

@@ -107,6 +107,45 @@ function runPvacStub(allele: string) {
   return { root, output, result };
 }
 
+function runPvacStubWithSpawnedImport() {
+  const root = mkdtempSync(join(tmpdir(), 'liatir-pvac-spawn-'));
+  runnablePvacStub(root);
+  const predictor = join(root, 'source/pvactools-wheel/pvactools/lib/prediction_class.py');
+  writeFileSync(predictor, [
+    'import multiprocessing',
+    'multiprocessing.set_start_method("spawn", force=True)',
+    '_manager = multiprocessing.Manager()',
+    '_queue = _manager.Queue()',
+    '',
+    'class MHCflurry:',
+    '    def valid_allele_names(self):',
+    '        return ["HLA-A*02:01"]',
+    '',
+  ].join('\n'));
+  const input = join(root, 'annotated.vcf');
+  const output = join(root, 'output');
+  const script = join(root, 'pvacseq.py');
+  writeFileSync(input, annotatedVcf());
+  writeFileSync(script, PVACSEQ_SCRIPT);
+  const result = spawnSync('python3', [script], {
+    encoding: 'utf8',
+    input: JSON.stringify({
+      runtimePath: root,
+      inputVcf: input,
+      tumorSample: 'TUMOR',
+      normalSample: '',
+      proximalVcf: '',
+      alleles: ['HLA-A*02:01'],
+      peptideLengths: [9],
+      predictors: ['MHCflurry', 'MHCflurryEL'],
+      topCount: 50,
+      threads: 1,
+      outputDir: output,
+    }),
+  });
+  return result;
+}
+
 describe('oncology product Python scripts', () => {
   it('finishes all bounded pVACseq input checks before importing its scientific stack', () => {
     const inspection = PVACSEQ_SCRIPT.indexOf('inspection = inspect_vcf(');
@@ -143,8 +182,9 @@ describe('oncology product Python scripts', () => {
 
   it('locks pVACseq to local MHCflurry predictors and guards parent and child sockets', () => {
     expect(PVACSEQ_SCRIPT).toContain('ALLOWED_PREDICTORS = ["MHCflurry", "MHCflurryEL"]');
-    expect(PVACSEQ_SCRIPT).toContain('"MHCflurry",\n    "MHCflurryEL",');
+    expect(PVACSEQ_SCRIPT).toContain('"MHCflurry",\n        "MHCflurryEL",');
     expect(PVACSEQ_SCRIPT).toContain('socket.socket.connect = deny_network');
+    expect(PVACSEQ_SCRIPT).toContain('sock.family == socket.AF_UNIX');
     expect(PVACSEQ_SCRIPT).toContain("socket.socket.connect = deny");
     expect(PVACSEQ_SCRIPT).toContain('MHCFLURRY_DOWNLOADS_DIR');
     expect(PVACSEQ_SCRIPT).not.toContain('mhcflurry-downloads fetch');
@@ -152,6 +192,12 @@ describe('oncology product Python scripts', () => {
     expect(PVACSEQ_SCRIPT).toContain('"proximalInputInspection": proximal_inspection');
     expect(PVACSEQ_SCRIPT).toContain('"passOnly": bool(payload.get("passOnly"))');
     expect(PVACSEQ_SCRIPT).toContain('"requestedTopCount": top_count');
+  });
+
+  it('runs from a file when a scientific import starts a spawned child process', () => {
+    const result = runPvacStubWithSpawnedImport();
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.stdout).toContain('Running pVACseq locally');
   });
 
   it('accepts the distinct upstream contract for a single-sample proximal VCF', () => {
