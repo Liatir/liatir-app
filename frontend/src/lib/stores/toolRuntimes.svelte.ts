@@ -3,8 +3,8 @@ import { liatir } from '$lib/api';
 import { getAIHardwareInfo, type AIHardwareInfo } from '$lib/ai/runtime';
 import { toolRuntimeInstallBlock } from '$lib/ai/model-compatibility';
 import { appStorage } from './app-storage';
+import { LIATIR_TOOL_RUNTIME_CATALOG } from '$lib/tool-runtimes/catalog';
 import {
-  LIATIR_TOOL_RUNTIME_CATALOG,
   packageChecksForToolRuntime,
   runtimeIdForToolRuntime,
   type LiatirRuntimeComponentUpdateStatus,

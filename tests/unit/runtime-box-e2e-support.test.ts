@@ -8,6 +8,7 @@ import {
   waitForRuntimeBoxInstall,
 } from '../e2e/support/runtime-box.mjs';
 import { waitForLiatirBridge } from '../e2e/support/liatir-app.mjs';
+import { resolveRuntimeBoxReleaseCandidate } from '../../frontend/src/lib/runtime-box-release-candidate';
 import {
   prepareTauriTestEnvironment,
   tauriTestEnvironment,
@@ -24,6 +25,18 @@ afterEach(() => {
 });
 
 describe('Runtime Box product E2E support', () => {
+  it('exposes only an exact checked release candidate to the non-distributable test app', () => {
+    expect(resolveRuntimeBoxReleaseCandidate(null)).toBeNull();
+    expect(resolveRuntimeBoxReleaseCandidate('openvax-mhcflurry-class1-presentation'))
+      .toMatchObject({ kind: 'ai-model', metadata: { install: { runtimeBox: { publishedTargets: [{
+        target: { platform: 'macos', arch: 'aarch64', accelerator: 'metal' },
+      }] } } } });
+    expect(resolveRuntimeBoxReleaseCandidate('griffithlab-pvactools-pvacseq'))
+      .toMatchObject({ kind: 'tool-runtime', metadata: { install: { runtimeBox: { publishedTargets: [{
+        target: { platform: 'macos', arch: 'aarch64', accelerator: 'cpu' },
+      }] } } } });
+    expect(() => resolveRuntimeBoxReleaseCandidate('unknown-component')).toThrow(/Unsupported/);
+  });
   it('opens the isolated Sandbox through the product workspace flow', async () => {
     let sandboxClicked = false;
     const browser = {

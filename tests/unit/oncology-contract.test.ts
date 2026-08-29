@@ -4,12 +4,14 @@ import { resolve } from 'node:path';
 import {
   MHC_CLASS_I_PEPTIDE_LENGTHS,
   MHCFLURRY_CLASS1_PRESENTATION_METADATA,
+  MHCFLURRY_CLASS1_PRESENTATION_RELEASE_CANDIDATE_METADATA,
   MHCFLURRY_CLASS1_PRESENTATION_MODEL_ID,
   MHCFLURRY_EPITOPE_TOOL_ID,
   NEOANTIGEN_PRIORITIZATION_TOOL_ID,
   ONCOLOGY_EXPERIMENTAL_CANDIDATE_NOTICE,
   PVACTOOLS_RUNTIME_COMPONENT_ID,
   PVACTOOLS_RUNTIME_ID,
+  PVACTOOLS_RELEASE_CANDIDATE_METADATA,
   parseMhcClassIAlleles,
   parseMhcClassIPeptideLengths,
 } from '../../packages/liatir-core/src';
@@ -121,6 +123,17 @@ describe('Phase 2 oncology contract', () => {
         runtimeBox: { boxId: 'mhcflurry-class1-presentation', publishedTargets: [] },
       },
     });
+    expect(MHCFLURRY_CLASS1_PRESENTATION_RELEASE_CANDIDATE_METADATA.install.runtimeBox.publishedTargets)
+      .toEqual([{
+        target: { platform: 'macos', arch: 'aarch64', accelerator: 'metal' },
+        hostEnvironments: ['native'],
+        minRamGb: 8,
+      }]);
+    expect(PVACTOOLS_RELEASE_CANDIDATE_METADATA.install.runtimeBox.publishedTargets).toEqual([{
+      target: { platform: 'macos', arch: 'aarch64', accelerator: 'cpu' },
+      hostEnvironments: ['native'],
+      minRamGb: 8,
+    }]);
   });
 
   it('normalizes, deduplicates, and bounds HLA Class I alleles', () => {

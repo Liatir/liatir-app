@@ -53,6 +53,7 @@ function productLifecycleSpec() {
 async function runProductLifecycle() {
   const invocation = npmInvocation([
     'run', 'test:tauri:run', '--', '--heavy',
+    'tests/e2e/specs/runtime-box-release-candidate.e2e.mjs',
     productLifecycleSpec(),
   ]);
   await new Promise((resolve, reject) => {

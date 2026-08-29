@@ -380,14 +380,18 @@ describe('Runtime Box CI catalog', () => {
     // The runner must read the spec from the catalog and be told which model it is releasing.
     expect(runner).toContain('productLifecycleSpec');
     expect(runner).toContain('LIATIR_RUNTIME_BOX_MODEL_ID');
+    expect(runner).toContain('tests/e2e/specs/runtime-box-release-candidate.e2e.mjs');
     expect(runner).not.toContain("'tests/e2e/specs/runtime-box-native.e2e.mjs'");
     // Every platform lifecycle step carries the component, or one silently picks the wrong spec.
     expect(release.match(/LIATIR_RUNTIME_BOX_MODEL_ID: \$\{\{ inputs\.model_id \}\}/g))
+      .toHaveLength(3);
+    expect(release.match(/\n          LIATIR_RUNTIME_BOX_RELEASE_CANDIDATE_ID: \$\{\{ inputs\.model_id \}\}/g))
       .toHaveLength(3);
     expect(release).toContain('Run the macOS candidate through the component\'s product lifecycle spec');
     expect(release).toContain('openvax-mhcflurry-class1-presentation');
     expect(release).toContain('griffithlab-pvactools-pvacseq');
     expect(release).toContain('macos-aarch64-cpu');
+    expect(release).toContain('VITE_LIATIR_RUNTIME_BOX_RELEASE_CANDIDATE_ID: ${{ inputs.model_id }}');
     expect(release).toContain('Upload bounded product lifecycle failure diagnostics');
     expect(release).toContain('tests/.artifacts/screenshots/');
     expect(release).toContain('tests/.artifacts/tauri-logs/');

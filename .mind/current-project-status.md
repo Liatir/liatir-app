@@ -19,6 +19,22 @@ waits for either the workspace shell or the rendered chooser, adds a delayed-ren
 and retains bounded screenshot and Tauri-log diagnostics on future failures. One fresh MHCflurry
 release retry is allowed after the focused tests, full `test:verify`, clean push and runner preflight.
 
+Retry `33249639926` proved that chooser correction and completed candidate installation, but the
+retained screenshot exposed the next closed boundary: the normal app catalog correctly rendered
+`Runtime not published`, so the pre-publication test binary could not reach the MHCflurry input form.
+The release test build therefore needs one explicit candidate ID. Core owns the exact prepared
+metadata and target; the frontend includes it only when that build-only ID is set, rejects unknown
+IDs, and normal distributable builds remain unchanged. The same generic boundary covers the pVACseq
+Tool Runtime. No further remote attempt is allowed until its focused contract test, full
+`test:verify`, and a local candidate-built UI smoke have passed.
+
+The candidate boundary's focused contracts passed (98 tests), frontend checking reported zero
+errors or warnings, and the locally compiled MHCflurry candidate app passed the dedicated UI smoke:
+it rendered `Install required` instead of `Runtime not published` without changing the normal product
+catalog. The remaining local stop condition is the full `test:verify` gate before a clean push and
+one fresh remote release attempt. That gate then passed all 70 test files and 482 tests, regenerated
+the SDK types, built Core and the frontend, and compiled the TypeScript bridge.
+
 ## Oncology Phase 2 is complete for the authorized scope (2026-08-29)
 
 MHC-I Epitope Prediction and pVACseq Neoantigen Prioritization now have shared contracts, bounded

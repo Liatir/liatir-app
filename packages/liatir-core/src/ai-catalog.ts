@@ -108,6 +108,18 @@ export const MHCFLURRY_CLASS1_PRESENTATION_METADATA: LiatirAIModelMetadata = {
 	tags: ['built-in', 'runtime-box', 'oncology', 'mhc-class-i', 'epitope', 'presentation']
 };
 
+/** Exact metadata used only by a release-built test app before the target enters the product catalog. */
+export const MHCFLURRY_CLASS1_PRESENTATION_RELEASE_CANDIDATE_METADATA: LiatirAIModelMetadata = {
+	...MHCFLURRY_CLASS1_PRESENTATION_METADATA,
+	install: {
+		...MHCFLURRY_CLASS1_PRESENTATION_METADATA.install,
+		runtimeBox: {
+			...MHCFLURRY_CLASS1_PRESENTATION_METADATA.install.runtimeBox,
+			publishedTargets: publishedMacosArm64MetalTarget(8)
+		}
+	}
+};
+
 /** Builds the shared Apple silicon target used by published single-cell Runtime Boxes. */
 function publishedMacosArm64MetalTarget(
 	minRamGb: number

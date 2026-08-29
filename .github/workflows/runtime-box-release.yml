@@ -270,12 +270,17 @@ jobs:
           --receipt .runtime-box-ci/publish-receipt.json
 
       - name: Build the real Liatir product test binary
+        env:
+          # This binary is never distributed. It exposes only the exact release candidate so the
+          # product lifecycle can run before the normal catalog is allowed to advertise it.
+          VITE_LIATIR_RUNTIME_BOX_RELEASE_CANDIDATE_ID: ${{ inputs.model_id }}
         run: npm run test:tauri:prepare
 
       - name: Run the macOS candidate through the component's product lifecycle spec
         if: startsWith(inputs.target_id, 'macos-')
         env:
           LIATIR_RUNTIME_BOX_REGISTRY_BASE_URL: http://127.0.0.1:8790/v1
+          LIATIR_RUNTIME_BOX_RELEASE_CANDIDATE_ID: ${{ inputs.model_id }}
           LIATIR_RUNTIME_BOX_MODEL_ID: ${{ inputs.model_id }}
           LIATIR_RUNTIME_BOX_TARGET_ID: ${{ inputs.target_id }}
           LIATIR_RUNTIME_BOX_EXPECTED_VERSION: ${{ needs.preflight.outputs.version }}
@@ -287,6 +292,7 @@ jobs:
         if: startsWith(inputs.target_id, 'linux-')
         env:
           LIATIR_RUNTIME_BOX_REGISTRY_BASE_URL: http://127.0.0.1:8790/v1
+          LIATIR_RUNTIME_BOX_RELEASE_CANDIDATE_ID: ${{ inputs.model_id }}
           LIATIR_RUNTIME_BOX_MODEL_ID: ${{ inputs.model_id }}
           LIATIR_RUNTIME_BOX_TARGET_ID: ${{ inputs.target_id }}
           LIATIR_RUNTIME_BOX_EXPECTED_VERSION: ${{ needs.preflight.outputs.version }}
@@ -300,6 +306,7 @@ jobs:
         if: startsWith(inputs.target_id, 'windows-')
         env:
           LIATIR_RUNTIME_BOX_REGISTRY_BASE_URL: http://127.0.0.1:8790/v1
+          LIATIR_RUNTIME_BOX_RELEASE_CANDIDATE_ID: ${{ inputs.model_id }}
           LIATIR_RUNTIME_BOX_MODEL_ID: ${{ inputs.model_id }}
           LIATIR_RUNTIME_BOX_TARGET_ID: ${{ inputs.target_id }}
           LIATIR_RUNTIME_BOX_EXPECTED_VERSION: ${{ needs.preflight.outputs.version }}

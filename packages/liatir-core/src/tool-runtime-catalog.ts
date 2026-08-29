@@ -101,6 +101,22 @@ export const PVACTOOLS_TOOL_RUNTIME_METADATA: LiatirToolRuntimeMetadata = {
   tags: ["runtime-box", "oncology", "neoantigen", "pvacseq", "mhc-class-i"],
 };
 
+/** Exact metadata used only by a release-built test app before the target enters the product catalog. */
+export const PVACTOOLS_RELEASE_CANDIDATE_METADATA: LiatirToolRuntimeMetadata = {
+  ...PVACTOOLS_TOOL_RUNTIME_METADATA,
+  install: {
+    ...PVACTOOLS_TOOL_RUNTIME_METADATA.install,
+    runtimeBox: {
+      ...PVACTOOLS_TOOL_RUNTIME_METADATA.install.runtimeBox,
+      publishedTargets: [{
+        target: { platform: "macos", arch: "aarch64", accelerator: "cpu" },
+        hostEnvironments: ["native"],
+        minRamGb: 8,
+      }],
+    },
+  },
+};
+
 /**
  * Phase 1 establishes the Tool Runtime product contract. Concrete entries are added only with
  * their reviewed Scrollcase recipes and published targets in the component-specific phases.
