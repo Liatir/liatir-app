@@ -22,8 +22,26 @@ export async function openSandboxWorkspace(browser) {
   await waitForLiatirBridge(browser);
 
   const sandboxSelector = '[data-testid="workspace-sandbox-button"]';
-  const sandboxButton = await browser.$(sandboxSelector);
-  if (await sandboxButton.isExisting()) {
+  let workspaceState = { shellOpen: false, sandboxButtonReady: false };
+  await browser.waitUntil(
+    async () => {
+      workspaceState = await browser.execute((selector) => ({
+        shellOpen: window.location.pathname !== '/workspaces'
+          && Boolean(document.querySelector('[data-testid="sidebar-nav-item"]')),
+        sandboxButtonReady: Boolean(document.querySelector(selector)),
+      }), sandboxSelector);
+      return workspaceState.shellOpen || workspaceState.sandboxButtonReady;
+    },
+    {
+      // The native bridge becomes available before Svelte necessarily renders the workspace
+      // chooser. Waiting for either final state avoids a one-shot hydration race on fresh builds.
+      timeout: 20_000,
+      timeoutMsg: 'Sandbox workspace chooser did not become ready',
+    },
+  );
+
+  if (!workspaceState.shellOpen) {
+    const sandboxButton = await browser.$(sandboxSelector);
     await sandboxButton.waitForDisplayed({ timeout: 20_000 });
     // The bridge is injected before Svelte finishes attaching its delegated
     // event handlers. Give hydration one render turn before the real click.

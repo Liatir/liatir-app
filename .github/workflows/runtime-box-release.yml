@@ -347,6 +347,18 @@ jobs:
           retention-days: 7
           if-no-files-found: warn
 
+      - name: Upload bounded product lifecycle failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: runtime-box-release-diagnostics-${{ inputs.model_id }}-${{ inputs.target_id }}-${{ github.run_attempt }}
+          path: |
+            tests/.artifacts/screenshots/
+            tests/.artifacts/tauri-logs/
+          include-hidden-files: true
+          retention-days: 7
+          if-no-files-found: warn
+
       - name: Clean Runtime Box build state
         if: always()
         run: npm run runtime-box:ci -- clean

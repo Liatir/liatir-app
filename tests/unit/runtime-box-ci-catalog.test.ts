@@ -388,6 +388,9 @@ describe('Runtime Box CI catalog', () => {
     expect(release).toContain('openvax-mhcflurry-class1-presentation');
     expect(release).toContain('griffithlab-pvactools-pvacseq');
     expect(release).toContain('macos-aarch64-cpu');
+    expect(release).toContain('Upload bounded product lifecycle failure diagnostics');
+    expect(release).toContain('tests/.artifacts/screenshots/');
+    expect(release).toContain('tests/.artifacts/tauri-logs/');
   });
 
   it('keeps both self-hosted launchers on one pinned runner release and one cleanup contract', () => {

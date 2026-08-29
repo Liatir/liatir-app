@@ -35,6 +35,9 @@ describe('Runtime Box product E2E support', () => {
         if (source.includes('bridgeAvailable')) {
           return { bridgeAvailable: true, documentReady: true, href: 'http://tauri.localhost/workspaces' };
         }
+        if (source.includes('sandboxButtonReady')) {
+          return { shellOpen: sandboxClicked, sandboxButtonReady: !sandboxClicked };
+        }
         if (source.includes("window.location.pathname !== '/workspaces'")) return sandboxClicked;
         throw new Error(`Unexpected browser script: ${source}`);
       },
@@ -50,6 +53,42 @@ describe('Runtime Box product E2E support', () => {
     };
 
     await activateCleanSandbox(browser);
+    expect(sandboxClicked).toBe(true);
+  });
+
+  it('waits for the Sandbox chooser to render after the native bridge is ready', async () => {
+    let readinessChecks = 0;
+    let sandboxClicked = false;
+    const browser = {
+      execute: async (fn: (...args: unknown[]) => unknown) => {
+        const source = fn.toString();
+        if (source.includes('bridgeAvailable')) {
+          return { bridgeAvailable: true, documentReady: true, href: 'http://tauri.localhost/workspaces' };
+        }
+        if (source.includes('sandboxButtonReady')) {
+          readinessChecks += 1;
+          return {
+            shellOpen: sandboxClicked,
+            sandboxButtonReady: readinessChecks >= 2 && !sandboxClicked,
+          };
+        }
+        if (source.includes("window.location.pathname !== '/workspaces'")) return sandboxClicked;
+        throw new Error(`Unexpected browser script: ${source}`);
+      },
+      waitUntil: async (condition: () => Promise<boolean>) => {
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+          if (await condition()) return true;
+        }
+        throw new Error('condition did not pass');
+      },
+      $: async () => ({
+        waitForDisplayed: async () => {},
+        click: async () => { sandboxClicked = true; },
+      }),
+    };
+
+    await activateCleanSandbox(browser);
+    expect(readinessChecks).toBeGreaterThanOrEqual(2);
     expect(sandboxClicked).toBe(true);
   });
 

@@ -10,6 +10,15 @@ approval required for paid GPU CI, and it does not permit publishing planned or 
 Every publication still requires the protected KMS signer, immutable public objects, independent
 public readback and retained evidence before the app catalog can expose it.
 
+Release attempt `33248936657` reached the new macOS packaged-product lifecycle after its clean
+signed build, native self-test, scientific Metal parity and immutable public-hash verification had
+passed. It stopped before beta promotion because the E2E helper checked for the Sandbox button once,
+while the native bridge can become ready before Svelte renders that button. Public readback confirmed
+the beta channel remained HTTP 404; only content-addressed immutable objects exist. The correction
+waits for either the workspace shell or the rendered chooser, adds a delayed-render regression test,
+and retains bounded screenshot and Tauri-log diagnostics on future failures. One fresh MHCflurry
+release retry is allowed after the focused tests, full `test:verify`, clean push and runner preflight.
+
 ## Oncology Phase 2 is complete for the authorized scope (2026-08-29)
 
 MHC-I Epitope Prediction and pVACseq Neoantigen Prioritization now have shared contracts, bounded
