@@ -89,6 +89,19 @@ and catalog activation remain the only open Phase 2 release work. The catalog ac
 2 intentionally skipped); an initial cache-lock denial was only the sandbox blocking Pixi's shared
 package cache, and the required-access rerun passed without a product change.
 
+The first protected pVACseq release attempt, run `33328650028` at exact commit
+`fc30cfb5b357355b20c3b99cc527eb13df3cbc34`, built and KMS-signed the box but failed its independent
+self-test before scientific validation, publication or promotion. The exact error was
+`OSError: AF_UNIX path too long`: the workflow forced Python's temporary directory under the long
+self-hosted runner root, and pVACtools' `pymp` dependency creates a local Unix socket there. macOS
+verify and validator steps now use the short `/tmp` root; Linux and WSL retain the large runner temp
+volume. A focused workflow regression covers both validation and release definitions. One bounded
+retry is allowed after the fix passes `test:verify`, reaches clean remote `main` and passes fresh
+runner preflight; any further failure requires a new diagnosis. The failed runner deregistered and
+its marked root was removed, and repository runner inventory returned to zero. The focused catalog
+suite passed 27 tests, catalog validation passed, and `test:verify` passed all 70 files / 486 tests,
+SDK regeneration, Core/frontend builds and bridge compilation.
+
 ## Oncology Phase 2 is complete for the authorized scope (2026-08-29)
 
 MHC-I Epitope Prediction and pVACseq Neoantigen Prioritization now have shared contracts, bounded

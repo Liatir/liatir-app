@@ -238,10 +238,10 @@ jobs:
           --metrics .runtime-box-ci/build-metrics.json
 
       - name: Verify the signed release and native self-test
-        # verify re-extracts the box under os.tmpdir(); on a self-hosted WSL host /tmp is a small
-        # tmpfs (~8 GB) a multi-GB CUDA box overflows, so point temp at the large work volume.
+        # macOS has a short AF_UNIX socket-path limit, so dependencies such as pymp need the short
+        # system temp root. On WSL /tmp is a small tmpfs, so other hosts retain the large work volume.
         env:
-          TMPDIR: ${{ runner.temp }}
+          TMPDIR: ${{ startsWith(inputs.target_id, 'macos-') && '/tmp' || runner.temp }}
         run: >-
           npm run runtime-box -- verify "${{ steps.build.outputs.release_path }}"
           --public-key runtime-boxes/trust/production-public.json
@@ -250,7 +250,7 @@ jobs:
 
       - name: Run scientific validation before publication
         env:
-          TMPDIR: ${{ runner.temp }}
+          TMPDIR: ${{ startsWith(inputs.target_id, 'macos-') && '/tmp' || runner.temp }}
         run: >-
           npm run runtime-box:ci -- run-validator
           --model "${{ inputs.model_id }}"

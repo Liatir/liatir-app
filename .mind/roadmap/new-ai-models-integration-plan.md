@@ -254,6 +254,12 @@ Its checked-in evidence record is
 `runtime-boxes/evidence/mhcflurry-class1-presentation-macos-aarch64-metal-2.2.1-beta.1-run-33267756734.json`.
 The exact target is now active in the AI Model catalog; all other MHCflurry targets remain hidden.
 pVACseq macOS CPU remains validated but unpublished and is the only open Phase 2 release/catalog gate.
+Its first protected release attempt, run `33328650028` at
+`fc30cfb5b357355b20c3b99cc527eb13df3cbc34`, built and KMS-signed successfully but stopped before
+publication because the long runner temporary path exceeded macOS's Unix-socket limit inside
+`pymp`. The workflow fix uses `/tmp` for macOS verification and validation while preserving the
+large runner volume on Linux/WSL; one regression-covered retry is allowed after clean local and
+remote gates. Its focused suite passed 27 tests and `test:verify` passed all 70 files / 486 tests.
 
 ## Fase 3 — Strutture, affinità e simulazione
 

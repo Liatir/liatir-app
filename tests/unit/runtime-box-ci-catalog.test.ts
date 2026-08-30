@@ -238,6 +238,25 @@ describe('Runtime Box CI catalog', () => {
     expect(trackedBuild).toBeGreaterThanOrEqual(0);
   });
 
+  it('keeps macOS Runtime Box temp paths below the Unix-socket limit', () => {
+    const validation = readFileSync(
+      new URL('../../.github/workflows/_runtime-box-validate.yml', import.meta.url),
+      'utf8',
+    );
+    const release = readFileSync(
+      new URL('../../.github/workflows/runtime-box-release.yml', import.meta.url),
+      'utf8',
+    );
+    const platformTemp = "TMPDIR: ${{ startsWith(inputs.target_id, 'macos-') && '/tmp' || runner.temp }}";
+
+    // pVACtools imports pymp, whose manager creates an AF_UNIX socket. A long self-hosted runner
+    // root made production run 33328650028 fail before publication even though its build passed.
+    expect(release.split(platformTemp)).toHaveLength(3);
+    expect(validation.split(platformTemp)).toHaveLength(3);
+    expect(release).not.toContain('TMPDIR: ${{ runner.temp }}');
+    expect(validation).not.toContain('TMPDIR: ${{ runner.temp }}');
+  });
+
   it('suppresses npm wrapper output before parsing one canonical validator result', () => {
     const ciSource = readFileSync(new URL('../../scripts/runtime-box-ci.mjs', import.meta.url), 'utf8');
     expect(ciSource).toContain("['run', '--silent', script]");
