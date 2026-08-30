@@ -1246,7 +1246,10 @@ gates, promoted signed beta channels, survived independent public signature and
 full-archive hash readback, and retain checked-in production evidence. The
 normal product catalogs expose only those exact targets; all other oncology
 targets remain planned and hidden. Each ephemeral runner removed its credentials
-and work root, and the repository runner inventory returned to zero.
+and work root, and the repository runner inventory returned to zero. Activation
+commit `1dbd329b3da292d120c5883a44f552c977ac0308` then passed the automatic
+catalog-only pVACseq check `33332043809` and MHCflurry check `33332043821`;
+neither push check requested native or GPU execution.
 
 ## Foundation completion criteria
 

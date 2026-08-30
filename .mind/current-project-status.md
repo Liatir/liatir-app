@@ -139,6 +139,11 @@ applicable suite groups, including 35/35 main scenarios and the direct visibilit
 published MHCflurry card, Neoantigen card and tumor-to-neoantigen preset. Platform-specific suites for
 other operating systems remained skipped as designed.
 
+Activation commit `1dbd329b3da292d120c5883a44f552c977ac0308` reached `origin/main` cleanly. Its
+catalog-only automatic checks passed for pVACseq in run `33332043809`, MHCflurry in run
+`33332043821`, and the shared UCE catalog path in run `33332043824`; public SDK synchronization also
+passed in run `33332043727`. These push checks did not request native or GPU work.
+
 ## Oncology Phase 2 is complete for the authorized scope (2026-08-30)
 
 MHC-I Epitope Prediction and pVACseq Neoantigen Prioritization now have shared contracts, bounded
