@@ -1,6 +1,6 @@
 # Current project status
 
-## Oncology publication is authorized and in progress (2026-08-29)
+## Oncology Phase 2 is published and active for the validated targets (2026-08-30)
 
 The product owner explicitly authorized protected production publication and active product-catalog
 exposure for the validated MHCflurry `macos-aarch64-metal` and pVACseq `macos-aarch64-cpu` targets.
@@ -83,8 +83,8 @@ Independent public readback verified both signatures, the release manifest SHA-2
 `511c3a86178fc5be92e2dc2647f17ecf4b7321bd5277b8266e9476aa79463053`.
 The exact target is now `published` and MHCflurry is in the normal AI Model catalog; every other
 MHCflurry target remains planned and hidden. The ephemeral runner exited successfully, removed its
-credentials and work root, and the repository runner inventory returned to zero. pVACseq publication
-and catalog activation remain the only open Phase 2 release work. The catalog activation passed
+credentials and work root, and the repository runner inventory returned to zero. At that checkpoint,
+pVACseq publication and catalog activation were the only open Phase 2 release work. The catalog activation passed
 `npm run test:verify` (70 files / 485 tests) and the real desktop UI gate (7 applicable suites passed,
 2 intentionally skipped); an initial cache-lock denial was only the sandbox blocking Pixi's shared
 package cache, and the required-access rerun passed without a product change.
@@ -114,10 +114,32 @@ public channel readback returned 404. The launcher is now a short `/bin/sh` wrap
 same exact runtime Python and guarded predictor as quoted arguments. A real regression invokes it
 through a Python path longer than 255 characters and passes; `test:verify` passes 70 files / 487
 tests plus every build and compile gate. The runner was removed and inventory again returned to
-zero. One fresh bounded retry is allowed after clean push and preflight; another failure stops the
-release for a new diagnosis.
+zero. At that point one fresh bounded retry was allowed after clean push and preflight; another
+failure would have stopped the release for a new diagnosis.
 
-## Oncology Phase 2 is complete for the authorized scope (2026-08-29)
+Protected release `33330550558` at exact commit
+`8509b0ce4bc67ee0a2ba2961bf6c6f7025f34b63` then completed pVACseq successfully. The KMS-signed
+`7.1.2-beta.1` `macos-aarch64-cpu` box passed self-test, the official reduced scientific fixture,
+immutable publication and the complete real-app lifecycle before beta promotion. The lifecycle
+proved installation, cancellation, real offline inference, Jobs, navigation-safe Results and
+provenance, the experimental disclaimer, removal, and survival of eight Result artifacts. Independent
+public readback verified the signed channel and release, release SHA-256
+`563fbd508ac1c2fc2975ca89ba95f3a4a969bfb663c37e16dcdcc2aa959ca8ef`, and all 994,583,880 archive
+bytes with SHA-256 `e9dbac894d1acec99434fec05c3b39c1e5acce2f2fe0bc6856466173c9a609f5`.
+The retained evidence is
+`runtime-boxes/evidence/pvactools-pvacseq-macos-aarch64-cpu-7.1.2-beta.1-run-33330550558.json`.
+The exact target is now published and active in the Tool Runtime catalog; the Neoantigen card,
+pipeline step and preset are therefore visible in the normal app. The runner and marked work root
+were removed and the repository runner inventory returned to zero.
+
+Final catalog activation passed `npm run runtime-box:catalog:check`, the 92 focused contract tests,
+and `npm run test:verify` with all 70 files / 487 tests plus SDK generation, Core/frontend builds,
+zero-warning Svelte checking and bridge compilation. The real desktop gate then passed all seven
+applicable suite groups, including 35/35 main scenarios and the direct visibility check for the
+published MHCflurry card, Neoantigen card and tumor-to-neoantigen preset. Platform-specific suites for
+other operating systems remained skipped as designed.
+
+## Oncology Phase 2 is complete for the authorized scope (2026-08-30)
 
 MHC-I Epitope Prediction and pVACseq Neoantigen Prioritization now have shared contracts, bounded
 offline product scripts, direct and pipeline execution, Jobs/Results/provenance, cancellation and
@@ -129,14 +151,12 @@ targets, with Windows WSL2 recorded only as future evidence and not current prod
 Each direct screen now binds only to its own direct-run Job, so a pipeline execution cannot disable
 or replace unrelated direct-run inputs. Persisted Results record every selected scientific parameter,
 primary and optional proximal input inspection, accelerator and disabled-network state, plus the exact
-signed Runtime Box version, target and archive SHA-256. The Neoantigen card and pipeline preset remain
-hidden while the Tool Runtime catalog is empty and become available only after at least one exact
-pVACseq target is published.
+signed Runtime Box version, target and archive SHA-256. The Neoantigen card and pipeline preset are
+derived from the published Tool Runtime catalog rather than maintained as a separate availability flag.
 
 MHCflurry `macos-aarch64-metal` is published and exposed in the active AI Model catalog. pVACseq
-`macos-aarch64-cpu` remains `native-lifecycle-validated` with native CI enabled but unpublished, so
-the Neoantigen card, pipeline step and preset remain filtered out. Every other oncology target remains
-`planned` with native CI disabled. No CUDA CI or unsupported target publication ran.
+`macos-aarch64-cpu` is published and exposed in the active Tool Runtime catalog. Every other oncology
+target remains `planned` with native CI disabled. No CUDA CI or unsupported target publication ran.
 The unmodified upstream pVACtools wheel retains generic IEDB integration modules because pVACseq loads
 that machinery even when it executes the local MHCflurry predictor. Liatir exposes only
 MHCflurry/MHCflurryEL, sets IEDB retries to zero and denies network access to the parent and child

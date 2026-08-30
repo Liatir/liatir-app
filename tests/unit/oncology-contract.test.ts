@@ -12,6 +12,7 @@ import {
   PVACTOOLS_RUNTIME_COMPONENT_ID,
   PVACTOOLS_RUNTIME_ID,
   PVACTOOLS_RELEASE_CANDIDATE_METADATA,
+  PVACTOOLS_TOOL_RUNTIME_METADATA,
   parseMhcClassIAlleles,
   parseMhcClassIPeptideLengths,
 } from '../../packages/liatir-core/src';
@@ -110,7 +111,7 @@ describe('Phase 2 oncology contract', () => {
     );
   });
 
-  it('exposes only the published MHCflurry target and keeps pVACseq as a candidate', () => {
+  it('exposes only the published MHCflurry and pVACseq targets', () => {
     expect(MHCFLURRY_CLASS1_PRESENTATION_METADATA).toMatchObject({
       id: MHCFLURRY_CLASS1_PRESENTATION_MODEL_ID,
       source: 'runtime-box',
@@ -133,11 +134,12 @@ describe('Phase 2 oncology contract', () => {
         hostEnvironments: ['native'],
         minRamGb: 8,
       }]);
-    expect(PVACTOOLS_RELEASE_CANDIDATE_METADATA.install.runtimeBox.publishedTargets).toEqual([{
+    expect(PVACTOOLS_TOOL_RUNTIME_METADATA.install.runtimeBox.publishedTargets).toEqual([{
       target: { platform: 'macos', arch: 'aarch64', accelerator: 'cpu' },
       hostEnvironments: ['native'],
       minRamGb: 8,
     }]);
+    expect(PVACTOOLS_RELEASE_CANDIDATE_METADATA).toBe(PVACTOOLS_TOOL_RUNTIME_METADATA);
   });
 
   it('normalizes, deduplicates, and bounds HLA Class I alleles', () => {

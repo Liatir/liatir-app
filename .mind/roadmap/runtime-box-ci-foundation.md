@@ -1237,6 +1237,17 @@ WSL2 Linux x86_64 using a separately compiled and verified ELF64 binary under
 Xvfb. This later product evidence does not alter the historical foundation
 gates, catalog identities, signed releases, or trust roots recorded here.
 
+Post-foundation oncology publication (2026-08-30): protected production release
+`33267756734` published MHCflurry `2.2.1-beta.1` only for
+`macos-aarch64-metal`, and release `33330550558` published pVACseq
+`7.1.2-beta.1` only for `macos-aarch64-cpu`. Both used the non-exportable KMS
+key, passed their component-specific scientific and packaged-product lifecycle
+gates, promoted signed beta channels, survived independent public signature and
+full-archive hash readback, and retain checked-in production evidence. The
+normal product catalogs expose only those exact targets; all other oncology
+targets remain planned and hidden. Each ephemeral runner removed its credentials
+and work root, and the repository runner inventory returned to zero.
+
 ## Foundation completion criteria
 
 The foundation is complete only when:

@@ -56,4 +56,32 @@ export const tests = [
       await expectNoVisibleRuntimeError(browser);
     },
   },
+  {
+    name: 'shows the published oncology model, tool, and pipeline preset',
+    async run({ browser, expect }) {
+      await openSandboxWorkspace(browser);
+      await navigateInApp(browser, '/ai');
+
+      await searchAIModels(browser, 'openvax-mhcflurry-class1-presentation');
+      const modelSelector = '[data-testid="ai-model-card"][data-model-id="openvax-mhcflurry-class1-presentation"]';
+      await (await browser.$(modelSelector)).waitForDisplayed({
+        timeout: 10_000,
+        timeoutMsg: 'Published MHCflurry model card was not visible',
+      });
+
+      await navigateInApp(browser, '/tools');
+      const tool = await browser.$('[data-testid="tool-card-neoantigen-prioritization"]');
+      await tool.waitForDisplayed({ timeout: 10_000, timeoutMsg: 'Published Neoantigen tool card was not visible' });
+      const toolText = await tool.getText();
+      expect(toolText).toContain('Neoantigen Prioritization');
+      expect(toolText).toContain('Ready');
+      expect(toolText).not.toContain('Coming soon');
+
+      await navigateInApp(browser, '/pipelines');
+      const preset = await browser.$('[data-testid="pipeline-preset-card"][data-preset-id="tumor-variants-neoantigen-candidates-v1"]');
+      await preset.waitForDisplayed({ timeout: 10_000, timeoutMsg: 'Published neoantigen preset was not visible' });
+      expect(await preset.getText()).toContain('Tumor variants to neoantigen candidates');
+      await expectNoVisibleRuntimeError(browser);
+    },
+  },
 ];

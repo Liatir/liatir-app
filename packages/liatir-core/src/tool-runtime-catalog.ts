@@ -50,10 +50,7 @@ export interface LiatirToolRuntimeRecord extends LiatirToolRuntimeMetadata {
   error?: string;
 }
 
-/**
- * Release-ready pVACseq metadata. It is intentionally not in the installable catalog until one
- * exact target has completed native validation and publication.
- */
+/** Published pVACseq metadata. Only the exact target with retained production evidence is exposed. */
 export const PVACTOOLS_TOOL_RUNTIME_METADATA: LiatirToolRuntimeMetadata = {
   id: PVACTOOLS_RUNTIME_COMPONENT_ID,
   name: "pVACtools pVACseq",
@@ -74,7 +71,11 @@ export const PVACTOOLS_TOOL_RUNTIME_METADATA: LiatirToolRuntimeMetadata = {
       boxId: "pvactools-pvacseq",
       channel: "beta",
       registryBaseUrl: "https://models.liatir.com/v1",
-      publishedTargets: [],
+      publishedTargets: [{
+        target: { platform: "macos", arch: "aarch64", accelerator: "cpu" },
+        hostEnvironments: ["native"],
+        minRamGb: 8,
+      }],
     },
     hostRequirements: {
       os: ["macos", "linux"],
@@ -101,27 +102,15 @@ export const PVACTOOLS_TOOL_RUNTIME_METADATA: LiatirToolRuntimeMetadata = {
   tags: ["runtime-box", "oncology", "neoantigen", "pvacseq", "mhc-class-i"],
 };
 
-/** Exact metadata used only by a release-built test app before the target enters the product catalog. */
-export const PVACTOOLS_RELEASE_CANDIDATE_METADATA: LiatirToolRuntimeMetadata = {
-  ...PVACTOOLS_TOOL_RUNTIME_METADATA,
-  install: {
-    ...PVACTOOLS_TOOL_RUNTIME_METADATA.install,
-    runtimeBox: {
-      ...PVACTOOLS_TOOL_RUNTIME_METADATA.install.runtimeBox,
-      publishedTargets: [{
-        target: { platform: "macos", arch: "aarch64", accelerator: "cpu" },
-        hostEnvironments: ["native"],
-        minRamGb: 8,
-      }],
-    },
-  },
-};
+/** Exact metadata used by a release-built test app and the product after publication. */
+export const PVACTOOLS_RELEASE_CANDIDATE_METADATA = PVACTOOLS_TOOL_RUNTIME_METADATA;
 
 /**
- * Phase 1 establishes the Tool Runtime product contract. Concrete entries are added only with
- * their reviewed Scrollcase recipes and published targets in the component-specific phases.
+ * Tool Runtimes enter this catalog only with reviewed Scrollcase recipes and published targets.
  */
-export const LIATIR_TOOL_RUNTIME_CATALOG: readonly LiatirToolRuntimeMetadata[] = [];
+export const LIATIR_TOOL_RUNTIME_CATALOG: readonly LiatirToolRuntimeMetadata[] = [
+  PVACTOOLS_TOOL_RUNTIME_METADATA,
+];
 
 export function runtimeIdForToolRuntime(runtime: LiatirToolRuntimeMetadata): string {
   return runtime.install.runtimeId;

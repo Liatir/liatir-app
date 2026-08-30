@@ -264,7 +264,25 @@ Retry `33329426470` proved that workflow fix, scientific parity and immutable pu
 real app exposed a second long-path limit before promotion: the generated MHCflurry command embedded
 the installed Python's 261-character path in its shebang. The short shell launcher now passes that
 same exact Python as a quoted argument, and a real greater-than-255-character regression plus all 70
-files / 487 tests pass. The beta channel still returns 404; one clean, preflighted retry remains.
+files / 487 tests passed. At that checkpoint the beta channel still returned 404 and one clean,
+preflighted retry remained.
+
+Protected retry `33330550558` at exact commit
+`8509b0ce4bc67ee0a2ba2961bf6c6f7025f34b63` completed the remaining gate. The signed pVACseq
+`7.1.2-beta.1` macOS CPU box passed self-test, official-fixture parity, immutable publication and the
+full real-product install/run/cancel/Jobs/Results/provenance/offline/remove lifecycle before beta
+promotion. Independent public readback verified release SHA-256
+`563fbd508ac1c2fc2975ca89ba95f3a4a969bfb663c37e16dcdcc2aa959ca8ef` and all 994,583,880 archive
+bytes at SHA-256 `e9dbac894d1acec99434fec05c3b39c1e5acce2f2fe0bc6856466173c9a609f5`.
+Evidence is retained at
+`runtime-boxes/evidence/pvactools-pvacseq-macos-aarch64-cpu-7.1.2-beta.1-run-33330550558.json`.
+MHCflurry Apple Metal and pVACseq macOS CPU are now both in the normal product catalogs, making the
+AI Model, Neoantigen Tool and tumor-to-neoantigen pipeline preset visible in the app. Phase 2 is
+release-complete for these exact validated targets; every other oncology target stays planned and
+hidden, with no CUDA claim.
+Final activation verification passed the catalog checker, 92 focused tests, all 70 files / 487 tests
+in `test:verify`, and all seven applicable desktop suite groups. The desktop proof directly observed
+the three published oncology entry points in the normal app.
 
 ## Fase 3 — Strutture, affinità e simulazione
 

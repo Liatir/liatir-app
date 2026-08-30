@@ -755,7 +755,7 @@
           "hostEnvironments": ["native"],
           "recipeId": "pvactools-pvacseq-macos-aarch64-cpu",
           "runnerProfileId": "macos-arm64-heavy",
-          "status": "native-lifecycle-validated",
+          "status": "published",
           "validationModes": ["build", "scientific", "native-lifecycle"],
           "timeoutMinutes": 180,
           "requiredBuildDiskBytes": 10737418240,
@@ -767,7 +767,19 @@
             "safetyMarginBytes": 4294967296
           },
           "gpuRequired": false,
-          "nativeCiEnabled": true
+          "nativeCiEnabled": true,
+          "publication": {
+            "source": "github-actions",
+            "releaseManifestUrl": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/pvactools-pvacseq/7.1.2-beta.1/macos-aarch64-cpu/563fbd508ac1c2fc2975ca89ba95f3a4a969bfb663c37e16dcdcc2aa959ca8ef.release.json",
+            "archiveSha256": "e9dbac894d1acec99434fec05c3b39c1e5acce2f2fe0bc6856466173c9a609f5",
+            "archiveSizeBytes": 994583880,
+            "installedSizeBytes": 3598150920,
+            "signingKeyId": "liatir-runtime-box-kms-2026",
+            "publishedAt": "2026-08-30T19:36:56.695Z",
+            "workflowRunId": "33330550558",
+            "workflowRunUrl": "https://github.com/Liatir/liatir-stack/actions/runs/33330550558",
+            "evidenceRecord": "runtime-boxes/evidence/pvactools-pvacseq-macos-aarch64-cpu-7.1.2-beta.1-run-33330550558.json"
+          }
         },
         {
           "targetId": "linux-x86_64-cpu",

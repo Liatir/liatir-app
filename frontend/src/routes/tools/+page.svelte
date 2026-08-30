@@ -305,6 +305,7 @@
           <div class="grid grid-cols-2 gap-3">
             {#each filteredTools.filter((t) => t.category === category) as tool}
               <Card
+                testId={`tool-card-${tool.id}`}
                 hoverable={tool?.status === 'available'}
                 class="p-4 {tool.status === 'soon' ? 'opacity-50' : ''}"
                 onclick={()=>openToolPage(tool)}

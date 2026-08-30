@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   LIATIR_TOOL_RUNTIME_CATALOG,
+  PVACTOOLS_RUNTIME_COMPONENT_ID,
   type LiatirRuntimeComponentKind,
   type LiatirRuntimeBoxCiCatalog,
   type LiatirAIProvenance,
@@ -15,7 +16,13 @@ describe('Runtime Component production contract', () => {
   it('keeps AI Models and Tool Runtimes as an exhaustive product classification', () => {
     const kinds: LiatirRuntimeComponentKind[] = ['ai-model', 'tool-runtime'];
     expect(kinds).toEqual(['ai-model', 'tool-runtime']);
-    expect(LIATIR_TOOL_RUNTIME_CATALOG).toEqual([]);
+    expect(LIATIR_TOOL_RUNTIME_CATALOG.map((runtime) => runtime.id))
+      .toEqual([PVACTOOLS_RUNTIME_COMPONENT_ID]);
+    expect(LIATIR_TOOL_RUNTIME_CATALOG[0]?.install.runtimeBox.publishedTargets).toEqual([{
+      target: { platform: 'macos', arch: 'aarch64', accelerator: 'cpu' },
+      hostEnvironments: ['native'],
+      minRamGb: 8,
+    }]);
   });
 
   it('uses the component catalog while preserving the Scrollcase modelId identity', () => {
