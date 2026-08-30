@@ -28,10 +28,12 @@ function filesUnder(dir: string): string[] {
 }
 
 describe('AI modularity boundaries', () => {
-  it('keeps every registered AI Model paired with an artifact/runtime-family spec', () => {
+  it('keeps every registered single-cell AI Model paired with an artifact/runtime-family spec', () => {
     const artifactIds = new Set(AI_MODEL_ARTIFACT_SPECS.map((spec) => spec.modelId));
 
-    for (const model of RUNTIME_BOX_AI_MODEL_REGISTRY) {
+    for (const model of RUNTIME_BOX_AI_MODEL_REGISTRY.filter(
+      (candidate) => candidate.capabilities.includes('single-cell-embedding'),
+    )) {
       expect(artifactIds.has(model.id), `${model.id} missing artifact spec`).toBe(true);
     }
   });

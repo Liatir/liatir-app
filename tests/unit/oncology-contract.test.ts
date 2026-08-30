@@ -110,7 +110,7 @@ describe('Phase 2 oncology contract', () => {
     );
   });
 
-  it('keeps reviewed MHCflurry metadata unexposed until an exact target is published', () => {
+  it('exposes only the published MHCflurry target and keeps pVACseq as a candidate', () => {
     expect(MHCFLURRY_CLASS1_PRESENTATION_METADATA).toMatchObject({
       id: MHCFLURRY_CLASS1_PRESENTATION_MODEL_ID,
       source: 'runtime-box',
@@ -120,7 +120,11 @@ describe('Phase 2 oncology contract', () => {
       install: {
         runtimeId: 'oncology-mhcflurry-class1-presentation-2-2-1',
         modelCacheSubdir: 'model-cache/mhcflurry-class1-presentation',
-        runtimeBox: { boxId: 'mhcflurry-class1-presentation', publishedTargets: [] },
+        runtimeBox: { boxId: 'mhcflurry-class1-presentation', publishedTargets: [{
+          target: { platform: 'macos', arch: 'aarch64', accelerator: 'metal' },
+          hostEnvironments: ['native'],
+          minRamGb: 8,
+        }] },
       },
     });
     expect(MHCFLURRY_CLASS1_PRESENTATION_RELEASE_CANDIDATE_METADATA.install.runtimeBox.publishedTargets)

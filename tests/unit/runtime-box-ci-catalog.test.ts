@@ -44,7 +44,7 @@ describe('Runtime Box CI catalog', () => {
       (component) => component.componentId === 'openvax-mhcflurry-class1-presentation',
     );
     expect(mhcflurry?.targets.find((target) => target.targetId === 'macos-aarch64-metal'))
-      .toMatchObject({ status: 'native-lifecycle-validated', nativeCiEnabled: true });
+      .toMatchObject({ status: 'published', nativeCiEnabled: true });
     expect(mhcflurry?.targets
       .filter((target) => target.targetId !== 'macos-aarch64-metal')
       .every((target) => target.status === 'planned' && !target.nativeCiEnabled)).toBe(true);

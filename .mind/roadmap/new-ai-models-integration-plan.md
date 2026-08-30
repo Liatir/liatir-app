@@ -149,23 +149,23 @@ requires its own explicit approval, and planned or unvalidated targets remain ou
   disable unrelated inputs. Persisted Result provenance includes every selected scientific parameter,
   both VCF inspections when applicable, accelerator and disabled-network state, and the exact signed
   Runtime Box version, target and archive SHA-256.
-- The pipeline step and Tumor variants to neoantigen candidates preset are registered internally but
-  filtered from the product until pVACseq has an exact published target. The Neoantigen card follows
-  the same catalog gate. The direct pVACseq page says that the runtime is not published; MHCflurry is
-  absent from the active AI catalog. This prevents an unvalidated or unavailable component from
-  appearing installable.
+- MHCflurry is present in the active AI catalog only for its published Apple Metal target. The
+  pipeline step and Tumor variants to neoantigen candidates preset remain filtered from the product
+  until pVACseq has an exact published target. The Neoantigen card follows the same catalog gate and
+  the direct pVACseq page still says that the runtime is not published.
 - The exact upstream pVACtools wheel retains its generic IEDB integration modules because pVACseq
   imports that machinery even for local MHCflurry execution. They are not an approved product surface:
   Liatir permits only MHCflurry/MHCflurryEL, sets IEDB retries to zero and denies parent and child
   network access. Physically pruning those modules would require an unsupported pVACtools fork.
 
-Local evidence: the final `npm run test:verify` passed 70 files / 473 tests; generated
+Implementation-closure evidence: `npm run test:verify` passed 70 files / 473 tests; generated
 SDK types, Core, frontend checks/build and `src-ts` compile passed. Rust passed 91 tests with 2 heavy
 fixtures ignored, and Clippy completed without errors. The real desktop UI gate passed 34 native app
 scenarios plus the applicable index, SnpEff, restart, Runtime Box security and macOS desktop lifecycle
 suites. The new native MHCflurry and pVACseq E2E specifications loaded correctly but were skipped as
 designed because no target is published. Catalog validation, 16 changed JSON documents, JavaScript
-syntax and `git diff --check` also passed. No GPU CI, Runtime Box signing or Runtime Box publication ran.
+syntax and `git diff --check` also passed. No GPU CI, Runtime Box signing or Runtime Box publication
+ran at that implementation-only checkpoint.
 
 Runtime Box publication remains gated, but its reviewed source mirror is ready. Commit `8128002` added
 the dedicated source-mirror command, the manual protected GitHub workflow and the independently
@@ -233,15 +233,27 @@ comparisons against the official fixture within the declared tolerance. The Rust
 Workflow cleanup passed, the runner deregistered, its marked root was removed and repository runner
 inventory returned to zero.
 
-Phase 2 is therefore complete at the authorized implementation and first-native-target scope:
-MHCflurry Apple Metal and pVACseq macOS CPU are `native-lifecycle-validated`; all other oncology
-targets remain `planned`, and no CUDA claim is made. Both active product catalogs still omit these
-unpublished components. Production signing, immutable Runtime Box publication and the real packaged
-product release lifecycle were not authorized here and remain explicit release gates rather than
-hidden Phase 2 claims. The final catalog/status commit
+Phase 2 reached the implementation and first-native-target scope with MHCflurry Apple Metal and
+pVACseq macOS CPU `native-lifecycle-validated`; all other oncology targets remain `planned`, and no
+CUDA claim is made. The implementation checkpoint deliberately kept both components out of the
+product catalogs until their separate protected release gates passed. The final implementation
+catalog/status commit
 `028105fa9fc8c279ad5597801b35923eb9862a33` passed automatic preflight run `33227635616`; artifact
 `9707405477` has digest
 `sha256:6511f0cdb29247f2d13f4465d23a189873d5aaed1e9e6151d3f0eba3d3a2d1ba`.
+
+Protected production release `33267756734` subsequently closed those gates for MHCflurry only at
+exact commit `f75f744ade0171b1700c4304d105c4896ddbc7f3`. The signed
+`2.2.1-beta.1` Apple Metal box passed build, self-test, scientific parity, immutable publication and
+the complete real-product lifecycle before beta promotion. Independent public readback verified the
+signed channel and release, release SHA-256
+`d576f64b4e82bee351220ba342b8d25399de9107482c8c9deee15ddf91136114`, and the
+459,529,386-byte archive SHA-256
+`511c3a86178fc5be92e2dc2647f17ecf4b7321bd5277b8266e9476aa79463053`.
+Its checked-in evidence record is
+`runtime-boxes/evidence/mhcflurry-class1-presentation-macos-aarch64-metal-2.2.1-beta.1-run-33267756734.json`.
+The exact target is now active in the AI Model catalog; all other MHCflurry targets remain hidden.
+pVACseq macOS CPU remains validated but unpublished and is the only open Phase 2 release/catalog gate.
 
 ## Fase 3 — Strutture, affinità e simulazione
 

@@ -626,7 +626,7 @@
           "hostEnvironments": ["native"],
           "recipeId": "mhcflurry-class1-presentation-macos-aarch64-metal",
           "runnerProfileId": "macos-arm64-heavy",
-          "status": "native-lifecycle-validated",
+          "status": "published",
           "validationModes": ["build", "scientific", "native-lifecycle"],
           "timeoutMinutes": 120,
           "requiredBuildDiskBytes": 8589934592,
@@ -638,7 +638,19 @@
             "safetyMarginBytes": 4294967296
           },
           "gpuRequired": false,
-          "nativeCiEnabled": true
+          "nativeCiEnabled": true,
+          "publication": {
+            "source": "github-actions",
+            "releaseManifestUrl": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/mhcflurry-class1-presentation/2.2.1-beta.1/macos-aarch64-metal/d576f64b4e82bee351220ba342b8d25399de9107482c8c9deee15ddf91136114.release.json",
+            "archiveSha256": "511c3a86178fc5be92e2dc2647f17ecf4b7321bd5277b8266e9476aa79463053",
+            "archiveSizeBytes": 459529386,
+            "installedSizeBytes": 1379850808,
+            "signingKeyId": "liatir-runtime-box-kms-2026",
+            "publishedAt": "2026-08-29T18:29:46.192Z",
+            "workflowRunId": "33267756734",
+            "workflowRunUrl": "https://github.com/Liatir/liatir-stack/actions/runs/33267756734",
+            "evidenceRecord": "runtime-boxes/evidence/mhcflurry-class1-presentation-macos-aarch64-metal-2.2.1-beta.1-run-33267756734.json"
+          }
         },
         {
           "targetId": "linux-x86_64-cpu",

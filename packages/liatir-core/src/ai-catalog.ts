@@ -44,8 +44,7 @@ const GENEFORMER_V1_10M_REVISION = '04c2b2e84da7c0f385c3f9ad8f3ec24bab6650e5';
 const SCGPT_WHOLE_HUMAN_REVISION = 'cebd6fae655b9c585a4807daa3ac31bb764f06b4';
 
 /**
- * Reviewed MHCflurry metadata. It remains outside the product registry until at least one exact
- * target completes scientific validation and signed publication.
+ * Published MHCflurry metadata. Only the exact target with retained production evidence is exposed.
  */
 export const MHCFLURRY_CLASS1_PRESENTATION_METADATA: LiatirAIModelMetadata = {
 	id: MHCFLURRY_CLASS1_PRESENTATION_MODEL_ID,
@@ -86,7 +85,7 @@ export const MHCFLURRY_CLASS1_PRESENTATION_METADATA: LiatirAIModelMetadata = {
 			boxId: 'mhcflurry-class1-presentation',
 			channel: 'beta',
 			registryBaseUrl: 'https://models.liatir.com/v1',
-			publishedTargets: []
+			publishedTargets: publishedMacosArm64MetalTarget(8)
 		},
 		runtimePackages: [
 			{ package: 'torch', version: '2.8.0', importName: 'torch' },
@@ -108,17 +107,9 @@ export const MHCFLURRY_CLASS1_PRESENTATION_METADATA: LiatirAIModelMetadata = {
 	tags: ['built-in', 'runtime-box', 'oncology', 'mhc-class-i', 'epitope', 'presentation']
 };
 
-/** Exact metadata used only by a release-built test app before the target enters the product catalog. */
-export const MHCFLURRY_CLASS1_PRESENTATION_RELEASE_CANDIDATE_METADATA: LiatirAIModelMetadata = {
-	...MHCFLURRY_CLASS1_PRESENTATION_METADATA,
-	install: {
-		...MHCFLURRY_CLASS1_PRESENTATION_METADATA.install,
-		runtimeBox: {
-			...MHCFLURRY_CLASS1_PRESENTATION_METADATA.install.runtimeBox,
-			publishedTargets: publishedMacosArm64MetalTarget(8)
-		}
-	}
-};
+/** Exact metadata used by a release-built test app and the product after publication. */
+export const MHCFLURRY_CLASS1_PRESENTATION_RELEASE_CANDIDATE_METADATA =
+	MHCFLURRY_CLASS1_PRESENTATION_METADATA;
 
 /** Builds the shared Apple silicon target used by published single-cell Runtime Boxes. */
 function publishedMacosArm64MetalTarget(
@@ -188,6 +179,7 @@ function publishedGeneformerTargets(): readonly LiatirRuntimeBoxTargetCandidate[
  * after at least one exact native target is published and recorded here.
  */
 export const RUNTIME_BOX_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
+	MHCFLURRY_CLASS1_PRESENTATION_METADATA,
 	{
 		id: SCGPT_WHOLE_HUMAN_MODEL_ID,
 		name: 'scGPT Whole-human',

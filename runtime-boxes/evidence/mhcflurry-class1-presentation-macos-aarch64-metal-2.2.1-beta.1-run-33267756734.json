@@ -1,0 +1,219 @@
+{
+  "schemaVersion": 1,
+  "kind": "liatir.runtime-box.ci-evidence",
+  "phase": "production-release",
+  "status": "passed",
+  "createdAt": "2026-08-29T18:29:46.192Z",
+  "subject": {
+    "componentKind": "ai-model",
+    "componentId": "openvax-mhcflurry-class1-presentation",
+    "modelId": "openvax-mhcflurry-class1-presentation",
+    "boxId": "mhcflurry-class1-presentation",
+    "runtimeId": "oncology-mhcflurry-class1-presentation-2-2-1",
+    "recipeId": "mhcflurry-class1-presentation-macos-aarch64-metal",
+    "recipeVersion": "1.0.0",
+    "version": "2.2.1-beta.1",
+    "targetId": "macos-aarch64-metal",
+    "mode": "native-lifecycle"
+  },
+  "source": {
+    "repository": "Liatir/liatir-stack",
+    "commitSha": "f75f744ade0171b1700c4304d105c4896ddbc7f3",
+    "sourceTreeDirty": false
+  },
+  "workflow": {
+    "provider": "github-actions",
+    "workflow": "Runtime Box production release",
+    "runId": "33267756734",
+    "runAttempt": "1",
+    "runUrl": "https://github.com/Liatir/liatir-stack/actions/runs/33267756734",
+    "actor": "suffro",
+    "triggeringActor": "suffro",
+    "environment": "runtime-box-production",
+    "approver": null
+  },
+  "host": {
+    "platform": "macos",
+    "arch": "aarch64",
+    "runnerName": "liatir-macos-heavy-1788027272-11329",
+    "runnerLabel": "liatir-macos-arm64-heavy",
+    "runnerEnvironment": "self-hosted",
+    "image": null,
+    "freeDiskBytesBefore": 49795407872,
+    "minimumFreeDiskBytes": 47242108928,
+    "peakAdditionalDiskBytes": 2474364928,
+    "gpuModel": "Apple M1",
+    "gpuCount": 1,
+    "gpuMemoryBytes": null,
+    "computeCapability": null,
+    "driverVersion": null,
+    "reportedCudaCompatibility": null,
+    "existingBuildStateBytes": 0,
+    "calculatedDiskPlan": {
+      "sourceAssetBytes": 136014007,
+      "localSourceBytes": 12893,
+      "estimatedInstalledSizeBytes": 1610612736,
+      "estimatedArchiveSizeBytes": 805306368,
+      "safetyMarginBytes": 4294967296,
+      "calculatedPeakDiskBytes": 6846913300,
+      "requiredBuildDiskBytes": 8589934592
+    }
+  },
+  "build": {
+    "recipeSha256": "6a4415727358676ebcb2c773a7d8035e936cbcaca868278d8706cfa95d650362",
+    "dependencyLockSha256": "5c972d33e8741232bc97bafc6cc7939bbaad01cb660beddf09394a0f24b8fc56",
+    "pythonVersion": "3.11.16",
+    "pixiVersion": "0.73.0",
+    "archiveSha256": "511c3a86178fc5be92e2dc2647f17ecf4b7321bd5277b8266e9476aa79463053",
+    "archiveSizeBytes": 459529386,
+    "installedSizeBytes": 1379850808,
+    "elapsedMs": 165233,
+    "selfTest": {
+      "status": "passed",
+      "imports": [
+        "torch",
+        "numpy",
+        "pandas",
+        "sklearn"
+      ],
+      "localSignatureVerified": true
+    }
+  },
+  "scientific": {
+    "validator": {
+      "path": "scripts/validate-mhcflurry-runtime.mjs",
+      "sha256": "77d3421a950c0c853753ab9afebab5e435090bfc5a5f5839665c5eaaeaeb6066"
+    },
+    "productScript": {
+      "path": "frontend/src/lib/tools/ai/python-scripts/mhcflurry-epitope.ts",
+      "sha256": "1fc978ab248099cd76e12db676f37759f2e059fd4fbae633b889a5da72e097ee"
+    },
+    "fixture": {
+      "id": "mhcflurry-known-hla-a02-peptides-v1",
+      "sha256": "e1479a26d8608cafe44282b01dde7fda3a66faa0dd2f933b6f5734c2fb246331",
+      "inputShapes": {
+        "peptides": [
+          4
+        ],
+        "alleles": [
+          1
+        ]
+      }
+    },
+    "sources": [
+      {
+        "kind": "source",
+        "identity": "https://assets.models.liatir.com/ai-runtime-boxes/source-mirrors/mhcflurry/models_class1_presentation.20200611.models-only.tar.gz",
+        "revision": "v2.2.1",
+        "sha256": "44784a00d480298b66bfc232e2d1bb1a2df5e564f894a2fcc15d29fbd83f0d1e"
+      },
+      {
+        "kind": "source",
+        "identity": "https://files.pythonhosted.org/packages/9e/f7/a465e7fef6c06fb649f5334550a73b4db5f387e7dbd3517a778d1c3fe923/mhcflurry-2.2.1-py3-none-any.whl",
+        "revision": "v2.2.1",
+        "sha256": "cd934e9b092de76e477442c6f84aab1265def91acfa5ae129308116dbfa66ac7"
+      },
+      {
+        "kind": "source",
+        "identity": "https://files.pythonhosted.org/packages/36/15/7fe6d6bb60483a39b49bcb5a8669ca931c0c514eb1cd867258c185e57652/mhcgnomes-3.33.6-py3-none-any.whl",
+        "revision": "v2.2.1",
+        "sha256": "65d76a8e48c43652d4e3cd8ac3dc73f62793e6bf6df1bf0dd849cebf96ddf904"
+      },
+      {
+        "kind": "source",
+        "identity": "https://files.pythonhosted.org/packages/83/09/612afbe0a602d35fae6b87fd201c5237f049bb27dbb99a6c5e3a931e5ae3/np_utils-0.6.0.tar.gz",
+        "revision": "v2.2.1",
+        "sha256": "2aa5c7ece3d1cb512d1af718aa05a5909dd47c74e5978b7c389c9b4f1a6ef804"
+      }
+    ],
+    "framework": {
+      "name": "torch",
+      "version": "2.8.0"
+    },
+    "accelerator": {
+      "kind": "metal",
+      "gpuModel": "Apple M1",
+      "gpuMemoryBytes": null,
+      "computeCapability": null,
+      "driverVersion": null,
+      "reportedCudaCompatibility": null
+    },
+    "outputShapes": {
+      "bindingPredictions": [
+        4
+      ],
+      "presentationPredictions": [
+        4
+      ]
+    },
+    "finiteValues": true,
+    "tolerances": {
+      "absolute": 0.001,
+      "relative": 0.001
+    },
+    "parity": {
+      "reference": "pinned-cpu-product-runner",
+      "passed": true,
+      "cpuBaselinePassed": true,
+      "acceleratorPassed": true,
+      "maximumAbsoluteDifference": 0.0014372563091455959,
+      "meanAbsoluteDifference": null,
+      "minimumCosineSimilarity": null
+    },
+    "elapsedMs": 43054,
+    "peakRamBytes": null,
+    "peakVramBytes": null,
+    "outputContract": "passed",
+    "provenanceContract": "passed"
+  },
+  "productLifecycle": {
+    "status": "passed",
+    "targetId": "macos-aarch64-metal",
+    "version": "2.2.1-beta.1",
+    "jobId": "job_2",
+    "analysisRunId": "3d362069-2fcc-4074-ad87-1002fe23442d",
+    "accelerator": "mps",
+    "gpuModel": null,
+    "computeCapability": null,
+    "reportedCudaCompatibility": null,
+    "peakVramBytes": null,
+    "resultArtifactCount": 3,
+    "assertions": {
+      "install": "passed",
+      "cancellation": "passed",
+      "realInference": "passed",
+      "jobs": "passed",
+      "navigationResume": "passed",
+      "results": "passed",
+      "provenance": "passed",
+      "offline": "passed",
+      "experimentalDisclaimer": "passed",
+      "removal": "passed",
+      "resultArtifactsSurvivedRemoval": "passed"
+    }
+  },
+  "publication": {
+    "signingKeyIds": [
+      "liatir-runtime-box-kms-2026"
+    ],
+    "localSignatureVerified": true,
+    "archive": {
+      "url": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/mhcflurry-class1-presentation/2.2.1-beta.1/macos-aarch64-metal/511c3a86178fc5be92e2dc2647f17ecf4b7321bd5277b8266e9476aa79463053.zip",
+      "sizeBytes": 459529386,
+      "sha256": "511c3a86178fc5be92e2dc2647f17ecf4b7321bd5277b8266e9476aa79463053",
+      "streamedVerification": "passed"
+    },
+    "release": {
+      "url": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/mhcflurry-class1-presentation/2.2.1-beta.1/macos-aarch64-metal/d576f64b4e82bee351220ba342b8d25399de9107482c8c9deee15ddf91136114.release.json",
+      "sizeBytes": 2655,
+      "sha256": "d576f64b4e82bee351220ba342b8d25399de9107482c8c9deee15ddf91136114",
+      "streamedVerification": "passed"
+    },
+    "channelUrl": "https://models.liatir.com/v1/channels/beta/mhcflurry-class1-presentation/macos-aarch64-metal",
+    "promotionHttpStatus": 200,
+    "promotionResponse": {
+      "ok": true,
+      "key": "channels/beta/mhcflurry-class1-presentation/macos-aarch64-metal.json"
+    }
+  }
+}

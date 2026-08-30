@@ -5,7 +5,11 @@ import {
 import { runtimeBoxReleaseCandidate } from '$lib/runtime-box-release-candidate';
 
 /** Product catalog plus the one candidate compiled into a non-distributable release test binary. */
+const releaseCandidate = runtimeBoxReleaseCandidate?.kind === 'tool-runtime'
+  ? runtimeBoxReleaseCandidate.metadata
+  : null;
+
 export const LIATIR_TOOL_RUNTIME_CATALOG: readonly LiatirToolRuntimeMetadata[] =
-  runtimeBoxReleaseCandidate?.kind === 'tool-runtime'
-    ? [...PRODUCT_TOOL_RUNTIME_CATALOG, runtimeBoxReleaseCandidate.metadata]
+  releaseCandidate && !PRODUCT_TOOL_RUNTIME_CATALOG.some((runtime) => runtime.id === releaseCandidate.id)
+    ? [...PRODUCT_TOOL_RUNTIME_CATALOG, releaseCandidate]
     : PRODUCT_TOOL_RUNTIME_CATALOG;
