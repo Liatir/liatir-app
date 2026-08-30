@@ -260,6 +260,11 @@ publication because the long runner temporary path exceeded macOS's Unix-socket 
 `pymp`. The workflow fix uses `/tmp` for macOS verification and validation while preserving the
 large runner volume on Linux/WSL; one regression-covered retry is allowed after clean local and
 remote gates. Its focused suite passed 27 tests and `test:verify` passed all 70 files / 486 tests.
+Retry `33329426470` proved that workflow fix, scientific parity and immutable publication, but the
+real app exposed a second long-path limit before promotion: the generated MHCflurry command embedded
+the installed Python's 261-character path in its shebang. The short shell launcher now passes that
+same exact Python as a quoted argument, and a real greater-than-255-character regression plus all 70
+files / 487 tests pass. The beta channel still returns 404; one clean, preflighted retry remains.
 
 ## Fase 3 — Strutture, affinità e simulazione
 

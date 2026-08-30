@@ -102,6 +102,21 @@ its marked root was removed, and repository runner inventory returned to zero. T
 suite passed 27 tests, catalog validation passed, and `test:verify` passed all 70 files / 486 tests,
 SDK regeneration, Core/frontend builds and bridge compilation.
 
+Retry `33329426470` at exact commit `0ba4cb7b86e44d5410736e5a3ebcc6f1c5d0e502` proved that
+correction: signed self-test and the full scientific validator passed, followed by immutable
+publication of the 994,583,879-byte archive
+`f90a4894e7ed934cc1a7424e2b206350dbc7ce8fcc6e9484e46df8271fdad458` and signed release
+`7608ff63f9ef5a6aa2df4ae1751779604274feb2e643e75c53e05fe3f3054209`. The real app then exposed a
+separate product-only path limit: its generated `mhcflurry-predict` script placed the installed
+runtime Python's 261-character path directly in the shebang, so macOS could not start it and
+pVACtools' broad upstream exception reported an empty MHCflurry error. Promotion did not run and
+public channel readback returned 404. The launcher is now a short `/bin/sh` wrapper that passes the
+same exact runtime Python and guarded predictor as quoted arguments. A real regression invokes it
+through a Python path longer than 255 characters and passes; `test:verify` passes 70 files / 487
+tests plus every build and compile gate. The runner was removed and inventory again returned to
+zero. One fresh bounded retry is allowed after clean push and preflight; another failure stops the
+release for a new diagnosis.
+
 ## Oncology Phase 2 is complete for the authorized scope (2026-08-29)
 
 MHC-I Epitope Prediction and pVACseq Neoantigen Prioritization now have shared contracts, bounded

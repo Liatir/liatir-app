@@ -180,10 +180,9 @@ def main():
     socket.create_connection = deny_network
     guarded_bin = output_dir / ".liatir-guarded-bin"
     guarded_bin.mkdir(exist_ok=True)
-    guarded_predict = guarded_bin / "mhcflurry-predict"
-    guarded_predict.write_text(
-        "#!%s\n" % sys.executable
-        + "import socket\n"
+    guarded_predict_script = guarded_bin / "_mhcflurry_predict.py"
+    guarded_predict_script.write_text(
+        "import socket\n"
         + "def deny(*a, **k): raise RuntimeError('Network access is disabled for this local predictor run.')\n"
         + "socket.socket.connect = deny\n"
         + "socket.create_connection = deny\n"
@@ -191,7 +190,15 @@ def main():
         + "run()\n",
         encoding="utf-8",
     )
+    guarded_predict = guarded_bin / "mhcflurry-predict"
+    guarded_predict.write_text(
+        "#!/bin/sh\n"
+        + 'exec "$LIATIR_PVACTOOLS_PYTHON" "$LIATIR_PVACTOOLS_PREDICTOR" "$@"\n',
+        encoding="utf-8",
+    )
     guarded_predict.chmod(0o700)
+    os.environ["LIATIR_PVACTOOLS_PYTHON"] = sys.executable
+    os.environ["LIATIR_PVACTOOLS_PREDICTOR"] = str(guarded_predict_script)
     os.environ["PATH"] = str(guarded_bin) + os.pathsep + os.environ.get("PATH", "")
 
     sys.path[:0] = source_paths

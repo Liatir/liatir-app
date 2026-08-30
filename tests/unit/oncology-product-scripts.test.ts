@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
@@ -44,7 +44,7 @@ function runPvacPreflight(vcf: string, tumorSample = 'TUMOR') {
   });
 }
 
-function runnablePvacStub(root: string): void {
+function runnablePvacStub(root: string, invokeGuardedPredictor = false): void {
   minimalPvacRuntime(root);
   const predictor = join(root, 'source/pvactools-wheel/pvactools/lib/prediction_class.py');
   mkdirSync(join(predictor, '..'), { recursive: true });
@@ -57,9 +57,11 @@ function runnablePvacStub(root: string): void {
   const runner = join(root, 'source/pvactools-wheel/pvactools/tools/pvacseq/run.py');
   writeFileSync(runner, [
     'import json',
+    ...(invokeGuardedPredictor ? ['import subprocess'] : []),
     'from pathlib import Path',
     '',
     'def main(args):',
+    ...(invokeGuardedPredictor ? ['    subprocess.run(["mhcflurry-predict"], check=True)'] : []),
     '    tumor = args[1]',
     '    root = Path(args[5]) / "MHC_Class_I"',
     '    root.mkdir(parents=True, exist_ok=True)',
@@ -70,6 +72,11 @@ function runnablePvacStub(root: string): void {
     '    Path(str(prefix) + ".all_epitopes.aggregated.metrics.json").write_text(json.dumps({"rows": 0}))',
     '',
   ].join('\n'));
+
+  if (invokeGuardedPredictor) {
+    const command = join(root, 'source/mhcflurry-wheel/mhcflurry/predict_command.py');
+    writeFileSync(command, 'def run():\n    print("guarded predictor started")\n');
+  }
 }
 
 function annotatedVcf(): string {
@@ -146,6 +153,41 @@ function runPvacStubWithSpawnedImport() {
   return result;
 }
 
+function runPvacStubWithLongPythonPath() {
+  const root = mkdtempSync(join(tmpdir(), 'liatir-pvac-long-python-'));
+  runnablePvacStub(root, true);
+  const input = join(root, 'annotated.vcf');
+  const output = join(root, 'output');
+  const script = join(root, 'pvacseq.py');
+  writeFileSync(input, annotatedVcf());
+  writeFileSync(script, PVACSEQ_SCRIPT);
+
+  const probe = spawnSync('python3', ['-c', 'import sys; print(sys.executable)'], { encoding: 'utf8' });
+  if (probe.status !== 0) throw new Error(probe.stderr || 'python3 probe failed');
+  const longBin = join(root, 'a'.repeat(120), 'b'.repeat(120));
+  mkdirSync(longBin, { recursive: true });
+  const longPython = join(longBin, 'python3');
+  symlinkSync(probe.stdout.trim(), longPython);
+
+  const result = spawnSync(longPython, [script], {
+    encoding: 'utf8',
+    input: JSON.stringify({
+      runtimePath: root,
+      inputVcf: input,
+      tumorSample: 'TUMOR',
+      normalSample: '',
+      proximalVcf: '',
+      alleles: ['HLA-A*02:01'],
+      peptideLengths: [9],
+      predictors: ['MHCflurry', 'MHCflurryEL'],
+      topCount: 50,
+      threads: 1,
+      outputDir: output,
+    }),
+  });
+  return { longPython, result };
+}
+
 describe('oncology product Python scripts', () => {
   it('finishes all bounded pVACseq input checks before importing its scientific stack', () => {
     const inspection = PVACSEQ_SCRIPT.indexOf('inspection = inspect_vcf(');
@@ -198,6 +240,16 @@ describe('oncology product Python scripts', () => {
     const result = runPvacStubWithSpawnedImport();
     expect(result.status, result.stderr).toBe(0);
     expect(result.stdout).toContain('Running pVACseq locally');
+  });
+
+  it('starts the guarded predictor without placing a long runtime path in its shebang', () => {
+    if (process.platform === 'win32') return;
+    const { longPython, result } = runPvacStubWithLongPythonPath();
+    expect(longPython.length).toBeGreaterThan(255);
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.stdout).toContain('guarded predictor started');
+    expect(PVACSEQ_SCRIPT).toContain('"#!/bin/sh\\n"');
+    expect(PVACSEQ_SCRIPT).not.toContain('"#!%s\\n" % sys.executable');
   });
 
   it('accepts the distinct upstream contract for a single-sample proximal VCF', () => {
