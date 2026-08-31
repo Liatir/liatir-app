@@ -53,8 +53,8 @@ use super::{
     ai_hardware::{nvidia_capability, total_memory_bytes},
     app_storage::{resolve_app_path, write_text_atomic},
     managed_bins::{
-        available_space_for_path, format_bytes, rename_with_retry,
-        sha256_of_file, stream_download, DownloadRegistry, DISK_SPACE_MARGIN_BYTES,
+        available_space_for_path, format_bytes, rename_with_retry, sha256_of_file, stream_download,
+        DownloadRegistry, DISK_SPACE_MARGIN_BYTES,
     },
     python_env::env_dir,
 };
@@ -99,6 +99,14 @@ static ANTI_REPLAY_STATE_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
 pub enum RuntimeComponentKind {
     AiModel,
     ToolRuntime,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq, Default)]
+#[serde(rename_all = "kebab-case")]
+pub(crate) enum RuntimeBoxHostEnvironment {
+    #[default]
+    Native,
+    WindowsWsl2,
 }
 
 impl RuntimeComponentKind {
@@ -309,6 +317,8 @@ struct RuntimeBoxRevocation {
 pub struct RuntimeBoxActivationMetadata {
     schema_version: u32,
     selected_target: RuntimeBoxTarget,
+    #[serde(default)]
+    pub(crate) host_environment: RuntimeBoxHostEnvironment,
     release: ReleaseManifest,
     /// Exact verified envelope, including signatures and payload bytes.
     signed_release: Option<serde_json::Value>,
@@ -351,13 +361,20 @@ pub(crate) fn runtime_box_activation_metadata_for_component(
     let value: serde_json::Value = serde_json::from_slice(&bytes)
         .map_err(|error| format!("invalid Runtime Box activation metadata: {error}"))?;
 
+    validate_runtime_box_activation_value(value).map(Some)
+}
+
+pub(crate) fn validate_runtime_box_activation_value(
+    value: serde_json::Value,
+) -> Result<serde_json::Value, String> {
     if value.get("release").is_none()
-        || value.get("schemaVersion").and_then(serde_json::Value::as_u64)
+        || value
+            .get("schemaVersion")
+            .and_then(serde_json::Value::as_u64)
             != Some(u64::from(RUNTIME_BOX_SCHEMA_VERSION))
     {
         return Err(
-            "Runtime Box format is unsupported; remove and reinstall this Runtime Box"
-                .to_string(),
+            "Runtime Box format is unsupported; remove and reinstall this Runtime Box".to_string(),
         );
     }
     let activation: RuntimeBoxActivationMetadata = serde_json::from_value(value)
@@ -378,9 +395,15 @@ pub(crate) fn runtime_box_activation_metadata_for_component(
         );
     }
 
-    serde_json::to_value(activation)
-        .map(Some)
-        .map_err(|error| error.to_string())
+    serde_json::to_value(activation).map_err(|error| error.to_string())
+}
+
+pub(crate) fn runtime_box_host_environment(
+    value: &serde_json::Value,
+) -> Result<RuntimeBoxHostEnvironment, String> {
+    serde_json::from_value::<RuntimeBoxActivationMetadata>(value.clone())
+        .map(|activation| activation.host_environment)
+        .map_err(|error| format!("invalid Runtime Box activation metadata: {error}"))
 }
 
 pub(crate) fn runtime_box_activation_metadata(
@@ -574,20 +597,18 @@ fn trusted_keys() -> Result<Vec<TrustedKey>, String> {
             let raw = std::fs::read_to_string(&path).map_err(|error| {
                 format!("cannot read debug Liatir distribution trust key {path}: {error}")
             })?;
-            keys.append(
-                &mut parse_keys(&raw)
-                    .map_err(|error| format!("invalid debug Liatir distribution trust key: {error}"))?,
-            );
+            keys.append(&mut parse_keys(&raw).map_err(|error| {
+                format!("invalid debug Liatir distribution trust key: {error}")
+            })?);
         }
     }
     // Extra production keys can be injected at *compile* time (option_env! reads the build
     // environment, not the runtime one), which is what makes key rotation possible without
     // editing the checked-in trust files.
     if let Some(raw) = option_env!("LIATIR_RUNTIME_BOX_TRUSTED_KEYS_JSON") {
-        keys.append(
-            &mut parse_keys(raw)
-                .map_err(|error| format!("invalid production Liatir distribution trust keys: {error}"))?,
-        );
+        keys.append(&mut parse_keys(raw).map_err(|error| {
+            format!("invalid production Liatir distribution trust keys: {error}")
+        })?);
     }
     // Fail closed: with no key at all every box would otherwise be unverifiable.
     if keys.is_empty() {
@@ -811,10 +832,7 @@ fn advance_control_floor(
     Ok(true)
 }
 
-fn persist_anti_replay_state(
-    path: &Path,
-    state: &RuntimeBoxAntiReplayState,
-) -> Result<(), String> {
+fn persist_anti_replay_state(path: &Path, state: &RuntimeBoxAntiReplayState) -> Result<(), String> {
     let mut json = serde_json::to_string_pretty(state).map_err(|error| error.to_string())?;
     json.push('\n');
     write_text_atomic(path, &json)
@@ -858,7 +876,10 @@ fn has_accepted_control_document(
         .map_err(|_| "Runtime Box security-state lock is poisoned".to_string())?;
     let path = resolve_app_path(app, ANTI_REPLAY_STATE_PATH)?;
     let state = load_anti_replay_state(&path).map_err(security_state_unavailable)?;
-    Ok(state.entries.iter().any(|entry| &entry.identity == identity))
+    Ok(state
+        .entries
+        .iter()
+        .any(|entry| &entry.identity == identity))
 }
 
 /// Downloads a small signed control document.
@@ -927,14 +948,20 @@ fn is_numeric_version(value: &str) -> bool {
         })
 }
 
-/// Selects the first published native target compatible with this exact host.
+#[derive(Debug, Clone, Copy)]
+struct SelectedTargetCandidate<'a> {
+    candidate: &'a RuntimeBoxTargetCandidate,
+    host_environment: RuntimeBoxHostEnvironment,
+}
+
+/// Selects the first published target compatible with this exact host.
 ///
-/// CUDA candidates must declare and satisfy a minimum NVIDIA driver. A later CPU candidate is a
-/// deliberate fallback; Linux payloads marked only for windows-wsl2 are never selected here.
+/// Native targets are preferred. Windows x86_64 may then consume an explicitly validated Linux
+/// x86_64 CPU payload through WSL2; CUDA remains native-only until it has separate product proof.
 fn select_target_candidate<'a>(
     candidates: &'a [RuntimeBoxTargetCandidate],
     host: &RuntimeBoxHostCapabilities,
-) -> Result<&'a RuntimeBoxTargetCandidate, String> {
+) -> Result<SelectedTargetCandidate<'a>, String> {
     if candidates.is_empty() {
         return Err("This Runtime Component has no published Runtime Box targets".to_string());
     }
@@ -977,51 +1004,67 @@ fn select_target_candidate<'a>(
         }
     }
 
-    let platform_candidates = candidates
+    let native_candidates = candidates
         .iter()
-        .filter(|candidate| candidate.target.platform == host.platform)
-        .collect::<Vec<_>>();
-    if platform_candidates.is_empty() {
-        return Err(format!(
-            "This Runtime Component does not have a published Runtime Box for {}",
-            match host.platform.as_str() {
-                "macos" => "macOS",
-                "windows" => "Windows",
-                "linux" => "Linux",
-                value => value,
-            }
-        ));
-    }
-    let architecture_candidates = platform_candidates
-        .into_iter()
-        .filter(|candidate| candidate.target.arch == host.arch)
-        .collect::<Vec<_>>();
-    if architecture_candidates.is_empty() {
-        return Err(format!(
-            "This Runtime Component does not have a published Runtime Box for {} {}",
-            host.platform, host.arch
-        ));
-    }
-    let native_candidates = architecture_candidates
-        .into_iter()
         .filter(|candidate| {
-            candidate
-                .host_environments
-                .iter()
-                .any(|environment| environment == "native")
+            candidate.target.platform == host.platform
+                && candidate.target.arch == host.arch
+                && candidate
+                    .host_environments
+                    .iter()
+                    .any(|environment| environment == "native")
+        })
+        .map(|candidate| SelectedTargetCandidate {
+            candidate,
+            host_environment: RuntimeBoxHostEnvironment::Native,
         })
         .collect::<Vec<_>>();
-    if native_candidates.is_empty() {
+    let wsl_candidates = candidates
+        .iter()
+        .filter(|candidate| {
+            host.platform == "windows"
+                && host.arch == "x86_64"
+                && candidate.target.platform == "linux"
+                && candidate.target.arch == "x86_64"
+                && candidate.target.accelerator == "cpu"
+                && candidate
+                    .host_environments
+                    .iter()
+                    .any(|environment| environment == "windows-wsl2")
+        })
+        .map(|candidate| SelectedTargetCandidate {
+            candidate,
+            host_environment: RuntimeBoxHostEnvironment::WindowsWsl2,
+        })
+        .collect::<Vec<_>>();
+    let routed_candidates = native_candidates
+        .into_iter()
+        .chain(wsl_candidates)
+        .collect::<Vec<_>>();
+    if routed_candidates.is_empty() {
+        let platform = match host.platform.as_str() {
+            "windows" => "Windows",
+            "macos" => "macOS",
+            "linux" => "Linux",
+            value => value,
+        };
         return Err(format!(
-            "This Runtime Component has no native Runtime Box for {} {}; WSL2 targets are not selected",
-            host.platform, host.arch
+            "This Runtime Component has no Runtime Box for {} {}{}",
+            platform,
+            host.arch,
+            if host.platform == "windows" {
+                " (native or WSL2)"
+            } else {
+                ""
+            }
         ));
     }
 
     let mut required_memory_gb = None;
     let mut required_driver = None;
     let mut candidates_after_memory_check = 0usize;
-    for candidate in native_candidates {
+    for selected in routed_candidates {
+        let candidate = selected.candidate;
         if let (Some(minimum_gb), Some(installed_bytes)) =
             (candidate.min_ram_gb, host.total_memory_bytes)
         {
@@ -1047,7 +1090,7 @@ fn select_target_candidate<'a>(
             "cpu" | "metal" => {}
             _ => continue,
         }
-        return Ok(candidate);
+        return Ok(selected);
     }
 
     if candidates_after_memory_check == 0 {
@@ -1083,7 +1126,8 @@ fn select_target_candidate<'a>(
 /// concept rather than the packaging tool.
 fn target_id(target: &RuntimeBoxTarget) -> Result<String, String> {
     // "box target" also rewrites the plural "box targets" in the CUDA-version message.
-    box_target_id(target).map_err(|error| error.message().replace("box target", "Runtime Box target"))
+    box_target_id(target)
+        .map_err(|error| error.message().replace("box target", "Runtime Box target"))
 }
 
 /// Rejects any path that could escape the directory it is joined onto.
@@ -1209,6 +1253,7 @@ fn liatir_constraint<'a>(
 fn check_compatibility(
     compatibility: &BoxCompatibility,
     host: &RuntimeBoxHostCapabilities,
+    host_environment: RuntimeBoxHostEnvironment,
 ) -> Result<(), String> {
     for name in compatibility.additional.keys() {
         if name != MIN_LIATIR_VERSION && name != MAX_LIATIR_VERSION_EXCLUSIVE {
@@ -1273,18 +1318,32 @@ fn check_compatibility(
             ));
         }
     }
-    if compatibility
+    let supports_host_environment = compatibility
         .host_environments
         .as_ref()
-        .is_some_and(|environments| {
-            !environments
+        .map(|environments| {
+            environments
                 .iter()
-                .any(|environment| environment == "native")
-        })
+                .any(|environment| match host_environment {
+                    RuntimeBoxHostEnvironment::Native => environment == "native",
+                    RuntimeBoxHostEnvironment::WindowsWsl2 => environment == "windows-wsl2",
+                })
+        });
+    // Old native releases predate this field and remain usable. WSL2 is a separate execution
+    // boundary, so it must be named explicitly by the signed release rather than inferred from
+    // the catalog candidate that selected it.
+    if supports_host_environment == Some(false)
+        || host_environment == RuntimeBoxHostEnvironment::WindowsWsl2
+            && supports_host_environment.is_none()
     {
-        return Err(
-            "This Runtime Box is not validated for native desktop execution".to_string(),
-        );
+        return Err(match host_environment {
+            RuntimeBoxHostEnvironment::Native => {
+                "This Runtime Box is not validated for native desktop execution".to_string()
+            }
+            RuntimeBoxHostEnvironment::WindowsWsl2 => {
+                "This Runtime Box is not validated for Windows execution through WSL2".to_string()
+            }
+        });
     }
     Ok(())
 }
@@ -1353,7 +1412,9 @@ fn validate_channel_manifest(
     }
     parse_control_updated_at(&manifest.updated_at)
         .map_err(|error| format!("invalid Runtime Box channel: {error}"))?;
-    if manifest.cohort_salt.is_empty() || manifest.releases.is_empty() || manifest.releases.len() > 10
+    if manifest.cohort_salt.is_empty()
+        || manifest.releases.is_empty()
+        || manifest.releases.len() > 10
     {
         return Err("invalid Runtime Box channel".to_string());
     }
@@ -1381,15 +1442,18 @@ pub(crate) async fn runtime_component_update_status(
 ) -> Result<RuntimeComponentUpdateStatus, String> {
     validate_runtime_component_request(&request.box_id, &request.component_id, &request.channel)?;
     let registry_base_url = if cfg!(debug_assertions) {
-        std::env::var("LIATIR_RUNTIME_BOX_REGISTRY_URL")
-            .unwrap_or(request.registry_base_url)
+        std::env::var("LIATIR_RUNTIME_BOX_REGISTRY_URL").unwrap_or(request.registry_base_url)
     } else {
         request.registry_base_url
     };
     let registry_base_url = canonical_registry_base_url(&registry_base_url)?;
     let host = current_host_capabilities();
     let selected_candidate = select_target_candidate(&request.target_candidates, &host)?;
-    let target = selected_candidate.target.clone();
+    let target = selected_candidate.candidate.target.clone();
+    #[cfg(target_os = "windows")]
+    if selected_candidate.host_environment == RuntimeBoxHostEnvironment::WindowsWsl2 {
+        crate::helpers::wsl::require_runtime_box_distribution()?;
+    }
     let target_slug = target_id(&target)?;
     let channel_url = format!(
         "{}/channels/{}/{}/{}",
@@ -1398,14 +1462,12 @@ pub(crate) async fn runtime_component_update_status(
         request.box_id,
         target_slug
     );
-    let channel_bytes = fetch_control_document(&channel_url)
-        .await?
-        .ok_or_else(|| {
-            format!(
-                "No {} Runtime Box is available for {target_slug}",
-                request.channel
-            )
-        })?;
+    let channel_bytes = fetch_control_document(&channel_url).await?.ok_or_else(|| {
+        format!(
+            "No {} Runtime Box is available for {target_slug}",
+            request.channel
+        )
+    })?;
     let (manifest, payload_sha256): (ChannelManifest, String) =
         verify_signed_payload_with_digest(&channel_bytes)?;
     validate_channel_manifest(&manifest, &request.channel, &request.box_id, &target)?;
@@ -1421,14 +1483,11 @@ pub(crate) async fn runtime_component_update_status(
         &payload_sha256,
     )?;
     let selected = select_channel_release(&manifest, &installation_id(app)?)?;
-    let activation = runtime_box_activation_metadata_for_component(
-        app,
-        component_kind,
-        runtime_id,
-    )?
-    .map(serde_json::from_value::<RuntimeBoxActivationMetadata>)
-    .transpose()
-    .map_err(|error| format!("invalid Runtime Box activation metadata: {error}"))?;
+    let activation =
+        runtime_box_activation_metadata_for_component(app, component_kind, runtime_id)?
+            .map(serde_json::from_value::<RuntimeBoxActivationMetadata>)
+            .transpose()
+            .map_err(|error| format!("invalid Runtime Box activation metadata: {error}"))?;
     if let Some(activation) = activation.as_ref() {
         if activation.release.runtime_id != runtime_id
             || activation.release.box_id != request.box_id
@@ -1462,6 +1521,7 @@ fn verify_release_identity(
     model_id: &str,
     target: &RuntimeBoxTarget,
     host: &RuntimeBoxHostCapabilities,
+    host_environment: RuntimeBoxHostEnvironment,
 ) -> Result<(), String> {
     release
         .validate()
@@ -1499,12 +1559,8 @@ fn verify_release_identity(
     validate_control_url(&release.archive.url)?;
     let adapter = box_target_adapter(&release.target)
         .map_err(|error| format!("invalid Runtime Box target: {}", error.message()))?;
-    assert_python_entry_point(adapter, &release.python_entry_point).map_err(|error| {
-        format!(
-            "invalid Runtime Box interpreter path: {}",
-            error.message()
-        )
-    })?;
+    assert_python_entry_point(adapter, &release.python_entry_point)
+        .map_err(|error| format!("invalid Runtime Box interpreter path: {}", error.message()))?;
     safe_relative_path(&release.model_cache_subdir)?;
     // Import names are interpolated into a Python `-c` script, so restrict them to characters
     // that can only form a module path — no spaces, quotes or semicolons that could smuggle in
@@ -1519,7 +1575,7 @@ fn verify_release_identity(
     {
         return Err("invalid Runtime Box self-test imports".to_string());
     }
-    check_compatibility(&release.compatibility, host)
+    check_compatibility(&release.compatibility, host, host_environment)
 }
 
 /// Fails the install if the chosen release appears on the signed revocation list.
@@ -1550,12 +1606,7 @@ async fn ensure_not_revoked(
     validate_revocations_manifest(&manifest)?;
     // Persist the authentic generation before acting on its contents. A later install can never
     // fall back to an older kill-list, even if this install fails for an unrelated reason.
-    accept_control_document(
-        app,
-        identity,
-        &manifest.updated_at,
-        &payload_sha256,
-    )?;
+    accept_control_document(app, identity, &manifest.updated_at, &payload_sha256)?;
     // A revocation without a target applies to every target of that box version.
     if let Some(revocation) = manifest.revocations.into_iter().find(|item| {
         item.box_id == release.box_id
@@ -1838,8 +1889,9 @@ fn activate_runtime(
     let backup = rollback.join(format!("{}-{}", release.version, Uuid::new_v4()));
     let had_previous = runtime_dir.exists();
     if had_previous {
-        rename_with_retry(runtime_dir, &backup)
-            .map_err(|error| format!("cannot stage previous Runtime Component for rollback: {error}"))?;
+        rename_with_retry(runtime_dir, &backup).map_err(|error| {
+            format!("cannot stage previous Runtime Component for rollback: {error}")
+        })?;
     }
     // The self-test just executed this box's interpreter from `staging`, so on Windows a
     // transient antivirus or child-process lock can still be clearing; retry the move before
@@ -1944,7 +1996,12 @@ async fn install_runtime_box(
     let registry_base_url = canonical_registry_base_url(&registry_base_url)?;
     let host = current_host_capabilities();
     let selected_candidate = select_target_candidate(&target_candidates, &host)?;
-    let target = selected_candidate.target.clone();
+    let target = selected_candidate.candidate.target.clone();
+    let host_environment = selected_candidate.host_environment;
+    #[cfg(target_os = "windows")]
+    if host_environment == RuntimeBoxHostEnvironment::WindowsWsl2 {
+        crate::helpers::wsl::require_runtime_box_distribution()?;
+    }
     let target_slug = target_id(&target)?;
     let mut install_order = RuntimeBoxInstallOrder::new();
     let channel_url = format!(
@@ -1983,11 +2040,18 @@ async fn install_runtime_box(
     let signed_release: serde_json::Value = serde_json::from_slice(&release_bytes)
         .map_err(|error| format!("invalid signed Runtime Box release document: {error}"))?;
     let release: ReleaseManifest = verify_signed_payload(&release_bytes)?;
-    verify_release_identity(&release, &box_id, &component_id, &target, &host)?;
+    verify_release_identity(
+        &release,
+        &box_id,
+        &component_id,
+        &target,
+        &host,
+        host_environment,
+    )?;
     if release.compatibility.min_nvidia_driver_version
-        != selected_candidate.min_nvidia_driver_version
-        || selected_candidate.min_ram_gb.is_some()
-            && release.compatibility.min_ram_gb != selected_candidate.min_ram_gb
+        != selected_candidate.candidate.min_nvidia_driver_version
+        || selected_candidate.candidate.min_ram_gb.is_some()
+            && release.compatibility.min_ram_gb != selected_candidate.candidate.min_ram_gb
     {
         return Err(
             "Published Runtime Box target requirements do not match the signed release".to_string(),
@@ -2086,6 +2150,66 @@ async fn install_runtime_box(
     }
     install_order.archive_verified()?;
 
+    let activation = RuntimeBoxActivationMetadata {
+        schema_version: RUNTIME_BOX_SCHEMA_VERSION,
+        selected_target: target.clone(),
+        host_environment,
+        release: release.clone(),
+        signed_release: Some(signed_release.clone()),
+    };
+
+    #[cfg(target_os = "windows")]
+    if host_environment == RuntimeBoxHostEnvironment::WindowsWsl2 {
+        let release_document_text = std::str::from_utf8(&release_bytes)
+            .map_err(|error| format!("invalid signed Runtime Box release document: {error}"))?;
+        let release_document = TemporaryReleaseDocument::write(
+            downloads_dir.join(format!("{release_payload_sha256}.release.json")),
+            release_document_text,
+        )?;
+        let trust_document = TemporaryReleaseDocument::write(
+            downloads_dir.join(format!("{release_payload_sha256}.trusted-keys.json")),
+            &super::runtime_box_wsl::trust_document()?,
+        )?;
+        let activation_value =
+            serde_json::to_value(&activation).map_err(|error| error.to_string())?;
+        let activation_document = TemporaryReleaseDocument::write(
+            downloads_dir.join(format!("{release_payload_sha256}.activation.json")),
+            &format!(
+                "{}\n",
+                serde_json::to_string_pretty(&activation_value)
+                    .map_err(|error| error.to_string())?
+            ),
+        )?;
+        let installed = install_order.extract(|| {
+            super::runtime_box_wsl::install(
+                &app,
+                component_kind,
+                &box_id,
+                &component_id,
+                &release.runtime_id,
+                release_document.path(),
+                trust_document.path(),
+                &archive_path,
+                &release.archive.sha256,
+                &release_payload_sha256,
+                activation_document.path(),
+                &activation_value,
+            )
+        })?;
+        let _ = std::fs::remove_file(&archive_path);
+        return Ok(RuntimeBoxInstallResult {
+            component_kind,
+            component_id,
+            runtime_id: release.runtime_id.clone(),
+            runtime_dir: installed.runtime_dir,
+            python_path: installed.python_path,
+            version: release.version.clone(),
+            size_bytes: installed.size_bytes,
+            rollback_available: installed.rollback_available,
+            activation,
+        });
+    }
+
     // Unpack next to the final location (same filesystem, so activation can rename) but under a
     // unique hidden name, so a half-extracted box is never mistaken for an installed one.
     //
@@ -2107,10 +2231,8 @@ async fn install_runtime_box(
     let staging = {
         let mut attempt = 0;
         loop {
-            let candidate = runtime_parent.join(format!(
-                ".s-{}",
-                &Uuid::new_v4().simple().to_string()[..8]
-            ));
+            let candidate =
+                runtime_parent.join(format!(".s-{}", &Uuid::new_v4().simple().to_string()[..8]));
             match std::fs::symlink_metadata(&candidate) {
                 Err(error) if error.kind() == std::io::ErrorKind::NotFound => break candidate,
                 Ok(_) if attempt < 8 => {
@@ -2157,12 +2279,6 @@ async fn install_runtime_box(
         run_self_test(&python_path, &release.self_test)?;
         // Persist both the selected target and the exact signed release envelope. The installed
         // directory then carries complete provenance without contacting the registry.
-        let activation = RuntimeBoxActivationMetadata {
-            schema_version: RUNTIME_BOX_SCHEMA_VERSION,
-            selected_target: target.clone(),
-            release: release.clone(),
-            signed_release: Some(signed_release.clone()),
-        };
         write_text_atomic(
             &staging.join("runtime-box-activation.json"),
             &format!(
@@ -2257,6 +2373,27 @@ async fn rollback_runtime_box(
 ) -> Result<RuntimeBoxRollbackResult, String> {
     // Same lock as install: a rollback must not race an install of the same runtime.
     let _install_guard = InstallGuard::acquire(component_kind, &runtime_id)?;
+    #[cfg(target_os = "windows")]
+    if runtime_box_activation_metadata_for_component(&app, component_kind, &runtime_id)?
+        .as_ref()
+        .map(runtime_box_host_environment)
+        .transpose()?
+        == Some(RuntimeBoxHostEnvironment::WindowsWsl2)
+    {
+        let app_for_task = app.clone();
+        let runtime_id_for_task = runtime_id.clone();
+        let result = tauri::async_runtime::spawn_blocking(move || {
+            super::runtime_box_wsl::rollback(&app_for_task, component_kind, &runtime_id_for_task)
+        })
+        .await
+        .map_err(|error| error.to_string())??;
+        return Ok(RuntimeBoxRollbackResult {
+            component_kind,
+            runtime_id,
+            runtime_dir: result.runtime_dir,
+            restored: result.restored,
+        });
+    }
     let runtime_dir = env_dir(&app, component_kind.runtime_root(), &runtime_id)?;
     let restored = rollback_runtime(&runtime_dir, &runtime_id)?;
     Ok(RuntimeBoxRollbackResult {
@@ -2342,10 +2479,28 @@ async fn remove_runtime_box(
                     .or_else(|| activation.get("boxId"))
                     .and_then(serde_json::Value::as_str);
                 if installed_box_id.is_some_and(|installed| installed != box_id) {
-                    return Err("Installed Runtime Box identity does not match this removal request".to_string());
+                    return Err(
+                        "Installed Runtime Box identity does not match this removal request"
+                            .to_string(),
+                    );
                 }
             }
         }
+    }
+    #[cfg(target_os = "windows")]
+    if runtime_box_activation_metadata_for_component(&app, component_kind, &runtime_id)?
+        .as_ref()
+        .map(runtime_box_host_environment)
+        .transpose()?
+        == Some(RuntimeBoxHostEnvironment::WindowsWsl2)
+    {
+        let app_for_task = app.clone();
+        let runtime_id_for_task = runtime_id.clone();
+        tauri::async_runtime::spawn_blocking(move || {
+            super::runtime_box_wsl::remove(&app_for_task, component_kind, &runtime_id_for_task)
+        })
+        .await
+        .map_err(|error| error.to_string())??;
     }
     remove_runtime_files(&runtime_dir, &runtime_id, &box_id)?;
     Ok(true)
@@ -2456,14 +2611,12 @@ mod tests {
         ))
         .unwrap();
 
-        let release: ReleaseManifest =
-            serde_json::from_value(fixtures["release"].clone()).unwrap();
+        let release: ReleaseManifest = serde_json::from_value(fixtures["release"].clone()).unwrap();
         assert_eq!(release.schema_version, RUNTIME_BOX_SCHEMA_VERSION);
         assert_eq!(release.kind, "liatir.runtime-box.release");
         assert_eq!(release.provenance.pixi_version, "0.50.0");
 
-        let channel: ChannelManifest =
-            serde_json::from_value(fixtures["channel"].clone()).unwrap();
+        let channel: ChannelManifest = serde_json::from_value(fixtures["channel"].clone()).unwrap();
         assert_eq!(channel.schema_version, RUNTIME_BOX_SCHEMA_VERSION);
         assert_eq!(channel.kind, "liatir.runtime-box.channel");
         assert_eq!(channel.releases.len(), 1);
@@ -2535,10 +2688,8 @@ mod tests {
 
     #[test]
     fn anti_replay_state_persists_and_corruption_fails_closed() {
-        let root = std::env::temp_dir().join(format!(
-            "liatir-runtime-box-anti-replay-{}",
-            Uuid::new_v4()
-        ));
+        let root =
+            std::env::temp_dir().join(format!("liatir-runtime-box-anti-replay-{}", Uuid::new_v4()));
         std::fs::create_dir_all(&root).unwrap();
         let path = root.join(ANTI_REPLAY_STATE_PATH);
         let identity = fixture_channel_identity();
@@ -2583,6 +2734,7 @@ mod tests {
             "liatir-fixture",
             &target("macos", "aarch64", "metal", None),
             &host,
+            RuntimeBoxHostEnvironment::Native,
         )
         .unwrap_err();
         assert!(error.contains("Unsupported schemaVersion 1"));
@@ -2676,7 +2828,11 @@ mod tests {
 
         for (name, host, candidates, expected) in cases {
             let selected = select_target_candidate(&candidates, &host).unwrap();
-            assert_eq!(target_id(&selected.target).unwrap(), expected, "{name}");
+            assert_eq!(
+                target_id(&selected.candidate.target).unwrap(),
+                expected,
+                "{name}"
+            );
         }
     }
 
@@ -2712,7 +2868,24 @@ mod tests {
             select_target_candidate(&[wsl_only], &host("windows", "x86_64", Some("590.48.01")))
                 .unwrap_err();
         assert!(error.contains("Windows"));
-        assert!(!error.contains("compatible with Windows through WSL"));
+
+        let wsl_cpu = RuntimeBoxTargetCandidate {
+            target: target("linux", "x86_64", "cpu", None),
+            host_environments: vec!["native".to_string(), "windows-wsl2".to_string()],
+            min_ram_gb: None,
+            min_nvidia_driver_version: None,
+        };
+        let wsl_candidates = [wsl_cpu];
+        let selected =
+            select_target_candidate(&wsl_candidates, &host("windows", "x86_64", None)).unwrap();
+        assert_eq!(
+            selected.host_environment,
+            RuntimeBoxHostEnvironment::WindowsWsl2
+        );
+        assert_eq!(
+            target_id(&selected.candidate.target).unwrap(),
+            "linux-x86_64-cpu"
+        );
     }
 
     #[test]
@@ -2735,8 +2908,18 @@ mod tests {
 
         let mut release: ReleaseManifest = serde_json::from_value(release_json()).unwrap();
         release.compatibility.min_ram_gb = Some(8.0);
-        assert!(check_compatibility(&release.compatibility, &exact_host).is_ok());
-        assert!(check_compatibility(&release.compatibility, &undersized_host).is_err());
+        assert!(check_compatibility(
+            &release.compatibility,
+            &exact_host,
+            RuntimeBoxHostEnvironment::Native
+        )
+        .is_ok());
+        assert!(check_compatibility(
+            &release.compatibility,
+            &undersized_host,
+            RuntimeBoxHostEnvironment::Native
+        )
+        .is_err());
     }
 
     /// A fractional requirement is what the shared catalog contract and the box format have always
@@ -2777,12 +2960,22 @@ mod tests {
             vec![MIN_LIATIR_VERSION],
             "the fixture's product constraint must land in the format's open block"
         );
-        assert!(check_compatibility(&known.compatibility, &host).is_ok());
+        assert!(check_compatibility(
+            &known.compatibility,
+            &host,
+            RuntimeBoxHostEnvironment::Native
+        )
+        .is_ok());
 
         let mut unknown = release_json();
         unknown["compatibility"]["minQuantumCores"] = serde_json::json!(4);
         let unknown: ReleaseManifest = serde_json::from_value(unknown).unwrap();
-        let error = check_compatibility(&unknown.compatibility, &host).unwrap_err();
+        let error = check_compatibility(
+            &unknown.compatibility,
+            &host,
+            RuntimeBoxHostEnvironment::Native,
+        )
+        .unwrap_err();
         assert!(error.contains("minQuantumCores"), "unexpected: {error}");
 
         // A release naming no minimum never went through Liatir's publishing path.
@@ -2792,13 +2985,23 @@ mod tests {
             .unwrap()
             .remove(MIN_LIATIR_VERSION);
         let absent: ReleaseManifest = serde_json::from_value(absent).unwrap();
-        assert!(check_compatibility(&absent.compatibility, &host).is_err());
+        assert!(check_compatibility(
+            &absent.compatibility,
+            &host,
+            RuntimeBoxHostEnvironment::Native
+        )
+        .is_err());
 
         // Present but not a string is malformed, not absent: it must not pass unchecked.
         let mut malformed = release_json();
         malformed["compatibility"][MIN_LIATIR_VERSION] = serde_json::json!(3);
         let malformed: ReleaseManifest = serde_json::from_value(malformed).unwrap();
-        assert!(check_compatibility(&malformed.compatibility, &host).is_err());
+        assert!(check_compatibility(
+            &malformed.compatibility,
+            &host,
+            RuntimeBoxHostEnvironment::Native
+        )
+        .is_err());
     }
 
     #[test]
@@ -2859,6 +3062,28 @@ mod tests {
     }
 
     #[test]
+    fn wsl2_requires_explicit_signed_compatibility() {
+        let host = host("windows", "x86_64", None);
+        let mut release: ReleaseManifest = serde_json::from_value(release_json()).unwrap();
+        let error = check_compatibility(
+            &release.compatibility,
+            &host,
+            RuntimeBoxHostEnvironment::WindowsWsl2,
+        )
+        .unwrap_err();
+        assert!(error.contains("WSL2"));
+
+        release.compatibility.host_environments =
+            Some(vec!["native".to_string(), "windows-wsl2".to_string()]);
+        assert!(check_compatibility(
+            &release.compatibility,
+            &host,
+            RuntimeBoxHostEnvironment::WindowsWsl2,
+        )
+        .is_ok());
+    }
+
+    #[test]
     fn runtime_box_cuda_release_requires_and_enforces_a_minimum_driver() {
         let mut value = release_json();
         value["target"] = serde_json::json!({
@@ -2871,16 +3096,28 @@ mod tests {
         let target: RuntimeBoxTarget = serde_json::from_value(value["target"].clone()).unwrap();
         let host = host("windows", "x86_64", Some("500.10"));
         let release: ReleaseManifest = serde_json::from_value(value.clone()).unwrap();
-        assert!(
-            verify_release_identity(&release, "fixture", "liatir-fixture", &target, &host)
-                .unwrap_err()
-                .contains("must declare a minimum NVIDIA driver")
-        );
+        assert!(verify_release_identity(
+            &release,
+            "fixture",
+            "liatir-fixture",
+            &target,
+            &host,
+            RuntimeBoxHostEnvironment::Native,
+        )
+        .unwrap_err()
+        .contains("must declare a minimum NVIDIA driver"));
 
         value["compatibility"]["minNvidiaDriverVersion"] = serde_json::json!("550.54");
         let release: ReleaseManifest = serde_json::from_value(value).unwrap();
-        let error = verify_release_identity(&release, "fixture", "liatir-fixture", &target, &host)
-            .unwrap_err();
+        let error = verify_release_identity(
+            &release,
+            "fixture",
+            "liatir-fixture",
+            &target,
+            &host,
+            RuntimeBoxHostEnvironment::Native,
+        )
+        .unwrap_err();
         assert!(error.contains("driver 550.54 or newer"));
         assert!(error.contains("500.10"));
     }
@@ -3037,7 +3274,10 @@ mod tests {
             timeout_seconds: 30,
         };
         let error = run_self_test(Path::new(python), &self_test).unwrap_err();
-        assert!(error.contains("self-test failed"), "unexpected error: {error}");
+        assert!(
+            error.contains("self-test failed"),
+            "unexpected error: {error}"
+        );
         // The captured stderr must identify the missing module, not just the exit code.
         assert!(
             error.contains("liatir_missing_selftest_module") || error.contains("No module named"),
@@ -3154,10 +3394,8 @@ mod tests {
             verify_signed_payload(&release_bytes).expect("cannot verify v2 fixture release");
         assert_eq!(release.schema_version, RUNTIME_BOX_SCHEMA_VERSION);
 
-        let destination = std::env::temp_dir().join(format!(
-            "liatir-runtime-box-v2-extract-{}",
-            Uuid::new_v4()
-        ));
+        let destination =
+            std::env::temp_dir().join(format!("liatir-runtime-box-v2-extract-{}", Uuid::new_v4()));
         let keys = trusted_keys().expect("cannot load v2 fixture trust key");
         let mut order = RuntimeBoxInstallOrder::new();
         order.release_verified().unwrap();
@@ -3225,7 +3463,10 @@ mod tests {
     #[test]
     fn runtime_component_kinds_have_isolated_storage_and_lock_keys() {
         assert_eq!(RuntimeComponentKind::AiModel.runtime_root(), "ai-runtimes");
-        assert_eq!(RuntimeComponentKind::ToolRuntime.runtime_root(), "tool-runtimes");
+        assert_eq!(
+            RuntimeComponentKind::ToolRuntime.runtime_root(),
+            "tool-runtimes"
+        );
         assert_ne!(
             RuntimeComponentKind::AiModel.guard_key("shared-id"),
             RuntimeComponentKind::ToolRuntime.guard_key("shared-id")

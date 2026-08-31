@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** Build the dependency-free Linux helper that consumes the box inside WSL2. */
+/** Build the statically linked Linux helper that consumes boxes inside WSL2. */
 
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';

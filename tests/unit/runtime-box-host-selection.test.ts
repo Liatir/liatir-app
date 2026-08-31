@@ -49,6 +49,9 @@ function hardware(
     appleMetal: os === 'macos',
     cudaAvailable: nvidiaDriverVersion ? true : null,
     nvidiaDriverVersion: nvidiaDriverVersion ?? null,
+    wsl2Available: false,
+    wslDistribution: null,
+    wslError: null,
   };
 }
 
@@ -166,19 +169,32 @@ describe('Runtime Box native target selection', () => {
     expect(platformBlock?.reason).not.toContain('/');
   });
 
-  it('never treats a Linux windows-wsl2 record as a native Windows target', () => {
+  it('uses an explicitly validated Linux CPU target through WSL2 on Windows', () => {
+    const windows = hardware('windows', 'x86_64');
+    windows.wsl2Available = true;
+    windows.wslDistribution = 'Ubuntu-24.04';
     const block = modelInstallBlock(
       modelWithTargets([
-        candidate('linux', 'cuda', {
-          cudaVersion: '12.4',
-          minNvidiaDriverVersion: '550.54',
+        candidate('linux', 'cpu', {
           hostEnvironments: ['windows-wsl2'],
         }),
       ]),
-      hardware('windows', 'x86_64', '590.48.01'),
+      windows,
     );
-    expect(block).not.toBeNull();
-    expect(block?.reason).toContain('Windows');
+    expect(block).toBeNull();
+  });
+
+  it('explains that WSL2 must be ready before a Windows install', () => {
+    const windows = hardware('windows', 'x86_64');
+    windows.wslError = 'No WSL2 distribution was found.';
+    const block = modelInstallBlock(
+      modelWithTargets([
+        candidate('linux', 'cpu', { hostEnvironments: ['windows-wsl2'] }),
+      ]),
+      windows,
+    );
+    expect(block?.kind).toBe('runtime-target');
+    expect(block?.summary).toContain('WSL2');
   });
 
   it('keeps every installable Runtime Box model tied to at least one published target', () => {
@@ -189,10 +205,7 @@ describe('Runtime Box native target selection', () => {
     for (const model of runtimeBoxModels) {
       const targets = model.install?.runtimeBox?.publishedTargets;
       expect(targets?.length, model.id).toBeGreaterThan(0);
-      expect(
-        targets?.every((item) => item.hostEnvironments.includes('native')),
-        model.id,
-      ).toBe(true);
+      expect(targets?.every((item) => item.hostEnvironments.length > 0), model.id).toBe(true);
     }
   });
 

@@ -270,6 +270,37 @@ pub(crate) async fn lia_jobs_spawn_with_kill_command(
     .await
 }
 
+pub(crate) async fn lia_jobs_spawn_with_cleanup_and_kill_command(
+    app: AppHandle,
+    cmd: String,
+    args: Vec<String>,
+    cwd: Option<String>,
+    workspace_id: Option<String>,
+    env: Option<HashMap<String, String>>,
+    label: Option<String>,
+    kind: Option<String>,
+    metadata: Option<Value>,
+    stdout_path: Option<String>,
+    cleanup_dir: String,
+    kill_command: JobKillCommand,
+) -> Result<serde_json::Value, String> {
+    spawn_job(
+        app,
+        cmd,
+        args,
+        cwd,
+        workspace_id,
+        env,
+        label,
+        kind,
+        metadata,
+        stdout_path,
+        Some(cleanup_dir),
+        Some(kill_command),
+    )
+    .await
+}
+
 /// Resolve a spawn target to what will actually be executed — the single source
 /// of truth for native-tool resolution, shared by the app's own `runNativeTool`
 /// and by out-of-process plugins calling `jobs.spawn(tools.X, ...)`:

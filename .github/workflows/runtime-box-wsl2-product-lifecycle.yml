@@ -1,0 +1,183 @@
+name: Runtime Box WSL2 product lifecycle
+
+on:
+  workflow_dispatch:
+    inputs:
+      model_id:
+        description: Published Linux CPU component to prove through WSL2
+        required: true
+        type: choice
+        options:
+          - openvax-mhcflurry-class1-presentation
+          - griffithlab-pvactools-pvacseq
+      native_tools_run_id:
+        description: Successful Native Tools workflow run from this exact commit
+        required: true
+        type: string
+
+concurrency:
+  group: runtime-box-wsl2-product-${{ inputs.model_id }}
+  cancel-in-progress: false
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  preflight:
+    name: Resolve exact WSL2 proof inputs
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      version: ${{ steps.component.outputs.version }}
+      spec: ${{ steps.component.outputs.spec }}
+      component_kind: ${{ steps.component.outputs.component_kind }}
+      runtime_id: ${{ steps.component.outputs.runtime_id }}
+    steps:
+      - name: Require the exact main ref
+        run: test "${{ github.ref }}" = "refs/heads/main"
+
+      - id: native-tools
+        name: Verify the build-bound WSL2 consumer artifact
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_SHA: ${{ github.sha }}
+          RUN_ID: ${{ inputs.native_tools_run_id }}
+        run: |
+          set -euo pipefail
+          [[ "$RUN_ID" =~ ^[0-9]+$ ]]
+          run="$(gh api "repos/${{ github.repository }}/actions/runs/$RUN_ID")"
+          test "$(jq -r .head_sha <<<"$run")" = "$EXPECTED_SHA"
+          test "$(jq -r .conclusion <<<"$run")" = "success"
+          test "$(jq -r .path <<<"$run")" = ".github/workflows/native-tools-box.yml"
+
+      - id: component
+        name: Resolve the fixed component identity
+        shell: bash
+        env:
+          MODEL_ID: ${{ inputs.model_id }}
+        run: |
+          set -euo pipefail
+          case "$MODEL_ID" in
+            openvax-mhcflurry-class1-presentation)
+              echo 'version=2.2.1-beta.1' >> "$GITHUB_OUTPUT"
+              echo 'spec=tests/e2e/specs/runtime-box-mhcflurry-native.e2e.mjs' >> "$GITHUB_OUTPUT"
+              echo 'component_kind=ai-runtimes' >> "$GITHUB_OUTPUT"
+              echo 'runtime_id=oncology-mhcflurry-class1-presentation-2-2-1' >> "$GITHUB_OUTPUT"
+              ;;
+            griffithlab-pvactools-pvacseq)
+              echo 'version=7.1.2-beta.1' >> "$GITHUB_OUTPUT"
+              echo 'spec=tests/e2e/specs/runtime-box-pvactools-native.e2e.mjs' >> "$GITHUB_OUTPUT"
+              echo 'component_kind=tool-runtimes' >> "$GITHUB_OUTPUT"
+              echo 'runtime_id=oncology-pvactools-pvacseq-7-1-2' >> "$GITHUB_OUTPUT"
+              ;;
+            *) exit 2 ;;
+          esac
+
+  product:
+    name: Install and run the public Linux box through WSL2
+    needs: preflight
+    runs-on: liatir-windows-selfhosted
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install pinned Rust 1.95.0
+        uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+        with:
+          toolchain: "1.95.0"
+
+      - run: npm ci
+
+      - name: Download the exact build-bound WSL2 consumer and Native Tools box
+        uses: actions/download-artifact@v4
+        with:
+          name: native-tools-linux-x86_64-cpu
+          path: src-tauri/resources/native-tools
+          run-id: ${{ inputs.native_tools_run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Require a compatible default WSL2 distribution
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $architecture = (& wsl.exe --exec uname -m).Trim()
+          if ($LASTEXITCODE -ne 0 -or $architecture -ne 'x86_64') {
+            throw "The default WSL distribution is not x86_64: $architecture"
+          }
+          $kernel = (& wsl.exe --exec uname -r).Trim()
+          if ($LASTEXITCODE -ne 0 -or -not $kernel.ToLowerInvariant().Contains('wsl2')) {
+            throw "The default distribution is not WSL2: $kernel"
+          }
+
+      - name: Build the real candidate product
+        env:
+          VITE_LIATIR_RUNTIME_BOX_RELEASE_CANDIDATE_ID: ${{ inputs.model_id }}
+        run: npm run test:tauri:prepare
+
+      - name: Run install, replacement, rollback, inference, Jobs, Results and removal
+        env:
+          LIATIR_RUNTIME_BOX_REGISTRY_BASE_URL: https://models.liatir.com/v1
+          LIATIR_RUNTIME_BOX_RELEASE_CANDIDATE_ID: ${{ inputs.model_id }}
+          LIATIR_RUNTIME_BOX_MODEL_ID: ${{ inputs.model_id }}
+          LIATIR_RUNTIME_BOX_TARGET_ID: linux-x86_64-cpu
+          LIATIR_RUNTIME_BOX_EXPECTED_VERSION: ${{ needs.preflight.outputs.version }}
+          LIATIR_RUNTIME_BOX_PRODUCT_EVIDENCE: .runtime-box-ci/wsl2-product-lifecycle.json
+          LIATIR_E2E_REPORT: .runtime-box-ci/wsl2-product-lifecycle-e2e.json
+        run: >-
+          npm run test:tauri:run -- --heavy
+          tests/e2e/specs/runtime-box-release-candidate.e2e.mjs
+          ${{ needs.preflight.outputs.spec }}
+
+      - name: Remove any WSL2 payload left by a failed test
+        if: always()
+        shell: powershell
+        env:
+          COMPONENT_KIND: ${{ needs.preflight.outputs.component_kind }}
+          RUNTIME_ID: ${{ needs.preflight.outputs.runtime_id }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $consumerPath = 'src-tauri/resources/native-tools/native-tools-box-consumer'
+          if (-not (Test-Path $consumerPath)) {
+            Write-Host 'The consumer was not downloaded; no WSL2 payload could have been installed.'
+            exit 0
+          }
+          $consumer = (Resolve-Path $consumerPath).Path
+          $linuxConsumer = (& wsl.exe --exec wslpath -a -u $consumer).Trim()
+          if ($LASTEXITCODE -ne 0 -or -not $linuxConsumer.StartsWith('/')) {
+            throw 'Could not map the build-bound WSL2 consumer.'
+          }
+          & wsl.exe --exec $linuxConsumer runtime-remove $env:COMPONENT_KIND $env:RUNTIME_ID
+          if ($LASTEXITCODE -ne 0) { throw 'Could not clean the WSL2 Runtime Box payload.' }
+
+      - name: Upload compact WSL2 product evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: runtime-box-wsl2-${{ inputs.model_id }}-${{ github.run_attempt }}
+          path: |
+            .runtime-box-ci/wsl2-product-lifecycle.json
+            .runtime-box-ci/wsl2-product-lifecycle-e2e.json
+          include-hidden-files: true
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Upload bounded failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: runtime-box-wsl2-diagnostics-${{ inputs.model_id }}-${{ github.run_attempt }}
+          path: |
+            tests/.artifacts/screenshots/
+            tests/.artifacts/tauri-logs/
+          include-hidden-files: true
+          retention-days: 7
+          if-no-files-found: warn

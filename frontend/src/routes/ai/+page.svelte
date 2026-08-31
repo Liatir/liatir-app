@@ -225,7 +225,7 @@
 
 			<div class="border border-border bg-surface rounded-lg px-4 py-3">
 				<p class="text-[10px] font-semibold uppercase text-text-subtle">Detected host</p>
-				<p class="mt-1 text-sm font-semibold text-text">{hardware ? `${hardware.cpuCores} CPU cores${hardware.totalMemoryBytes ? ` · ${fmtBytes(hardware.totalMemoryBytes)} RAM` : ''}${hardware.appleMetal ? ' · Apple Metal' : ''}${hardware.cudaAvailable ? ' · CUDA' : ''}` : 'Hardware detection unavailable'}</p>
+				<p class="mt-1 text-sm font-semibold text-text">{hardware ? `${hardware.cpuCores} CPU cores${hardware.totalMemoryBytes ? ` · ${fmtBytes(hardware.totalMemoryBytes)} RAM` : ''}${hardware.appleMetal ? ' · Apple Metal' : ''}${hardware.cudaAvailable ? ' · CUDA' : ''}${hardware.wsl2Available ? ' · WSL2' : ''}` : 'Hardware detection unavailable'}</p>
 			</div>
 
 			<div class="relative max-w-md">

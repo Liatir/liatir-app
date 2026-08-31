@@ -37,6 +37,9 @@ export interface AIHardwareInfo {
   appleMetal: boolean;
   cudaAvailable: boolean | null;
   nvidiaDriverVersion?: string | null;
+  wsl2Available: boolean;
+  wslDistribution?: string | null;
+  wslError?: string | null;
 }
 
 export type AIRuntimeStatus = LiatirRuntimeComponentStatus;

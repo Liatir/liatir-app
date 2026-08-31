@@ -45,6 +45,8 @@ pub mod execution_resources;
 pub mod ai_hardware;
 pub mod ai_runtime;
 pub mod runtime_boxes;
+#[cfg_attr(not(target_os = "windows"), allow(dead_code))]
+pub(crate) mod runtime_box_wsl;
 pub mod python_env;
 pub mod visual_capture;
 pub mod plugin_log;

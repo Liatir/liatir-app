@@ -66,7 +66,7 @@ jobs:
         with:
           targets: x86_64-unknown-linux-musl
 
-      - name: Build the dependency-free WSL2 Scrollcase consumer
+      - name: Build the statically linked WSL2 Scrollcase consumer
         if: matrix.target-id == 'linux-x86_64-cpu'
         run: npm run native-tools:wsl-consumer:build
 

@@ -100,6 +100,16 @@ the two validated Phase 2 targets: MHCflurry `macos-aarch64-metal` and pVACseq
 legal, build, scientific, native and packaged-product lifecycle gate has passed. Paid GPU CI still
 requires its own explicit approval, and planned or unvalidated targets remain outside this authority.
 
+### Linux and WSL2 scope extension — required 2026-08-30
+
+The product owner requires MHCflurry and pVACseq on native Linux x86_64 and in the native Windows
+x86_64 app through WSL2. Phase 2 is therefore reopened beyond the completed macOS scope. The two
+Linux CPU recipes are the only distribution artifacts: WSL2 must consume those exact signed Linux
+payloads rather than introduce parallel Windows builds. Completion requires native Linux scientific
+and product release evidence, a shared Windows-to-WSL2 Runtime Box lifecycle in the app, and real
+Windows product evidence for install, run, Jobs, Results, provenance, rollback/removal and offline
+execution. No CUDA work is authorized or needed for this extension.
+
 ### Runtime Box
 
 - Box MHCflurry standalone con PyTorch, modelli Class I binding/processing/presentation e asset già inclusi: nessun `mhcflurry-downloads fetch` durante l’uso.

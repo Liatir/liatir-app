@@ -11,9 +11,7 @@
 //! every platform. Only the calls into `wsl.exe` are Windows-only, which is why
 //! `helpers/mod.rs` allows dead code for this module off Windows.
 
-#[cfg(target_os = "windows")]
 use std::io::Write;
-#[cfg(target_os = "windows")]
 use std::process::{Command, Output, Stdio};
 
 /// Accept only distribution names WSL itself can name on a command line.
@@ -89,7 +87,6 @@ pub(crate) fn validate_mapped_paths(mapped: &[String], expected: usize) -> Resul
     Ok(())
 }
 
-#[cfg(target_os = "windows")]
 pub(crate) fn run_wsl(distribution: Option<&str>, command: &[String]) -> Result<Output, String> {
     Command::new("wsl.exe")
         .args(wsl_command_args(distribution, command))
@@ -97,7 +94,6 @@ pub(crate) fn run_wsl(distribution: Option<&str>, command: &[String]) -> Result<
         .map_err(|error| format!("Could not start WSL2 through wsl.exe: {error}"))
 }
 
-#[cfg(target_os = "windows")]
 pub(crate) fn run_wsl_with_input(
     distribution: Option<&str>,
     command: &[String],
@@ -126,7 +122,6 @@ pub(crate) fn run_wsl_with_input(
     Ok(output)
 }
 
-#[cfg(target_os = "windows")]
 pub(crate) fn combined_output(output: &Output) -> String {
     let stdout = String::from_utf8_lossy(&output.stdout);
     let stderr = String::from_utf8_lossy(&output.stderr);
@@ -144,7 +139,6 @@ pub(crate) fn combined_output(output: &Output) -> String {
 /// Asking `wslpath` instead of rewriting `C:\` into `/mnt/c` in Rust is the
 /// whole point: mount points are configurable per machine, so the only authority
 /// on where a Windows drive appears is the distribution itself.
-#[cfg(target_os = "windows")]
 pub(crate) fn map_host_paths_to_wsl(
     distribution: &str,
     host_paths: &[String],
@@ -184,6 +178,76 @@ pub(crate) fn map_host_paths_to_wsl(
         .collect::<Vec<_>>();
     validate_mapped_paths(&mapped, host_paths.len())?;
     Ok(mapped)
+}
+
+/// Select and validate the WSL2 distribution used for Linux Runtime Components.
+///
+/// The payloads are x86_64 Linux boxes and tracked Jobs need `setsid` plus `kill` so cancellation
+/// reaches the whole scientific process tree instead of only terminating the Windows launcher.
+pub(crate) fn require_runtime_box_distribution() -> Result<String, String> {
+    let configured = std::env::var("LIATIR_WSL_DISTRIBUTION")
+        .ok()
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty());
+    if configured
+        .as_deref()
+        .is_some_and(|value| !valid_wsl_distribution(value))
+    {
+        return Err("LIATIR_WSL_DISTRIBUTION contains unsupported characters.".into());
+    }
+    const PROBE: &str = r#"printf 'distribution=%s\n' "$WSL_DISTRO_NAME"
+printf 'architecture=%s\n' "$(uname -m)"
+printf 'kernel=%s\n' "$(uname -r)"
+printf 'wslpath=%s\n' "$(command -v wslpath || true)"
+printf 'setsid=%s\n' "$(command -v setsid || true)"
+printf 'sleep=%s\n' "$(command -v sleep || true)"
+if [ -x /bin/kill ]; then printf 'kill=%s\n' /bin/kill; else printf 'kill=\n'; fi"#;
+    let output = run_wsl(
+        configured.as_deref(),
+        &["/bin/sh".into(), "-c".into(), PROBE.into()],
+    )?;
+    if !output.status.success() {
+        return Err(format!(
+            "Liatir needs WSL2 to run this Runtime Box on Windows: {}",
+            combined_output(&output)
+        ));
+    }
+    let fields = String::from_utf8_lossy(&output.stdout)
+        .lines()
+        .filter_map(|line| line.split_once('='))
+        .map(|(key, value)| (key.to_string(), value.to_string()))
+        .collect::<std::collections::HashMap<_, _>>();
+    let distribution = fields
+        .get("distribution")
+        .map(String::as_str)
+        .filter(|value| valid_wsl_distribution(value))
+        .map(str::to_string)
+        .or(configured)
+        .ok_or("WSL2 did not report a usable distribution.")?;
+    let architecture = fields
+        .get("architecture")
+        .map(String::as_str)
+        .unwrap_or("unknown");
+    let kernel = fields.get("kernel").map(String::as_str).unwrap_or_default();
+    let mut problems = Vec::new();
+    if architecture != "x86_64" {
+        problems.push(format!("it reports {architecture}, not x86_64"));
+    }
+    if !kernel.to_ascii_lowercase().contains("wsl2") {
+        problems.push("it is not running a WSL2 kernel".to_string());
+    }
+    for utility in ["wslpath", "setsid", "sleep", "kill"] {
+        if !fields.get(utility).is_some_and(|path| path.starts_with('/')) {
+            problems.push(format!("{utility} is unavailable"));
+        }
+    }
+    if !problems.is_empty() {
+        return Err(format!(
+            "WSL2 distribution {distribution} cannot run this Runtime Box: {}.",
+            problems.join("; ")
+        ));
+    }
+    Ok(distribution)
 }
 
 #[cfg(test)]

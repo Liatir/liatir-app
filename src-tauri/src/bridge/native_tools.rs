@@ -177,19 +177,45 @@ fn verify_platform_resources(resource: &Resources) -> Result<String, String> {
     let digest = verified_archive_digest(resource)?;
     #[cfg(target_os = "windows")]
     {
-        if EMBEDDED_WSL_CONSUMER_SHA256.is_empty() {
-            return Err("This build has no compiled-in WSL2 consumer identity.".into());
-        }
-        let bytes = std::fs::read(&resource.wsl_consumer)
-            .map_err(|error| format!("Cannot read the WSL2 Scrollcase consumer: {error}"))?;
-        let actual = format!("{:x}", Sha256::digest(bytes));
-        if actual != EMBEDDED_WSL_CONSUMER_SHA256 {
-            return Err(
-                "The WSL2 Scrollcase consumer does not match this application build.".into(),
-            );
-        }
+        verify_wsl_consumer_path(&resource.wsl_consumer)?;
     }
     Ok(digest)
+}
+
+#[cfg(target_os = "windows")]
+fn verify_wsl_consumer_path(path: &Path) -> Result<(), String> {
+    if EMBEDDED_WSL_CONSUMER_SHA256.is_empty() {
+        return Err("This build has no compiled-in WSL2 consumer identity.".into());
+    }
+    let bytes = std::fs::read(path)
+        .map_err(|error| format!("Cannot read the WSL2 Scrollcase consumer: {error}"))?;
+    let actual = format!("{:x}", Sha256::digest(bytes));
+    if actual != EMBEDDED_WSL_CONSUMER_SHA256 {
+        return Err("The WSL2 Scrollcase consumer does not match this application build.".into());
+    }
+    Ok(())
+}
+
+/// The same static, build-bound Scrollcase consumer is shared by bundled Native Tools and
+/// install-on-demand Runtime Components. Returning it without requiring the Native Tools archive
+/// keeps the generic Runtime Box lifecycle independent from that payload.
+pub(crate) fn verified_wsl_consumer(app: &AppHandle) -> Result<PathBuf, String> {
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = app;
+        return Err("The WSL2 Scrollcase consumer is available only on Windows.".into());
+    }
+    #[cfg(target_os = "windows")]
+    {
+        let path = resource_root(app)
+            .ok_or("The WSL2 Scrollcase consumer is missing from this installation.")?
+            .join(WSL_CONSUMER);
+        if !path.is_file() {
+            return Err("The WSL2 Scrollcase consumer is missing from this installation.".into());
+        }
+        verify_wsl_consumer_path(&path)?;
+        Ok(path)
+    }
 }
 
 #[derive(Debug, Clone, Serialize)]

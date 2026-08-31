@@ -1,6 +1,13 @@
 # Current project status
 
-## Oncology Phase 2 is published and active for the validated targets (2026-08-30)
+## Oncology Phase 2 Linux and WSL2 expansion is in progress (2026-08-30)
+
+The product owner now requires both oncology components on native Linux x86_64 and in the native
+Windows x86_64 app through WSL2. The existing macOS publications remain complete. This is not only a
+catalog expansion: the current Runtime Box installer deliberately rejects Linux payloads on Windows,
+so WSL2 needs a shared install, execution, status, rollback and removal lifecycle plus a real Windows
+product proof before either Linux payload can be advertised for that environment. No CUDA target is
+part of this extension.
 
 The product owner explicitly authorized protected production publication and active product-catalog
 exposure for the validated MHCflurry `macos-aarch64-metal` and pVACseq `macos-aarch64-cpu` targets.

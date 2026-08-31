@@ -43,6 +43,10 @@ describe('Runtime Box CI cost controls', () => {
     const productLifecycle = readFileSync(resolve('scripts/run-runtime-box-product-lifecycle.mjs'), 'utf8');
     const releaseWorkflow = readFileSync(resolve('.github/workflows/runtime-box-release.yml'), 'utf8');
     const windowsProductSmoke = readFileSync(resolve('.github/workflows/runtime-box-windows-product-smoke.yml'), 'utf8');
+    const wsl2ProductLifecycle = readFileSync(
+      resolve('.github/workflows/runtime-box-wsl2-product-lifecycle.yml'),
+      'utf8',
+    );
     const nativeBridgeE2E = readFileSync(resolve('tests/e2e/specs/native-bridge.e2e.mjs'), 'utf8');
     const tauriProcessSupport = readFileSync(resolve('tests/e2e/support/tauri-process.mjs'), 'utf8');
     // Every job that runs a Runtime Box script on a bare ephemeral runner must install
@@ -159,8 +163,9 @@ describe('Runtime Box CI cost controls', () => {
       aiRuntime.indexOf('pub async fn lia_ai_python_run'),
     );
     expect(componentInlineRun).toContain(
-      'runtime_box_activation_metadata_for_component(&app, component_kind, &runtime_id)?;',
+      'runtime_box_activation_metadata_for_component(&app, component_kind, &runtime_id)?',
     );
+    expect(componentInlineRun).toContain('Runtime Box activation metadata is missing');
     const inlineRun = aiRuntime.slice(aiRuntime.indexOf('pub async fn lia_ai_python_run'));
     expect(inlineRun).toContain('lia_runtime_component_python_run(');
     expect(inlineRun).toContain('RuntimeComponentKind::AiModel');
@@ -187,6 +192,25 @@ describe('Runtime Box CI cost controls', () => {
     expect(windowsProductSmoke).toContain('runs-on: liatir-windows-selfhosted');
     expect(windowsProductSmoke).toContain('timeout-minutes: 40');
     expect(windowsProductSmoke).toContain('npm run test:tauri:prepare');
+    expect(wsl2ProductLifecycle).toContain('workflow_dispatch:');
+    expect(wsl2ProductLifecycle).not.toContain('push:');
+    expect(wsl2ProductLifecycle).toContain('runs-on: liatir-windows-selfhosted');
+    expect(wsl2ProductLifecycle).toContain('native_tools_run_id:');
+    expect(wsl2ProductLifecycle).toContain('actions/download-artifact@v4');
+    expect(wsl2ProductLifecycle).toContain('https://models.liatir.com/v1');
+    expect(wsl2ProductLifecycle).toContain('LIATIR_RUNTIME_BOX_TARGET_ID: linux-x86_64-cpu');
+    expect(wsl2ProductLifecycle).toContain('wsl2-product-lifecycle.json');
+    expect(wsl2ProductLifecycle).not.toContain('wrangler');
+    for (const specPath of ['runtime-box-mhcflurry-native', 'runtime-box-pvactools-native']) {
+      const spec = readFileSync(resolve(`tests/e2e/specs/${specPath}.e2e.mjs`), 'utf8');
+      for (const phase of [
+        'install', 'replacement', 'rollback', 'cancellation', 'realInference', 'jobs',
+        'results', 'provenance', 'offline', 'removal', 'resultArtifactsSurvivedRemoval',
+      ]) {
+        expect(spec, `${specPath} lifecycle receipt lacks ${phase}`).toContain(`${phase}: 'passed'`);
+      }
+      expect(spec).toContain("hostEnvironment: EXPECTED_HOST_ENVIRONMENT");
+    }
     expect(windowsProductSmoke).toContain('tests/e2e/specs/native-bridge.e2e.mjs');
     expect(windowsProductSmoke).not.toContain('tests/e2e/specs/runtime-box-native.e2e.mjs');
     expect(windowsProductSmoke).toContain('.runtime-box-ci/windows-product-startup-e2e.json');

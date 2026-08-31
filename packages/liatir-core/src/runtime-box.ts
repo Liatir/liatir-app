@@ -52,7 +52,7 @@ export type LiatirRuntimeBoxCompatibility = Omit<
  */
 export interface LiatirRuntimeBoxTargetCandidate {
   target: LiatirRuntimeBoxTarget;
-  /** Native is required for current desktop selection; windows-wsl2 is future evidence only. */
+  /** Execution environments validated for this exact payload. */
   hostEnvironments: readonly LiatirRuntimeBoxHostEnvironment[];
   /** Minimum installed memory in decimal gigabytes (1 GB = 1,000,000,000 bytes). */
   minRamGb?: number;
@@ -98,6 +98,8 @@ export type LiatirSignedRuntimeBoxDocument = SignedBoxDocument;
 export interface LiatirRuntimeBoxActivationMetadata {
   schemaVersion: typeof LIATIR_RUNTIME_BOX_SCHEMA_VERSION;
   selectedTarget: LiatirRuntimeBoxTarget;
+  /** Omitted only by Runtime Boxes installed before WSL2 component execution was introduced. */
+  hostEnvironment?: LiatirRuntimeBoxHostEnvironment;
   release: LiatirRuntimeBoxReleaseManifest;
   /** Exact verified signing envelope persisted for offline re-verification before dispatch. */
   signedRelease: LiatirSignedRuntimeBoxDocument;

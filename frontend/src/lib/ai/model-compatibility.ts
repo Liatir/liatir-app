@@ -70,6 +70,7 @@ function detectedHostLabel(hardware: AIHardwareInfo): string {
     );
   }
   if (hardware.cudaAvailable !== true) accelerators.push('CUDA not detected');
+  if (hardware.wsl2Available) accelerators.push('WSL2 available');
   return `${osLabel(hardware.os)} ${hardware.arch}${accelerators.length ? ` with ${accelerators.join(' and ')}` : ''}`;
 }
 
@@ -91,10 +92,66 @@ function runtimeBoxInstallBlock(
     };
   }
 
-  const platformCandidates = candidates.filter(
-    (candidate) => candidate.target.platform === hardware.os,
+  const nativeCandidates = candidates.filter(
+    (candidate) => candidate.target.platform === hardware.os
+      && candidate.target.arch === hardware.arch
+      && candidate.hostEnvironments.includes('native'),
   );
-  if (platformCandidates.length === 0) {
+  const wslCandidates = candidates.filter(
+    (candidate) => hardware.os === 'windows'
+      && hardware.arch === 'x86_64'
+      && candidate.target.platform === 'linux'
+      && candidate.target.arch === 'x86_64'
+      && candidate.target.accelerator === 'cpu'
+      && candidate.hostEnvironments.includes('windows-wsl2'),
+  );
+  if (nativeCandidates.length === 0 && wslCandidates.length > 0 && !hardware.wsl2Available) {
+    return {
+      kind: 'runtime-target',
+      summary: 'WSL2 is required',
+      required: 'A working x86_64 WSL2 Linux distribution',
+      detected: hardware.wslError || 'WSL2 is not ready',
+      reason: `This ${componentLabel} uses its signed Linux Runtime Box through WSL2 on Windows. Install or repair WSL2, then retry.`,
+      details: [hardware.wslError || 'Liatir could not start a compatible WSL2 distribution.'],
+    };
+  }
+  const runnableCandidates = [
+    ...nativeCandidates,
+    ...(hardware.wsl2Available ? wslCandidates : []),
+  ];
+  if (runnableCandidates.length === 0) {
+    const platformCandidates = candidates.filter(
+      (candidate) => candidate.target.platform === hardware.os,
+    );
+    if (platformCandidates.length > 0) {
+      const architectureCandidates = platformCandidates.filter(
+        (candidate) => candidate.target.arch === hardware.arch,
+      );
+      if (architectureCandidates.length === 0) {
+        const requiredArchitectures = [
+          ...new Set(platformCandidates.map((candidate) => candidate.target.arch)),
+        ];
+        return {
+          kind: 'host-arch',
+          summary: 'This model is not available on this architecture',
+          required: requiredArchitectures.join(', '),
+          detected: `${osLabel(hardware.os)} ${hardware.arch}`,
+          reason: `This ${componentLabel} needs a published ${requiredArchitectures.join(' or ')} Runtime Box.`,
+          details: [
+            `Detected architecture: ${hardware.arch}`,
+            `Published architectures: ${requiredArchitectures.join(', ')}`,
+          ],
+        };
+      }
+      return {
+        kind: 'runtime-target',
+        summary: 'A compatible Runtime Box is not available',
+        required: `${osLabel(hardware.os)} ${hardware.arch}`,
+        detected: detectedHostLabel(hardware),
+        reason: `This ${componentLabel} has no validated native or WSL2 Runtime Box for this computer.`,
+        details: ['The published payload does not declare a supported execution environment.'],
+      };
+    }
     const requiredPlatforms = [
       ...new Set(candidates.map((candidate) => candidate.target.platform)),
     ];
@@ -111,45 +168,10 @@ function runtimeBoxInstallBlock(
     };
   }
 
-  const architectureCandidates = platformCandidates.filter(
-    (candidate) => candidate.target.arch === hardware.arch,
-  );
-  if (architectureCandidates.length === 0) {
-    const requiredArchitectures = [
-      ...new Set(platformCandidates.map((candidate) => candidate.target.arch)),
-    ];
-    return {
-      kind: 'host-arch',
-      summary: 'This model is not available on this architecture',
-      required: requiredArchitectures.join(', '),
-      detected: `${osLabel(hardware.os)} ${hardware.arch}`,
-      reason: `This ${componentLabel} needs a published ${requiredArchitectures.join(' or ')} Runtime Box.`,
-      details: [
-        `Detected architecture: ${hardware.arch}`,
-        `Published architectures: ${requiredArchitectures.join(', ')}`,
-      ],
-    };
-  }
-
-  const nativeCandidates = architectureCandidates.filter((candidate) =>
-    candidate.hostEnvironments.includes('native'),
-  );
-  if (nativeCandidates.length === 0) {
-    return {
-      kind: 'runtime-target',
-      summary: 'A native Runtime Box is not available',
-      required: `Native ${osLabel(hardware.os)} ${hardware.arch}`,
-      detected: detectedHostLabel(hardware),
-      reason:
-        `This ${componentLabel} has no native Runtime Box for this computer. WSL2 targets are not selected.`,
-      details: ['Only native Runtime Boxes can be installed by the current desktop runtime.'],
-    };
-  }
-
   const memoryBytes = hardware.totalMemoryBytes;
   let minimumMemoryGb: number | null = null;
   let minimumDriver: string | null = null;
-  for (const candidate of nativeCandidates) {
+  for (const candidate of runnableCandidates) {
     if (
       candidate.minRamGb &&
       memoryBytes !== null &&
@@ -203,10 +225,10 @@ function runtimeBoxInstallBlock(
   return {
     kind: 'runtime-target',
     summary: 'No compatible Runtime Box is available',
-    required: `Native ${osLabel(hardware.os)} ${hardware.arch}`,
+    required: `A validated ${osLabel(hardware.os)} ${hardware.arch} execution path`,
     detected: detectedHostLabel(hardware),
     reason: 'No published Runtime Box target is compatible with this computer.',
-    details: ['Windows is never routed to a Linux or WSL2 Runtime Box by this installer.'],
+    details: ['No native or WSL2 candidate satisfies the detected hardware requirements.'],
   };
 }
 

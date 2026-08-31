@@ -26,6 +26,9 @@ const VERSION = process.env.LIATIR_RUNTIME_BOX_EXPECTED_VERSION ?? '7.1.2-beta.1
 const REGISTRY_BASE_URL = process.env.LIATIR_RUNTIME_BOX_REGISTRY_BASE_URL
   ?? 'https://models.liatir.com/v1';
 const PRODUCT_EVIDENCE_PATH = process.env.LIATIR_RUNTIME_BOX_PRODUCT_EVIDENCE ?? null;
+const EXPECTED_HOST_ENVIRONMENT = process.platform === 'win32' && TARGET_ID.startsWith('linux-')
+  ? 'windows-wsl2'
+  : 'native';
 
 const REDUCE_FIXTURE_SCRIPT = String.raw`
 import json
@@ -88,11 +91,37 @@ export const tests = [{
     expect(installError).toBe(null);
     const installed = await runtimeBoxInstallResult(browser, downloadId);
     expect(installed.version).toBe(VERSION);
+    expect(installed.activation.hostEnvironment).toBe(EXPECTED_HOST_ENVIRONMENT);
+
+    const replacementId = `runtime-box-pvactools-replacement-${Date.now()}`;
+    await startRuntimeBoxInstall(browser, {
+      componentKind: 'tool-runtime', componentId: MODEL_ID, boxId: BOX_ID,
+      channel: 'beta', registryBaseUrl: REGISTRY_BASE_URL, targetCandidates,
+      downloadId: replacementId,
+    });
+    await waitForRuntimeBoxInstall(browser, replacementId, {
+      archiveSizeBytes: installed.activation.release.archive.sizeBytes,
+      timeoutMsg: 'pVACtools Runtime Box replacement did not complete',
+    });
+    const replacementError = await runtimeBoxInstallError(browser, replacementId);
+    const replacementStatus = await runtimeBoxInstallStatus(browser, replacementId);
+    if (replacementStatus !== 'done') {
+      throw new Error(`pVACtools replacement failed with status ${replacementStatus}: ${replacementError ?? 'unknown error'}`);
+    }
+    expect(replacementError).toBe(null);
+    const replacement = await runtimeBoxInstallResult(browser, replacementId);
+    expect(replacement.rollbackAvailable).toBe(true);
+    const rollback = await browser.execute(
+      async (input) => window.Liatir.invoke('lia_runtime_box_rollback', input),
+      { componentKind: 'tool-runtime', runtimeId: RUNTIME_ID },
+    );
+    expect(rollback.restored).toBe(true);
 
     const fixtureDir = path.join(storage.dataPath, 'workspaces', '__test__', 'pvactools-native');
     const fixturePath = path.join(fixtureDir, 'official-reduced.vcf.gz');
     fs.mkdirSync(fixtureDir, { recursive: true });
-    const officialVcf = path.join(
+    const joinRuntimePath = installed.runtimeDir.startsWith('/') ? path.posix.join : path.join;
+    const officialVcf = joinRuntimePath(
       installed.runtimeDir,
       'source/pvactools-wheel/pvactools/tools/pvacseq/example_data/annotated.expression.vcf.gz',
     );
@@ -224,10 +253,11 @@ export const tests = [{
         schemaVersion: 1,
         kind: 'liatir.runtime-box.product-lifecycle-evidence',
         status: 'passed', boxId: BOX_ID, modelId: MODEL_ID, runtimeId: RUNTIME_ID,
-        targetId: TARGET_ID, version: VERSION, jobId: productJob.id, analysisRunId: result.id,
+        targetId: TARGET_ID, hostEnvironment: EXPECTED_HOST_ENVIRONMENT,
+        version: VERSION, jobId: productJob.id, analysisRunId: result.id,
         accelerator: 'CPU', resultArtifactCount: result.outputFiles.length,
         assertions: {
-          install: 'passed', officialFixture: 'passed', cancellation: 'passed', realInference: 'passed',
+          install: 'passed', replacement: 'passed', rollback: 'passed', officialFixture: 'passed', cancellation: 'passed', realInference: 'passed',
           jobs: 'passed', navigationResume: 'passed', results: 'passed', provenance: 'passed',
           offline: 'passed', experimentalDisclaimer: 'passed', removal: 'passed',
           resultArtifactsSurvivedRemoval: 'passed',

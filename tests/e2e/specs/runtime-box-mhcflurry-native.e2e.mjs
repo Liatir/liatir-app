@@ -26,6 +26,9 @@ const VERSION = process.env.LIATIR_RUNTIME_BOX_EXPECTED_VERSION ?? '2.2.1-beta.1
 const REGISTRY_BASE_URL = process.env.LIATIR_RUNTIME_BOX_REGISTRY_BASE_URL
   ?? 'https://models.liatir.com/v1';
 const PRODUCT_EVIDENCE_PATH = process.env.LIATIR_RUNTIME_BOX_PRODUCT_EVIDENCE ?? null;
+const EXPECTED_HOST_ENVIRONMENT = process.platform === 'win32' && TARGET_ID.startsWith('linux-')
+  ? 'windows-wsl2'
+  : 'native';
 
 async function writeAppJson(browser, rel, value) {
   await browser.execute(async ({ file, content }) => window.Liatir.invoke('lia_app_write_text', {
@@ -64,6 +67,31 @@ export const tests = [{
     expect(installError).toBe(null);
     const installed = await runtimeBoxInstallResult(browser, downloadId);
     expect(installed.version).toBe(VERSION);
+    expect(installed.activation.hostEnvironment).toBe(EXPECTED_HOST_ENVIRONMENT);
+
+    const replacementId = `runtime-box-mhcflurry-replacement-${Date.now()}`;
+    await startRuntimeBoxInstall(browser, {
+      componentKind: 'ai-model', componentId: MODEL_ID, boxId: BOX_ID,
+      channel: 'beta', registryBaseUrl: REGISTRY_BASE_URL, targetCandidates,
+      downloadId: replacementId,
+    });
+    await waitForRuntimeBoxInstall(browser, replacementId, {
+      archiveSizeBytes: installed.activation.release.archive.sizeBytes,
+      timeoutMsg: 'MHCflurry Runtime Box replacement did not complete',
+    });
+    const replacementError = await runtimeBoxInstallError(browser, replacementId);
+    const replacementStatus = await runtimeBoxInstallStatus(browser, replacementId);
+    if (replacementStatus !== 'done') {
+      throw new Error(`MHCflurry replacement failed with status ${replacementStatus}: ${replacementError ?? 'unknown error'}`);
+    }
+    expect(replacementError).toBe(null);
+    const replacement = await runtimeBoxInstallResult(browser, replacementId);
+    expect(replacement.rollbackAvailable).toBe(true);
+    const rollback = await browser.execute(
+      async (input) => window.Liatir.invoke('lia_runtime_box_rollback', input),
+      { componentKind: 'ai-model', runtimeId: RUNTIME_ID },
+    );
+    expect(rollback.restored).toBe(true);
 
     const fixtureDir = path.join(storage.dataPath, 'workspaces', '__test__', 'mhcflurry-native');
     const fixturePath = path.join(fixtureDir, 'mhc-native-input.fasta');
@@ -175,10 +203,11 @@ export const tests = [{
         schemaVersion: 1,
         kind: 'liatir.runtime-box.product-lifecycle-evidence',
         status: 'passed', boxId: BOX_ID, modelId: MODEL_ID, runtimeId: RUNTIME_ID,
-        targetId: TARGET_ID, version: VERSION, jobId: productJob.id, analysisRunId: result.id,
+        targetId: TARGET_ID, hostEnvironment: EXPECTED_HOST_ENVIRONMENT,
+        version: VERSION, jobId: productJob.id, analysisRunId: result.id,
         accelerator: summary.accelerator, resultArtifactCount: result.outputFiles.length,
         assertions: {
-          install: 'passed', cancellation: 'passed', realInference: 'passed', jobs: 'passed',
+          install: 'passed', replacement: 'passed', rollback: 'passed', cancellation: 'passed', realInference: 'passed', jobs: 'passed',
           navigationResume: 'passed', results: 'passed', provenance: 'passed', offline: 'passed',
           experimentalDisclaimer: 'passed', removal: 'passed', resultArtifactsSurvivedRemoval: 'passed',
         },

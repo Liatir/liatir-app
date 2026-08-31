@@ -655,7 +655,7 @@
         {
           "targetId": "linux-x86_64-cpu",
           "target": { "platform": "linux", "arch": "x86_64", "accelerator": "cpu" },
-          "hostEnvironments": ["native"],
+          "hostEnvironments": ["native", "windows-wsl2"],
           "recipeId": "mhcflurry-class1-presentation-linux-x86_64-cpu",
           "runnerProfileId": "linux-x64-selfhosted",
           "status": "planned",

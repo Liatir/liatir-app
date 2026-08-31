@@ -8,11 +8,15 @@ use serde_json::Value;
 use tauri::AppHandle;
 
 use super::ai_hardware::{nvidia_capability, total_memory_bytes};
+#[cfg(target_os = "windows")]
+use super::python_env::env_dir;
 use super::python_env::{run_in_env, spawn_in_env, status_env, PythonEnvPackage, PythonRunResult};
 use super::runtime_boxes::{
     runtime_box_activation_metadata_for_component, runtime_component_update_status,
     RuntimeComponentKind, RuntimeComponentUpdateRequest, RuntimeComponentUpdateStatus,
 };
+#[cfg(target_os = "windows")]
+use super::runtime_boxes::{runtime_box_host_environment, RuntimeBoxHostEnvironment};
 
 // AI-facing names for the generic execution contracts. These are aliases, not copies.
 pub type AiRuntimePackage = PythonEnvPackage;
@@ -34,6 +38,9 @@ pub struct AiHardwareInfo {
     pub cuda_available: Option<bool>,
     /// Exact NVIDIA driver reported by the same probe used by Runtime Box selection.
     pub nvidia_driver_version: Option<String>,
+    pub wsl2_available: bool,
+    pub wsl_distribution: Option<String>,
+    pub wsl_error: Option<String>,
 }
 
 /// Whether a runtime is ready to use, and if not, precisely what it is missing — so the UI can
@@ -70,6 +77,10 @@ pub struct RuntimeComponentStatus {
 #[tauri::command]
 pub fn lia_ai_hardware_info() -> Result<AiHardwareInfo, String> {
     let nvidia = nvidia_capability();
+    #[cfg(target_os = "windows")]
+    let wsl = crate::helpers::wsl::require_runtime_box_distribution();
+    #[cfg(not(target_os = "windows"))]
+    let wsl: Result<String, String> = Ok(String::new());
 
     Ok(AiHardwareInfo {
         os: std::env::consts::OS.to_string(),
@@ -84,6 +95,15 @@ pub fn lia_ai_hardware_info() -> Result<AiHardwareInfo, String> {
         apple_metal: cfg!(target_os = "macos"),
         cuda_available: nvidia.as_ref().map(|_| true),
         nvidia_driver_version: nvidia.map(|capability| capability.driver_version),
+        wsl2_available: cfg!(target_os = "windows") && wsl.is_ok(),
+        wsl_distribution: cfg!(target_os = "windows")
+            .then(|| wsl.as_ref().ok().cloned())
+            .flatten(),
+        wsl_error: if cfg!(target_os = "windows") {
+            wsl.err()
+        } else {
+            None
+        },
     })
 }
 
@@ -110,6 +130,72 @@ async fn runtime_component_status(
     packages: Vec<AiRuntimePackage>,
     update: Option<RuntimeComponentUpdateRequest>,
 ) -> Result<RuntimeComponentStatus, String> {
+    let activation_result =
+        runtime_box_activation_metadata_for_component(&app, component_kind, &runtime_id);
+    #[cfg(target_os = "windows")]
+    if let Ok(Some(activation)) = activation_result.as_ref() {
+        if runtime_box_host_environment(activation)? == RuntimeBoxHostEnvironment::WindowsWsl2 {
+            let app_for_task = app.clone();
+            let runtime_id_for_task = runtime_id.clone();
+            let packages_for_task = packages.clone();
+            let activation_for_task = activation.clone();
+            let status = tauri::async_runtime::spawn_blocking(move || {
+                super::runtime_box_wsl::status(
+                    &app_for_task,
+                    component_kind,
+                    &runtime_id_for_task,
+                    &packages_for_task,
+                    &activation_for_task,
+                )
+            })
+            .await
+            .map_err(|error| error.to_string())?;
+            let (runtime_dir, python_path, installed, missing_packages, error, size_bytes) =
+                match status {
+                    Ok(status) => (
+                        status.runtime_dir,
+                        Some(status.python_path),
+                        status.missing_packages.is_empty(),
+                        status.missing_packages,
+                        None,
+                        Some(status.size_bytes),
+                    ),
+                    Err(error) => (
+                        env_dir(&app, component_kind.runtime_root(), &runtime_id)?
+                            .to_string_lossy()
+                            .to_string(),
+                        None,
+                        false,
+                        Vec::new(),
+                        Some(error),
+                        None,
+                    ),
+                };
+            let update = if installed && error.is_none() {
+                match update {
+                    Some(request) => Some(
+                        runtime_component_update_status(&app, component_kind, &runtime_id, request)
+                            .await?,
+                    ),
+                    None => None,
+                }
+            } else {
+                None
+            };
+            return Ok(RuntimeComponentStatus {
+                component_kind,
+                runtime_id,
+                runtime_dir,
+                python_path,
+                installed,
+                missing_packages,
+                error,
+                size_bytes,
+                activation: Some(activation.clone()),
+                update,
+            });
+        }
+    }
     // Cloned because the closure moves it, while the original is needed to build the response.
     let runtime_id_for_task = runtime_id.clone();
     let app_for_task = app.clone();
@@ -124,15 +210,14 @@ async fn runtime_component_status(
     })
     .await
     .map_err(|e| e.to_string())??;
-    let activation =
-        match runtime_box_activation_metadata_for_component(&app, component_kind, &runtime_id) {
-            Ok(value) => value,
-            Err(error) => {
-                status.installed = false;
-                status.error = Some(error);
-                None
-            }
-        };
+    let activation = match activation_result {
+        Ok(value) => value,
+        Err(error) => {
+            status.installed = false;
+            status.error = Some(error);
+            None
+        }
+    };
     let update = if status.installed && status.error.is_none() {
         match update {
             Some(request) => Some(
@@ -218,10 +303,38 @@ pub async fn lia_runtime_component_python_spawn(
         serde_json::to_value(component_kind).map_err(|error| error.to_string())?,
     );
     metadata_map.insert("runtimeId".to_string(), Value::String(runtime_id.clone()));
-    if let Some(activation) =
-        runtime_box_activation_metadata_for_component(&app, component_kind, &runtime_id)?
+    let activation =
+        runtime_box_activation_metadata_for_component(&app, component_kind, &runtime_id)?;
+    if let Some(activation) = activation.as_ref() {
+        metadata_map.insert("runtimeBoxActivation".to_string(), activation.clone());
+    }
+
+    #[cfg(target_os = "windows")]
+    if activation
+        .as_ref()
+        .map(runtime_box_host_environment)
+        .transpose()?
+        == Some(RuntimeBoxHostEnvironment::WindowsWsl2)
     {
-        metadata_map.insert("runtimeBoxActivation".to_string(), activation);
+        return super::runtime_box_wsl::spawn_python(
+            app,
+            component_kind,
+            runtime_id.clone(),
+            script,
+            args,
+            input_json,
+            workspace_id,
+            label.unwrap_or_else(|| match component_kind {
+                RuntimeComponentKind::AiModel => format!("AI runtime: {runtime_id}"),
+                RuntimeComponentKind::ToolRuntime => format!("Tool runtime: {runtime_id}"),
+            }),
+            match component_kind {
+                RuntimeComponentKind::AiModel => "ai-python".to_string(),
+                RuntimeComponentKind::ToolRuntime => "tool-runtime-python".to_string(),
+            },
+            Value::Object(metadata_map),
+        )
+        .await;
     }
 
     spawn_in_env(
@@ -292,7 +405,27 @@ pub async fn lia_runtime_component_python_run(
 ) -> Result<AiPythonRunResult, String> {
     // Keep the inline path under the same Runtime Box gate as tracked Jobs. Without this check a
     // schema-v1 activation blocked by spawn could still execute here.
-    runtime_box_activation_metadata_for_component(&app, component_kind, &runtime_id)?;
+    let activation =
+        runtime_box_activation_metadata_for_component(&app, component_kind, &runtime_id)?
+            .ok_or_else(|| "Runtime Box activation metadata is missing".to_string())?;
+    #[cfg(not(target_os = "windows"))]
+    let _ = &activation;
+    #[cfg(target_os = "windows")]
+    if runtime_box_host_environment(&activation)? == RuntimeBoxHostEnvironment::WindowsWsl2 {
+        return tauri::async_runtime::spawn_blocking(move || {
+            super::runtime_box_wsl::run_python(
+                &app,
+                component_kind,
+                &runtime_id,
+                &script,
+                &args,
+                &input_json,
+                timeout_seconds,
+            )
+        })
+        .await
+        .map_err(|error| error.to_string())?;
+    }
     tauri::async_runtime::spawn_blocking(move || {
         run_in_env(
             app,
