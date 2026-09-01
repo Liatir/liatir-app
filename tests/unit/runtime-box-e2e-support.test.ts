@@ -216,6 +216,48 @@ describe('Runtime Box product E2E support', () => {
     expect(cudaArchiveTimeout).toBeGreaterThan(cpuArchiveTimeout);
   });
 
+  it('discovers the first install size from progress before choosing its timeout', async () => {
+    const downloadId = 'runtime-box-first-install-timeout-test';
+    const archiveSizeBytes = 1_167_379_913;
+    let waitCall = 0;
+    const observedOptions: Array<{ timeout?: number; interval?: number; timeoutMsg?: string }> = [];
+    (globalThis as any).window = {
+      __liatirRuntimeBoxInstall: {
+        [downloadId]: {
+          status: 'running',
+          error: null,
+          progress: [{ bytesDownloaded: 16_354_657, bytesTotal: archiveSizeBytes, done: false }],
+        },
+      },
+    };
+    const browser = {
+      execute: async (fn: (input: unknown) => unknown, input: unknown) => fn(input),
+      waitUntil: async (condition: () => Promise<boolean>, options: typeof observedOptions[number]) => {
+        observedOptions.push(options);
+        waitCall += 1;
+        if (waitCall === 1) {
+          expect(await condition()).toBe(true);
+          return;
+        }
+        throw new Error('fixture timeout');
+      },
+    };
+
+    await expect(waitForRuntimeBoxInstall(browser, downloadId, {
+      timeoutMsg: 'First install did not complete',
+    })).rejects.toThrow(`\"bytesTotal\":${archiveSizeBytes}`);
+    expect(observedOptions[0]).toEqual({
+      timeout: 30_000,
+      interval: 500,
+      timeoutMsg: 'First install did not complete: archive size was not reported',
+    });
+    expect(observedOptions[1]).toEqual({
+      timeout: runtimeBoxInstallTimeoutMs(archiveSizeBytes),
+      interval: 1_000,
+      timeoutMsg: 'First install did not complete',
+    });
+  });
+
   it('reports the last install progress when a size-aware wait expires', async () => {
     const downloadId = 'runtime-box-timeout-test';
     const archiveSizeBytes = 3_079_059_631;

@@ -7,6 +7,10 @@ import { describe, expect, it } from 'vitest';
 import { MHCFLURRY_EPITOPE_SCRIPT } from '../../frontend/src/lib/tools/ai/python-scripts/mhcflurry-epitope';
 import { PVACSEQ_SCRIPT } from '../../frontend/src/lib/tools/oncology/python-scripts/pvacseq';
 
+const PYTHON = ['python3', 'python'].find((command) => (
+  spawnSync(command, ['-c', 'import sys'], { encoding: 'utf8' }).status === 0
+)) ?? 'python3';
+
 function minimalPvacRuntime(root: string): void {
   for (const file of [
     'source/pvactools-wheel/pvactools/tools/pvacseq/run.py',
@@ -28,7 +32,7 @@ function runPvacPreflight(vcf: string, tumorSample = 'TUMOR') {
   minimalPvacRuntime(root);
   const input = join(root, 'input.vcf');
   writeFileSync(input, vcf);
-  return spawnSync('python3', ['-c', PVACSEQ_SCRIPT], {
+  return spawnSync(PYTHON, ['-c', PVACSEQ_SCRIPT], {
     encoding: 'utf8',
     input: JSON.stringify({
       runtimePath: root,
@@ -95,7 +99,7 @@ function runPvacStub(allele: string) {
   const input = join(root, 'annotated.vcf');
   const output = join(root, 'output');
   writeFileSync(input, annotatedVcf());
-  const result = spawnSync('python3', ['-c', PVACSEQ_SCRIPT], {
+  const result = spawnSync(PYTHON, ['-c', PVACSEQ_SCRIPT], {
     encoding: 'utf8',
     input: JSON.stringify({
       runtimePath: root,
@@ -134,7 +138,7 @@ function runPvacStubWithSpawnedImport() {
   const script = join(root, 'pvacseq.py');
   writeFileSync(input, annotatedVcf());
   writeFileSync(script, PVACSEQ_SCRIPT);
-  const result = spawnSync('python3', [script], {
+  const result = spawnSync(PYTHON, [script], {
     encoding: 'utf8',
     input: JSON.stringify({
       runtimePath: root,
@@ -162,8 +166,8 @@ function runPvacStubWithLongPythonPath() {
   writeFileSync(input, annotatedVcf());
   writeFileSync(script, PVACSEQ_SCRIPT);
 
-  const probe = spawnSync('python3', ['-c', 'import sys; print(sys.executable)'], { encoding: 'utf8' });
-  if (probe.status !== 0) throw new Error(probe.stderr || 'python3 probe failed');
+  const probe = spawnSync(PYTHON, ['-c', 'import sys; print(sys.executable)'], { encoding: 'utf8' });
+  if (probe.status !== 0) throw new Error(probe.stderr || 'Python probe failed');
   const longBin = join(root, 'a'.repeat(120), 'b'.repeat(120));
   mkdirSync(longBin, { recursive: true });
   const longPython = join(longBin, 'python3');
@@ -267,7 +271,7 @@ describe('oncology product Python scripts', () => {
       '',
     ].join('\n')));
     writeFileSync(`${proximal}.tbi`, 'fixture');
-    const result = spawnSync('python3', ['-c', PVACSEQ_SCRIPT], {
+    const result = spawnSync(PYTHON, ['-c', PVACSEQ_SCRIPT], {
       encoding: 'utf8',
       input: JSON.stringify({
         runtimePath: root,
@@ -305,7 +309,7 @@ describe('oncology product Python scripts', () => {
     });
     expect(payload.preview).toEqual([]);
     expect(payload.candidatesPath).toBe(join(output, 'MHC_Class_I/TUMOR.MHC_I.candidates.fasta'));
-    expect(spawnSync('python3', ['-c', `from pathlib import Path; assert Path(${JSON.stringify(payload.candidatesPath)}).read_text() == ""`]).status).toBe(0);
+    expect(spawnSync(PYTHON, ['-c', `from pathlib import Path; assert Path(${JSON.stringify(payload.candidatesPath)}).read_text() == ""`]).status).toBe(0);
   });
 
   it('keeps MHCflurry inputs bounded and uses only explicit bundled models', () => {

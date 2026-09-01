@@ -130,7 +130,7 @@ function sha256File(file) {
 function authoringRevision() {
   const hash = createHash('sha256');
   for (const relative of AUTHORING_SOURCES) {
-    hash.update(fs.readFileSync(path.join(REPO_ROOT, relative)));
+    hash.update(fs.readFileSync(path.join(REPO_ROOT, relative), 'utf8').replace(/\r\n/gu, '\n'));
     hash.update(Buffer.from([0]));
   }
   return hash.digest('hex');

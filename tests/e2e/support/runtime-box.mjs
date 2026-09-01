@@ -11,6 +11,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../.
 const CATALOG = JSON.parse(fs.readFileSync(path.join(ROOT, 'runtime-boxes/catalog.json'), 'utf8'));
 
 const MIN_INSTALL_TIMEOUT_MS = 180_000;
+const INSTALL_SIZE_DISCOVERY_TIMEOUT_MS = 30_000;
 // Eight MiB/s is intentionally below the observed protected-release transfer rate. The fixed
 // allowance covers signature verification, multi-gigabyte ZIP extraction, self-test, and activation.
 const INSTALL_FIXED_OVERHEAD_MS = 180_000;
@@ -159,8 +160,31 @@ export async function runtimeBoxInstallResult(browser, downloadId) {
 
 /** Waits for one install with a size-aware bound and preserves actionable timeout diagnostics. */
 export async function waitForRuntimeBoxInstall(browser, downloadId, options = {}) {
-  const timeout = runtimeBoxInstallTimeoutMs(options.archiveSizeBytes);
   const timeoutMsg = options.timeoutMsg ?? 'Runtime Box install did not complete';
+  let archiveSizeBytes = options.archiveSizeBytes;
+  if (!Number.isFinite(Number(archiveSizeBytes)) || Number(archiveSizeBytes) <= 0) {
+    try {
+      await browser.waitUntil(async () => {
+        const status = await runtimeBoxInstallStatus(browser, downloadId);
+        if (status !== null && status !== 'running') return true;
+        const progress = await runtimeBoxInstallProgress(browser, downloadId);
+        if (Number.isFinite(Number(progress.bytesTotal)) && Number(progress.bytesTotal) > 0) {
+          archiveSizeBytes = progress.bytesTotal;
+          return true;
+        }
+        return false;
+      }, {
+        timeout: INSTALL_SIZE_DISCOVERY_TIMEOUT_MS,
+        interval: 500,
+        timeoutMsg: `${timeoutMsg}: archive size was not reported`,
+      });
+    } catch {
+      // Older fixtures may not report a total. They retain the established minimum bound below.
+    }
+    const status = await runtimeBoxInstallStatus(browser, downloadId);
+    if (status !== null && status !== 'running') return;
+  }
+  const timeout = runtimeBoxInstallTimeoutMs(archiveSizeBytes);
   try {
     await browser.waitUntil(
       async () => (await runtimeBoxInstallStatus(browser, downloadId)) !== 'running',

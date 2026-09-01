@@ -9,6 +9,19 @@ so WSL2 needs a shared install, execution, status, rollback and removal lifecycl
 product proof before either Linux payload can be advertised for that environment. No CUDA target is
 part of this extension.
 
+MHCflurry Linux CPU release `33397148921` passed at exact commit
+`9c002d2f672cd3995ca74d115b0b09e47f7d6fac`; its production evidence and independent public readback
+are pending catalog registration. pVACtools run `33397199542` passed KMS signing, self-test, the
+official reduced scientific fixture, immutable publication and public hash verification, then stopped
+before promotion during the first product install. The install was still healthy at the fixed
+180-second test limit, with `1,151,024,256 / 1,167,379,913` bytes downloaded and no install error.
+The shared E2E helper applied its existing size-aware bound only when the caller already knew the
+archive size, which covered replacement but not the first install. The correction discovers
+`bytesTotal` from the real progress stream before choosing the bound. One fresh pVACtools release
+retry is allowed only after the focused regression, full `test:verify`, clean push and runner
+preflight pass. The failed run did not promote the beta channel; its ephemeral runner and marked root
+were removed.
+
 The product owner explicitly authorized protected production publication and active product-catalog
 exposure for the validated MHCflurry `macos-aarch64-metal` and pVACseq `macos-aarch64-cpu` targets.
 The same authorization applies to future Runtime Boxes only after their exact legal, build,

@@ -51,7 +51,10 @@ function scroll(targetId: string): Record<string, any> {
 }
 
 function sha256(contents: string | Buffer): string {
-  return createHash('sha256').update(contents).digest('hex');
+  const canonical = Buffer.isBuffer(contents)
+    ? Buffer.from(contents.toString('utf8').replace(/\r\n/gu, '\n'))
+    : contents.replace(/\r\n/gu, '\n');
+  return createHash('sha256').update(canonical).digest('hex');
 }
 
 function authoringRevision(): string {
@@ -60,7 +63,7 @@ function authoringRevision(): string {
     '../../runtime-boxes/native-tools/native-tools.json',
     '../../runtime-boxes/native-tools/native-tools-self-test.py',
   ]) {
-    hash.update(readFileSync(new URL(relative, import.meta.url)));
+    hash.update(readFileSync(new URL(relative, import.meta.url), 'utf8').replace(/\r\n/gu, '\n'));
     hash.update(Buffer.from([0]));
   }
   return hash.digest('hex');
