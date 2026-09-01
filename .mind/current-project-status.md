@@ -28,6 +28,13 @@ action, matching the already proven Windows release workflows. A new WSL2 attemp
 regression test, full `test:verify`, clean push and a fresh successful Native Tools run from the new
 exact commit.
 
+After that setup correction passed on the real runner, MHCflurry WSL2 run `33459261959` reached the
+Windows Rust build and exposed a separate ownership error in `native_tools.rs`: the verified archive
+digest was moved into the WSL2 consumer arguments and then reused to record the verified resource.
+No payload install or inference started. The bounded correction passes a clone to the consumer and
+keeps the original digest for process state. Another attempt requires the focused regression, a real
+Windows Rust compile, full `test:verify`, clean push and another exact-commit Native Tools run.
+
 The product owner explicitly authorized protected production publication and active product-catalog
 exposure for the validated MHCflurry `macos-aarch64-metal` and pVACseq `macos-aarch64-cpu` targets.
 The same authorization applies to future Runtime Boxes only after their exact legal, build,

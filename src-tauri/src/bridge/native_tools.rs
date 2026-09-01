@@ -699,7 +699,7 @@ mod windows {
                 mapped[1].clone(),
                 mapped[2].clone(),
                 mapped[3].clone(),
-                digest,
+                digest.clone(),
             ],
         )?;
         if !output.status.success() {

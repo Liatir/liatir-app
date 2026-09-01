@@ -185,4 +185,9 @@ describe('Native Tools Scrollcase box', () => {
     expect(isProvidedByNativeToolsBox('fastqc', 'macos', 'arm64')).toBe(false);
     expect(isProvidedByNativeToolsBox('snpeff', 'macos', 'arm64')).toBe(false);
   });
+
+  it('retains the verified archive digest after passing it to the WSL2 consumer', () => {
+    expect(resolver).toContain('mapped[3].clone(),\n                digest.clone(),');
+    expect(resolver).toContain('= Some(digest);');
+  });
 });
