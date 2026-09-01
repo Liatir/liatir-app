@@ -10,17 +10,15 @@ product proof before either Linux payload can be advertised for that environment
 part of this extension.
 
 MHCflurry Linux CPU release `33397148921` passed at exact commit
-`9c002d2f672cd3995ca74d115b0b09e47f7d6fac`; its production evidence and independent public readback
-are pending catalog registration. pVACtools run `33397199542` passed KMS signing, self-test, the
-official reduced scientific fixture, immutable publication and public hash verification, then stopped
-before promotion during the first product install. The install was still healthy at the fixed
-180-second test limit, with `1,151,024,256 / 1,167,379,913` bytes downloaded and no install error.
-The shared E2E helper applied its existing size-aware bound only when the caller already knew the
-archive size, which covered replacement but not the first install. The correction discovers
-`bytesTotal` from the real progress stream before choosing the bound. One fresh pVACtools release
-retry is allowed only after the focused regression, full `test:verify`, clean push and runner
-preflight pass. The failed run did not promote the beta channel; its ephemeral runner and marked root
-were removed.
+`9c002d2f672cd3995ca74d115b0b09e47f7d6fac`. pVACtools release `33456282626` passed at exact commit
+`7c651d0625bd0bb1d4ceff72c6a1c8300489bcaf` after the first-install timeout was made size-aware and
+covered by regression tests. Both workflows passed KMS signing, self-test, scientific validation,
+the full native product lifecycle, promotion and public readback; independent reads also verified
+both signed channel/release documents and streamed each complete public archive to its expected
+SHA-256 hash. Failed pVACtools run `33397199542` remains the recorded diagnosis: it published only
+immutable objects, never promoted its channel, and stopped while a healthy first install reached the
+old fixed timeout. The Linux payloads are published, but the product catalogs remain macOS-only until
+both exact-commit Windows/WSL2 lifecycle proofs pass.
 
 The product owner explicitly authorized protected production publication and active product-catalog
 exposure for the validated MHCflurry `macos-aarch64-metal` and pVACseq `macos-aarch64-cpu` targets.

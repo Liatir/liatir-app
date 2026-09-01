@@ -1,0 +1,251 @@
+{
+  "schemaVersion": 1,
+  "kind": "liatir.runtime-box.ci-evidence",
+  "phase": "production-release",
+  "status": "passed",
+  "createdAt": "2026-09-01T01:16:07.857Z",
+  "subject": {
+    "componentKind": "tool-runtime",
+    "componentId": "griffithlab-pvactools-pvacseq",
+    "modelId": "griffithlab-pvactools-pvacseq",
+    "boxId": "pvactools-pvacseq",
+    "runtimeId": "oncology-pvactools-pvacseq-7-1-2",
+    "recipeId": "pvactools-pvacseq-linux-x86_64-cpu",
+    "recipeVersion": "1.0.0",
+    "version": "7.1.2-beta.1",
+    "targetId": "linux-x86_64-cpu",
+    "mode": "native-lifecycle"
+  },
+  "source": {
+    "repository": "Liatir/liatir-stack",
+    "commitSha": "7c651d0625bd0bb1d4ceff72c6a1c8300489bcaf",
+    "sourceTreeDirty": false
+  },
+  "workflow": {
+    "provider": "github-actions",
+    "workflow": "Runtime Box production release",
+    "runId": "33456282626",
+    "runAttempt": "1",
+    "runUrl": "https://github.com/Liatir/liatir-stack/actions/runs/33456282626",
+    "actor": "suffro",
+    "triggeringActor": "suffro",
+    "environment": "runtime-box-production",
+    "approver": null
+  },
+  "host": {
+    "platform": "linux",
+    "arch": "x86_64",
+    "runnerName": "liatir-linux-selfhosted-1788223767-649",
+    "runnerLabel": "liatir-linux-selfhosted",
+    "runnerEnvironment": "self-hosted",
+    "image": null,
+    "freeDiskBytesBefore": 960381489152,
+    "minimumFreeDiskBytes": 954406420480,
+    "peakAdditionalDiskBytes": 5806956544,
+    "gpuModel": null,
+    "gpuCount": null,
+    "gpuMemoryBytes": null,
+    "computeCapability": null,
+    "driverVersion": null,
+    "reportedCudaCompatibility": null,
+    "existingBuildStateBytes": 0,
+    "calculatedDiskPlan": {
+      "sourceAssetBytes": 214329628,
+      "localSourceBytes": 13911,
+      "estimatedInstalledSizeBytes": 3221225472,
+      "estimatedArchiveSizeBytes": 1610612736,
+      "safetyMarginBytes": 4294967296,
+      "calculatedPeakDiskBytes": 9341149043,
+      "requiredBuildDiskBytes": 10737418240
+    }
+  },
+  "build": {
+    "recipeSha256": "a4ce68e95ded6778a5751900fc27c322491490fa5516634c66221f0abf4fa717",
+    "dependencyLockSha256": "984ef86f75d955cf7abbb97e19b83440d8ee57f5826b32762ef45afde0e22646",
+    "pythonVersion": "3.11.16",
+    "pixiVersion": "0.73.0",
+    "archiveSha256": "afb1e87fe6241e04c5fe299a037a1309081eda96090f50331c3588f065877cb5",
+    "archiveSizeBytes": 1167379919,
+    "installedSizeBytes": 3851450140,
+    "elapsedMs": 346975,
+    "selfTest": {
+      "status": "passed",
+      "imports": [
+        "tensorflow",
+        "numpy",
+        "pandas",
+        "sklearn",
+        "pysam",
+        "Bio",
+        "pymp",
+        "wget",
+        "pkg_resources"
+      ],
+      "localSignatureVerified": true
+    }
+  },
+  "scientific": {
+    "validator": {
+      "path": "scripts/validate-pvactools-runtime.mjs",
+      "sha256": "7bb162fe7e4fe21731eca9f81510cccb3c5edf2bd91e2bbf0d8cfea721533548"
+    },
+    "productScript": {
+      "path": "frontend/src/lib/tools/oncology/python-scripts/pvacseq.ts",
+      "sha256": "38eafdb7d1769b5f6e2a7b22c31d9f381fca16c9c32bdf54ec2a46dd4ef64799"
+    },
+    "fixture": {
+      "id": "pvactools-7.1.2-official-example-first-25-variants-v1",
+      "sha256": "66f81511175518630d416e2a1cc50c323f1e5a50a0c38a5a9ee8dc6096425583",
+      "inputShapes": {
+        "variants": [
+          25
+        ],
+        "alleles": [
+          3
+        ],
+        "peptideLengths": [
+          1
+        ]
+      }
+    },
+    "sources": [
+      {
+        "kind": "source",
+        "identity": "https://files.pythonhosted.org/packages/4c/5e/ea975bf21baea879b27bb8fd5e61e0a64ac312c087c3c4bd27a6448d72c3/pvactools-7.1.2-py3-none-any.whl",
+        "revision": "v7.1.2+mhcflurry-v2.0.6",
+        "sha256": "625049fea40020660c365c02d14f6f72c0be6a47aba1a7d4f079fda912853dba"
+      },
+      {
+        "kind": "source",
+        "identity": "https://files.pythonhosted.org/packages/19/2f/4d33286e48d9477a897cc3e07e0bb21e302c2ecd91f6ce6f1d707b02a9a2/mhcflurry-2.0.6-py3-none-any.whl",
+        "revision": "v7.1.2+mhcflurry-v2.0.6",
+        "sha256": "9aae769f4093a93076dfa9662bd563f1245d15c0ad159da41af91bc6c405bdef"
+      },
+      {
+        "kind": "source",
+        "identity": "https://files.pythonhosted.org/packages/36/15/7fe6d6bb60483a39b49bcb5a8669ca931c0c514eb1cd867258c185e57652/mhcgnomes-3.33.6-py3-none-any.whl",
+        "revision": "v7.1.2+mhcflurry-v2.0.6",
+        "sha256": "65d76a8e48c43652d4e3cd8ac3dc73f62793e6bf6df1bf0dd849cebf96ddf904"
+      },
+      {
+        "kind": "source",
+        "identity": "https://files.pythonhosted.org/packages/e7/c1/314e8bac0b73b683ecbd23e565f3309173eef3e0f9b6d470ef60f5dfdfae/vcfpy-0.13.8.tar.gz",
+        "revision": "v7.1.2+mhcflurry-v2.0.6",
+        "sha256": "e7d00965105e7ca9567299f073ad60c6bbfc78d685d25ba33353988af9b33160"
+      },
+      {
+        "kind": "source",
+        "identity": "https://files.pythonhosted.org/packages/83/09/612afbe0a602d35fae6b87fd201c5237f049bb27dbb99a6c5e3a931e5ae3/np_utils-0.6.0.tar.gz",
+        "revision": "v7.1.2+mhcflurry-v2.0.6",
+        "sha256": "2aa5c7ece3d1cb512d1af718aa05a5909dd47c74e5978b7c389c9b4f1a6ef804"
+      },
+      {
+        "kind": "source",
+        "identity": "https://files.pythonhosted.org/packages/b2/de/565cac253738616a63544bbf1483f0e27695ef92a641376aa6f2b9dcc141/vaxrank-1.4.0.tar.gz",
+        "revision": "v7.1.2+mhcflurry-v2.0.6",
+        "sha256": "0a287076eae0542a26fd0131848b230c803714de3ff5ba14d9add0e8d7c99be7"
+      },
+      {
+        "kind": "source",
+        "identity": "https://assets.models.liatir.com/ai-runtime-boxes/source-mirrors/mhcflurry/models_class1_presentation.20200611.models-only.tar.gz",
+        "revision": "v7.1.2+mhcflurry-v2.0.6",
+        "sha256": "44784a00d480298b66bfc232e2d1bb1a2df5e564f894a2fcc15d29fbd83f0d1e"
+      }
+    ],
+    "framework": {
+      "name": "tensorflow",
+      "version": "2.15.0"
+    },
+    "accelerator": {
+      "kind": "cpu",
+      "gpuModel": null,
+      "gpuMemoryBytes": null,
+      "computeCapability": null,
+      "driverVersion": null,
+      "reportedCudaCompatibility": null
+    },
+    "outputShapes": {
+      "allEpitopes": [
+        540
+      ],
+      "filteredEpitopes": [
+        3
+      ],
+      "aggregateCandidates": [
+        11
+      ]
+    },
+    "finiteValues": true,
+    "tolerances": {
+      "absolute": 0.001,
+      "relative": 0.001
+    },
+    "parity": {
+      "reference": "pvactools-7.1.2-official-example-output",
+      "passed": true,
+      "cpuBaselinePassed": true,
+      "acceleratorPassed": null,
+      "maximumAbsoluteDifference": 0.005574177579546813,
+      "meanAbsoluteDifference": null,
+      "minimumCosineSimilarity": null
+    },
+    "elapsedMs": 59916,
+    "peakRamBytes": null,
+    "peakVramBytes": null,
+    "outputContract": "passed",
+    "provenanceContract": "passed"
+  },
+  "productLifecycle": {
+    "status": "passed",
+    "targetId": "linux-x86_64-cpu",
+    "version": "7.1.2-beta.1",
+    "jobId": "job_2",
+    "analysisRunId": "49cddcce-22d5-4d27-9221-20f2088e3bf4",
+    "accelerator": "CPU",
+    "gpuModel": null,
+    "computeCapability": null,
+    "reportedCudaCompatibility": null,
+    "peakVramBytes": null,
+    "resultArtifactCount": 8,
+    "assertions": {
+      "install": "passed",
+      "replacement": "passed",
+      "rollback": "passed",
+      "officialFixture": "passed",
+      "cancellation": "passed",
+      "realInference": "passed",
+      "jobs": "passed",
+      "navigationResume": "passed",
+      "results": "passed",
+      "provenance": "passed",
+      "offline": "passed",
+      "experimentalDisclaimer": "passed",
+      "removal": "passed",
+      "resultArtifactsSurvivedRemoval": "passed"
+    }
+  },
+  "publication": {
+    "signingKeyIds": [
+      "liatir-runtime-box-kms-2026"
+    ],
+    "localSignatureVerified": true,
+    "archive": {
+      "url": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/pvactools-pvacseq/7.1.2-beta.1/linux-x86_64-cpu/afb1e87fe6241e04c5fe299a037a1309081eda96090f50331c3588f065877cb5.zip",
+      "sizeBytes": 1167379919,
+      "sha256": "afb1e87fe6241e04c5fe299a037a1309081eda96090f50331c3588f065877cb5",
+      "streamedVerification": "passed"
+    },
+    "release": {
+      "url": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/pvactools-pvacseq/7.1.2-beta.1/linux-x86_64-cpu/2f2f49de4ea0e44764d4aac869a15f667ac4cda1eb4a5feac778d6425fd1020d.release.json",
+      "sizeBytes": 2663,
+      "sha256": "2f2f49de4ea0e44764d4aac869a15f667ac4cda1eb4a5feac778d6425fd1020d",
+      "streamedVerification": "passed"
+    },
+    "channelUrl": "https://models.liatir.com/v1/channels/beta/pvactools-pvacseq/linux-x86_64-cpu",
+    "promotionHttpStatus": 200,
+    "promotionResponse": {
+      "ok": true,
+      "key": "channels/beta/pvactools-pvacseq/linux-x86_64-cpu.json"
+    }
+  }
+}

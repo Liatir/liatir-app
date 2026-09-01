@@ -48,7 +48,7 @@ describe('Runtime Box CI catalog', () => {
     expect(mhcflurry?.targets.find((target) => target.targetId === 'macos-aarch64-metal'))
       .toMatchObject({ status: 'published', nativeCiEnabled: true });
     expect(mhcflurry?.targets.find((target) => target.targetId === 'linux-x86_64-cpu'))
-      .toMatchObject({ status: 'planned', nativeCiEnabled: true });
+      .toMatchObject({ status: 'published', nativeCiEnabled: true });
     expect(mhcflurry?.targets
       .filter((target) => !['macos-aarch64-metal', 'linux-x86_64-cpu'].includes(target.targetId))
       .every((target) => target.status === 'planned' && !target.nativeCiEnabled)).toBe(true);
@@ -58,13 +58,13 @@ describe('Runtime Box CI catalog', () => {
     expect(pvactools?.targets.find((target) => target.targetId === 'macos-aarch64-cpu'))
       .toMatchObject({ status: 'published', nativeCiEnabled: true });
     expect(pvactools?.targets.find((target) => target.targetId === 'linux-x86_64-cpu'))
-      .toMatchObject({ status: 'planned', nativeCiEnabled: true });
+      .toMatchObject({ status: 'published', nativeCiEnabled: true });
     for (const component of catalog.components.filter((entry) => oncologyIds.has(entry.componentId))) {
       expect(readFileSync(component.callerWorkflow, 'utf8')).toContain('"runtime-boxes/catalog.json"');
     }
   });
 
-  it('keeps published core targets exactly aligned with published catalog targets', () => {
+  it('keeps every core target aligned with a published catalog target', () => {
     for (const record of catalog.components) {
       const component = record.componentKind === 'ai-model'
         ? RUNTIME_BOX_AI_MODEL_REGISTRY.find((candidate) => candidate.id === record.componentId)
@@ -82,11 +82,12 @@ describe('Runtime Box CI catalog', () => {
       }
       expect(component?.install.runtimeBox.boxId).toBe(record.boxId);
       expect(component?.install.runtimeId).toBe(record.runtimeId);
-      expect(appTargets.map((candidate) => runtimeBoxTargetId(candidate.target)).sort())
-        .toEqual(catalogTargets.map((target) => target.targetId).sort());
-      for (const target of catalogTargets) {
-        const candidate = appTargets.find((value) => runtimeBoxTargetId(value.target) === target.targetId);
-        expect(candidate?.hostEnvironments).toEqual(target.hostEnvironments);
+      expect(appTargets.length).toBeGreaterThan(0);
+      for (const candidate of appTargets) {
+        const targetId = runtimeBoxTargetId(candidate.target);
+        const target = catalogTargets.find((value) => value.targetId === targetId);
+        expect(target, `${record.componentId}/${targetId} is exposed before publication`).toBeDefined();
+        expect(candidate.hostEnvironments).toEqual(target?.hostEnvironments);
       }
     }
   });
