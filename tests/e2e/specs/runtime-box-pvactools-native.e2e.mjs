@@ -81,6 +81,7 @@ export const tests = [{
       channel: 'beta', registryBaseUrl: REGISTRY_BASE_URL, targetCandidates, downloadId,
     });
     await waitForRuntimeBoxInstall(browser, downloadId, {
+      hostEnvironment: EXPECTED_HOST_ENVIRONMENT,
       timeoutMsg: 'pVACtools Runtime Box install did not complete',
     });
     const installError = await runtimeBoxInstallError(browser, downloadId);
@@ -101,6 +102,7 @@ export const tests = [{
     });
     await waitForRuntimeBoxInstall(browser, replacementId, {
       archiveSizeBytes: installed.activation.release.archive.sizeBytes,
+      hostEnvironment: EXPECTED_HOST_ENVIRONMENT,
       timeoutMsg: 'pVACtools Runtime Box replacement did not complete',
     });
     const replacementError = await runtimeBoxInstallError(browser, replacementId);

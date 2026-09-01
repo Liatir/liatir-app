@@ -55,6 +55,20 @@ The retained native analysis run IDs are `582083da-e4f9-46ca-ac56-dd25aaf6c9e7` 
 `a3c763af-354d-4ec5-ab58-f8800d85d03b`. Product exposure remains blocked until both exact-commit
 Windows/WSL2 lifecycle workflows pass with one newly built Native Tools box.
 
+Native Tools run `33518455571` passed at exact commit
+`ff3184f704b99ec2bcc4352311bcc37a2d98c06d`. MHCflurry Windows/WSL2 lifecycle run
+`33518815450` then passed every assertion at that commit, with analysis run
+`db0f0f72-0d24-48b6-bd61-d67a1ed3658d` and three Result artifacts surviving removal. The following
+pVACtools run `33522895351` failed only because its size-aware install wait expired after 320 seconds:
+there was no install error, and progress had reached 1,161,379,840 of 1,167,379,910 bytes. Its runner
+and partial payload were removed. Root cause: the shared wait included native verification and
+extraction overhead but not the extra Windows-to-WSL2 boundary. The bounded correction gives only
+`windows-wsl2` a 360-second fixed allowance, propagates the already computed host environment through
+both oncology specs, and regresses the exact measured pVACtools size. Cheap focused checks and full
+`test:verify` passed (70 files / 491 tests). The next bounded steps are a clean push, one fresh
+exact-commit Native Tools build, then one new MHCflurry-to-pVACtools proof pair using that same Native
+Tools run. Any further pVACtools failure stops the retry for a new diagnosis.
+
 The product owner explicitly authorized protected production publication and active product-catalog
 exposure for the validated MHCflurry `macos-aarch64-metal` and pVACseq `macos-aarch64-cpu` targets.
 The same authorization applies to future Runtime Boxes only after their exact legal, build,

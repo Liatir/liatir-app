@@ -206,14 +206,17 @@ describe('Runtime Box product E2E support', () => {
     ]);
   });
 
-  it('scales the install bound from the observed archive size without target-specific branches', () => {
+  it('scales the install bound from size and keeps the measured WSL2 crossing allowance explicit', () => {
     const cpuArchiveTimeout = runtimeBoxInstallTimeoutMs(380_481_131);
     const cudaArchiveTimeout = runtimeBoxInstallTimeoutMs(3_079_059_631);
+    const pvacWsl2Timeout = runtimeBoxInstallTimeoutMs(1_167_379_910, 'windows-wsl2');
 
     expect(runtimeBoxInstallTimeoutMs(null)).toBe(180_000);
     expect(cpuArchiveTimeout).toBeGreaterThanOrEqual(180_000);
     expect(cudaArchiveTimeout).toBeGreaterThanOrEqual(9 * 60_000);
     expect(cudaArchiveTimeout).toBeGreaterThan(cpuArchiveTimeout);
+    expect(pvacWsl2Timeout).toBe(499_163);
+    expect(pvacWsl2Timeout - runtimeBoxInstallTimeoutMs(1_167_379_910)).toBe(180_000);
   });
 
   it('discovers the first install size from progress before choosing its timeout', async () => {
@@ -244,6 +247,7 @@ describe('Runtime Box product E2E support', () => {
     };
 
     await expect(waitForRuntimeBoxInstall(browser, downloadId, {
+      hostEnvironment: 'windows-wsl2',
       timeoutMsg: 'First install did not complete',
     })).rejects.toThrow(`\"bytesTotal\":${archiveSizeBytes}`);
     expect(observedOptions[0]).toEqual({
@@ -252,7 +256,7 @@ describe('Runtime Box product E2E support', () => {
       timeoutMsg: 'First install did not complete: archive size was not reported',
     });
     expect(observedOptions[1]).toEqual({
-      timeout: runtimeBoxInstallTimeoutMs(archiveSizeBytes),
+      timeout: runtimeBoxInstallTimeoutMs(archiveSizeBytes, 'windows-wsl2'),
       interval: 1_000,
       timeoutMsg: 'First install did not complete',
     });

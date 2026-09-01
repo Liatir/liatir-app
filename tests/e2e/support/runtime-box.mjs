@@ -12,17 +12,24 @@ const CATALOG = JSON.parse(fs.readFileSync(path.join(ROOT, 'runtime-boxes/catalo
 
 const MIN_INSTALL_TIMEOUT_MS = 180_000;
 const INSTALL_SIZE_DISCOVERY_TIMEOUT_MS = 30_000;
-// Eight MiB/s is intentionally below the observed protected-release transfer rate. The fixed
+// Eight MiB/s is intentionally below the observed protected-release transfer rate. The native
 // allowance covers signature verification, multi-gigabyte ZIP extraction, self-test, and activation.
-const INSTALL_FIXED_OVERHEAD_MS = 180_000;
+const NATIVE_INSTALL_FIXED_OVERHEAD_MS = 180_000;
+// WSL2 additionally crosses the Windows/Linux boundary before extracting and activating the box.
+// Run 33522895351 reached 1,161,379,840 of 1,167,379,910 bytes with no install error at the old
+// 320-second bound, so this measured path needs a separate bounded allowance.
+const WSL2_INSTALL_FIXED_OVERHEAD_MS = 360_000;
 const CONSERVATIVE_DOWNLOAD_BYTES_PER_SECOND = 8 * 1024 * 1024;
 
-/** Sizes a native install bound from observed archive bytes, verification, extraction, and activation. */
-export function runtimeBoxInstallTimeoutMs(archiveSizeBytes) {
+/** Sizes an install bound from observed archive bytes and the selected host boundary. */
+export function runtimeBoxInstallTimeoutMs(archiveSizeBytes, hostEnvironment = 'native') {
   const bytes = Number(archiveSizeBytes);
   if (!Number.isFinite(bytes) || bytes <= 0) return MIN_INSTALL_TIMEOUT_MS;
   const downloadMs = Math.ceil((bytes / CONSERVATIVE_DOWNLOAD_BYTES_PER_SECOND) * 1_000);
-  return Math.max(MIN_INSTALL_TIMEOUT_MS, INSTALL_FIXED_OVERHEAD_MS + downloadMs);
+  const fixedOverheadMs = hostEnvironment === 'windows-wsl2'
+    ? WSL2_INSTALL_FIXED_OVERHEAD_MS
+    : NATIVE_INSTALL_FIXED_OVERHEAD_MS;
+  return Math.max(MIN_INSTALL_TIMEOUT_MS, fixedOverheadMs + downloadMs);
 }
 
 /** Returns candidate metadata from the same checked catalog and recipe used by the release. */
@@ -184,7 +191,7 @@ export async function waitForRuntimeBoxInstall(browser, downloadId, options = {}
     const status = await runtimeBoxInstallStatus(browser, downloadId);
     if (status !== null && status !== 'running') return;
   }
-  const timeout = runtimeBoxInstallTimeoutMs(archiveSizeBytes);
+  const timeout = runtimeBoxInstallTimeoutMs(archiveSizeBytes, options.hostEnvironment);
   try {
     await browser.waitUntil(
       async () => (await runtimeBoxInstallStatus(browser, downloadId)) !== 'running',
