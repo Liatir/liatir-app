@@ -43,6 +43,18 @@ not changed or rerun. New MHCflurry `2.2.1-beta.2` and pVACtools `7.1.2-beta.2` 
 will carry `['native', 'windows-wsl2']` in the signed document; catalog validation now requires every
 authored target's signed host environments to match its reviewed catalog entry.
 
+Those replacement publications are now complete. MHCflurry `2.2.1-beta.2` release
+`33462667589` and pVACtools `7.1.2-beta.2` release `33464208587` both passed at exact commit
+`f37be317e0b64eeafe963831e81ec6ad3d2c444b`: clean build, KMS signature, native self-test,
+scientific validation, real Linux product lifecycle, immutable publication and beta promotion.
+Independent public reads verified both channel and release signatures, the signed
+`['native', 'windows-wsl2']` compatibility, and the complete archive hashes
+`f9444985f6fc5163625dea1fddac50121522bec5d3a29461180f5708c3452227` (MHCflurry) and
+`1fcca89636801592c6f3da5414f88988bfbca84eeccf9b48878e0b2ff5daa0db` (pVACtools).
+The retained native analysis run IDs are `582083da-e4f9-46ca-ac56-dd25aaf6c9e7` and
+`a3c763af-354d-4ec5-ab58-f8800d85d03b`. Product exposure remains blocked until both exact-commit
+Windows/WSL2 lifecycle workflows pass with one newly built Native Tools box.
+
 The product owner explicitly authorized protected production publication and active product-catalog
 exposure for the validated MHCflurry `macos-aarch64-metal` and pVACseq `macos-aarch64-cpu` targets.
 The same authorization applies to future Runtime Boxes only after their exact legal, build,

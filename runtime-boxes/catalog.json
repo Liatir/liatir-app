@@ -673,15 +673,15 @@
           "nativeCiEnabled": true,
           "publication": {
             "source": "github-actions",
-            "releaseManifestUrl": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/mhcflurry-class1-presentation/2.2.1-beta.1/linux-x86_64-cpu/4b970e0eb5c52783fce07a1528a74ebea206b9e12c11b3488fe22fd623efea00.release.json",
-            "archiveSha256": "2a017d488f658bed21c7e795568226b0483cc28575f843d9cf6810a368cef3db",
-            "archiveSizeBytes": 806866213,
+            "releaseManifestUrl": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/mhcflurry-class1-presentation/2.2.1-beta.2/linux-x86_64-cpu/51b55fa0ede81c4f946eaa3869db92e2f86d16e08731add9a902320d665aa63d.release.json",
+            "archiveSha256": "f9444985f6fc5163625dea1fddac50121522bec5d3a29461180f5708c3452227",
+            "archiveSizeBytes": 806866215,
             "installedSizeBytes": 2421400094,
             "signingKeyId": "liatir-runtime-box-kms-2026",
-            "publishedAt": "2026-09-01T00:13:39.914Z",
-            "workflowRunId": "33397148921",
-            "workflowRunUrl": "https://github.com/Liatir/liatir-stack/actions/runs/33397148921",
-            "evidenceRecord": "runtime-boxes/evidence/mhcflurry-class1-presentation-linux-x86_64-cpu-2.2.1-beta.1-run-33397148921.json"
+            "publishedAt": "2026-09-01T02:51:08.120Z",
+            "workflowRunId": "33462667589",
+            "workflowRunUrl": "https://github.com/Liatir/liatir-stack/actions/runs/33462667589",
+            "evidenceRecord": "runtime-boxes/evidence/mhcflurry-class1-presentation-linux-x86_64-cpu-2.2.1-beta.2-run-33462667589.json"
           }
         },
         {
@@ -814,15 +814,15 @@
           "nativeCiEnabled": true,
           "publication": {
             "source": "github-actions",
-            "releaseManifestUrl": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/pvactools-pvacseq/7.1.2-beta.1/linux-x86_64-cpu/2f2f49de4ea0e44764d4aac869a15f667ac4cda1eb4a5feac778d6425fd1020d.release.json",
-            "archiveSha256": "afb1e87fe6241e04c5fe299a037a1309081eda96090f50331c3588f065877cb5",
-            "archiveSizeBytes": 1167379919,
+            "releaseManifestUrl": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/pvactools-pvacseq/7.1.2-beta.2/linux-x86_64-cpu/cf2d1950d99a2fb812306da507f1697b683621713af4c9259e6c4258d7e0cc54.release.json",
+            "archiveSha256": "1fcca89636801592c6f3da5414f88988bfbca84eeccf9b48878e0b2ff5daa0db",
+            "archiveSizeBytes": 1167379910,
             "installedSizeBytes": 3851450140,
             "signingKeyId": "liatir-runtime-box-kms-2026",
-            "publishedAt": "2026-09-01T01:16:07.857Z",
-            "workflowRunId": "33456282626",
-            "workflowRunUrl": "https://github.com/Liatir/liatir-stack/actions/runs/33456282626",
-            "evidenceRecord": "runtime-boxes/evidence/pvactools-pvacseq-linux-x86_64-cpu-7.1.2-beta.1-run-33456282626.json"
+            "publishedAt": "2026-09-01T03:21:40.275Z",
+            "workflowRunId": "33464208587",
+            "workflowRunUrl": "https://github.com/Liatir/liatir-stack/actions/runs/33464208587",
+            "evidenceRecord": "runtime-boxes/evidence/pvactools-pvacseq-linux-x86_64-cpu-7.1.2-beta.2-run-33464208587.json"
           }
         }
       ]
