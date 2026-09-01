@@ -17,6 +17,11 @@
  * cannot do for a directory that lives outside it.
  */
 import { liatir } from '$lib/api';
+import {
+  fileRunOutputEntries,
+  type ListedFsEntry,
+  type RunOutputEntry,
+} from '$lib/execution/run-output-entries';
 import { getDataPrefix } from '$lib/stores/workspace.svelte';
 import type {
   LiatirExecutionLogEntry,
@@ -136,11 +141,7 @@ export async function moveRunFile(from: string, to: string): Promise<void> {
   });
 }
 
-export interface RunOutputEntry {
-  name: string;
-  path: string;
-  size?: number;
-}
+export type { RunOutputEntry } from '$lib/execution/run-output-entries';
 
 /**
  * Everything actually sitting in a run's `output/`.
@@ -157,14 +158,8 @@ export async function listRunOutputs(runId: string): Promise<RunOutputEntry[]> {
       permanent: true,
       windowLabel: undefined,
       pluginStoragePlugin: undefined,
-    }) as Array<{ name: string; path: string; isDir: boolean; size?: number | null }>;
-    return entries
-      .filter((entry) => !entry.isDir)
-      .map((entry) => ({
-        name: entry.name,
-        path: entry.path,
-        ...(entry.size != null ? { size: entry.size } : {}),
-      }));
+    }) as ListedFsEntry[];
+    return fileRunOutputEntries(entries);
   } catch {
     return [];
   }

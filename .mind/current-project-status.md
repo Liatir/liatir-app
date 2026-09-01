@@ -84,6 +84,20 @@ afterward. Its regression must accept a preserved empty file and detect changed 
 pair retry is allowed only after focused tests, full `test:verify`, clean push, a fresh exact-commit
 Native Tools build and fresh runner preflights; any different failure stops again for diagnosis.
 
+At exact correction commit `80c623e0950181f5b11e059c3303f50b7c7e4ea5`, Native Tools run
+`33553202219` passed and MHCflurry Windows/WSL2 run `33553513312` passed the complete lifecycle with
+analysis run `af36e9f6-4ae2-4b6c-b5e9-d4c12bb3eca0`, three byte-identical Result artifacts and
+compact artifact `9819547610` (`sha256:4dfad75cd188ef4b7420e4f04dc9ea05b924508f76a442f5fce429555e24aa32`).
+pVACtools run `33557362572` again completed the scientific lifecycle but the improved preservation
+check identified the exact remaining defect before removal: `EISDIR` while hashing an entry recorded
+as a file. Root cause is the run-output enumerator reading `isDir`, while the direct Tauri bridge
+serializes the Rust `FsEntry.is_dir` field as `is_dir`; consequently the pVACseq `MHC_Class_I`
+subdirectory was added to `outputFiles` as an undeclared file with size zero. The correction consumes
+the actual bridge field and regression-tests that a nested directory is excluded while its sibling
+file is retained. One new exact-commit proof pair is allowed only after that regression, full
+`test:verify`, clean push, fresh Native Tools and fresh runner preflights. No product target is exposed
+until both workflows pass.
+
 The product owner explicitly authorized protected production publication and active product-catalog
 exposure for the validated MHCflurry `macos-aarch64-metal` and pVACseq `macos-aarch64-cpu` targets.
 The same authorization applies to future Runtime Boxes only after their exact legal, build,

@@ -14,6 +14,7 @@
  */
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { fileRunOutputEntries } from '../../frontend/src/lib/execution/run-output-entries';
 
 function read(path: string): string {
   return readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8');
@@ -137,6 +138,17 @@ describe('an empty declaration is checked, not believed', () => {
 
   it('records what is in that directory whether or not the caller mentioned it', () => {
     expect(finalization).toContain('undeclaredRunOutputs(await listRunOutputs(run.id)');
+  });
+
+  it('does not record a nested output directory as a file artifact', () => {
+    expect(fileRunOutputEntries([
+      { name: 'MHC_Class_I', path: 'C:\\run\\output\\MHC_Class_I', is_dir: true },
+      { name: 'summary.json', path: 'C:\\run\\output\\summary.json', is_dir: false, size: 42 },
+    ])).toEqual([{
+      name: 'summary.json',
+      path: 'C:\\run\\output\\summary.json',
+      size: 42,
+    }]);
   });
 
   it('matches by filename, because path separators differ by platform', () => {
