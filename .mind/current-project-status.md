@@ -69,6 +69,21 @@ both oncology specs, and regresses the exact measured pVACtools size. Cheap focu
 exact-commit Native Tools build, then one new MHCflurry-to-pVACtools proof pair using that same Native
 Tools run. Any further pVACtools failure stops the retry for a new diagnosis.
 
+That corrected pair reached a new boundary at exact commit
+`604cb2cbeaa7edb3ce8d0ead8307c0eeae53ac69`. Native Tools run `33526400474` passed, and MHCflurry
+Windows/WSL2 run `33526724084` passed the complete lifecycle with analysis run
+`0104b919-1fc0-4dc3-afb4-42832335f0c3` and three preserved Result artifacts. pVACtools run
+`33530623525` then completed install, replacement, rollback, cancellation, the real offline pVACseq
+inference, Jobs, Results, provenance, navigation and removal, but the final test failed at its generic
+`file size > 0` assertion. The retained screenshot shows the completed Result and its six registered
+outputs. Root cause: non-empty is not the preservation contract; a valid scientific output may be
+empty, as the existing zero-candidate regression already requires, and that assertion neither
+compared the artifact before and after removal nor named the failing file. The bounded correction
+snapshots every Result artifact's size and SHA-256 before removal and requires the exact same snapshot
+afterward. Its regression must accept a preserved empty file and detect changed bytes. One corrected
+pair retry is allowed only after focused tests, full `test:verify`, clean push, a fresh exact-commit
+Native Tools build and fresh runner preflights; any different failure stops again for diagnosis.
+
 The product owner explicitly authorized protected production publication and active product-catalog
 exposure for the validated MHCflurry `macos-aarch64-metal` and pVACseq `macos-aarch64-cpu` targets.
 The same authorization applies to future Runtime Boxes only after their exact legal, build,

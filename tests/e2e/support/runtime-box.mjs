@@ -2,6 +2,7 @@
  * Support helpers for the Runtime Box end-to-end tests.
  */
 import fs from 'node:fs';
+import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { resolveRuntimeBoxAuthoringInput } from '../../../scripts/runtime-box/authoring-input.mjs';
@@ -30,6 +31,18 @@ export function runtimeBoxInstallTimeoutMs(archiveSizeBytes, hostEnvironment = '
     ? WSL2_INSTALL_FIXED_OVERHEAD_MS
     : NATIVE_INSTALL_FIXED_OVERHEAD_MS;
   return Math.max(MIN_INSTALL_TIMEOUT_MS, fixedOverheadMs + downloadMs);
+}
+
+/** Captures the bytes that must remain unchanged when an installed Runtime Box is removed. */
+export function runtimeBoxResultArtifactSnapshot(outputFiles) {
+  return outputFiles.map((file) => {
+    const contents = fs.readFileSync(file.path);
+    return {
+      path: file.path,
+      sizeBytes: contents.byteLength,
+      sha256: createHash('sha256').update(contents).digest('hex'),
+    };
+  });
 }
 
 /** Returns candidate metadata from the same checked catalog and recipe used by the release. */

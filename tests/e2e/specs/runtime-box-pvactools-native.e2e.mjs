@@ -6,6 +6,7 @@ import {
   runtimeBoxInstallError,
   runtimeBoxInstallResult,
   runtimeBoxInstallStatus,
+  runtimeBoxResultArtifactSnapshot,
   runtimeBoxTargetForNativeTest,
   startRuntimeBoxInstall,
   waitForRuntimeBoxInstall,
@@ -242,11 +243,12 @@ export const tests = [{
     );
     expect(await browser.execute(() => document.body.innerText)).toContain('not a validated vaccine');
 
+    const resultArtifactsBeforeRemoval = runtimeBoxResultArtifactSnapshot(result.outputFiles);
     const removed = await browser.execute(async (input) => window.Liatir.invoke('lia_runtime_box_remove', input), {
       componentKind: 'tool-runtime', runtimeId: RUNTIME_ID, boxId: BOX_ID,
     });
     expect(removed).toBe(true);
-    for (const file of result.outputFiles) expect(fs.statSync(file.path).size).toBeGreaterThan(0);
+    expect(runtimeBoxResultArtifactSnapshot(result.outputFiles)).toEqual(resultArtifactsBeforeRemoval);
 
     if (PRODUCT_EVIDENCE_PATH) {
       const evidencePath = path.resolve(rootDir, PRODUCT_EVIDENCE_PATH);

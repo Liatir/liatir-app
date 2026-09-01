@@ -1,10 +1,12 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 
 import {
   activateCleanSandbox,
   runtimeBoxInstallTimeoutMs,
+  runtimeBoxResultArtifactSnapshot,
   runtimeBoxTargetForNativeTest,
   startRuntimeBoxInstall,
   waitForRuntimeBoxInstall,
@@ -217,6 +219,26 @@ describe('Runtime Box product E2E support', () => {
     expect(cudaArchiveTimeout).toBeGreaterThan(cpuArchiveTimeout);
     expect(pvacWsl2Timeout).toBe(499_163);
     expect(pvacWsl2Timeout - runtimeBoxInstallTimeoutMs(1_167_379_910)).toBe(180_000);
+  });
+
+  it('proves Result artifacts are unchanged across removal without rejecting valid empty output', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'liatir-runtime-box-results-'));
+    const emptyPath = join(directory, 'empty.tsv');
+    const resultPath = join(directory, 'result.json');
+    try {
+      writeFileSync(emptyPath, '');
+      writeFileSync(resultPath, '{"status":"done"}\n');
+      const outputFiles = [{ path: emptyPath }, { path: resultPath }];
+      const beforeRemoval = runtimeBoxResultArtifactSnapshot(outputFiles);
+
+      expect(beforeRemoval[0].sizeBytes).toBe(0);
+      expect(runtimeBoxResultArtifactSnapshot(outputFiles)).toEqual(beforeRemoval);
+
+      writeFileSync(resultPath, '{"status":"changed"}\n');
+      expect(runtimeBoxResultArtifactSnapshot(outputFiles)).not.toEqual(beforeRemoval);
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
   });
 
   it('discovers the first install size from progress before choosing its timeout', async () => {
