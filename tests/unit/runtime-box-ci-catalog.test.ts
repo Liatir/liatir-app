@@ -603,6 +603,20 @@ describe('Runtime Box CI catalog', () => {
     expect(windowsPixiInstaller).toContain('conda-pack==0.9.2');
   });
 
+  it('selects Git Bash before a Windows composite action in the WSL2 proof', () => {
+    const workflow = readFileSync(
+      new URL('../../.github/workflows/runtime-box-wsl2-product-lifecycle.yml', import.meta.url),
+      'utf8',
+    );
+    const gitBash = workflow.indexOf('Select Git Bash for Windows composite actions');
+    const rust = workflow.indexOf('Install pinned Rust 1.95.0');
+
+    expect(gitBash).toBeGreaterThanOrEqual(0);
+    expect(gitBash).toBeLessThan(rust);
+    expect(workflow).toContain("$gitBash = 'C:\\Program Files\\Git\\bin'");
+    expect(workflow).toContain('$gitBash | Out-File -FilePath $env:GITHUB_PATH');
+  });
+
   it('keeps foundation validation manual and entirely self-hosted', () => {
     const ciDispatcher = readFileSync(
       new URL('../../scripts/runtime-box-ci.mjs', import.meta.url),

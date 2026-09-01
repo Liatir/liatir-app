@@ -20,6 +20,14 @@ immutable objects, never promoted its channel, and stopped while a healthy first
 old fixed timeout. The Linux payloads are published, but the product catalogs remain macOS-only until
 both exact-commit Windows/WSL2 lifecycle proofs pass.
 
+The first Windows/WSL2 proof, MHCflurry run `33458591342`, failed before downloading either box:
+the pinned Rust composite action selected Windows' WSL launcher at `C:\Windows\System32\bash.exe`,
+which stripped the backslashes from the runner work path. The runner and marked root were removed.
+The bounded correction selects `C:\Program Files\Git\bin\bash.exe` through `GITHUB_PATH` before the
+action, matching the already proven Windows release workflows. A new WSL2 attempt requires its
+regression test, full `test:verify`, clean push and a fresh successful Native Tools run from the new
+exact commit.
+
 The product owner explicitly authorized protected production publication and active product-catalog
 exposure for the validated MHCflurry `macos-aarch64-metal` and pVACseq `macos-aarch64-cpu` targets.
 The same authorization applies to future Runtime Boxes only after their exact legal, build,
