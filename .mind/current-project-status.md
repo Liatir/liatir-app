@@ -35,6 +35,14 @@ No payload install or inference started. The bounded correction passes a clone t
 keeps the original digest for process state. Another attempt requires the focused regression, a real
 Windows Rust compile, full `test:verify`, clean push and another exact-commit Native Tools run.
 
+With both setup defects corrected, MHCflurry WSL2 run `33461036295` built the real Windows app and
+reached the first install. It then correctly refused the signed Linux `2.2.1-beta.1` release because
+that immutable release predates the explicit `compatibility.hostEnvironments` field and therefore
+cannot authorize the separate WSL2 execution boundary. The existing successful native releases are
+not changed or rerun. New MHCflurry `2.2.1-beta.2` and pVACtools `7.1.2-beta.2` Linux CPU releases
+will carry `['native', 'windows-wsl2']` in the signed document; catalog validation now requires every
+authored target's signed host environments to match its reviewed catalog entry.
+
 The product owner explicitly authorized protected production publication and active product-catalog
 exposure for the validated MHCflurry `macos-aarch64-metal` and pVACseq `macos-aarch64-cpu` targets.
 The same authorization applies to future Runtime Boxes only after their exact legal, build,

@@ -6,7 +6,7 @@
   "boxId": "pvactools-pvacseq",
   "modelId": "griffithlab-pvactools-pvacseq",
   "runtimeId": "oncology-pvactools-pvacseq-7-1-2",
-  "version": "7.1.2-beta.1",
+  "version": "7.1.2-beta.2",
   "sourceRevision": "v7.1.2+mhcflurry-v2.0.6",
   "target": {
     "platform": "linux",
@@ -15,7 +15,8 @@
   },
   "compatibility": {
     "minLiatirVersion": "0.2.1",
-    "minRamGb": 8
+    "minRamGb": 8,
+    "hostEnvironments": ["native", "windows-wsl2"]
   },
   "pythonVersion": "3.11.16",
   "pixiVersion": "0.73.0",

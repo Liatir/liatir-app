@@ -61,6 +61,12 @@ describe('Runtime Box CI catalog', () => {
       .toMatchObject({ status: 'published', nativeCiEnabled: true });
     for (const component of catalog.components.filter((entry) => oncologyIds.has(entry.componentId))) {
       expect(readFileSync(component.callerWorkflow, 'utf8')).toContain('"runtime-boxes/catalog.json"');
+      const linux = component.targets.find((target) => target.targetId === 'linux-x86_64-cpu');
+      const scroll = JSON.parse(readFileSync(
+        new URL(`../../runtime-boxes/scrolls/${component.boxId}/${linux?.targetId}/scroll.json`, import.meta.url),
+        'utf8',
+      ));
+      expect(scroll.compatibility.hostEnvironments).toEqual(['native', 'windows-wsl2']);
     }
   });
 

@@ -428,6 +428,11 @@ export function validateRuntimeBoxCiCatalog(catalog, { requireWorkflows = true }
         `authoring identity mismatch for ${targetKey}`,
       );
       requireCatalog(boxTargetId(recipe.target) === target.targetId, `recipe target mismatch for ${targetKey}`);
+      const authoredHostEnvironments = recipe.compatibility?.hostEnvironments ?? ['native'];
+      requireCatalog(
+        JSON.stringify(authoredHostEnvironments) === JSON.stringify(target.hostEnvironments),
+        `signed host environments do not match the catalog for ${targetKey}`,
+      );
       requireNoLegacyAuthoringFields(recipe, `scroll ${target.recipeId}`);
       requireCatalog(readFileSync(resolve(workspaceRoot(), model.legalRecord), 'utf8').includes(recipe.sourceRevision), `legal record is not pinned to recipe source ${recipe.sourceRevision} for ${targetKey}`);
       for (const localFile of recipe.localFiles ?? []) {

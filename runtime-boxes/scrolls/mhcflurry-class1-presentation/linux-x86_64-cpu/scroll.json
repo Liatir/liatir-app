@@ -6,7 +6,7 @@
   "boxId": "mhcflurry-class1-presentation",
   "modelId": "openvax-mhcflurry-class1-presentation",
   "runtimeId": "oncology-mhcflurry-class1-presentation-2-2-1",
-  "version": "2.2.1-beta.1",
+  "version": "2.2.1-beta.2",
   "sourceRevision": "v2.2.1",
   "target": {
     "platform": "linux",
@@ -15,7 +15,8 @@
   },
   "compatibility": {
     "minLiatirVersion": "0.2.1",
-    "minRamGb": 8
+    "minRamGb": 8,
+    "hostEnvironments": ["native", "windows-wsl2"]
   },
   "pythonVersion": "3.11.16",
   "pixiVersion": "0.73.0",

@@ -61,13 +61,13 @@ jobs:
           set -euo pipefail
           case "$MODEL_ID" in
             openvax-mhcflurry-class1-presentation)
-              echo 'version=2.2.1-beta.1' >> "$GITHUB_OUTPUT"
+              echo 'version=2.2.1-beta.2' >> "$GITHUB_OUTPUT"
               echo 'spec=tests/e2e/specs/runtime-box-mhcflurry-native.e2e.mjs' >> "$GITHUB_OUTPUT"
               echo 'component_kind=ai-runtimes' >> "$GITHUB_OUTPUT"
               echo 'runtime_id=oncology-mhcflurry-class1-presentation-2-2-1' >> "$GITHUB_OUTPUT"
               ;;
             griffithlab-pvactools-pvacseq)
-              echo 'version=7.1.2-beta.1' >> "$GITHUB_OUTPUT"
+              echo 'version=7.1.2-beta.2' >> "$GITHUB_OUTPUT"
               echo 'spec=tests/e2e/specs/runtime-box-pvactools-native.e2e.mjs' >> "$GITHUB_OUTPUT"
               echo 'component_kind=tool-runtimes' >> "$GITHUB_OUTPUT"
               echo 'runtime_id=oncology-pvactools-pvacseq-7-1-2' >> "$GITHUB_OUTPUT"
