@@ -58,8 +58,12 @@ export const tests = [{
     });
     expect(toolStatusA).toMatchObject({ ok: true, value: { installed: true, componentKind: 'tool-runtime' } });
     expect(aiStatusA).toMatchObject({ ok: true, value: { installed: true, componentKind: 'ai-model' } });
-    expect(toolStatusA.value.runtimeDir).toContain('tool-runtimes');
-    expect(aiStatusA.value.runtimeDir).toContain('ai-runtimes');
+    const toolRoot = process.platform === 'win32' ? 'tool' : 'tool-runtimes';
+    const aiRoot = process.platform === 'win32' ? 'ai' : 'ai-runtimes';
+    expect(toolStatusA.value.runtimeDir.replaceAll('\\', '/'))
+      .toMatch(new RegExp(`/${toolRoot}/${SECURITY_RUNTIME_ID}$`));
+    expect(aiStatusA.value.runtimeDir.replaceAll('\\', '/'))
+      .toMatch(new RegExp(`/${aiRoot}/${SECURITY_RUNTIME_ID}$`));
 
     await setSecurityRegistryState('b', 'b');
     const toolUpdate = await invokeOutcome(browser, 'lia_runtime_box_status', {

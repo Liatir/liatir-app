@@ -47,13 +47,15 @@ describe('Runtime Box product E2E support', () => {
   it('exposes only an exact checked release candidate to the non-distributable test app', () => {
     expect(resolveRuntimeBoxReleaseCandidate(null)).toBeNull();
     expect(resolveRuntimeBoxReleaseCandidate('openvax-mhcflurry-class1-presentation'))
-      .toMatchObject({ kind: 'ai-model', metadata: { install: { runtimeBox: { publishedTargets: [{
-        target: { platform: 'macos', arch: 'aarch64', accelerator: 'metal' },
-      }] } } } });
+      .toMatchObject({ kind: 'ai-model', metadata: { install: { runtimeBox: { publishedTargets: [
+        { target: { platform: 'macos', arch: 'aarch64', accelerator: 'metal' } },
+        { target: { platform: 'linux', arch: 'x86_64', accelerator: 'cpu' } },
+      ] } } } });
     expect(resolveRuntimeBoxReleaseCandidate('griffithlab-pvactools-pvacseq'))
-      .toMatchObject({ kind: 'tool-runtime', metadata: { install: { runtimeBox: { publishedTargets: [{
-        target: { platform: 'macos', arch: 'aarch64', accelerator: 'cpu' },
-      }] } } } });
+      .toMatchObject({ kind: 'tool-runtime', metadata: { install: { runtimeBox: { publishedTargets: [
+        { target: { platform: 'macos', arch: 'aarch64', accelerator: 'cpu' } },
+        { target: { platform: 'linux', arch: 'x86_64', accelerator: 'cpu' } },
+      ] } } } });
     expect(() => resolveRuntimeBoxReleaseCandidate('unknown-component')).toThrow(/Unsupported/);
   });
 

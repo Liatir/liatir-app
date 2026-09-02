@@ -74,7 +74,7 @@ export const MHCFLURRY_CLASS1_PRESENTATION_METADATA: LiatirAIModelMetadata = {
 		minRamGb: 8,
 		recommendedRamGb: 16,
 		notes:
-			'CPU, Apple Metal, and NVIDIA CUDA targets are prepared independently and are exposed only after exact-target validation.'
+			'Published targets use Apple Metal or Linux x86_64 CPU; the Linux box also runs through WSL2 on Windows. CUDA targets remain hidden.'
 	},
 	install: {
 		method: 'runtime-box',
@@ -85,7 +85,7 @@ export const MHCFLURRY_CLASS1_PRESENTATION_METADATA: LiatirAIModelMetadata = {
 			boxId: 'mhcflurry-class1-presentation',
 			channel: 'beta',
 			registryBaseUrl: 'https://models.liatir.com/v1',
-			publishedTargets: publishedMacosArm64MetalTarget(8)
+			publishedTargets: publishedMhcflurryTargets()
 		},
 		runtimePackages: [
 			{ package: 'torch', version: '2.8.0', importName: 'torch' },
@@ -97,7 +97,7 @@ export const MHCFLURRY_CLASS1_PRESENTATION_METADATA: LiatirAIModelMetadata = {
 			os: ['macos', 'linux', 'windows'],
 			arch: ['aarch64', 'x86_64'],
 			reason:
-				'Separate signed Runtime Boxes are prepared for Apple silicon Metal and Linux or Windows x86_64 CPU/CUDA targets.'
+				'MHCflurry ships as signed Runtime Boxes for Apple silicon Metal and Linux x86_64 CPU; Windows uses the validated Linux CPU box through WSL2.'
 		}
 	},
 	documentation: {
@@ -120,6 +120,18 @@ function publishedMacosArm64MetalTarget(
 			target: { platform: 'macos', arch: 'aarch64', accelerator: 'metal' },
 			hostEnvironments: ['native'],
 			minRamGb
+		}
+	];
+}
+
+/** Lists the exact MHCflurry targets that completed native and packaged-product validation. */
+function publishedMhcflurryTargets(): readonly LiatirRuntimeBoxTargetCandidate[] {
+	return [
+		...publishedMacosArm64MetalTarget(8),
+		{
+			target: { platform: 'linux', arch: 'x86_64', accelerator: 'cpu' },
+			hostEnvironments: ['native', 'windows-wsl2'],
+			minRamGb: 8
 		}
 	];
 }

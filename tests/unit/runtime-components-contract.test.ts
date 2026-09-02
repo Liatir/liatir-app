@@ -18,11 +18,18 @@ describe('Runtime Component production contract', () => {
     expect(kinds).toEqual(['ai-model', 'tool-runtime']);
     expect(LIATIR_TOOL_RUNTIME_CATALOG.map((runtime) => runtime.id))
       .toEqual([PVACTOOLS_RUNTIME_COMPONENT_ID]);
-    expect(LIATIR_TOOL_RUNTIME_CATALOG[0]?.install.runtimeBox.publishedTargets).toEqual([{
-      target: { platform: 'macos', arch: 'aarch64', accelerator: 'cpu' },
-      hostEnvironments: ['native'],
-      minRamGb: 8,
-    }]);
+    expect(LIATIR_TOOL_RUNTIME_CATALOG[0]?.install.runtimeBox.publishedTargets).toEqual([
+      {
+        target: { platform: 'macos', arch: 'aarch64', accelerator: 'cpu' },
+        hostEnvironments: ['native'],
+        minRamGb: 8,
+      },
+      {
+        target: { platform: 'linux', arch: 'x86_64', accelerator: 'cpu' },
+        hostEnvironments: ['native', 'windows-wsl2'],
+        minRamGb: 8,
+      },
+    ]);
   });
 
   it('uses the component catalog while preserving the Scrollcase modelId identity', () => {

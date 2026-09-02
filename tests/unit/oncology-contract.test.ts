@@ -121,24 +121,45 @@ describe('Phase 2 oncology contract', () => {
       install: {
         runtimeId: 'oncology-mhcflurry-class1-presentation-2-2-1',
         modelCacheSubdir: 'model-cache/mhcflurry-class1-presentation',
-        runtimeBox: { boxId: 'mhcflurry-class1-presentation', publishedTargets: [{
-          target: { platform: 'macos', arch: 'aarch64', accelerator: 'metal' },
-          hostEnvironments: ['native'],
-          minRamGb: 8,
-        }] },
+        runtimeBox: { boxId: 'mhcflurry-class1-presentation', publishedTargets: [
+          {
+            target: { platform: 'macos', arch: 'aarch64', accelerator: 'metal' },
+            hostEnvironments: ['native'],
+            minRamGb: 8,
+          },
+          {
+            target: { platform: 'linux', arch: 'x86_64', accelerator: 'cpu' },
+            hostEnvironments: ['native', 'windows-wsl2'],
+            minRamGb: 8,
+          },
+        ] },
       },
     });
     expect(MHCFLURRY_CLASS1_PRESENTATION_RELEASE_CANDIDATE_METADATA.install.runtimeBox.publishedTargets)
-      .toEqual([{
-        target: { platform: 'macos', arch: 'aarch64', accelerator: 'metal' },
+      .toEqual([
+        {
+          target: { platform: 'macos', arch: 'aarch64', accelerator: 'metal' },
+          hostEnvironments: ['native'],
+          minRamGb: 8,
+        },
+        {
+          target: { platform: 'linux', arch: 'x86_64', accelerator: 'cpu' },
+          hostEnvironments: ['native', 'windows-wsl2'],
+          minRamGb: 8,
+        },
+      ]);
+    expect(PVACTOOLS_TOOL_RUNTIME_METADATA.install.runtimeBox.publishedTargets).toEqual([
+      {
+        target: { platform: 'macos', arch: 'aarch64', accelerator: 'cpu' },
         hostEnvironments: ['native'],
         minRamGb: 8,
-      }]);
-    expect(PVACTOOLS_TOOL_RUNTIME_METADATA.install.runtimeBox.publishedTargets).toEqual([{
-      target: { platform: 'macos', arch: 'aarch64', accelerator: 'cpu' },
-      hostEnvironments: ['native'],
-      minRamGb: 8,
-    }]);
+      },
+      {
+        target: { platform: 'linux', arch: 'x86_64', accelerator: 'cpu' },
+        hostEnvironments: ['native', 'windows-wsl2'],
+        minRamGb: 8,
+      },
+    ]);
     expect(PVACTOOLS_RELEASE_CANDIDATE_METADATA).toBe(PVACTOOLS_TOOL_RUNTIME_METADATA);
   });
 

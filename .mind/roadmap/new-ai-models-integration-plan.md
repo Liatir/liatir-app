@@ -294,6 +294,31 @@ Final activation verification passed the catalog checker, 92 focused tests, all 
 in `test:verify`, and all seven applicable desktop suite groups. The desktop proof directly observed
 the three published oncology entry points in the normal app.
 
+### Linux and WSL2 extension closure — complete 2026-09-02
+
+The reopened Phase 2 scope is complete. Protected GitHub Actions releases `33462667589` and
+`33464208587` published and promoted the signed Linux x86_64 CPU boxes as MHCflurry
+`2.2.1-beta.2` and pVACtools `7.1.2-beta.2`. Independent public readback verified their channel and
+release signatures, signed `native` plus `windows-wsl2` compatibility, and full archive hashes
+`f9444985f6fc5163625dea1fddac50121522bec5d3a29461180f5708c3452227` and
+`1fcca89636801592c6f3da5414f88988bfbca84eeccf9b48878e0b2ff5daa0db`. Their production evidence
+is retained in `runtime-boxes/evidence/` and linked from `runtime-boxes/catalog.json`.
+
+The final Windows product proof used one exact revision for every input:
+`0f21ddb29d4667ad2e9d260cc60901a0af82fa92`. Native Tools run `33561232291`, MHCflurry WSL2 run
+`33561608102`, and pVACtools WSL2 run `33564921577` all passed. The two product runs proved install,
+replacement, rollback, cancellation, real inference, Jobs, Results, provenance, navigation resume,
+offline operation, removal and Result preservation. Retained compact artifacts are `9822458638`
+(`sha256:8dfb11207845bfb3f1aa3f73d3658767486b522e9d4b12831cf06273c39fd123`) and `9823743568`
+(`sha256:744e7c76a7deadca487ffa516295498d17865a685f4334e4767bb8a4f3e44e9f`). The normal product
+catalogs now expose both Linux CPU targets to native Linux and to Windows through WSL2. Planned native
+Windows and CUDA targets remain hidden; no GPU workflow ran.
+
+Final local verification passed 70 files / 494 tests in `test:verify`, including generated SDK types,
+Core, frontend checks/build and `src-ts`. `test:ui` passed all seven applicable Windows suite groups
+with two platform skips: 35 main native scenarios plus the single-cell index, SnpEff, pipeline
+restart, Runtime Box security and Windows install/migration/restart/uninstall-retention lifecycles.
+
 ## Fase 3 — Strutture, affinità e simulazione
 
 **Codex effort consigliato: max**  

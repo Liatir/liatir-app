@@ -1,13 +1,46 @@
 # Current project status
 
-## Oncology Phase 2 Linux and WSL2 expansion is in progress (2026-08-30)
+## Oncology Phase 2 Linux and WSL2 expansion is complete (2026-09-02)
 
-The product owner now requires both oncology components on native Linux x86_64 and in the native
-Windows x86_64 app through WSL2. The existing macOS publications remain complete. This is not only a
-catalog expansion: the current Runtime Box installer deliberately rejects Linux payloads on Windows,
-so WSL2 needs a shared install, execution, status, rollback and removal lifecycle plus a real Windows
-product proof before either Linux payload can be advertised for that environment. No CUDA target is
-part of this extension.
+MHCflurry and pVACseq are now published and exposed for native Linux x86_64 CPU and for the native
+Windows x86_64 app through WSL2, in addition to their existing macOS targets. The app selects the
+same signed Linux payload for both host environments; there is no parallel Windows build and no CUDA
+claim.
+
+The final exact-commit chain used commit `0f21ddb29d4667ad2e9d260cc60901a0af82fa92` throughout.
+Native Tools run `33561232291` passed first. MHCflurry Windows/WSL2 run `33561608102` then passed
+install, replacement, rollback, cancellation, real offline inference, Jobs, navigation-safe Results,
+provenance, experimental-disclaimer, removal and byte-identical Result preservation. Its analysis run
+is `744bc569-d2eb-4a2d-9735-aa68f1d43c96`; three Result artifacts survived removal. Compact evidence
+artifact `9822458638` has digest
+`sha256:8dfb11207845bfb3f1aa3f73d3658767486b522e9d4b12831cf06273c39fd123`.
+
+pVACtools Windows/WSL2 run `33564921577` passed the same lifecycle plus the reduced official pVACseq
+fixture. Its analysis run is `07bf2105-f0d2-4faf-8fcc-a8a3ae3798b9`; all six declared Result files
+survived removal and the former `MHC_Class_I` directory is no longer misregistered as a file. Compact
+evidence artifact `9823743568` has digest
+`sha256:744e7c76a7deadca487ffa516295498d17865a685f4334e4767bb8a4f3e44e9f`.
+Both Windows ephemeral runners passed their disk preflight, used explicit roots on `E:`, removed their
+credentials and roots, and left the repository runner inventory empty.
+
+The signed Linux publications remain the reviewed MHCflurry `2.2.1-beta.2` release `33462667589` and
+pVACtools `7.1.2-beta.2` release `33464208587`. Their checked-in evidence and catalog publication
+records are the source of truth for public release URLs, signed host compatibility and complete
+archive hashes. The following paragraphs retain the diagnosis and retry history that led to this
+closure.
+
+The first final Windows `test:ui` attempt passed the 35-scenario main desktop suite, catalog
+visibility, Native Tools, the single-cell index and SnpEff lifecycles, and the two-process pipeline
+restart lifecycle. It then stopped in the Runtime Box security fixture because that old assertion
+expected the POSIX directory names `tool-runtimes` and `ai-runtimes` on Windows. Since commit
+`5d35592f`, the documented Windows path-length contract removes the `-runtimes` suffix and uses
+`tool` and `ai`; the observed install path was therefore correct. The E2E now verifies the exact
+platform-specific root plus runtime ID. Its 63 focused tests passed, followed by the final
+`test:verify`: 70 files / 494 tests, SDK type generation, Core build, zero-warning Svelte check,
+frontend build and `src-ts` compile. The one bounded `test:ui` retry then passed all seven applicable
+suite groups with two host-inapplicable skips. Its main native suite passed 35 scenarios with no
+failures, and the separate index, SnpEff, pipeline-restart, Runtime Box security and Windows desktop
+install/migration/restart/uninstall-retention lifecycles all passed.
 
 MHCflurry Linux CPU release `33397148921` passed at exact commit
 `9c002d2f672cd3995ca74d115b0b09e47f7d6fac`. pVACtools release `33456282626` passed at exact commit

@@ -1251,6 +1251,21 @@ commit `1dbd329b3da292d120c5883a44f552c977ac0308` then passed the automatic
 catalog-only pVACseq check `33332043809` and MHCflurry check `33332043821`;
 neither push check requested native or GPU execution.
 
+Post-foundation oncology Linux/WSL2 closure (2026-09-02): protected GitHub Actions releases
+`33462667589` and `33464208587` published and promoted the MHCflurry `2.2.1-beta.2` and pVACtools
+`7.1.2-beta.2` Linux x86_64 CPU boxes with signed `native` and `windows-wsl2` compatibility.
+Independent public reads verified both signatures and complete archive hashes; the exact evidence
+records and publication metadata are retained in `runtime-boxes/evidence/` and
+`runtime-boxes/catalog.json`. At exact app commit
+`0f21ddb29d4667ad2e9d260cc60901a0af82fa92`, Native Tools run `33561232291` passed, followed by
+complete Windows/WSL2 packaged-product lifecycle runs `33561608102` (MHCflurry) and `33564921577`
+(pVACtools). Compact evidence artifacts `9822458638` and `9823743568` retain every passed lifecycle
+assertion and prove Result preservation after removal. The normal catalogs therefore expose these
+Linux CPU boxes to native Linux and Windows through WSL2. This is a post-foundation product expansion:
+it does not reopen any foundation gate, change target identity or trust, or claim any CUDA target.
+Final validation passed 70 files / 494 tests in `test:verify` and all seven applicable Windows
+`test:ui` suite groups, including the Runtime Box security and Windows desktop install lifecycles.
+
 ## Foundation completion criteria
 
 The foundation is complete only when:

@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 import {
   RUNTIME_BOX_AI_MODEL_REGISTRY,
   GENEFORMER_V1_10M_MODEL_ID,
+  MHCFLURRY_CLASS1_PRESENTATION_METADATA,
   getRuntimeBoxAIModelMetadata,
 } from '../../packages/liatir-core/src/ai-catalog';
+import { PVACTOOLS_TOOL_RUNTIME_METADATA } from '../../packages/liatir-core/src/tool-runtime-catalog';
 import type {
   LiatirAIModelMetadata,
   LiatirRuntimeBoxActivationMetadata,
@@ -16,6 +18,7 @@ import {
 import type { AIHardwareInfo } from '../../frontend/src/lib/ai/runtime';
 import {
   modelInstallBlock,
+  toolRuntimeInstallBlock,
 } from '../../frontend/src/lib/ai/model-compatibility';
 
 const baseModel = getRuntimeBoxAIModelMetadata(GENEFORMER_V1_10M_MODEL_ID)!;
@@ -182,6 +185,18 @@ describe('Runtime Box native target selection', () => {
       windows,
     );
     expect(block).toBeNull();
+  });
+
+  it('exposes both oncology Linux CPU boxes natively and through WSL2', () => {
+    const linux = hardware('linux', 'x86_64');
+    const windows = hardware('windows', 'x86_64');
+    windows.wsl2Available = true;
+    windows.wslDistribution = 'Ubuntu-24.04';
+
+    expect(modelInstallBlock(MHCFLURRY_CLASS1_PRESENTATION_METADATA, linux)).toBeNull();
+    expect(modelInstallBlock(MHCFLURRY_CLASS1_PRESENTATION_METADATA, windows)).toBeNull();
+    expect(toolRuntimeInstallBlock(PVACTOOLS_TOOL_RUNTIME_METADATA, linux)).toBeNull();
+    expect(toolRuntimeInstallBlock(PVACTOOLS_TOOL_RUNTIME_METADATA, windows)).toBeNull();
   });
 
   it('explains that WSL2 must be ready before a Windows install', () => {

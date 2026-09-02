@@ -75,12 +75,16 @@ export const PVACTOOLS_TOOL_RUNTIME_METADATA: LiatirToolRuntimeMetadata = {
         target: { platform: "macos", arch: "aarch64", accelerator: "cpu" },
         hostEnvironments: ["native"],
         minRamGb: 8,
+      }, {
+        target: { platform: "linux", arch: "x86_64", accelerator: "cpu" },
+        hostEnvironments: ["native", "windows-wsl2"],
+        minRamGb: 8,
       }],
     },
     hostRequirements: {
-      os: ["macos", "linux"],
+      os: ["macos", "linux", "windows"],
       arch: ["aarch64", "x86_64"],
-      reason: "Upstream supports Linux and reports limited macOS use; a Windows target needs WSL2 evidence before product exposure.",
+      reason: "pVACseq ships as signed Runtime Boxes for Apple silicon and Linux x86_64 CPU; Windows uses the validated Linux CPU box through WSL2.",
     },
   },
   license: {
