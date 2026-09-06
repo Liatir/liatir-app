@@ -1,5 +1,37 @@
 # Current project status
 
+## Structure and simulation Phase 3 is in progress (2026-09-06)
+
+The Phase 2 Linux/WSL2 closure below remains the published product state. Phase 3 has candidate-only
+contracts and initial OpenMM product code plus five locked recipes; no Phase 3 component is released.
+The local macOS OpenMM development-signed payload passed 13 scientific/negative cases, and the
+general verification passed 555 tests after the complex-input guards. Cross-platform validation,
+product lifecycle, other Phase 3
+models and publication remain unfinished; these local results do not close the phase.
+The [implementation checklist](roadmap/phase3-implementation-status.md) records verified work,
+scientific defects found during the continuation and every remaining release gate.
+Boltz-2 source and model revisions are now pinned in its source review. Its candidate dependency
+manifest needs Linux-side resolution for source-only dependencies; no Boltz package is built yet.
+Structure and affinity candidate routes own saved input drafts by workspace and draft ID, and the
+serial UI gate now passes those rendered editor and candidate checks: 37 native scenarios, zero
+failures (report `2026-09-06T21-25-49-220Z`), after the paired verification `2026-09-06T21-24-16-023Z`.
+The retained macOS CPU measurement is now a registered run envelope, so Molecular Relaxation accepts
+the measured 33-atom fixture and explicitly refuses anything larger instead of guessing. OpenMM is a
+CI catalog component with five `planned` targets, a caller workflow, a signer-policy entry and a
+product lifecycle spec. **Its macOS CPU product lifecycle now passes in the real app** — install,
+cancellation, refusal of an unmeasured input, a real relaxation reducing potential energy by
+117.84 kJ/mol, Jobs, Results, provenance, navigation and removal with artifacts preserved — retained
+as `runtime-boxes/measurements/openmm-macos-aarch64-cpu-product-lifecycle-development-2026-09-06.json`.
+That is the first real Phase 3 product evidence, on a development-signed local build; it is not
+publication evidence. No signer deploy, no CI dispatch and no publication happened.
+Protenix v2 and exact Mini Default have separate candidate inputs and Linux manifests at source
+commit `2475421477ab414b571149ad4a875c390ff8a35d`. Official v2 checkpoint access currently returns
+HTTP 403; Mini metadata is readable, but no weights or byte hashes have been obtained. See the
+[Protenix review](roadmap/phase3-protenix-source-review.md). One shared Linux CPU-only lock-authoring
+workflow now covers Boltz-2 and both Protenix components; it has not been dispatched, and cannot be
+until it reaches the default branch. Scientific runners, hardware limits for realistic input sizes,
+complete per-component product lifecycles and production publication remain open.
+
 ## Oncology Phase 2 Linux and WSL2 expansion is complete (2026-09-02)
 
 MHCflurry and pVACseq are now published and exposed for native Linux x86_64 CPU and for the native

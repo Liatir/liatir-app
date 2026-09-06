@@ -324,6 +324,29 @@ restart, Runtime Box security and Windows install/migration/restart/uninstall-re
 **Codex effort consigliato: max**  
 **Stima prudenziale: 18–25 giorni**
 
+### Implementation identity and release boundary — locked 2026-09-02
+
+Phase 3 uses four independent Runtime Components so installation, failure, update, rollback and
+removal remain isolated per real runtime: AI Models `jwohlwend-boltz-2`,
+`bytedance-protenix-v2` and `bytedance-protenix-mini-default-v0-5-0`, plus Tool Runtime
+`openmm-openmm`. Their immutable box/runtime identities are respectively
+`boltz-2` / `structure-boltz-2-2-1`, `protenix-v2` / `structure-protenix-v2-2-0-0`,
+`protenix-mini-default-v0-5-0` / `structure-protenix-mini-default-v0-5-0`, and
+`openmm` / `molecular-simulation-openmm-8-5-1`.
+
+The reviewed OpenMM 8.5.1 conda build exposes CUDA 12.9 (not 12.8). Before any publication, the
+Windows candidate was therefore locked to `windows-x86_64-cuda12.9` with NVIDIA driver minimum
+`528.33`; Linux uses the same CUDA 12.9 runtime with minimum driver `525.60.13`. CPU selection
+remains explicit even though the unified Linux and Windows conda package also contains GPU plugins.
+
+Product tools use the stable IDs `biomolecular-structure-prediction`,
+`protein-ligand-affinity`, `molecular-relaxation` and `molecular-dynamics`. None enters the normal
+catalog merely because its UI or recipe exists: each component remains release-candidate-only until
+its exact legal, build, scientific, native, packaged-product, public-signature and hardware-measurement
+evidence has passed. Hardware limits may be derived only from retained target measurements; inputs
+outside a measured envelope are rejected rather than extrapolated. GPU CI remains manual and still
+requires the product owner's separate explicit approval.
+
 ### Runtime Box
 
 - Boltz-2 con checkpoint di struttura e affinità inclusi; Linux CUDA come target obbligatorio. Boltz supporta CPU/non-CUDA ma upstream avverte che sono molto più lenti, quindi niente box CPU pesanti senza utilità pratica. [Boltz ufficiale](https://github.com/jwohlwend/boltz)

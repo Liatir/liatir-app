@@ -18,5 +18,9 @@ runtime-boxes/recipes/**/pixi.lock text eol=lf
 runtime-boxes/recipes/**/pixi.toml text eol=lf
 runtime-boxes/scrolls/**/pixi.lock text eol=lf
 runtime-boxes/scrolls/**/pixi.toml text eol=lf
+# Scroll payload files are hashed into the signed box, so a CRLF checkout would break the pin
+# before the build ever runs. OpenMM ships a self-test, a startup hook and its `.pth` this way.
+runtime-boxes/scrolls/**/*.py text eol=lf
+runtime-boxes/scrolls/**/*.pth text eol=lf
 runtime-boxes/fixtures/** text eol=lf
 runtime-boxes/legal/** text eol=lf

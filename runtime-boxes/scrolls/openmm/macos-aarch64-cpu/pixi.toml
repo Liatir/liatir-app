@@ -1,0 +1,18 @@
+[workspace]
+name = "openmm-macos-aarch64-cpu"
+channels = ["conda-forge"]
+platforms = ["osx-arm64"]
+
+[dependencies]
+python = "3.11.*"
+openmm = "8.5.1.*"
+openff-toolkit-base = "0.17.1.*"
+openff-interchange-base = "0.4.11.*"
+openff-nagl = "0.5.5.*"
+openff-forcefields = "2026.01.0.*"
+openff-nagl-models = "2025.9.0.*"
+rdkit = "2025.03.6.*"
+numpy = "1.26.4.*"
+pyyaml = "*"
+lxml = "6.0.*"
+pytorch = { version = "2.10.0.*", build = "cpu_*" }

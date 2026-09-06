@@ -4,6 +4,8 @@ import {
   validateLiatirFastaArtifact,
   validateLiatirAnnDataArtifact,
   validateLiatirNeoantigenTsvArtifact,
+  validateLiatirDcdTrajectoryArtifact,
+  validateLiatirStructureArtifact,
   validateLiatirVepTumorVcfArtifact,
   type LiatirAnnDataInspectionV1,
   type LiatirArtifactCompatibilityReport,
@@ -11,8 +13,10 @@ import {
   type LiatirArtifactRequirement,
   type LiatirArtifactViewerHints,
   type LiatirNeoantigenTsvInspectionV1,
+  type LiatirDcdTrajectoryInspectionV1,
   type LiatirSequenceInspectionV1,
   type LiatirScientificArtifactMetadata,
+  type LiatirStructureInspectionV1,
   type LiatirVepTumorVcfInspectionV1,
 } from '@liatir/core';
 
@@ -99,6 +103,41 @@ export async function inspectNeoantigenTsvArtifact(
     sizeBytes: identity.sizeBytes,
     sha256: identity.sha256,
     inspection,
+    validatedAt: options.validatedAt ?? new Date().toISOString(),
+    ...(options.lineage ? { lineage: options.lineage } : {}),
+    ...(options.viewerHints ? { viewerHints: options.viewerHints } : {}),
+  });
+}
+
+export async function inspectStructureArtifact(
+  path: string,
+  inspection: LiatirStructureInspectionV1,
+  options: ScientificArtifactOptions = {},
+): Promise<LiatirScientificArtifactMetadata> {
+  const identity = await fileIdentity(path);
+  return validateLiatirStructureArtifact({
+    sizeBytes: identity.sizeBytes,
+    sha256: identity.sha256,
+    inspection,
+    validatedAt: options.validatedAt ?? new Date().toISOString(),
+    ...(options.lineage ? { lineage: options.lineage } : {}),
+    ...(options.viewerHints ? { viewerHints: options.viewerHints } : {}),
+  });
+}
+
+export async function inspectDcdTrajectoryArtifact(
+  path: string,
+  inspection: Omit<LiatirDcdTrajectoryInspectionV1, 'dcdSignature'>,
+  options: ScientificArtifactOptions = {},
+): Promise<LiatirScientificArtifactMetadata> {
+  const identity = await fileIdentity(path);
+  return validateLiatirDcdTrajectoryArtifact({
+    sizeBytes: identity.sizeBytes,
+    sha256: identity.sha256,
+    inspection: {
+      ...inspection,
+      dcdSignature: /^(?:54000000|00000054)434f5244$/u.test(identity.prefixHex.toLowerCase()),
+    },
     validatedAt: options.validatedAt ?? new Date().toISOString(),
     ...(options.lineage ? { lineage: options.lineage } : {}),
     ...(options.viewerHints ? { viewerHints: options.viewerHints } : {}),

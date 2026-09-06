@@ -826,6 +826,123 @@
           }
         }
       ]
+    },
+    {
+      "componentKind": "tool-runtime",
+      "componentId": "openmm-openmm",
+      "modelId": "openmm-openmm",
+      "boxId": "openmm",
+      "runtimeId": "molecular-simulation-openmm-8-5-1",
+      "legalRecord": "runtime-boxes/legal/openmm.md",
+      "legalStatus": "approved",
+      "validatorScript": "runtime-box:validate:openmm",
+      "validatorPath": "scripts/validate-openmm-runtime.mjs",
+      "productScriptPath": "frontend/src/lib/tools/molecular-simulation/python-scripts/openmm.ts",
+      "productLifecycleSpec": "tests/e2e/specs/runtime-box-openmm-native.e2e.mjs",
+      "callerWorkflow": ".github/workflows/runtime-box-openmm.yml",
+      "targets": [
+        {
+          "targetId": "macos-aarch64-cpu",
+          "target": { "platform": "macos", "arch": "aarch64", "accelerator": "cpu" },
+          "hostEnvironments": ["native"],
+          "recipeId": "openmm-macos-aarch64-cpu",
+          "runnerProfileId": "macos-arm64-heavy",
+          "status": "planned",
+          "validationModes": ["build", "scientific", "native-lifecycle"],
+          "timeoutMinutes": 180,
+          "requiredBuildDiskBytes": 8589934592,
+          "dependencyLockSha256": "246bd4d7806162ce80574582430eed261c7549451e79e28b6abd13e23da7386b",
+          "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/openmm-macos-aarch64-cpu.json",
+          "diskPlan": {
+            "estimatedInstalledSizeBytes": 2147483648,
+            "estimatedArchiveSizeBytes": 1073741824,
+            "safetyMarginBytes": 4294967296
+          },
+          "gpuRequired": false,
+          "nativeCiEnabled": false
+        },
+        {
+          "targetId": "linux-x86_64-cpu",
+          "target": { "platform": "linux", "arch": "x86_64", "accelerator": "cpu" },
+          "hostEnvironments": ["native"],
+          "recipeId": "openmm-linux-x86_64-cpu",
+          "runnerProfileId": "linux-x64-selfhosted",
+          "status": "planned",
+          "validationModes": ["build", "scientific", "native-lifecycle"],
+          "timeoutMinutes": 180,
+          "requiredBuildDiskBytes": 8589934592,
+          "dependencyLockSha256": "c35e17ae7d1373455c0de30a8b7a01868c550a1f988e90f22cae61127fb47cd1",
+          "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/openmm-linux-x86_64-cpu.json",
+          "diskPlan": {
+            "estimatedInstalledSizeBytes": 2147483648,
+            "estimatedArchiveSizeBytes": 1073741824,
+            "safetyMarginBytes": 4294967296
+          },
+          "gpuRequired": false,
+          "nativeCiEnabled": false
+        },
+        {
+          "targetId": "windows-x86_64-cpu",
+          "target": { "platform": "windows", "arch": "x86_64", "accelerator": "cpu" },
+          "hostEnvironments": ["native"],
+          "recipeId": "openmm-windows-x86_64-cpu",
+          "runnerProfileId": "windows-x64-selfhosted",
+          "status": "planned",
+          "validationModes": ["build", "scientific", "native-lifecycle"],
+          "timeoutMinutes": 180,
+          "requiredBuildDiskBytes": 8589934592,
+          "dependencyLockSha256": "ea14d4986db4cb8537c022b31f1db48d5466903b61e2683267b272a17f4599b9",
+          "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/openmm-windows-x86_64-cpu.json",
+          "diskPlan": {
+            "estimatedInstalledSizeBytes": 2147483648,
+            "estimatedArchiveSizeBytes": 1073741824,
+            "safetyMarginBytes": 4294967296
+          },
+          "gpuRequired": false,
+          "nativeCiEnabled": false
+        },
+        {
+          "targetId": "linux-x86_64-cuda12.9",
+          "target": { "platform": "linux", "arch": "x86_64", "accelerator": "cuda", "cudaVersion": "12.9" },
+          "hostEnvironments": ["native"],
+          "recipeId": "openmm-linux-x86_64-cuda12.9",
+          "runnerProfileId": "linux-x64-cuda-selfhosted",
+          "status": "planned",
+          "validationModes": ["build", "scientific", "native-lifecycle"],
+          "timeoutMinutes": 180,
+          "requiredBuildDiskBytes": 17179869184,
+          "dependencyLockSha256": "0bf2cb447cde30e8ee2ca1b262c88fec72c890519728ed52588a0c59c2afb39f",
+          "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/openmm-linux-x86_64-cuda12.9.json",
+          "diskPlan": {
+            "estimatedInstalledSizeBytes": 6442450944,
+            "estimatedArchiveSizeBytes": 3221225472,
+            "safetyMarginBytes": 4294967296
+          },
+          "gpuRequired": true,
+          "nativeCiEnabled": false
+        },
+        {
+          "targetId": "windows-x86_64-cuda12.9",
+          "target": { "platform": "windows", "arch": "x86_64", "accelerator": "cuda", "cudaVersion": "12.9" },
+          "hostEnvironments": ["native"],
+          "recipeId": "openmm-windows-x86_64-cuda12.9",
+          "runnerProfileId": "windows-x64-cuda-selfhosted",
+          "status": "planned",
+          "validationModes": ["build", "scientific", "native-lifecycle"],
+          "timeoutMinutes": 180,
+          "requiredBuildDiskBytes": 17179869184,
+          "dependencyLockSha256": "1b75b07a5acb79dbc113e71e16ae146a485be8b01074aaabf14a603fecc7c274",
+          "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/openmm-windows-x86_64-cuda12.9.json",
+          "diskPlan": {
+            "estimatedInstalledSizeBytes": 6442450944,
+            "estimatedArchiveSizeBytes": 3221225472,
+            "safetyMarginBytes": 4294967296
+          },
+          "gpuRequired": true,
+          "nativeCiEnabled": false,
+          "linuxValidationPrerequisiteTargetId": "linux-x86_64-cuda12.9"
+        }
+      ]
     }
   ]
 }

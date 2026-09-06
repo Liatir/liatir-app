@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "kind": "liatir.phase3-source-candidate",
+  "componentId": "bytedance-protenix-mini-default-v0-5-0",
+  "boxId": "protenix-mini-default-v0-5-0",
+  "runtimeId": "structure-protenix-mini-default-v0-5-0",
+  "sourceRepository": "https://github.com/bytedance/Protenix",
+  "sourceRevision": "2475421477ab414b571149ad4a875c390ff8a35d",
+  "packageVersion": "2.0.0",
+  "modelName": "protenix_mini_default_v0.5.0",
+  "checkpoint": {
+    "url": "https://protenix.tos-cn-beijing.volces.com/checkpoint/protenix_mini_default_v0.5.0.pt",
+    "relativePath": "checkpoint/protenix_mini_default_v0.5.0.pt",
+    "sha256": null,
+    "integrityStatus": "unverified-not-downloaded"
+  },
+  "commonAssetKeys": ["ccd_components_file", "ccd_components_rdkit_mol_file", "pdb_cluster_file", "obsolete_release_data_csv"],
+  "assetUrlSource": "protenix/web_service/dependency_url.py",
+  "esmEnabled": false,
+  "additionalCheckpoints": [],
+  "useTemplate": false,
+  "inference": { "recycles": 4, "diffusionSteps": 5, "loadStrict": true },
+  "releaseStatus": "blocked-pending-asset-integrity-dependencies-legal-scientific-hardware-product-evidence"
+}

@@ -31,7 +31,8 @@ export interface LiatirComplexTemplate {
   id: string;
   entityId: string;
   path: string;
-  format: "pdb" | "mmcif";
+  /** Boltz accepts PDB/mmCIF; Protenix accepts local HHR/A3M template-search output. */
+  format: "pdb" | "mmcif" | "hhr" | "a3m";
   chainId?: string;
 }
 
@@ -74,6 +75,94 @@ export interface LiatirComplexSpec {
 export interface LiatirComplexSpecValidation {
   valid: boolean;
   errors: string[];
+}
+
+export interface LiatirComplexSpecParseResult extends LiatirComplexSpecValidation {
+  spec: LiatirComplexSpec | null;
+}
+
+/** Read advanced user input without letting malformed JSON reach scientific adapters. */
+export function parseLiatirComplexSpecJson(text: string): LiatirComplexSpecParseResult {
+  const parsed = parseLiatirComplexSpecDraftJson(text);
+  return { ...parsed, spec: parsed.valid ? parsed.spec : null };
+}
+
+/** Restore unfinished editor data safely, retaining well-shaped but scientifically invalid input. */
+export function parseLiatirComplexSpecDraftJson(text: string): LiatirComplexSpecParseResult {
+  let value: unknown;
+  try {
+    value = JSON.parse(text);
+  } catch {
+    return { valid: false, errors: ["Complex input must be valid JSON."], spec: null };
+  }
+  const errors: string[] = [];
+  const object = (item: unknown): item is Record<string, unknown> =>
+    typeof item === "object" && item !== null && !Array.isArray(item);
+  const knownFields = (item: Record<string, unknown>, label: string, allowed: string[]) => {
+    for (const key of Object.keys(item)) {
+      if (!allowed.includes(key)) errors.push(`${label}.${key} is not supported; it would not be used by prediction.`);
+    }
+  };
+  const fields = (item: Record<string, unknown>, label: string, required: Record<string, string>, optional: Record<string, string> = {}) => {
+    for (const [key, type] of Object.entries(required)) {
+      if (typeof item[key] !== type || (type === "number" && !Number.isFinite(item[key]))) errors.push(`${label}.${key} must be a ${type === "number" ? "finite number" : type}.`);
+    }
+    for (const [key, type] of Object.entries(optional)) {
+      if (item[key] !== undefined && (typeof item[key] !== type || (type === "number" && !Number.isFinite(item[key])))) errors.push(`${label}.${key} must be a ${type === "number" ? "finite number" : type}.`);
+    }
+  };
+  if (!object(value)) return { valid: false, errors: ["Complex input must be a JSON object."], spec: null };
+  knownFields(value, "Complex", ["schemaVersion", "kind", "name", "entities", "templates", "constraints"]);
+  fields(value, "Complex", { schemaVersion: "number", kind: "string" }, { name: "string" });
+  if (!Array.isArray(value.entities)) errors.push("Complex.entities must be an array.");
+  for (const [index, entity] of (Array.isArray(value.entities) ? value.entities : []).entries()) {
+    const label = `Entity ${index + 1}`;
+    if (!object(entity)) { errors.push(`${label} must be an object.`); continue; }
+    fields(entity, label, { id: "string", type: "string" }, { copies: "number" });
+    knownFields(entity, label, ["id", "type", "copies", ...(entity.type === "ligand" ? ["smiles", "ccdCode"] : ["sequence", "msa"])]);
+    if (entity.type === "ligand") {
+      fields(entity, label, {}, { smiles: "string", ccdCode: "string" });
+    } else if (["protein", "dna", "rna"].includes(String(entity.type))) {
+      fields(entity, label, { sequence: "string" });
+      if (entity.msa !== undefined) {
+        if (!object(entity.msa)) errors.push(`${label}.msa must be an object.`);
+        else {
+          knownFields(entity.msa, `${label}.msa`, ["format", "path"]);
+          fields(entity.msa, `${label}.msa`, { path: "string" });
+          if (entity.msa.format !== "a3m") errors.push(`${label}.msa.format must be a3m.`);
+        }
+      }
+    } else errors.push(`${label}.type must be protein, dna, rna or ligand.`);
+  }
+  for (const key of ["templates", "constraints"] as const) {
+    if (value[key] !== undefined && !Array.isArray(value[key])) errors.push(`Complex.${key} must be an array.`);
+  }
+  for (const [index, template] of (Array.isArray(value.templates) ? value.templates : []).entries()) {
+    const label = `Template ${index + 1}`;
+    if (!object(template)) { errors.push(`${label} must be an object.`); continue; }
+    knownFields(template, label, ["id", "entityId", "path", "format", "chainId"]);
+    fields(template, label, { id: "string", entityId: "string", path: "string" }, { chainId: "string" });
+    if (!["pdb", "mmcif", "hhr", "a3m"].includes(String(template.format))) errors.push(`${label} has an unsupported format.`);
+  }
+  for (const [index, constraint] of (Array.isArray(value.constraints) ? value.constraints : []).entries()) {
+    const label = `Constraint ${index + 1}`;
+    if (!object(constraint)) { errors.push(`${label} must be an object.`); continue; }
+    knownFields(constraint, label, ["type", "left", "right", ...(constraint.type === "distance" ? ["minDistanceAngstrom", "maxDistanceAngstrom"] : constraint.type === "contact" ? ["maxDistanceAngstrom"] : [])]);
+    if (!["bond", "contact", "distance"].includes(String(constraint.type))) errors.push(`${label} has an unsupported type.`);
+    fields(constraint, label, constraint.type === "distance" ? { maxDistanceAngstrom: "number" } : {},
+      { minDistanceAngstrom: "number", maxDistanceAngstrom: "number" });
+    for (const side of ["left", "right"] as const) {
+      if (!object(constraint[side])) errors.push(`${label}.${side} must be an object.`);
+      else {
+        knownFields(constraint[side], `${label}.${side}`, ["entityId", "residue", "atom"]);
+        fields(constraint[side], `${label}.${side}`, { entityId: "string" }, { residue: "number", atom: "string" });
+      }
+    }
+  }
+  if (errors.length) return { valid: false, errors, spec: null };
+  const spec = value as unknown as LiatirComplexSpec;
+  const validation = validateLiatirComplexSpec(spec);
+  return { ...validation, spec };
 }
 
 const ENTITY_ID_RE = /^[A-Za-z][A-Za-z0-9_-]{0,63}$/;

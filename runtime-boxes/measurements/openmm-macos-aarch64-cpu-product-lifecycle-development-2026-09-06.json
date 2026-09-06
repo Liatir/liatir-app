@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "kind": "liatir.runtime-box.product-lifecycle-evidence",
+  "status": "passed",
+  "boxId": "openmm",
+  "modelId": "openmm-openmm",
+  "runtimeId": "molecular-simulation-openmm-8-5-1",
+  "targetId": "macos-aarch64-cpu",
+  "hostEnvironment": "native",
+  "version": "8.5.1-beta.1",
+  "jobId": "job_2",
+  "analysisRunId": "785782f6-ec0b-45d5-85fa-3d39c5b9af2d",
+  "accelerator": "CPU",
+  "resultArtifactCount": 4,
+  "release": {
+    "archiveSha256": "c78db875fb91c8be0088a22547062af3ed40efb614f88f23ee056d94ce2b23a6",
+    "archiveSizeBytes": 580872984,
+    "installedSizeBytes": 1945943879,
+    "signingKeyIds": [
+      "liatir-openmm-development"
+    ]
+  },
+  "measured": {
+    "hardwareProfileId": "openmm-8.5.1-beta.1-macos-aarch64-cpu-development-2026-09-06",
+    "preparedAtomCount": 33,
+    "initialPotentialEnergyKilojoulePerMole": -1.691218992097177,
+    "finalPotentialEnergyKilojoulePerMole": -119.53121642948675,
+    "energyReductionKilojoulePerMole": 117.83999743738957
+  },
+  "assertions": {
+    "install": "passed",
+    "cancellation": "passed",
+    "unmeasuredInputRefused": "passed",
+    "officialFixture": "passed",
+    "realRelaxation": "passed",
+    "energyReduced": "passed",
+    "jobs": "passed",
+    "navigationResume": "passed",
+    "results": "passed",
+    "provenance": "passed",
+    "offline": "passed",
+    "interpretationNotice": "passed",
+    "removal": "passed",
+    "resultArtifactsSurvivedRemoval": "passed"
+  }
+}

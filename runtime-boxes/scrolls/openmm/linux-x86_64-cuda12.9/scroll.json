@@ -1,0 +1,107 @@
+{
+  "$schema": "https://scrollcase.dev/schema/v2/scroll.schema.json",
+  "schemaVersion": 2,
+  "scrollId": "openmm-linux-x86_64-cuda12.9",
+  "scrollVersion": "1.0.0",
+  "boxId": "openmm",
+  "modelId": "openmm-openmm",
+  "runtimeId": "molecular-simulation-openmm-8-5-1",
+  "version": "8.5.1-beta.1",
+  "sourceRevision": "8.5.1+openmmforcefields-0.16.0+openff-toolkit-0.17.1+openff-sage-2.3.0+nagl-0.5.5",
+  "target": {
+    "platform": "linux",
+    "arch": "x86_64",
+    "accelerator": "cuda",
+    "cudaVersion": "12.9"
+  },
+  "compatibility": {
+    "minLiatirVersion": "0.2.1",
+    "minRamGb": 8,
+    "minNvidiaDriverVersion": "525.60.13"
+  },
+  "pythonVersion": "3.11.16",
+  "pixiVersion": "0.73.0",
+  "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/openmm-linux-x86_64-cuda12.9.json",
+  "pythonEntryPoint": "venv/bin/python",
+  "modelCacheSubdir": "venv/lib/python3.11/site-packages/openff/nagl_models/models/am1bcc",
+  "assetBaseUrl": "https://assets.models.liatir.com/ai-runtime-boxes",
+  "assets": [
+    {
+      "url": "https://codeload.github.com/openmm/openmmforcefields/tar.gz/refs/tags/0.16.0",
+      "relativePath": ".sources/openmmforcefields-0.16.0.tar.gz",
+      "sizeBytes": 33077731,
+      "sha256": "703f1341569ec691c0af20b134bd0fc7b00b6c4049fd90ad1c1728630e7c1d99"
+    }
+  ],
+  "assetArchives": [
+    {
+      "relativePath": ".sources/openmmforcefields-0.16.0.tar.gz",
+      "format": "tar.gz",
+      "destination": "source/openmmforcefields",
+      "stripComponents": 1,
+      "removeAfterExtract": true
+    }
+  ],
+  "localFiles": [
+    {
+      "sourcePath": "runtime-boxes/legal/openmm.md",
+      "relativePath": "THIRD_PARTY_NOTICES/openmm.md",
+      "sha256": "ad8231503270a71d96f300e76e216acf64a7dff879019392fd61b813536a3813"
+    },
+    {
+      "sourcePath": "runtime-boxes/scrolls/openmm/self-test.py",
+      "relativePath": "self-tests/openmm.py",
+      "sha256": "270d2072b1b6e74aed8febef4fddd09919ba6fa8da39c2315f4fd32f31f8fa01"
+    },
+    {
+      "sourcePath": "runtime-boxes/scrolls/openmm/python-startup.py",
+      "relativePath": "venv/lib/python3.11/site-packages/liatir_openmm_bootstrap.py",
+      "sha256": "978df97668721e6ccaaca68ad64e1b998324056ebdc5868830364f8f224e7843"
+    },
+    {
+      "sourcePath": "runtime-boxes/scrolls/openmm/liatir-openmm.pth",
+      "relativePath": "venv/lib/python3.11/site-packages/liatir-openmm.pth",
+      "sha256": "78cbbe6f2a961da35924b67c0c0d2bf158cb208e64ea6562c5b2e8043cbb4efe"
+    }
+  ],
+  "prunePaths": [
+    "source/openmmforcefields/.github",
+    "source/openmmforcefields/amber",
+    "source/openmmforcefields/charmm",
+    "source/openmmforcefields/devtools",
+    "source/openmmforcefields/docs",
+    "source/openmmforcefields/openmmforcefields/ffxml",
+    "source/openmmforcefields/openmmforcefields/tests",
+    "source/openmmforcefields/openmmforcefields/data/minidrugbank",
+    "source/openmmforcefields/openmmforcefields/data/perses_jacs_systems",
+    "source/openmmforcefields/openmmforcefields/data/test_vsites_mols",
+    "source/openmmforcefields/openmmforcefields/data/test-virtual-sites.offxml"
+  ],
+  "selfTest": {
+    "imports": [
+      "openmm",
+      "openff.toolkit",
+      "openff.nagl",
+      "openff.nagl_models",
+      "openforcefields",
+      "rdkit",
+      "lxml"
+    ],
+    "files": [
+      "source/openmmforcefields/LICENSE",
+      "source/openmmforcefields/openmmforcefields/__init__.py",
+      "source/openmmforcefields/openmmforcefields/generators/template_generators.py",
+      "THIRD_PARTY_NOTICES/openmm.md",
+      "self-tests/openmm.py",
+      "source/openmmforcefields/openmmforcefields/data/test-ala-3.pdb",
+      "source/openmmforcefields/openmmforcefields/data/test-aa.pdb",
+      "venv/lib/python3.11/site-packages/openff/nagl_models/models/am1bcc/openff-gnn-am1bcc-1.0.0.pt",
+      "venv/lib/python3.11/site-packages/liatir_openmm_bootstrap.py",
+      "venv/lib/python3.11/site-packages/liatir-openmm.pth"
+    ],
+    "pythonCode": "import os\nfrom pathlib import Path\nos.environ['LIATIR_EXPECTED_OPENMM_ACCELERATOR'] = 'cuda'\ncode = Path('self-tests/openmm.py').read_text(encoding='utf-8')\nexec(compile(code, 'self-tests/openmm.py', 'exec'), {'__name__': '__main__'})"
+  },
+  "environment": {
+    "PYTHONNOUSERSITE": "1"
+  }
+}

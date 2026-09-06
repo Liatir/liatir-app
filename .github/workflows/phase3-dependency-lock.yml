@@ -1,0 +1,96 @@
+name: Phase 3 dependency authoring
+
+# Resolves source-only Python dependencies on their Linux authoring platform. Boltz-2 and both
+# Protenix components pin PyPI packages that ship an sdist only (fairscale) or a Git revision, so
+# their metadata cannot be resolved on macOS arm64 at all. This is authoring, not a release gate:
+# no GPU runner, no model weights, no signer, no R2 upload, and nothing is committed by the run.
+on:
+  workflow_dispatch:
+    inputs:
+      component:
+        description: Phase 3 component to resolve
+        required: true
+        type: choice
+        options:
+          - boltz-2
+          - protenix-v2
+          - protenix-mini-default-v0-5-0
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phase3-dependency-authoring-${{ inputs.component }}
+  cancel-in-progress: false
+
+jobs:
+  lock:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      PIXI_VERSION: v0.73.0
+      PIXI_HOME: ${{ runner.temp }}/liatir-phase3-pixi
+      PIXI_NO_PATH_UPDATE: '1'
+      PIXI_CACHE_DIR: ${{ runner.temp }}/liatir-phase3-pixi-cache
+      SCROLL_DIR: runtime-boxes/scrolls/${{ inputs.component }}/linux-x86_64-cuda12.9
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Install the reviewed dependency resolver
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL https://pixi.sh/install.sh | bash
+          echo "$PIXI_HOME/bin" >> "$GITHUB_PATH"
+          test "$("$PIXI_HOME/bin/pixi" --version)" = 'pixi 0.73.0'
+
+      - name: Resolve the candidate on its Linux authoring platform
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(uname -m)" = x86_64
+          pixi lock --manifest-path "$SCROLL_DIR/pixi.toml"
+          pixi lock --check --manifest-path "$SCROLL_DIR/pixi.toml"
+
+      - name: Record source and dependency identity
+        shell: python
+        env:
+          COMPONENT: ${{ inputs.component }}
+          REVIEWED_COMMIT: ${{ github.sha }}
+        run: |
+          import hashlib, json, os, pathlib, platform
+          component_ids = {
+              'boltz-2': 'jwohlwend-boltz-2',
+              'protenix-v2': 'bytedance-protenix-v2',
+              'protenix-mini-default-v0-5-0': 'bytedance-protenix-mini-default-v0-5-0',
+          }
+          root = pathlib.Path(os.environ['SCROLL_DIR'])
+          receipt = {
+              'schemaVersion': 1,
+              'kind': 'liatir.phase3-dependency-authoring',
+              'componentId': component_ids[os.environ['COMPONENT']],
+              'candidateTargetId': 'linux-x86_64-cuda12.9',
+              'sourceCommit': os.environ['REVIEWED_COMMIT'],
+              'workflowRunId': os.environ['GITHUB_RUN_ID'],
+              'pixiVersion': '0.73.0',
+              'host': {'system': platform.system(), 'machine': platform.machine()},
+              'files': {name: hashlib.sha256((root / name).read_bytes()).hexdigest()
+                        for name in ['pixi.toml', 'pixi.lock']},
+              'gpuExecuted': False,
+              'modelWeightsDownloaded': False,
+              'published': False,
+          }
+          (root / 'authoring-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+
+      - name: Retain the candidate lock for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase3-dependency-lock-${{ inputs.component }}-${{ github.sha }}
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            ${{ env.SCROLL_DIR }}/pixi.toml
+            ${{ env.SCROLL_DIR }}/pixi.lock
+            ${{ env.SCROLL_DIR }}/authoring-receipt.json

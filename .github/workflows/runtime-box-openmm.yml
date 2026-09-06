@@ -1,0 +1,84 @@
+name: Runtime Box OpenMM
+
+on:
+  pull_request:
+    paths:
+      - "runtime-boxes/catalog.json"
+      - "runtime-boxes/scrolls/openmm/macos-aarch64-cpu/**"
+      - "runtime-boxes/scrolls/openmm/linux-x86_64-cpu/**"
+      - "runtime-boxes/scrolls/openmm/windows-x86_64-cpu/**"
+      - "runtime-boxes/scrolls/openmm/linux-x86_64-cuda12.9/**"
+      - "runtime-boxes/scrolls/openmm/windows-x86_64-cuda12.9/**"
+      - "runtime-boxes/legal/audits/openmm-macos-aarch64-cpu.json"
+      - "runtime-boxes/legal/audits/openmm-linux-x86_64-cpu.json"
+      - "runtime-boxes/legal/audits/openmm-windows-x86_64-cpu.json"
+      - "runtime-boxes/legal/audits/openmm-linux-x86_64-cuda12.9.json"
+      - "runtime-boxes/legal/audits/openmm-windows-x86_64-cuda12.9.json"
+      - "runtime-boxes/legal/openmm.md"
+      - "scripts/validate-openmm-runtime.mjs"
+      - "scripts/runtime-box/evidence.mjs"
+      - "scripts/runtime-box-ci.mjs"
+      - "scripts/runtime-box/validator-context.mjs"
+      - "scripts/install-runtime-box-linux-product-deps.sh"
+      - "frontend/src/lib/tools/molecular-simulation/python-scripts/openmm.ts"
+      - "tests/e2e/specs/runtime-box-openmm-native.e2e.mjs"
+      - ".github/workflows/_runtime-box-validate.yml"
+      - ".github/workflows/runtime-box-openmm.yml"
+  push:
+    branches: [main]
+    paths:
+      - "runtime-boxes/catalog.json"
+      - "runtime-boxes/scrolls/openmm/macos-aarch64-cpu/**"
+      - "runtime-boxes/scrolls/openmm/linux-x86_64-cpu/**"
+      - "runtime-boxes/scrolls/openmm/windows-x86_64-cpu/**"
+      - "runtime-boxes/scrolls/openmm/linux-x86_64-cuda12.9/**"
+      - "runtime-boxes/scrolls/openmm/windows-x86_64-cuda12.9/**"
+      - "runtime-boxes/legal/audits/openmm-macos-aarch64-cpu.json"
+      - "runtime-boxes/legal/audits/openmm-linux-x86_64-cpu.json"
+      - "runtime-boxes/legal/audits/openmm-windows-x86_64-cpu.json"
+      - "runtime-boxes/legal/audits/openmm-linux-x86_64-cuda12.9.json"
+      - "runtime-boxes/legal/audits/openmm-windows-x86_64-cuda12.9.json"
+      - "runtime-boxes/legal/openmm.md"
+      - "scripts/validate-openmm-runtime.mjs"
+      - "scripts/runtime-box/evidence.mjs"
+      - "scripts/runtime-box-ci.mjs"
+      - "scripts/runtime-box/validator-context.mjs"
+      - "scripts/install-runtime-box-linux-product-deps.sh"
+      - "frontend/src/lib/tools/molecular-simulation/python-scripts/openmm.ts"
+      - "tests/e2e/specs/runtime-box-openmm-native.e2e.mjs"
+      - ".github/workflows/_runtime-box-validate.yml"
+      - ".github/workflows/runtime-box-openmm.yml"
+  workflow_dispatch:
+    inputs:
+      target_id:
+        description: Checked Runtime Box target
+        required: true
+        type: choice
+        options:
+          - macos-aarch64-cpu
+          - linux-x86_64-cpu
+          - windows-x86_64-cpu
+          - linux-x86_64-cuda12.9
+          - windows-x86_64-cuda12.9
+      mode:
+        description: Native validation depth
+        required: true
+        default: build
+        type: choice
+        options: [build, scientific, native-lifecycle]
+
+concurrency:
+  group: runtime-box-openmm-${{ inputs.target_id || 'macos-aarch64-cpu' }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    uses: ./.github/workflows/_runtime-box-validate.yml
+    with:
+      model_id: openmm-openmm
+      target_id: ${{ inputs.target_id || 'macos-aarch64-cpu' }}
+      mode: ${{ inputs.mode || 'build' }}
+      native_requested: ${{ github.event_name == 'workflow_dispatch' }}

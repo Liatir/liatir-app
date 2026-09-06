@@ -15,6 +15,12 @@ import {
   runNeoantigenPrioritizationStep,
 } from './oncology/neoantigen-prioritization';
 import {
+  molecularDynamicsDefinition,
+  molecularRelaxationDefinition,
+  runMolecularDynamicsStep,
+  runMolecularRelaxationStep,
+} from './molecular-simulation/openmm';
+import {
   runSimpleafIndexStep,
   runSimpleafQuantStep,
   simpleafIndexDefinition,
@@ -43,6 +49,7 @@ import type { JsonValue } from '@liatir/core';
 import {
   LIATIR_TOOL_RUNTIME_CATALOG,
   MHCFLURRY_CLASS1_PRESENTATION_MODEL_ID,
+  OPENMM_RUNTIME_COMPONENT_ID,
   PVACTOOLS_RUNTIME_COMPONENT_ID,
   RUNTIME_BOX_AI_MODEL_REGISTRY,
 } from '@liatir/core';
@@ -577,6 +584,8 @@ export const PIPELINE_REGISTRY: Record<string, PipelineRegistryEntry> = {
   'ai-single-cell-embedding': { definition: singleCellEmbeddingDefinition, run: runSingleCellEmbeddingStep },
   'ai-mhc-class-i-epitope-prediction': { definition: mhcFlurryEpitopeDefinition, run: runMhcFlurryEpitopeStep },
   'neoantigen-prioritization': { definition: neoantigenPrioritizationDefinition, run: runNeoantigenPrioritizationStep },
+  'molecular-relaxation': { definition: molecularRelaxationDefinition, run: runMolecularRelaxationStep },
+  'molecular-dynamics': { definition: molecularDynamicsDefinition, run: runMolecularDynamicsStep },
   'viewer-structure-3d': { definition: structureViewerDefinition, run: runStructureViewerStep },
   'viewer-genome-track': { definition: genomeViewerDefinition, run: runGenomeViewerStep },
   'viewer-single-cell': { definition: singleCellViewerDefinition, run: runSingleCellViewerStep },
@@ -646,14 +655,17 @@ export function allStepDefinitions(): PipelineStepDefinition[] {
       ? [mhcFlurryEpitopeDefinition.id]
       : [],
   );
-  const publishedToolRuntimeSteps = new Set(
-    LIATIR_TOOL_RUNTIME_CATALOG.some((runtime) =>
-      runtime.id === PVACTOOLS_RUNTIME_COMPONENT_ID
-      && runtime.install.runtimeBox.publishedTargets.length > 0
-    )
-      ? [neoantigenPrioritizationDefinition.id]
-      : [],
-  );
+  const publishedToolRuntimeSteps = new Set<string>();
+  for (const runtime of LIATIR_TOOL_RUNTIME_CATALOG) {
+    if (runtime.install.runtimeBox.publishedTargets.length === 0) continue;
+    if (runtime.id === PVACTOOLS_RUNTIME_COMPONENT_ID) {
+      publishedToolRuntimeSteps.add(neoantigenPrioritizationDefinition.id);
+    }
+    if (runtime.id === OPENMM_RUNTIME_COMPONENT_ID) {
+      publishedToolRuntimeSteps.add(molecularRelaxationDefinition.id);
+      publishedToolRuntimeSteps.add(molecularDynamicsDefinition.id);
+    }
+  }
   return [
     ...Object.values(PIPELINE_REGISTRY)
       .map((e) => e.definition)

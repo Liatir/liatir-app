@@ -1,0 +1,1010 @@
+{
+  "schemaVersion": 2,
+  "kind": "scrollcase.box.dependency-license-audit",
+  "targetId": "macos-aarch64-cpu",
+  "dependencyLockSha256": "246bd4d7806162ce80574582430eed261c7549451e79e28b6abd13e23da7386b",
+  "packages": [
+    {
+      "name": "_openmp_mutex",
+      "version": "4.5",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "annotated-types",
+      "version": "0.8.0",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "brotli",
+      "version": "1.2.0",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "brotli-bin",
+      "version": "1.2.0",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "bson",
+      "version": "0.5.10",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "bzip2",
+      "version": "1.0.8",
+      "declaredLicense": "bzip2-1.0.6",
+      "source": "conda"
+    },
+    {
+      "name": "ca-certificates",
+      "version": "2026.7.22",
+      "declaredLicense": "ISC",
+      "source": "conda"
+    },
+    {
+      "name": "cachetools",
+      "version": "7.1.8",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "cairo",
+      "version": "1.18.4",
+      "declaredLicense": "LGPL-2.1-only or MPL-1.1",
+      "source": "conda"
+    },
+    {
+      "name": "charset-normalizer",
+      "version": "3.5.1",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "click",
+      "version": "8.4.2",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "click-option-group",
+      "version": "0.5.9",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "contourpy",
+      "version": "1.3.3",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "cpython",
+      "version": "3.11.16",
+      "declaredLicense": "Python-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "cycler",
+      "version": "0.12.1",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "cyrus-sasl",
+      "version": "2.1.28",
+      "declaredLicense": "BSD-3-Clause-Attribution",
+      "source": "conda"
+    },
+    {
+      "name": "filelock",
+      "version": "3.32.5",
+      "declaredLicense": "Unlicense",
+      "source": "conda"
+    },
+    {
+      "name": "flexcache",
+      "version": "0.3",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "flexparser",
+      "version": "0.4",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "fmt",
+      "version": "12.1.0",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "font-ttf-dejavu-sans-mono",
+      "version": "2.37",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "font-ttf-inconsolata",
+      "version": "3.000",
+      "declaredLicense": "OFL-1.1",
+      "source": "conda"
+    },
+    {
+      "name": "font-ttf-source-code-pro",
+      "version": "2.038",
+      "declaredLicense": "OFL-1.1",
+      "source": "conda"
+    },
+    {
+      "name": "font-ttf-ubuntu",
+      "version": "0.83",
+      "declaredLicense": "LicenseRef-Ubuntu-Font-Licence-Version-1.0",
+      "source": "conda"
+    },
+    {
+      "name": "fontconfig",
+      "version": "2.18.3",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "fonts-conda-ecosystem",
+      "version": "1",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "fonts-conda-forge",
+      "version": "1",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "fonttools",
+      "version": "4.63.0",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "freetype",
+      "version": "2.14.3",
+      "declaredLicense": "GPL-2.0-only OR FTL",
+      "source": "conda"
+    },
+    {
+      "name": "freetype-py",
+      "version": "2.3.0",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "fribidi",
+      "version": "1.0.16",
+      "declaredLicense": "LGPL-2.1-or-later",
+      "source": "conda"
+    },
+    {
+      "name": "fsspec",
+      "version": "2026.7.0",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "gmp",
+      "version": "6.3.0",
+      "declaredLicense": "GPL-2.0-or-later OR LGPL-3.0-or-later",
+      "source": "conda"
+    },
+    {
+      "name": "gmpy2",
+      "version": "2.3.1",
+      "declaredLicense": "LGPL-3.0-or-later",
+      "source": "conda"
+    },
+    {
+      "name": "graphite2",
+      "version": "1.3.15",
+      "declaredLicense": "LGPL-2.0-or-later",
+      "source": "conda"
+    },
+    {
+      "name": "greenlet",
+      "version": "3.5.5",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "icu",
+      "version": "78.3",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "importlib_resources",
+      "version": "7.1.0",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "jinja2",
+      "version": "3.1.6",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "khronos-opencl-icd-loader",
+      "version": "2024.10.24",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "kiwisolver",
+      "version": "1.5.1",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "krb5",
+      "version": "1.22.2",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "lcms2",
+      "version": "2.19.1",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "lerc",
+      "version": "4.2.0",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "libabseil",
+      "version": "20260107.1",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "libblas",
+      "version": "3.11.0",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "libboost",
+      "version": "1.86.0",
+      "declaredLicense": "BSL-1.0",
+      "source": "conda"
+    },
+    {
+      "name": "libboost-python",
+      "version": "1.86.0",
+      "declaredLicense": "BSL-1.0",
+      "source": "conda"
+    },
+    {
+      "name": "libbrotlicommon",
+      "version": "1.2.0",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "libbrotlidec",
+      "version": "1.2.0",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "libbrotlienc",
+      "version": "1.2.0",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "libcblas",
+      "version": "3.11.0",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "libcxx",
+      "version": "23.1.0",
+      "declaredLicense": "Apache-2.0 WITH LLVM-exception",
+      "source": "conda"
+    },
+    {
+      "name": "libdeflate",
+      "version": "1.25",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "libedit",
+      "version": "3.1.20250104",
+      "declaredLicense": "BSD-2-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "libexpat",
+      "version": "2.8.1",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "libffi",
+      "version": "3.7.0",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "libfreetype",
+      "version": "2.14.3",
+      "declaredLicense": "GPL-2.0-only OR FTL",
+      "source": "conda"
+    },
+    {
+      "name": "libfreetype6",
+      "version": "2.14.3",
+      "declaredLicense": "GPL-2.0-only OR FTL",
+      "source": "conda"
+    },
+    {
+      "name": "libgcc",
+      "version": "16.2.0",
+      "declaredLicense": "GPL-3.0-only WITH GCC-exception-3.1",
+      "source": "conda"
+    },
+    {
+      "name": "libgfortran",
+      "version": "16.2.0",
+      "declaredLicense": "GPL-3.0-only WITH GCC-exception-3.1",
+      "source": "conda"
+    },
+    {
+      "name": "libgfortran5",
+      "version": "16.2.0",
+      "declaredLicense": "GPL-3.0-only WITH GCC-exception-3.1",
+      "source": "conda"
+    },
+    {
+      "name": "libglib",
+      "version": "2.88.3",
+      "declaredLicense": "LGPL-2.1-or-later",
+      "source": "conda"
+    },
+    {
+      "name": "libharfbuzz",
+      "version": "14.4.0",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "libiconv",
+      "version": "1.18",
+      "declaredLicense": "LGPL-2.1-only",
+      "source": "conda"
+    },
+    {
+      "name": "libintl",
+      "version": "0.25.1",
+      "declaredLicense": "LGPL-2.1-or-later",
+      "source": "conda"
+    },
+    {
+      "name": "libjpeg-turbo",
+      "version": "3.2.0",
+      "declaredLicense": "IJG AND BSD-3-Clause AND Zlib",
+      "source": "conda"
+    },
+    {
+      "name": "liblapack",
+      "version": "3.11.0",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "liblzma",
+      "version": "5.8.3",
+      "declaredLicense": "0BSD",
+      "source": "conda"
+    },
+    {
+      "name": "libntlm",
+      "version": "1.8",
+      "declaredLicense": "LGPL-2.1-or-later",
+      "source": "conda"
+    },
+    {
+      "name": "libopenblas",
+      "version": "0.3.34",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "libpng",
+      "version": "1.6.58",
+      "declaredLicense": "zlib-acknowledgement",
+      "source": "conda"
+    },
+    {
+      "name": "libpq",
+      "version": "18.4",
+      "declaredLicense": "PostgreSQL",
+      "source": "conda"
+    },
+    {
+      "name": "libprotobuf",
+      "version": "6.33.5",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "libraqm",
+      "version": "0.11.0",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "librdkit",
+      "version": "2025.03.6",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "libsqlite",
+      "version": "3.53.4",
+      "declaredLicense": "blessing",
+      "source": "conda"
+    },
+    {
+      "name": "libtiff",
+      "version": "4.7.2",
+      "declaredLicense": "HPND",
+      "source": "conda"
+    },
+    {
+      "name": "libtorch",
+      "version": "2.10.0",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "libuv",
+      "version": "1.52.1",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "libwebp-base",
+      "version": "1.6.0",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "libxcb",
+      "version": "1.17.0",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "libxml2",
+      "version": "2.15.3",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "libxml2-16",
+      "version": "2.15.3",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "libxslt",
+      "version": "1.1.45",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "libzlib",
+      "version": "1.3.2",
+      "declaredLicense": "Zlib",
+      "source": "conda"
+    },
+    {
+      "name": "lightning-utilities",
+      "version": "0.15.3",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "llvm-openmp",
+      "version": "23.1.0",
+      "declaredLicense": "Apache-2.0 WITH LLVM-exception",
+      "source": "conda"
+    },
+    {
+      "name": "lxml",
+      "version": "6.0.4",
+      "declaredLicense": "BSD-3-Clause and MIT-CMU",
+      "source": "conda"
+    },
+    {
+      "name": "markdown-it-py",
+      "version": "4.2.0",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "markupsafe",
+      "version": "3.0.3",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "matplotlib-base",
+      "version": "3.11.1",
+      "declaredLicense": "PSF-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "mdurl",
+      "version": "0.1.2",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "mpc",
+      "version": "1.4.0",
+      "declaredLicense": "LGPL-3.0-or-later",
+      "source": "conda"
+    },
+    {
+      "name": "mpfr",
+      "version": "4.2.2",
+      "declaredLicense": "LGPL-3.0-only",
+      "source": "conda"
+    },
+    {
+      "name": "mpmath",
+      "version": "1.3.0",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "munkres",
+      "version": "1.1.4",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "ncurses",
+      "version": "6.6",
+      "declaredLicense": "X11 AND BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "networkx",
+      "version": "3.6.1",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "nomkl",
+      "version": "1.0",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "numpy",
+      "version": "1.26.4",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "ocl_icd_wrapper_apple",
+      "version": "1.0.0",
+      "declaredLicense": "BSD-2-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "opencl-headers",
+      "version": "2025.06.13",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "openff-amber-ff-ports",
+      "version": "2025.09.0",
+      "declaredLicense": "CC-BY-4.0",
+      "source": "conda"
+    },
+    {
+      "name": "openff-forcefields",
+      "version": "2026.01.0",
+      "declaredLicense": "CC-BY-4.0",
+      "source": "conda"
+    },
+    {
+      "name": "openff-interchange-base",
+      "version": "0.4.11",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "openff-nagl",
+      "version": "0.5.5",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "openff-nagl-base",
+      "version": "0.5.5",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "openff-nagl-models",
+      "version": "2025.9.0",
+      "declaredLicense": "CC-BY-4.0",
+      "source": "conda"
+    },
+    {
+      "name": "openff-toolkit-base",
+      "version": "0.17.1",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "openff-units",
+      "version": "0.3.2",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "openff-utilities",
+      "version": "0.1.16",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "openjpeg",
+      "version": "2.5.4",
+      "declaredLicense": "BSD-2-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "openldap",
+      "version": "2.6.13",
+      "declaredLicense": "OLDAP-2.8",
+      "source": "conda"
+    },
+    {
+      "name": "openmm",
+      "version": "8.5.1",
+      "declaredLicense": "LGPL-3.0-or-later",
+      "source": "conda"
+    },
+    {
+      "name": "openssl",
+      "version": "3.6.4",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "optree",
+      "version": "0.20.0",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "packaging",
+      "version": "26.3",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "pandas",
+      "version": "3.0.5",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "pcre2",
+      "version": "10.47",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "pillow",
+      "version": "12.3.0",
+      "declaredLicense": "HPND",
+      "source": "conda"
+    },
+    {
+      "name": "pint",
+      "version": "0.25.3",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "pixman",
+      "version": "0.46.4",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "platformdirs",
+      "version": "4.11.6",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "pthread-stubs",
+      "version": "0.4",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "pybind11",
+      "version": "3.0.1",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "pybind11-abi",
+      "version": "11",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "pybind11-global",
+      "version": "3.0.1",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "pycairo",
+      "version": "1.29.1",
+      "declaredLicense": "LGPL-2.1-only OR MPL-1.1",
+      "source": "conda"
+    },
+    {
+      "name": "pydantic",
+      "version": "2.11.10",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "pydantic-core",
+      "version": "2.33.2",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "pygments",
+      "version": "2.21.0",
+      "declaredLicense": "BSD-2-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "pyparsing",
+      "version": "3.3.2",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "python",
+      "version": "3.11.16",
+      "declaredLicense": "Python-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "python-constraint",
+      "version": "1.4.0",
+      "declaredLicense": "BSD-2-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "python-dateutil",
+      "version": "2.9.0.post0",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "python_abi",
+      "version": "3.11",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "pytorch",
+      "version": "2.10.0",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "pytorch-lightning",
+      "version": "2.6.5",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "pyyaml",
+      "version": "6.0.3",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "qhull",
+      "version": "2020.2",
+      "declaredLicense": "LicenseRef-Qhull",
+      "source": "conda"
+    },
+    {
+      "name": "rdkit",
+      "version": "2025.03.6",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "readline",
+      "version": "8.3",
+      "declaredLicense": "GPL-3.0-only",
+      "source": "conda"
+    },
+    {
+      "name": "reportlab",
+      "version": "5.0.1",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "rich",
+      "version": "15.0.0",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "rlpycairo",
+      "version": "0.4.0",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "scipy",
+      "version": "1.17.1",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "setuptools",
+      "version": "84.0.0",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "six",
+      "version": "1.17.0",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "sleef",
+      "version": "3.9.0",
+      "declaredLicense": "BSL-1.0",
+      "source": "conda"
+    },
+    {
+      "name": "sqlalchemy",
+      "version": "2.0.52",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "sympy",
+      "version": "1.14.0",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "tk",
+      "version": "8.6.13",
+      "declaredLicense": "TCL",
+      "source": "conda"
+    },
+    {
+      "name": "torchmetrics",
+      "version": "1.9.0",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "tqdm",
+      "version": "4.70.0",
+      "declaredLicense": "MPL-2.0 and MIT",
+      "source": "conda"
+    },
+    {
+      "name": "typing-extensions",
+      "version": "4.16.0",
+      "declaredLicense": "PSF-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "typing-inspection",
+      "version": "0.4.4",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "typing_extensions",
+      "version": "4.16.0",
+      "declaredLicense": "PSF-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "tzdata",
+      "version": "2026c",
+      "declaredLicense": "LicenseRef-Public-Domain",
+      "source": "conda"
+    },
+    {
+      "name": "unicodedata2",
+      "version": "17.0.1",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "xmltodict",
+      "version": "1.0.4",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "xorg-libxau",
+      "version": "1.0.12",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "xorg-libxdmcp",
+      "version": "1.1.5",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "yaml",
+      "version": "0.2.5",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "zipp",
+      "version": "4.1.0",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "zlib-ng",
+      "version": "2.3.3",
+      "declaredLicense": "Zlib",
+      "source": "conda"
+    },
+    {
+      "name": "zstd",
+      "version": "1.5.7",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    }
+  ]
+}

@@ -1,0 +1,438 @@
+{
+  "schemaVersion": 1,
+  "kind": "liatir.openmm-scientific-validation",
+  "createdAt": "2026-09-06T12:23:08.255Z",
+  "status": "passed",
+  "modelId": "openmm-openmm",
+  "sourceRevision": "8.5.1+openmmforcefields-0.16.0+openff-toolkit-0.17.1+openff-sage-2.3.0+nagl-0.5.5",
+  "targetId": "macos-aarch64-cpu",
+  "productRunnerSha256": "b5064faf474c33326199a3dbf6cd294af09e2a13b61eb20fc63d1374e47c4910",
+  "cases": [
+    {
+      "id": "official-protein-relaxation",
+      "metrics": {
+        "schemaVersion": 1,
+        "kind": "liatir.openmm-preflight",
+        "mode": "relaxation",
+        "workloadId": "openmm:relaxation:none:standard",
+        "tokenCount": 1,
+        "atomCount": 33,
+        "inputAtomCount": 33,
+        "stepCount": 5000,
+        "ligandAtomCount": 0,
+        "outputItemCount": 1,
+        "inputBytes": 2751,
+        "networkAccess": false
+      },
+      "preparedAtoms": 33,
+      "measurement": {
+        "elapsedMs": 452,
+        "peakRamBytes": 81985536,
+        "peakVramBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 13739
+    },
+    {
+      "id": "add-missing-hydrogens",
+      "metrics": {
+        "schemaVersion": 1,
+        "kind": "liatir.openmm-preflight",
+        "mode": "relaxation",
+        "workloadId": "openmm:relaxation:none:standard",
+        "tokenCount": 1,
+        "atomCount": 80,
+        "inputAtomCount": 16,
+        "stepCount": 5000,
+        "ligandAtomCount": 0,
+        "outputItemCount": 1,
+        "inputBytes": 1376,
+        "networkAccess": false
+      },
+      "preparedAtoms": 33,
+      "measurement": {
+        "elapsedMs": 421,
+        "peakRamBytes": 83443712,
+        "peakVramBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 13737
+    },
+    {
+      "id": "protein-ligand-relaxation",
+      "metrics": {
+        "schemaVersion": 1,
+        "kind": "liatir.openmm-preflight",
+        "mode": "relaxation",
+        "workloadId": "openmm:relaxation:none:openff",
+        "tokenCount": 1,
+        "atomCount": 42,
+        "inputAtomCount": 42,
+        "stepCount": 5000,
+        "ligandAtomCount": 9,
+        "outputItemCount": 1,
+        "inputBytes": 4508,
+        "networkAccess": false
+      },
+      "preparedAtoms": 42,
+      "measurement": {
+        "elapsedMs": 13406,
+        "peakRamBytes": 581861376,
+        "peakVramBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 18491
+    },
+    {
+      "id": "protein-dynamics-10ps",
+      "metrics": {
+        "schemaVersion": 1,
+        "kind": "liatir.openmm-preflight",
+        "mode": "dynamics",
+        "workloadId": "openmm:dynamics:none:standard",
+        "tokenCount": 1,
+        "atomCount": 33,
+        "inputAtomCount": 33,
+        "stepCount": 5000,
+        "ligandAtomCount": 0,
+        "outputItemCount": 10,
+        "inputBytes": 2751,
+        "networkAccess": false
+      },
+      "preparedAtoms": 33,
+      "measurement": {
+        "elapsedMs": 3556,
+        "peakRamBytes": 82460672,
+        "peakVramBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 461069
+    },
+    {
+      "id": "protein-checkpoint-resume",
+      "metrics": {
+        "schemaVersion": 1,
+        "kind": "liatir.openmm-preflight",
+        "mode": "dynamics",
+        "workloadId": "openmm:dynamics:none:standard",
+        "tokenCount": 1,
+        "atomCount": 33,
+        "inputAtomCount": 33,
+        "stepCount": 5000,
+        "ligandAtomCount": 0,
+        "outputItemCount": 10,
+        "inputBytes": 2751,
+        "networkAccess": false
+      },
+      "preparedAtoms": 33,
+      "measurement": {
+        "elapsedMs": 3253,
+        "peakRamBytes": 64700416,
+        "peakVramBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 461921
+    },
+    {
+      "id": "protein-dynamics-100ps",
+      "metrics": {
+        "schemaVersion": 1,
+        "kind": "liatir.openmm-preflight",
+        "mode": "dynamics",
+        "workloadId": "openmm:dynamics:none:standard",
+        "tokenCount": 1,
+        "atomCount": 33,
+        "inputAtomCount": 33,
+        "stepCount": 50000,
+        "ligandAtomCount": 0,
+        "outputItemCount": 10,
+        "inputBytes": 2751,
+        "networkAccess": false
+      },
+      "preparedAtoms": 33,
+      "measurement": {
+        "elapsedMs": 31891,
+        "peakRamBytes": 86966272,
+        "peakVramBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 461075
+    },
+    {
+      "id": "solvated-dynamics-custom",
+      "metrics": {
+        "schemaVersion": 1,
+        "kind": "liatir.openmm-preflight",
+        "mode": "dynamics",
+        "workloadId": "openmm:dynamics:tip3p-fb:standard",
+        "tokenCount": 1,
+        "atomCount": 6605,
+        "inputAtomCount": 33,
+        "stepCount": 10,
+        "ligandAtomCount": 0,
+        "outputItemCount": 2,
+        "inputBytes": 2751,
+        "networkAccess": false
+      },
+      "preparedAtoms": 974,
+      "measurement": {
+        "elapsedMs": 4027,
+        "peakRamBytes": 90439680,
+        "peakVramBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 1267554
+    },
+    {
+      "id": "solvated-checkpoint-resume",
+      "metrics": {
+        "schemaVersion": 1,
+        "kind": "liatir.openmm-preflight",
+        "mode": "dynamics",
+        "workloadId": "openmm:dynamics:tip3p-fb:standard",
+        "tokenCount": 1,
+        "atomCount": 6605,
+        "inputAtomCount": 33,
+        "stepCount": 10,
+        "ligandAtomCount": 0,
+        "outputItemCount": 2,
+        "inputBytes": 2751,
+        "networkAccess": false
+      },
+      "preparedAtoms": 974,
+      "measurement": {
+        "elapsedMs": 186,
+        "peakRamBytes": 74514432,
+        "peakVramBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 1268427
+    },
+    {
+      "id": "changed-release",
+      "rejected": true
+    },
+    {
+      "id": "changed-target",
+      "rejected": true
+    },
+    {
+      "id": "changed-temperature",
+      "rejected": true
+    },
+    {
+      "id": "absent-ligand",
+      "rejected": true
+    },
+    {
+      "id": "corrupted-checkpoint-system",
+      "rejected": true
+    }
+  ],
+  "hardwareSamples": [
+    {
+      "fixtureId": "official-protein-relaxation",
+      "workloadId": "openmm:relaxation:none:standard",
+      "maxTokenCount": 1,
+      "maxAtomCount": 33,
+      "maxStepCount": 5000,
+      "maxOutputItemCount": 1,
+      "peakRamBytes": 81985536,
+      "peakVramBytes": null,
+      "elapsedMs": 452,
+      "outputBytes": 13739
+    },
+    {
+      "fixtureId": "add-missing-hydrogens",
+      "workloadId": "openmm:relaxation:none:standard",
+      "maxTokenCount": 1,
+      "maxAtomCount": 33,
+      "maxStepCount": 5000,
+      "maxOutputItemCount": 1,
+      "peakRamBytes": 83443712,
+      "peakVramBytes": null,
+      "elapsedMs": 421,
+      "outputBytes": 13737
+    },
+    {
+      "fixtureId": "protein-ligand-relaxation",
+      "workloadId": "openmm:relaxation:none:openff",
+      "maxTokenCount": 1,
+      "maxAtomCount": 42,
+      "maxStepCount": 5000,
+      "maxOutputItemCount": 1,
+      "peakRamBytes": 581861376,
+      "peakVramBytes": null,
+      "elapsedMs": 13406,
+      "outputBytes": 18491
+    },
+    {
+      "fixtureId": "protein-dynamics-10ps",
+      "workloadId": "openmm:dynamics:none:standard",
+      "maxTokenCount": 1,
+      "maxAtomCount": 33,
+      "maxStepCount": 5000,
+      "maxOutputItemCount": 10,
+      "peakRamBytes": 82460672,
+      "peakVramBytes": null,
+      "elapsedMs": 3556,
+      "outputBytes": 461069
+    },
+    {
+      "fixtureId": "protein-checkpoint-resume",
+      "workloadId": "openmm:dynamics:none:standard",
+      "maxTokenCount": 1,
+      "maxAtomCount": 33,
+      "maxStepCount": 5000,
+      "maxOutputItemCount": 10,
+      "peakRamBytes": 64700416,
+      "peakVramBytes": null,
+      "elapsedMs": 3253,
+      "outputBytes": 461921
+    },
+    {
+      "fixtureId": "protein-dynamics-100ps",
+      "workloadId": "openmm:dynamics:none:standard",
+      "maxTokenCount": 1,
+      "maxAtomCount": 33,
+      "maxStepCount": 50000,
+      "maxOutputItemCount": 10,
+      "peakRamBytes": 86966272,
+      "peakVramBytes": null,
+      "elapsedMs": 31891,
+      "outputBytes": 461075
+    },
+    {
+      "fixtureId": "solvated-dynamics-custom",
+      "workloadId": "openmm:dynamics:tip3p-fb:standard",
+      "maxTokenCount": 1,
+      "maxAtomCount": 974,
+      "maxStepCount": 10,
+      "maxOutputItemCount": 2,
+      "peakRamBytes": 90439680,
+      "peakVramBytes": null,
+      "elapsedMs": 4027,
+      "outputBytes": 1267554
+    },
+    {
+      "fixtureId": "solvated-checkpoint-resume",
+      "workloadId": "openmm:dynamics:tip3p-fb:standard",
+      "maxTokenCount": 1,
+      "maxAtomCount": 974,
+      "maxStepCount": 10,
+      "maxOutputItemCount": 2,
+      "peakRamBytes": 74514432,
+      "peakVramBytes": null,
+      "elapsedMs": 186,
+      "outputBytes": 1268427
+    }
+  ],
+  "runtimeEvidence": {
+    "kind": "signed-payload",
+    "signedPayloadVerified": true,
+    "releaseManifestSha256": "7ebdd89d1a4f179cf409e3ceca4bc399a26f8a28acb424b0470bfb87d2b67d86",
+    "archiveSha256": "c1a52a1a6fa5ae46fbb5d0e6546ceba3aa0a281ad8fea965e96845c134a3f48e",
+    "payloadDigestSha256": "81a3f47e3be89065e7a679543048f016d4425e27da65c4052a817694b1092df5",
+    "provenance": {
+      "scrollId": "openmm-macos-aarch64-cpu",
+      "scrollVersion": "1.0.0",
+      "builderRevision": "a584df0a36e6da91756a5a3c28e18e7e2fd1dcb1",
+      "sourceTreeDirty": true,
+      "sourceRevision": "8.5.1+openmmforcefields-0.16.0+openff-toolkit-0.17.1+openff-sage-2.3.0+nagl-0.5.5",
+      "pythonVersion": "3.11.16",
+      "pixiVersion": "0.73.0",
+      "dependencyLockSha256": "246bd4d7806162ce80574582430eed261c7549451e79e28b6abd13e23da7386b",
+      "builtAt": "2026-09-02T12:50:11+02:00"
+    }
+  },
+  "measurementHost": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "osRelease": "23.4.0",
+    "cpuModel": "Apple M1",
+    "logicalCpuCount": 8,
+    "totalMemoryBytes": 17179869184
+  },
+  "validatorSource": {
+    "gitCommit": "a584df0a36e6da91756a5a3c28e18e7e2fd1dcb1",
+    "sourceTreeDirty": true,
+    "scriptSha256": "3075c387d95273e53acbe1c2f95f9a1888cb66e04e75c02259d2e4c609a06ef8",
+    "measurementScriptSha256": "7fcd22434ad44a9cc55846f4f5e2a2398b0d8e3a81628602b400f31a03d469eb",
+    "fixturePreparationSha256": "fa5b41c16c093eb225371eef061b3696c292129d1451c1c54bf6510522f30beb",
+    "recipeSha256": "90298ad9d7d597137ceece83151ea8c7062e04a8194aedf8f423bdad08f7d9a9"
+  },
+  "provenance": {
+    "recipeId": "openmm-macos-aarch64-cpu",
+    "recipeVersion": "1.0.0",
+    "pythonVersion": "3.11.16",
+    "pixiVersion": "0.73.0",
+    "dependencyLockSha256": "246bd4d7806162ce80574582430eed261c7549451e79e28b6abd13e23da7386b"
+  },
+  "evidence": {
+    "fixture": {
+      "id": "openmmforcefields-0.16.0-official-ala3-and-ethanol-v1",
+      "sha256": "25c1464b65bdd067c91ab4887aa25404b4668b9e1b8bb2bcd1506a639fdc881a",
+      "inputShapes": {
+        "proteinAtoms": [
+          33
+        ],
+        "proteinLigandAtoms": [
+          42
+        ]
+      }
+    },
+    "framework": {
+      "name": "openmm",
+      "version": "8.5.1",
+      "backend": "cpu",
+      "reportedCudaCompatibility": null
+    },
+    "accelerator": {
+      "kind": "cpu",
+      "gpuModel": null,
+      "driverVersion": null,
+      "reportedCudaCompatibility": null
+    },
+    "outputShapes": {
+      "relaxedStructure": [
+        33,
+        3
+      ],
+      "ligandStructure": [
+        42,
+        3
+      ],
+      "trajectory": [
+        10,
+        33,
+        3
+      ]
+    },
+    "finiteValues": true,
+    "tolerances": {
+      "absolute": 0.01,
+      "relative": 0
+    },
+    "parity": {
+      "reference": "OpenMM-8.5.1-Reference-platform-official-ala3-energy",
+      "passed": true,
+      "cpuBaselinePassed": true,
+      "acceleratorPassed": null,
+      "maximumAbsoluteDifference": 0.000023163204190268516,
+      "meanAbsoluteDifference": 0.000023163204190268516,
+      "minimumCosineSimilarity": null
+    },
+    "peakRamBytes": 581861376,
+    "peakVramBytes": null,
+    "outputContract": "passed",
+    "provenanceContract": "passed"
+  }
+}

@@ -678,6 +678,8 @@ export * from "./tool-runtime-catalog.js";
 
 // Neutral multimolecular input shared by structure-prediction adapters.
 export * from "./complex-spec.js";
+export * from "./structure-simulation.js";
+export * from "./structure-draft.js";
 
 // Built-in native tools catalog — bioinformatics binaries bundled with Liatir.
 export * from "./native-tools.js";

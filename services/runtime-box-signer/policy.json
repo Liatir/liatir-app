@@ -83,6 +83,18 @@
         "macos-aarch64-cpu",
         "linux-x86_64-cpu"
       ]
+    },
+    {
+      "boxId": "openmm",
+      "modelId": "openmm-openmm",
+      "runtimeId": "molecular-simulation-openmm-8-5-1",
+      "targets": [
+        "macos-aarch64-cpu",
+        "linux-x86_64-cpu",
+        "windows-x86_64-cpu",
+        "linux-x86_64-cuda12.9",
+        "windows-x86_64-cuda12.9"
+      ]
     }
   ]
 }

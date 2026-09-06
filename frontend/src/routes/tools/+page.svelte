@@ -14,7 +14,11 @@
   import { workspaceStore } from '$lib/stores/workspace.svelte';
   import { toast } from '$lib/stores/toast.svelte';
 	import PageContent from '$lib/components/layout/PageContent.svelte';
-  import { LIATIR_TOOL_RUNTIME_CATALOG, PVACTOOLS_RUNTIME_COMPONENT_ID } from '@liatir/core';
+  import {
+    LIATIR_TOOL_RUNTIME_CATALOG,
+    OPENMM_RUNTIME_COMPONENT_ID,
+    PVACTOOLS_RUNTIME_COMPONENT_ID,
+  } from '@liatir/core';
 
   interface BuiltinTool {
     id: string;
@@ -31,6 +35,10 @@
 
   const pvactoolsPublished = LIATIR_TOOL_RUNTIME_CATALOG.some(
     (runtime) => runtime.id === PVACTOOLS_RUNTIME_COMPONENT_ID
+      && runtime.install.runtimeBox.publishedTargets.length > 0,
+  );
+  const openmmPublished = LIATIR_TOOL_RUNTIME_CATALOG.some(
+    (runtime) => runtime.id === OPENMM_RUNTIME_COMPONENT_ID
       && runtime.install.runtimeBox.publishedTargets.length > 0,
   );
 
@@ -160,6 +168,24 @@
       status: pvactoolsPublished ? 'available' : 'soon',
       tags: ['VCF', 'VEP', 'pVACseq', 'MHC Class I'],
       category: 'Oncology',
+    },
+    {
+      id: 'molecular-relaxation',
+      label: 'Molecular Relaxation',
+      description: 'Prepare and minimize a molecular structure locally with OpenMM.',
+      ...(openmmPublished ? { href: '/tools/molecular-simulation/relaxation' } : {}),
+      status: openmmPublished ? 'available' : 'soon',
+      tags: ['PDB', 'mmCIF', 'OpenMM', 'Amber19'],
+      category: 'Molecular Simulation',
+    },
+    {
+      id: 'molecular-dynamics',
+      label: 'Molecular Dynamics',
+      description: 'Create a short local atomic trajectory with checkpoint resume.',
+      ...(openmmPublished ? { href: '/tools/molecular-simulation/dynamics' } : {}),
+      status: openmmPublished ? 'available' : 'soon',
+      tags: ['DCD', 'Trajectory', 'OpenMM', 'CUDA'],
+      category: 'Molecular Simulation',
     },
     {
       id: 'viewer-structure-3d',

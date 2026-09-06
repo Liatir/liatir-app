@@ -8,6 +8,11 @@ import {
   finalizeNeoantigenPrioritizationResult,
   neoantigenPrioritizationDefinition,
 } from '$lib/tools/oncology/neoantigen-prioritization';
+import {
+  finalizeOpenMMResult,
+  molecularDynamicsDefinition,
+  molecularRelaxationDefinition,
+} from '$lib/tools/molecular-simulation/openmm';
 import { parseToolRuntimeDirectRunContext } from './direct-run-context';
 
 const finalizing = new Set<string>();
@@ -66,15 +71,20 @@ export async function finalizeCompletedToolRuntimeDirectRuns(jobs: JobEntry[]): 
       const runtimeId = typeof job.metadata?.toolRuntimeId === 'string' ? job.metadata.toolRuntimeId : '';
       const runtime = toolRuntimesStore.runtimes.find((item) => item.id === runtimeId);
       if (!runtime) throw new Error(`Unknown Tool Runtime: ${runtimeId || 'missing metadata'}`);
-      if (context.toolId !== neoantigenPrioritizationDefinition.id) {
-        throw new Error(`Unsupported Tool Runtime finalizer: ${context.toolId}`);
-      }
-      const finalized = await finalizeNeoantigenPrioritizationResult(
-        runtime,
-        context.params,
-        outputToResult(job, output, context.startedAt),
-        (line) => { if (line.trim()) logs.push(line); },
-      );
+      const runtimeResult = outputToResult(job, output, context.startedAt);
+      const appendLog = (line: string) => { if (line.trim()) logs.push(line); };
+      const finalized = context.toolId === neoantigenPrioritizationDefinition.id
+        ? await finalizeNeoantigenPrioritizationResult(runtime, context.params, runtimeResult, appendLog)
+        : context.toolId === molecularRelaxationDefinition.id
+          ? await finalizeOpenMMResult(
+              runtime, 'relaxation', context.params, context.outputDir, runtimeResult, appendLog,
+            )
+          : context.toolId === molecularDynamicsDefinition.id
+            ? await finalizeOpenMMResult(
+                runtime, 'dynamics', context.params, context.outputDir, runtimeResult, appendLog,
+              )
+            : null;
+      if (!finalized) throw new Error(`Unsupported Tool Runtime finalizer: ${context.toolId}`);
       const endedAt = job.endedAtMs ?? Date.now();
       await finalizeExecutionResult(context.execution.runId, 'done', {
         id: context.analysisRunId,

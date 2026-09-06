@@ -76,6 +76,8 @@ const AI_ANALYSIS_TOOLS = new Set([
 ]);
 const TOOL_RUNTIME_ANALYSIS_TOOLS = new Set([
   'neoantigen-prioritization',
+  'molecular-relaxation',
+  'molecular-dynamics',
 ]);
 
 function producerKindFor(tool: string): LiatirArtifactProducerKind {

@@ -1,6 +1,20 @@
 import type { LiatirAIModelMetadata, LiatirAIModelRuntimePackage } from './index.js';
 import type { LiatirRuntimeBoxTargetCandidate } from './runtime-box.js';
 import { MHCFLURRY_CLASS1_PRESENTATION_MODEL_ID } from './oncology.js';
+import {
+	BOLTZ_2_BOX_ID,
+	BOLTZ_2_MODEL_ID,
+	BOLTZ_2_RUNTIME_ID,
+	BOLTZ_2_VERSION,
+	PROTENIX_MINI_DEFAULT_BOX_ID,
+	PROTENIX_MINI_DEFAULT_MODEL_ID,
+	PROTENIX_MINI_DEFAULT_RUNTIME_ID,
+	PROTENIX_MINI_DEFAULT_VERSION,
+	PROTENIX_V2_BOX_ID,
+	PROTENIX_V2_MODEL_ID,
+	PROTENIX_V2_RUNTIME_ID,
+	PROTENIX_V2_VERSION,
+} from './structure-simulation.js';
 
 export const SCGPT_WHOLE_HUMAN_MODEL_ID = 'bowang-scgpt-whole-human';
 export const GENEFORMER_V1_10M_MODEL_ID = 'ctheodoris-geneformer-v1-10m';
@@ -110,6 +124,172 @@ export const MHCFLURRY_CLASS1_PRESENTATION_METADATA: LiatirAIModelMetadata = {
 /** Exact metadata used by a release-built test app and the product after publication. */
 export const MHCFLURRY_CLASS1_PRESENTATION_RELEASE_CANDIDATE_METADATA =
 	MHCFLURRY_CLASS1_PRESENTATION_METADATA;
+
+const LINUX_CUDA_12_9_TARGET: LiatirRuntimeBoxTargetCandidate = {
+	target: { platform: 'linux', arch: 'x86_64', accelerator: 'cuda', cudaVersion: '12.9' },
+	hostEnvironments: ['native'],
+	minNvidiaDriverVersion: '525.60.13',
+};
+
+const WINDOWS_CUDA_12_8_TARGET: LiatirRuntimeBoxTargetCandidate = {
+	target: { platform: 'windows', arch: 'x86_64', accelerator: 'cuda', cudaVersion: '12.8' },
+	hostEnvironments: ['native'],
+	minNvidiaDriverVersion: '527.41',
+};
+
+/** Non-distributable candidate metadata; normal product exposure waits for retained release evidence. */
+export const BOLTZ_2_RELEASE_CANDIDATE_METADATA: LiatirAIModelMetadata = {
+	id: BOLTZ_2_MODEL_ID,
+	name: 'Boltz-2',
+	description: 'Local biomolecular structure and protein-ligand affinity prediction with bundled checkpoints.',
+	category: 'Biomolecular Structure',
+	version: BOLTZ_2_VERSION,
+	runtime: { kind: 'python-venv', name: 'Boltz-2 Runtime', version: 'Python 3.11' },
+	source: 'runtime-box',
+	localOnly: true,
+	capabilities: ['protein-structure-prediction', 'protein-binding'],
+	modalities: ['protein', 'dna', 'rna', 'ligand'],
+	license: {
+		name: 'MIT License',
+		spdxId: 'MIT',
+		url: 'https://github.com/jwohlwend/boltz/blob/v2.2.1/LICENSE',
+		verifiedAt: '2026-09-02',
+		components: [
+			{ scope: 'source-code', name: 'MIT License', spdxId: 'MIT', sourceUrl: 'https://github.com/jwohlwend/boltz/tree/v2.2.1' },
+			{ scope: 'model-assets', name: 'MIT License', spdxId: 'MIT', sourceUrl: 'https://huggingface.co/boltz-community/boltz-2' },
+		],
+	},
+	hardware: {
+		cpu: false,
+		gpu: true,
+		notes: 'Linux CUDA is required for publication. VRAM values remain unpublished until retained target measurements can apply the required safety margins.',
+	},
+	install: {
+		method: 'runtime-box',
+		runtimeId: BOLTZ_2_RUNTIME_ID,
+		modelCacheSubdir: 'model-cache/boltz-2',
+		revision: 'v2.2.1',
+		runtimeBox: {
+			boxId: BOLTZ_2_BOX_ID,
+			channel: 'beta',
+			registryBaseUrl: 'https://models.liatir.com/v1',
+			publishedTargets: [
+				LINUX_CUDA_12_9_TARGET,
+				WINDOWS_CUDA_12_8_TARGET,
+				{ target: { platform: 'macos', arch: 'aarch64', accelerator: 'metal' }, hostEnvironments: ['native'] },
+			],
+		},
+		runtimePackages: [
+			{ package: 'boltz', version: BOLTZ_2_VERSION, importName: 'boltz' },
+			{ package: 'torch', importName: 'torch' },
+			{ package: 'rdkit', importName: 'rdkit' },
+		],
+		hostRequirements: {
+			os: ['linux', 'windows', 'macos'],
+			arch: ['x86_64', 'aarch64'],
+			reason: 'Linux CUDA is mandatory; Windows CUDA and Apple Metal are bounded feasibility targets and cannot be exposed without their own evidence.',
+		},
+	},
+	documentation: { officialUrl: 'https://github.com/jwohlwend/boltz/tree/v2.2.1' },
+	tags: ['runtime-box', 'structure', 'protein', 'ligand', 'affinity', 'local'],
+};
+
+/** Non-distributable candidate metadata for the exact enhanced Protenix v2 model. */
+export const PROTENIX_V2_RELEASE_CANDIDATE_METADATA: LiatirAIModelMetadata = {
+	id: PROTENIX_V2_MODEL_ID,
+	name: 'Protenix v2',
+	description: 'Local enhanced-capacity biomolecular structure prediction with local MSA and template inputs.',
+	category: 'Biomolecular Structure',
+	version: PROTENIX_V2_VERSION,
+	runtime: { kind: 'python-venv', name: 'Protenix v2 Runtime', version: 'Python 3.11' },
+	source: 'runtime-box',
+	localOnly: true,
+	capabilities: ['protein-structure-prediction'],
+	modalities: ['protein', 'dna', 'rna', 'ligand'],
+	license: {
+		name: 'Apache License 2.0',
+		spdxId: 'Apache-2.0',
+		url: 'https://github.com/bytedance/Protenix/blob/v2.0.0/LICENSE',
+		verifiedAt: '2026-09-02',
+	},
+	hardware: {
+		cpu: false,
+		gpu: true,
+		notes: 'Linux CUDA only. VRAM values remain unpublished until retained measurements exist.',
+	},
+	install: {
+		method: 'runtime-box',
+		runtimeId: PROTENIX_V2_RUNTIME_ID,
+		modelCacheSubdir: 'model-cache/protenix-v2',
+		revision: 'v2.0.0:protenix-v2',
+		runtimeBox: {
+			boxId: PROTENIX_V2_BOX_ID,
+			channel: 'beta',
+			registryBaseUrl: 'https://models.liatir.com/v1',
+			publishedTargets: [LINUX_CUDA_12_9_TARGET],
+		},
+		runtimePackages: [
+			{ package: 'protenix', version: PROTENIX_V2_VERSION, importName: 'protenix' },
+			{ package: 'torch', importName: 'torch' },
+		],
+		hostRequirements: {
+			os: ['linux'],
+			arch: ['x86_64'],
+			reason: 'The reviewed Protenix v2 target is Linux x86_64 with NVIDIA CUDA.',
+		},
+	},
+	documentation: { officialUrl: 'https://github.com/bytedance/Protenix/tree/v2.0.0' },
+	tags: ['runtime-box', 'structure', 'protein', 'ligand', 'local'],
+};
+
+/** Non-distributable candidate metadata for the exact Mini Default checkpoint, never Mini ESM. */
+export const PROTENIX_MINI_DEFAULT_RELEASE_CANDIDATE_METADATA: LiatirAIModelMetadata = {
+	id: PROTENIX_MINI_DEFAULT_MODEL_ID,
+	name: 'Protenix Mini Default v0.5.0',
+	description: 'Local lightweight biomolecular structure prediction with the exact Mini Default checkpoint and no ESM model.',
+	category: 'Biomolecular Structure',
+	version: PROTENIX_MINI_DEFAULT_VERSION,
+	runtime: { kind: 'python-venv', name: 'Protenix Mini Default Runtime', version: 'Python 3.11' },
+	source: 'runtime-box',
+	localOnly: true,
+	capabilities: ['protein-structure-prediction'],
+	modalities: ['protein', 'dna', 'rna', 'ligand'],
+	parameters: 134_060_000,
+	license: {
+		name: 'Apache License 2.0',
+		spdxId: 'Apache-2.0',
+		url: 'https://github.com/bytedance/Protenix/blob/v2.0.0/LICENSE',
+		verifiedAt: '2026-09-02',
+	},
+	hardware: {
+		cpu: false,
+		gpu: true,
+		notes: 'Linux CUDA is primary and Windows CUDA is a bounded feasibility target. This runtime never installs ESM2-3B, and VRAM values wait for retained measurements.',
+	},
+	install: {
+		method: 'runtime-box',
+		runtimeId: PROTENIX_MINI_DEFAULT_RUNTIME_ID,
+		modelCacheSubdir: 'model-cache/protenix-mini-default-v0-5-0',
+		revision: 'v2.0.0:protenix_mini_default_v0.5.0',
+		runtimeBox: {
+			boxId: PROTENIX_MINI_DEFAULT_BOX_ID,
+			channel: 'beta',
+			registryBaseUrl: 'https://models.liatir.com/v1',
+			publishedTargets: [LINUX_CUDA_12_9_TARGET, WINDOWS_CUDA_12_8_TARGET],
+		},
+		runtimePackages: [
+			{ package: 'protenix', version: PROTENIX_V2_VERSION, importName: 'protenix' },
+			{ package: 'torch', importName: 'torch' },
+		],
+		hostRequirements: {
+			os: ['linux', 'windows'],
+			arch: ['x86_64'],
+			reason: 'Linux CUDA is primary; Windows CUDA remains hidden until its own lifecycle evidence passes.',
+		},
+	},
+	documentation: { officialUrl: 'https://github.com/bytedance/Protenix/blob/v2.0.0/docs/supported_models.md' },
+	tags: ['runtime-box', 'structure', 'protein', 'ligand', 'mini', 'local', 'no-esm'],
+};
 
 /** Builds the shared Apple silicon target used by published single-cell Runtime Boxes. */
 function publishedMacosArm64MetalTarget(
