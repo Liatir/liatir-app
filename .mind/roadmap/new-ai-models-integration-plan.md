@@ -347,6 +347,71 @@ evidence has passed. Hardware limits may be derived only from retained target me
 outside a measured envelope are rejected rather than extrapolated. GPU CI remains manual and still
 requires the product owner's separate explicit approval.
 
+> Superseded in part on 2026-09-07: the sentence about rejecting inputs outside the measured
+> envelope is replaced by the hardware rule below. Everything else in this block still holds.
+
+### Host targets and hardware limits — corrected 2026-09-07
+
+Two decisions in this phase were wrong. They are replaced here rather than quietly edited away, so
+the change and its reason stay visible.
+
+#### 1. Host targets are explicit per component
+
+| Component | Host targets | Not targeted |
+| --- | --- | --- |
+| `jwohlwend-boltz-2` | `linux-x86_64-cuda12.9`, native Linux and Windows through WSL2 | macOS |
+| `bytedance-protenix-v2` | `linux-x86_64-cuda12.9`, native Linux and Windows through WSL2 | macOS |
+| `bytedance-protenix-mini-default-v0-5-0` | `linux-x86_64-cuda12.9`, native Linux and Windows through WSL2 | macOS |
+| `openmm-openmm` | `macos-aarch64-cpu` native; `linux-x86_64-cpu`; `windows-x86_64-cpu`; `linux-x86_64-cuda12.9`; `windows-x86_64-cuda12.9` | — |
+
+Why the three AI Models exclude macOS: Protenix pins Triton, DeepSpeed and cuEquivariance, none of
+which exist on macOS, so as specified it cannot start there. Boltz-2 is a different case — upstream
+supports CPU and it would probably run on Apple silicon, only far too slowly to be useful. Neither
+was ever tried. Owner decision of 2026-09-07: spend no macOS effort on the three AI Models. Recorded
+as a product decision so it is not re-argued, **not** as a claim that Boltz-2 cannot run on a Mac.
+
+Evidence is required **per host environment, not per payload**. One signed Linux box serves native
+Linux and Windows-through-WSL2, but WSL2 needs its own proof inside the Windows app: path
+translation, the slow `/mnt/<drive>` boundary and NVIDIA GPU pass-through are application behaviours
+that a native Linux run never exercises. Concretely, before Windows support is claimed for any
+component:
+
+- the scroll's `compatibility.hostEnvironments` lists `windows-wsl2`, and the catalog target's
+  `hostEnvironments` matches it exactly;
+- a real product lifecycle has passed inside the Windows app through WSL2, not only on Linux;
+- OpenMM's Linux targets currently declare only `native` and must be corrected first.
+
+No component is published for a host environment it has not actually been exercised in.
+
+#### 2. Hardware protection warns; it does not block
+
+The previous rule — refuse every input above the largest measured fixture — produces a tool nobody
+can use. OpenMM's retained macOS envelope tops out at 33 atoms without solvent, so a real protein is
+refused while the runtime could compute it perfectly well. The deeper defect is what the ceiling is
+tied to: the size of whichever fixture happened to be measured, never a property of the user's
+machine, so an 8 GB laptop and a 512 GB workstation are refused identically.
+
+The replacement:
+
+- Estimate before the run as before — tokens, atoms, RAM, VRAM, time, output size — and show it.
+- **Within the measured envelope:** run.
+- **Above it:** state plainly what is known and what is not, require one explicit confirmation, then
+  run. The Result records that the run happened outside measured evidence.
+- **Refuse only** when the estimate exceeds the usable physical memory of this host — RAM, or VRAM
+  on an accelerator target. There the failure is certain and it costs the user their work; that is
+  the only case where blocking serves them rather than us.
+- Published minimum and recommended VRAM stay measured peak × 1.25 and × 1.5. They are guidance for
+  choosing hardware, not a gate on running.
+- Never present an extrapolation as evidence: outside the envelope the estimate is labelled an
+  estimate, and provenance keeps saying which retained measurement it came from.
+
+Implementation consequence, so this is not mistaken for a documentation change:
+`estimateHardwareResources` returns an unconditional rejection above the envelope, and both product
+pages disable Run on it. That has to become a three-state outcome — inside evidence, outside
+evidence but confirmable, impossible on this host — and the app must read the host's memory to
+decide the third state. Larger retained measurements are still worth taking, because they move the
+boundary between the first two states; they are no longer what makes the tool usable at all.
+
 ### Runtime Box
 
 - Boltz-2 con checkpoint di struttura e affinità inclusi; Linux CUDA come target obbligatorio. Boltz supporta CPU/non-CUDA ma upstream avverte che sono molto più lenti, quindi niente box CPU pesanti senza utilità pratica. [Boltz ufficiale](https://github.com/jwohlwend/boltz)
@@ -380,8 +445,11 @@ requires the product owner's separate explicit approval.
 
 - Prima del run stimare token, atomi, RAM, VRAM, tempo e spazio di output.
 - Il minimo VRAM pubblicato sarà il picco misurato sui fixture moltiplicato per 1,25; il consigliato userà 1,5.
-- Rifiutare prima del caricamento gli input oltre il massimo validato, evitando crash OOM.
-- Ogni Result registra GPU/CPU, precisione, seed, MSA, modello, force field e release Scrollcase.
+- Sopra il massimo misurato l'utente riceve un avviso e conferma esplicitamente; il rifiuto secco
+  vale solo quando la stima supera la memoria fisica utilizzabile dell'host. Regola completa e
+  motivazione in [Host targets and hardware limits — corrected 2026-09-07](#host-targets-and-hardware-limits--corrected-2026-09-07).
+- Ogni Result registra GPU/CPU, precisione, seed, MSA, modello, force field e release Scrollcase,
+  e se il run è avvenuto fuori dall'evidenza misurata.
 
 ## Fase 4 — RFdiffusion3 + ProteinMPNN e chiusura production
 
@@ -423,6 +491,8 @@ Un box non passa al catalogo pubblico finché non esistono inferenza reale, life
 - Nessun download o aggiornamento senza scelta esplicita dell’utente.
 - Installazioni concorrenti isolate per `runtimeId`; un fallimento non blocca altri run.
 - Navigazione, riavvio dell’app, cancellazione e ritorno alla pagina conservano Job e Result corretti.
+- Un lifecycle di prodotto reale per ogni **host environment** dichiarato, non per payload: Linux
+  nativo e Windows-tramite-WSL2 sono due prove distinte anche quando il pacchetto firmato è lo stesso.
 - Strutture con coordinate finite e topologia coerente; confidence nei range dichiarati.
 - OpenMM deve ridurre l’energia nella minimizzazione e riprendere correttamente un checkpoint.
 - RFdiffusion3 deve produrre il numero richiesto di strutture; ProteinMPNN deve generare sequenze coerenti con ogni backbone.
@@ -434,6 +504,9 @@ Un box non passa al catalogo pubblico finché non esistono inferenza reale, life
 - Nessun database MSA enorme incluso; si accettano MSA già preparati oppure la modalità single-sequence esplicita.
 - Niente fork community nei target pubblici.
 - Protenix Mini significa `protenix_mini_default_v0.5.0`.
+- Boltz-2, Protenix v2 e Protenix Mini girano solo su Linux x86_64 con NVIDIA, nativo o Windows
+  tramite WSL2. macOS è fuori scopo per loro (decisione del 2026-09-07). OpenMM resta l'unico
+  componente della Fase 3 con un target macOS.
 - pVACtools v1 copre neoantigeni MHC-I tramite MHCflurry; Class II e predictor IEDB restano fuori.
 - OpenMM copre minimizzazione e dinamica molecolare standard, non free-energy perturbation o validazione terapeutica.
 - Le predizioni oncologiche sono strumenti di prioritizzazione da verificare sperimentalmente, non dispositivi diagnostici.

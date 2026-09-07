@@ -79,8 +79,11 @@ Remaining bounded actions:
   still fail closed. A different release or target of OpenMM also resolves to no profile.
   Consequence worth knowing: the measured relaxation envelope is small. Without added hydrogens the
   official 33-atom fixture is accepted; with the page default (hydrogens on, a five-atoms-per-input
-  preflight bound) the same file is refused at 165 atoms. Practical public limits still need larger
-  measurements, which is exactly the open item below.
+  preflight bound) the same file is refused at 165 atoms. A real protein is thousands of atoms, so
+  under the old rule the tool refused every realistic input. That rule is superseded by the corrected
+  hardware policy of 2026-09-07 — warn and confirm above the envelope, refuse only above the host's
+  physical memory — which is not implemented yet: the code still refuses. Until it is reworked, the
+  envelope is a hard ceiling in practice.
 - OpenMM is now a `runtime-boxes/catalog.json` component with all five authored targets at
   `planned` / `nativeCiEnabled: false`, plus `.github/workflows/runtime-box-openmm.yml` and an
   `openmm` entry in `services/runtime-box-signer/policy.json`. `validateRuntimeBoxCiCatalog` passes
@@ -218,9 +221,14 @@ by this audit; production actions require the owner's separate confirmation.
   explicit single-sequence choice, 128-atom refusal and 56-atom warning, distinct affinity values,
   structures/confidence/PAE/PDE/table/3D output.
 - [ ] Per-run Jobs/Results/provenance/cancellation/navigation/restart/offline isolation and complete
-  runtime install/update/rollback/remove/revocation lifecycle on each published target.
-- [ ] Measurements: reject unmeasured workloads, include preparation and simulation duration,
-  publish measured VRAM times 1.25/1.5 and retain the exact release/target evidence.
+  runtime install/update/rollback/remove/revocation lifecycle on **each declared host environment**,
+  not each payload: native Linux and Windows-through-WSL2 are two proofs of one signed box.
+- [ ] Rework the hardware gate to the corrected rule of 2026-09-07: warn and take one explicit
+  confirmation above the measured envelope, refuse only above the host's usable physical memory.
+  `estimateHardwareResources` returns a flat rejection today and both pages disable Run on it, so
+  this is a three-state contract change plus reading host memory, not a copy edit. Measurements
+  still include preparation and simulation duration, publish measured VRAM times 1.25/1.5 and retain
+  the exact release/target evidence; they now move the warning boundary rather than gate the tool.
 - [ ] Final `test:verify`, applicable Rust tests/clippy and real `test:ui`; reviewed commit/push and
   independent signed public readback for each released component.
 

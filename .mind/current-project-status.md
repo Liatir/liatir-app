@@ -29,6 +29,16 @@ defect is corrected by this verification.
 
 ## Structure and simulation Phase 3 is in progress (2026-09-06)
 
+Two plan corrections landed on 2026-09-07, both owner decisions, both recorded in
+[the plan](roadmap/new-ai-models-integration-plan.md#host-targets-and-hardware-limits--corrected-2026-09-07):
+Boltz-2, Protenix v2 and Protenix Mini target only Linux x86_64 with NVIDIA, native or Windows
+through WSL2, with no macOS effort; and the hardware gate must warn and take one explicit
+confirmation above the measured envelope instead of refusing, with a hard refusal only above the
+host's usable physical memory. The second is **not implemented**: the code still refuses, which with
+OpenMM's 33-atom macOS envelope means every realistic protein is rejected today. Evidence is also now
+required per declared host environment rather than per payload, so native Linux and
+Windows-through-WSL2 are two separate proofs of the same signed box.
+
 The Phase 2 Linux/WSL2 closure below remains the published product state. Phase 3 has candidate-only
 contracts and initial OpenMM product code plus five locked recipes; no Phase 3 component is released.
 The local macOS OpenMM development-signed payload passed 13 scientific/negative cases, and the
