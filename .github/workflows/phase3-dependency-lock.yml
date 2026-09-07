@@ -29,19 +29,23 @@ jobs:
     timeout-minutes: 45
     env:
       PIXI_VERSION: v0.73.0
-      PIXI_HOME: ${{ runner.temp }}/liatir-phase3-pixi
       PIXI_NO_PATH_UPDATE: '1'
-      PIXI_CACHE_DIR: ${{ runner.temp }}/liatir-phase3-pixi-cache
       SCROLL_DIR: runtime-boxes/scrolls/${{ inputs.component }}/linux-x86_64-cuda12.9
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
 
+      # The resolver's paths live under the runner temp volume, which is only reachable from a step:
+      # `runner` is not one of the contexts GitHub allows in job-level `env`, and naming it there
+      # makes the whole file invalid. $RUNNER_TEMP is the same value as a plain shell variable.
       - name: Install the reviewed dependency resolver
         shell: bash
         run: |
           set -euo pipefail
+          export PIXI_HOME="$RUNNER_TEMP/liatir-phase3-pixi"
+          echo "PIXI_HOME=$PIXI_HOME" >> "$GITHUB_ENV"
+          echo "PIXI_CACHE_DIR=$RUNNER_TEMP/liatir-phase3-pixi-cache" >> "$GITHUB_ENV"
           curl -fsSL https://pixi.sh/install.sh | bash
           echo "$PIXI_HOME/bin" >> "$GITHUB_PATH"
           test "$("$PIXI_HOME/bin/pixi" --version)" = 'pixi 0.73.0'

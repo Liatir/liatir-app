@@ -1,5 +1,32 @@
 # Current project status
 
+## Phase 3 pushed-commit audit (2026-09-07)
+
+GitHub readback of `82137e7706ecd783590fc321dd2c392b85dcdfdd` found all four Runtime Box
+preflights successful on `ubuntu-24.04`, with their native jobs skipped: OpenMM `34063716252`,
+MHCflurry `34063716199`, pVACtools `34063716260`, UCE `34063716348`. SDK sync `34063715872`
+also passed. Scheduled CI `34098675990` passed its verify and Rust jobs, but its advisory ESLint
+job failed on an unnecessary type assertion in `packages/liatir-core/src/external-workflows.ts:300`.
+The manual dependency workflow is on main but **not dispatch-ready**: GitHub recorded invalid-workflow
+failure `34063715213` on push, with zero jobs. Its job-level `env` uses the unsupported `runner`
+context at lines 32 and 34. Fix and statically validate that workflow before any dependency dispatch;
+the earlier default-branch blocker is superseded. No fixes, dispatches or deployments were performed
+in this audit. Runner inventory was independently confirmed empty. The pre-existing untracked
+`AGENT-POLICY.md` was read and preserved; `AGENTS-POLICY.md` is absent.
+
+No Phase 3 component is ready for publication. OpenMM still needs practical workload measurements,
+Molecular Dynamics in the real app, remaining per-platform evidence and production signing/builds.
+Its authored Windows targets are native Windows, not WSL2; its Linux catalog entries authorize only
+native hosts. Boltz-2 and both Protenix models still lack resolved locks, complete packages/runners
+and scientific/product evidence; v2 official checkpoint access was last observed denied. Their
+current candidate environments are Linux CUDA, not established macOS or Windows+WSL2 support.
+See the [updated audit and release checklist](roadmap/phase3-implementation-status.md#github-audit-2026-09-07).
+Production build/publication requires fresh owner approval in this continuation, and GPU CI requires
+separate explicit approval. R2 writes remain GitHub-Actions-only.
+Local `test:verify` passed all six suites / 567 tests, report `2026-09-07T14-45-29-324Z`.
+Only memory documents changed; UI/lifecycle tests were not repeated and neither diagnosed code
+defect is corrected by this verification.
+
 ## Structure and simulation Phase 3 is in progress (2026-09-06)
 
 The Phase 2 Linux/WSL2 closure below remains the published product state. Phase 3 has candidate-only

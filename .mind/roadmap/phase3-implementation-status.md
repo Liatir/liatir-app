@@ -3,6 +3,72 @@
 The full scope is [Phase 3 of the integration plan](new-ai-models-integration-plan.md#fase-3--strutture-affinità-e-simulazione).
 Status on 2026-09-06: in progress; no Phase 3 component is published or in the normal product catalog.
 
+## GitHub audit (2026-09-07)
+
+Read-only GitHub inspection for exact commit `82137e7706ecd783590fc321dd2c392b85dcdfdd`:
+
+| Workflow | Run | Observed result |
+| --- | --- | --- |
+| OpenMM | [34063716252](https://github.com/Liatir/liatir-stack/actions/runs/34063716252) | Ubuntu 24.04 preflight passed; native job skipped |
+| MHCflurry | [34063716199](https://github.com/Liatir/liatir-stack/actions/runs/34063716199) | Ubuntu 24.04 preflight passed; native job skipped |
+| pVACtools | [34063716260](https://github.com/Liatir/liatir-stack/actions/runs/34063716260) | Ubuntu 24.04 preflight passed; native job skipped |
+| UCE | [34063716348](https://github.com/Liatir/liatir-stack/actions/runs/34063716348) | Ubuntu 24.04 preflight passed; native job skipped |
+| SDK sync | [34063715872](https://github.com/Liatir/liatir-stack/actions/runs/34063715872) | Passed |
+| Phase 3 dependency authoring | [34063715213](https://github.com/Liatir/liatir-stack/actions/runs/34063715213) | Invalid workflow on push; zero jobs |
+| Scheduled CI | [34098675990](https://github.com/Liatir/liatir-stack/actions/runs/34098675990) | Overall success; verify/Rust passed, advisory ESLint failed |
+
+The dependency workflow's `jobs.lock.env` uses `${{ runner.temp }}` at lines 32 and 34.
+GitHub's [context availability rules](https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#context-availability)
+do not permit `runner` in job-level `env`; it is available in step-level `env` and `run` instead.
+The API exposes no jobs/logs for this rejected definition; `gh run view` reports a workflow-file issue.
+This is a workflow-definition defect, not a failed dependency solve. The file is now on main, but
+its presence there does not make it ready to dispatch. No retry or code correction occurred here.
+
+The scheduled advisory ESLint job reports one error and 48 warnings. The error is the redundant
+`as LiatirInputFieldSchema` assertion in `external-workflows.ts:300-306`; `continue-on-error: true`
+explains the overall green CI result. Its install log also reports npm advisories (root: 12,
+including nine high); package identities and shipped impact were not assessed by this audit.
+
+Runner inventory from `gh api repos/Liatir/liatir-stack/actions/runners` was zero. The existing
+untracked `AGENT-POLICY.md` was read without modification; the requested plural filename is absent.
+No workflow dispatch, GPU execution, signer deployment, upload or publication was initiated.
+
+Local audit verification passed `npm run test:verify`: six suites, 76 files / 567 tests, zero
+failures; report `tests/.artifacts/reports/2026-09-07T14-45-29-324Z/`. This does not validate
+GitHub expression contexts or run advisory ESLint, so it does not close either diagnosed defect.
+`test:ui` was not repeated because only memory documents changed; no UI or lifecycle code changed.
+
+Remaining bounded actions:
+
+- Done. `phase3-dependency-lock.yml` no longer names `runner` in job-level `env`: the resolver's
+  paths are exported from `$RUNNER_TEMP` inside the install step, through `$GITHUB_ENV` for the later
+  steps. `tests/unit/workflow-context-placement.test.ts` scans every workflow for a context GitHub
+  does not allow in `jobs.<id>.env`, and was observed failing on the exact rejected file (reporting
+  `lock.PIXI_HOME` and `lock.PIXI_CACHE_DIR`, and nothing else across the other 22 workflows) before
+  the correction. It still carries the rejected snippet as a fixture, so the guard cannot silently
+  stop detecting it. This proves the definition is valid locally, not that the solve succeeds:
+  one initial CPU-only dispatch per component is still the next step, and any different failure must
+  be diagnosed before a retry. Inspect resulting locks before committing them.
+- Done. The advisory lint error is corrected: the redundant `as LiatirInputFieldSchema` assertion in
+  `external-workflows.ts:300-306` is removed and `npm run lint:ts` now reports 0 errors and 48
+  pre-existing warnings. A green advisory workflow still does not mean a clean lint result, because
+  `continue-on-error: true` hides a real error. Dependency advisories remain unreviewed.
+- Boltz-2 and both Protenix components still need verified official assets, redistribution review,
+  complete scrolls, offline product runners, validators, measured hardware bounds and real per-target
+  product lifecycles. None is in the distribution catalog or release-workflow choices yet.
+- OpenMM still needs larger retained measurements, the Dynamics product lifecycle, remaining target
+  validation and full legal review. Production scientific/product tests must exercise the production
+  artifact rather than borrow evidence from either development archive.
+- Windows native is not WSL2: OpenMM Linux targets currently sign only `hostEnvironments: ["native"]`,
+  and the WSL2 proof workflow does not select any Phase 3 component. Supporting Windows through WSL2
+  needs explicit compatibility and real Windows-app evidence. The three AI Model manifests currently
+  target Linux CUDA only; macOS support for all models is not an established plan or verified fact.
+- After owner approval and scientific/product readiness, the OpenMM production sequence remains:
+  deploy signer policy, enable only the reviewed target's `nativeCiEnabled` on clean committed main,
+  start its ephemeral runner, then dispatch `runtime-box-release.yml`. Every R2 upload must run in
+  GitHub Actions; verify public signatures and complete bytes before catalog exposure. Immutable
+  upload alone is not product release: the workflow promotes beta only after its real app test.
+
 ## Current evidence
 
 - The retained macOS arm64 CPU measurement is now a real run envelope. `LIATIR_PHASE3_HARDWARE_VALIDATION_PROFILES`
@@ -128,19 +194,14 @@ Status on 2026-09-06: in progress; no Phase 3 component is published or in the n
 
 ## Living implementation checklist
 
-Continuation prerequisites: read the current `AGENTS.md`; `AGENTS-POLICY.md` is absent from this
-checkout (including ignored-file discovery). Preserve all existing Phase 3 worktree edits. Nothing
-is committed yet, and the next step needs an owner decision, because **pushing this work to `main`
-fires four Runtime Box caller workflows** — `runtime-box-mhcflurry-class1-presentation.yml`,
-`runtime-box-pvactools-pvacseq.yml`, `runtime-box-uce-4layer.yml` and the new
-`runtime-box-openmm.yml` all list `runtime-boxes/catalog.json` in their `push:` path filters, and
-each defaults to a `build` job on a heavy or self-hosted runner. Opening a pull request triggers the
-same four through their `pull_request` filters. A branch push with no PR triggers nothing.
-`.github/workflows/phase3-dependency-lock.yml` is `workflow_dispatch` only and never self-triggers,
-but GitHub will not offer it until the file exists on the default branch. So the cheap sequence is:
-land the lock workflow on `main` on its own first, dispatch it for `boltz-2`, `protenix-v2` and
-`protenix-mini-default-v0-5-0`, and land the catalog change separately once the four builds are
-wanted. No GPU workflow, R2 upload, signer deploy or publication is authorized by this increment.
+Continuation prerequisites were rechecked on 2026-09-07; see the GitHub audit above. Phase 3 is
+committed on main as `82137e7`. The earlier claim that the catalog push starts heavy builds was
+incorrect: all four callers set `native_requested` only for `workflow_dispatch`, and the shared
+native job requires `native_eligible == 'true'`. Their actual push runs passed only the hosted CPU
+preflight and skipped native work. The manual dependency workflow now needs its invalid job-level
+context corrected before dispatch, not another initial landing on main. Preserve the owner's
+untracked `AGENT-POLICY.md`. No GPU workflow, R2 upload, signer deploy or publication is authorized
+by this audit; production actions require the owner's separate confirmation.
 
 - [ ] OpenMM: actual source layout and pruned payload verified, dedicated scientific validator,
   retained CPU measurements, real local build, per-target CI/lifecycle and publication.

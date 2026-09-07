@@ -303,7 +303,7 @@ export function externalWorkflowToStepDefinition(
       description: parameter.description,
       required: parameter.required,
       default: parameter.default,
-    } as LiatirInputFieldSchema;
+    };
   }
 
   const outputSchema: Record<string, LiatirOutputFieldSchema> = {};
