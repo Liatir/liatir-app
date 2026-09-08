@@ -83,13 +83,15 @@ manifest needs Linux-side resolution for source-only dependencies; no Boltz pack
 Structure and affinity candidate routes own saved input drafts by workspace and draft ID, and the
 serial UI gate now passes those rendered editor and candidate checks: 37 native scenarios, zero
 failures (report `2026-09-06T21-25-49-220Z`), after the paired verification `2026-09-06T21-24-16-023Z`.
-The retained macOS CPU measurement is now a registered run envelope, so Molecular Relaxation accepts
-the measured 33-atom fixture and explicitly refuses anything larger instead of guessing. OpenMM is a
-CI catalog component with five `planned` targets, a caller workflow, a signer-policy entry and a
-product lifecycle spec. **Its macOS CPU product lifecycle now passes in the real app** — install,
-cancellation, refusal of an unmeasured input, a real relaxation reducing potential energy by
-117.84 kJ/mol, Jobs, Results, provenance, navigation and removal with artifacts preserved — retained
-as `runtime-boxes/measurements/openmm-macos-aarch64-cpu-product-lifecycle-development-2026-09-06.json`.
+The retained macOS CPU measurement is a registered run envelope, and the corrected hardware rule is
+now implemented: inside it Molecular Relaxation runs on measured figures, past it the screen says the
+run is larger than anything measured and runs only after one explicit acknowledgement, and the single
+size refusal is a floor above the machine's installed memory. OpenMM is a CI catalog component with
+five `planned` targets, a caller workflow, a signer-policy entry and a product lifecycle spec.
+**Its macOS CPU product lifecycle passes in the real app** — install, cancellation, both reachable
+hardware states on the same input, a real relaxation reducing potential energy by 117.92 kJ/mol,
+Jobs, Results, provenance, navigation and removal with artifacts preserved — retained as
+`runtime-boxes/measurements/openmm-macos-aarch64-cpu-product-lifecycle-development-2026-09-08.json`.
 That is the first real Phase 3 product evidence, on a development-signed local build; it is not
 publication evidence. No signer deploy, no CI dispatch and no publication happened.
 Protenix v2 and exact Mini Default have separate candidate inputs and Linux manifests at source

@@ -2,9 +2,10 @@
  * Runs the signed OpenMM Tool Runtime through Liatir's install, preflight, Job, Result, and removal lifecycle.
  *
  * The generic install/replace/rollback contract is covered by the shared Runtime Box lifecycle spec. This
- * focused gate exists because Molecular Relaxation is the first Phase 3 tool whose run must be refused unless a
- * retained hardware measurement covers the exact release and target, and because its Result carries scientific
- * provenance (force field, seed, energy reduction) that no other tool produces.
+ * focused gate exists because Molecular Relaxation is the first Phase 3 tool with a three-state hardware
+ * decision — inside retained measurements, past them but confirmable, or impossible on this machine — and
+ * because its Result carries scientific provenance (force field, seed, energy reduction) that no other
+ * tool produces. Both reachable states are exercised here on the same input.
  *
  * The input is the official `test-ala-3.pdb` shipped inside the installed box, so the run reproduces the exact
  * 33-atom fixture the retained macOS CPU measurement was taken from rather than an invented structure.
@@ -53,7 +54,7 @@ async function jobs(browser) {
 }
 
 export const tests = [{
-  name: 'refuses an unmeasured input, relaxes the official fixture, and preserves its Result',
+  name: 'confirms an unmeasured run, relaxes the official fixture, and preserves its Result',
   heavy: true,
   async run({ browser, expect, rootDir }) {
     await activateCleanSandbox(browser);
@@ -139,21 +140,36 @@ print(json.dumps({
 
     await selectFileFromPicker(browser, 'openmm-input-structure', path.basename(officialPath));
 
-    // The page default adds hydrogens, whose preflight bound (5 atoms per input atom) is outside
-    // every retained sample for this workload. The refusal must be explicit, not an extrapolation.
+    // The page default adds hydrogens, whose preflight bound (5 atoms per input atom) is past every
+    // retained sample. That must not block the run: it must say so and ask once.
     await checkButton.click();
     await browser.waitUntil(
-      async () => browser.execute(() => document.body.innerText.includes('outside the measured limits')),
-      { timeout: 120_000, timeoutMsg: 'OpenMM preflight did not refuse the unmeasured preparation' },
+      async () => browser.execute(() => document.body.innerText.includes('larger than anything measured')),
+      { timeout: 120_000, timeoutMsg: 'OpenMM preflight did not report an unmeasured run size' },
     );
-    expect(await (await browser.$('[data-testid="openmm-run"]')).isEnabled()).toBe(false);
+    const runButton = await browser.$('[data-testid="openmm-run"]');
+    expect(await runButton.isEnabled()).toBe(false);
 
+    const acknowledgement = await browser.$('[data-testid="openmm-accept-beyond-evidence"]');
+    await acknowledgement.click();
+    await browser.waitUntil(() => runButton.isEnabled(), {
+      timeout: 20_000, timeoutMsg: 'Acknowledging an unmeasured run did not enable Run',
+    });
+    // Withdrawing the acknowledgement closes it again, so the gate is real rather than decorative.
+    await acknowledgement.click();
+    await browser.waitUntil(async () => !await runButton.isEnabled(), {
+      timeout: 20_000, timeoutMsg: 'Withdrawing the acknowledgement did not disable Run',
+    });
+
+    // Back inside the measured envelope: no acknowledgement is asked for at all.
     await (await browser.$('[data-testid="openmm-add-hydrogens"]')).click();
     await checkButton.click();
-    const runButton = await browser.$('[data-testid="openmm-run"]');
     await browser.waitUntil(() => runButton.isEnabled(), {
       timeout: 120_000, timeoutMsg: 'OpenMM Run did not become enabled for the measured fixture',
     });
+    expect(await browser.execute(
+      () => document.querySelectorAll('[data-testid="openmm-accept-beyond-evidence"]').length,
+    )).toBe(0);
     await runButton.click();
     await navigateInApp(browser, '/jobs');
 
@@ -200,6 +216,7 @@ print(json.dumps({
       Seed: 17,
       'Network access': 'Disabled',
       'Hardware evidence': 'openmm-8.5.1-beta.1-macos-aarch64-cpu-development-2026-09-06',
+      'Within measured evidence': 'Yes',
       'Runtime Box': `${VERSION} · ${TARGET_ID}`,
       'Runtime Box archive SHA-256': installed.activation.release.archive.sha256,
     });
@@ -254,7 +271,7 @@ print(json.dumps({
           energyReductionKilojoulePerMole: metrics.energyReductionKilojoulePerMole,
         },
         assertions: {
-          install: 'passed', cancellation: 'passed', unmeasuredInputRefused: 'passed',
+          install: 'passed', cancellation: 'passed', unmeasuredRunConfirmable: 'passed',
           officialFixture: 'passed', realRelaxation: 'passed', energyReduced: 'passed',
           jobs: 'passed', navigationResume: 'passed', results: 'passed', provenance: 'passed',
           offline: 'passed', interpretationNotice: 'passed', removal: 'passed',

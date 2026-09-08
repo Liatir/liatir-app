@@ -9,13 +9,13 @@
   "hostEnvironment": "native",
   "version": "8.5.1-beta.1",
   "jobId": "job_2",
-  "analysisRunId": "785782f6-ec0b-45d5-85fa-3d39c5b9af2d",
+  "analysisRunId": "2cb41fd9-c9c7-46ba-a4d1-8945547114bc",
   "accelerator": "CPU",
   "resultArtifactCount": 4,
   "release": {
-    "archiveSha256": "c78db875fb91c8be0088a22547062af3ed40efb614f88f23ee056d94ce2b23a6",
-    "archiveSizeBytes": 580872984,
-    "installedSizeBytes": 1945943879,
+    "archiveSha256": "e5e1f3ba48bb0e2affe006b0b2cbbc793ee4b7af2475589e6f047d827b8c97d1",
+    "archiveSizeBytes": 580872708,
+    "installedSizeBytes": 1945943501,
     "signingKeyIds": [
       "liatir-openmm-development"
     ]
@@ -24,13 +24,13 @@
     "hardwareProfileId": "openmm-8.5.1-beta.1-macos-aarch64-cpu-development-2026-09-06",
     "preparedAtomCount": 33,
     "initialPotentialEnergyKilojoulePerMole": -1.691218992097177,
-    "finalPotentialEnergyKilojoulePerMole": -119.53121642948675,
-    "energyReductionKilojoulePerMole": 117.83999743738957
+    "finalPotentialEnergyKilojoulePerMole": -119.61344153048529,
+    "energyReductionKilojoulePerMole": 117.92222253838811
   },
   "assertions": {
     "install": "passed",
     "cancellation": "passed",
-    "unmeasuredInputRefused": "passed",
+    "unmeasuredRunConfirmable": "passed",
     "officialFixture": "passed",
     "realRelaxation": "passed",
     "energyReduced": "passed",

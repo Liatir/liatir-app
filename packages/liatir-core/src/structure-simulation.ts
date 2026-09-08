@@ -708,8 +708,19 @@ export function phase3HardwareValidationProfile(input: {
   )) ?? null;
 }
 
+/** Whether a run's resource figures come from a retained measurement or from beyond one. */
+export type LiatirHardwareEvidence = "measured" | "beyond-evidence";
+
+/** What the host can offer. `null` means the native probe reported nothing, not zero. */
+export interface LiatirHardwareHostMemory {
+  totalMemoryBytes: number | null;
+}
+
 export interface LiatirHardwareResourceEstimate extends LiatirHardwareWorkloadMetrics {
   accepted: true;
+  evidence: "measured";
+  /** Inside the envelope nothing is guessed, so the run needs no extra acknowledgement. */
+  confirmationRequired: false;
   hardwareProfileId: string;
   sampleFixtureId: string;
   estimatedRamBytes: number;
@@ -719,8 +730,30 @@ export interface LiatirHardwareResourceEstimate extends LiatirHardwareWorkloadMe
   evidenceRecord: string;
 }
 
+/**
+ * A run larger than anything measured. Deliberately carries no invented estimate: the figures are
+ * the largest measured point this request is already known to exceed, so they are a floor and are
+ * named as one. A user with a big machine may still run it after acknowledging that.
+ */
+export interface LiatirHardwareResourceExtrapolation extends LiatirHardwareWorkloadMetrics {
+  accepted: true;
+  evidence: "beyond-evidence";
+  confirmationRequired: true;
+  hardwareProfileId: string;
+  evidenceRecord: string;
+  /** The dominated sample the floor comes from, or `null` when no measured point is smaller. */
+  floorFixtureId: string | null;
+  minimumRamBytes: number | null;
+  maxValidatedTokenCount: number;
+  maxValidatedAtomCount: number;
+  maxValidatedStepCount: number;
+  maxValidatedOutputItemCount: number;
+}
+
 export interface LiatirHardwareResourceRejection {
   accepted: false;
+  /** `impossible` is the only refusal about size; the rest mean there is nothing to judge with. */
+  reason: "impossible" | "no-evidence" | "invalid-metrics";
   error: string;
   maxValidatedTokenCount: number;
   maxValidatedAtomCount: number;
@@ -730,6 +763,7 @@ export interface LiatirHardwareResourceRejection {
 
 export type LiatirHardwareResourcePreflight =
   | LiatirHardwareResourceEstimate
+  | LiatirHardwareResourceExtrapolation
   | LiatirHardwareResourceRejection;
 
 function positiveSafeInteger(value: number): boolean {
@@ -749,12 +783,22 @@ function validMeasurementSample(sample: LiatirHardwareMeasurementSample): boolea
 }
 
 /**
- * Return the smallest measured envelope that dominates the request. Inputs outside every measured
- * envelope are rejected instead of being extrapolated into a possible out-of-memory crash.
+ * Judge one request against the retained measurements for its target.
+ *
+ * Inside the measured envelope the smallest dominating sample supplies real figures. Outside it,
+ * the run is still allowed after an explicit acknowledgement, because the measured ceiling is the
+ * size of whichever fixture happened to be validated, never a property of this machine — blocking
+ * on it refused every realistic protein while the runtime could compute them.
+ *
+ * The one refusal about size is a certain failure: the largest measured point the request already
+ * exceeds is a floor on what it will need, so a floor above the host's installed memory cannot
+ * succeed. With no host figure and no smaller measured point nothing is certain, so nothing is
+ * refused. No estimate is ever extrapolated past the evidence and presented as if measured.
  */
 export function estimateHardwareResources(
   metrics: LiatirHardwareWorkloadMetrics,
   profile: LiatirHardwareValidationProfile,
+  host: LiatirHardwareHostMemory = { totalMemoryBytes: null },
 ): LiatirHardwareResourcePreflight {
   const samples = profile.samples.filter((sample) => validMeasurementSample(sample)
     && sample.workloadId === metrics.workloadId);
@@ -768,16 +812,20 @@ export function estimateHardwareResources(
     || !positiveSafeInteger(metrics.atomCount)
     || !positiveSafeInteger(metrics.stepCount)
     || !positiveSafeInteger(metrics.outputItemCount);
+  const validated = {
+    maxValidatedTokenCount: maxima.tokens,
+    maxValidatedAtomCount: maxima.atoms,
+    maxValidatedStepCount: maxima.steps,
+    maxValidatedOutputItemCount: maxima.outputs,
+  };
   if (samples.length === 0 || invalidMetrics) {
     return {
       accepted: false,
+      reason: samples.length === 0 ? "no-evidence" : "invalid-metrics",
       error: samples.length === 0
         ? "No valid measured hardware envelope is available for this target."
         : "Workload metrics must be positive integers produced by the input preflight.",
-      maxValidatedTokenCount: maxima.tokens,
-      maxValidatedAtomCount: maxima.atoms,
-      maxValidatedStepCount: maxima.steps,
-      maxValidatedOutputItemCount: maxima.outputs,
+      ...validated,
     };
   }
 
@@ -792,31 +840,61 @@ export function estimateHardwareResources(
       return leftVolume - rightVolume;
     });
   const sample = candidates[0];
-  if (!sample) {
-    return {
-      accepted: false,
-      error: "This input is outside the measured limits for the selected model and target.",
-      maxValidatedTokenCount: maxima.tokens,
-      maxValidatedAtomCount: maxima.atoms,
-      maxValidatedStepCount: maxima.steps,
-      maxValidatedOutputItemCount: maxima.outputs,
-    };
-  }
-
-  return {
-    accepted: true,
-    hardwareProfileId: profile.profileId,
-    sampleFixtureId: sample.fixtureId,
+  const requested = {
     workloadId: metrics.workloadId,
     tokenCount: metrics.tokenCount,
     atomCount: metrics.atomCount,
     stepCount: metrics.stepCount,
     outputItemCount: metrics.outputItemCount,
-    estimatedRamBytes: sample.peakRamBytes,
-    estimatedVramBytes: sample.peakVramBytes,
-    estimatedTimeMs: sample.elapsedMs,
-    estimatedOutputBytes: sample.outputBytes,
+  };
+  if (sample) {
+    return {
+      accepted: true,
+      evidence: "measured",
+      confirmationRequired: false,
+      hardwareProfileId: profile.profileId,
+      sampleFixtureId: sample.fixtureId,
+      ...requested,
+      estimatedRamBytes: sample.peakRamBytes,
+      estimatedVramBytes: sample.peakVramBytes,
+      estimatedTimeMs: sample.elapsedMs,
+      estimatedOutputBytes: sample.outputBytes,
+      evidenceRecord: profile.evidenceRecord,
+    };
+  }
+
+  // The heaviest measured point this request already exceeds in every dimension. It cannot need
+  // less than that, which is the only thing about a larger run that is known rather than guessed.
+  const floor = samples
+    .filter((candidate) => metrics.tokenCount >= candidate.maxTokenCount
+      && metrics.atomCount >= candidate.maxAtomCount
+      && metrics.stepCount >= candidate.maxStepCount
+      && metrics.outputItemCount >= candidate.maxOutputItemCount)
+    .reduce<LiatirHardwareMeasurementSample | null>(
+      (heaviest, candidate) => (!heaviest || candidate.peakRamBytes > heaviest.peakRamBytes
+        ? candidate
+        : heaviest),
+      null,
+    );
+  if (floor && host.totalMemoryBytes !== null && floor.peakRamBytes > host.totalMemoryBytes) {
+    return {
+      accepted: false,
+      reason: "impossible",
+      error: "This run needs more memory than this computer has installed, so it cannot finish.",
+      ...validated,
+    };
+  }
+
+  return {
+    accepted: true,
+    evidence: "beyond-evidence",
+    confirmationRequired: true,
+    hardwareProfileId: profile.profileId,
     evidenceRecord: profile.evidenceRecord,
+    floorFixtureId: floor?.fixtureId ?? null,
+    minimumRamBytes: floor?.peakRamBytes ?? null,
+    ...requested,
+    ...validated,
   };
 }
 
@@ -868,6 +946,8 @@ export interface LiatirPhase3ResultProvenance {
     archiveSha256: string;
   };
   hardwareProfileId: string;
+  /** A Result must say whether its run stayed inside the retained measurements or went past them. */
+  hardwareEvidence: LiatirHardwareEvidence;
 }
 
 export interface LiatirStructureModelRow {

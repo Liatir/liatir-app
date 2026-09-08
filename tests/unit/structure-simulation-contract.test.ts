@@ -274,23 +274,56 @@ describe('Phase 3 scientific contracts', () => {
       .toHaveLength(2);
   });
 
-  it('uses a measured upper envelope and rejects workloads that would require extrapolation', () => {
+  it('uses a measured envelope inside it and asks for confirmation beyond it', () => {
     const profile = hardwareProfile();
     const metrics = { workloadId: 'structure-prediction', stepCount: 200, tokenCount: 200, atomCount: 1_500, outputItemCount: 2 };
-    expect(estimateHardwareResources(metrics, profile))
-      .toMatchObject({ ...metrics, accepted: true, sampleFixtureId: 'small', estimatedVramBytes: 8_000_000_000 });
+    expect(estimateHardwareResources(metrics, profile)).toMatchObject({
+      ...metrics,
+      accepted: true,
+      evidence: 'measured',
+      confirmationRequired: false,
+      sampleFixtureId: 'small',
+      estimatedVramBytes: 8_000_000_000,
+    });
 
-    expect(estimateHardwareResources({ ...metrics, tokenCount: 600 }, profile))
-      .toEqual({
-        accepted: false,
-        error: 'This input is outside the measured limits for the selected model and target.',
-        maxValidatedTokenCount: 512,
-        maxValidatedAtomCount: 4_000,
-        maxValidatedStepCount: 200,
-        maxValidatedOutputItemCount: 5,
-      });
-    expect(estimateHardwareResources({ ...metrics, stepCount: 201 }, profile).accepted).toBe(false);
-    expect(estimateHardwareResources({ ...metrics, workloadId: 'protein-ligand-affinity' }, profile).accepted).toBe(false);
+    // Past every measured point the run is still allowed, but only after an explicit choice, and
+    // it is never given invented figures: the floor is the heaviest sample it already exceeds.
+    const beyond = { ...metrics, tokenCount: 600, atomCount: 5_000, outputItemCount: 6 };
+    expect(estimateHardwareResources(beyond, profile)).toMatchObject({
+      ...beyond,
+      accepted: true,
+      evidence: 'beyond-evidence',
+      confirmationRequired: true,
+      floorFixtureId: 'large',
+      maxValidatedTokenCount: 512,
+      maxValidatedAtomCount: 4_000,
+      maxValidatedOutputItemCount: 5,
+    });
+    expect('estimatedRamBytes' in estimateHardwareResources(beyond, profile)).toBe(false);
+
+    // A workload with no measurement at all still fails closed: there is nothing to judge with.
+    expect(estimateHardwareResources({ ...metrics, workloadId: 'protein-ligand-affinity' }, profile))
+      .toMatchObject({ accepted: false, reason: 'no-evidence' });
+  });
+
+  it('refuses only a run whose measured floor exceeds the memory this computer has', () => {
+    const profile = hardwareProfile();
+    const beyond = { workloadId: 'structure-prediction', stepCount: 200, tokenCount: 600, atomCount: 5_000, outputItemCount: 6 };
+    const floorBytes = 8_000_000_000; // the 'large' sample's peak RAM, the heaviest one it exceeds
+
+    expect(estimateHardwareResources(beyond, profile, { totalMemoryBytes: floorBytes - 1 }))
+      .toMatchObject({ accepted: false, reason: 'impossible' });
+    expect(estimateHardwareResources(beyond, profile, { totalMemoryBytes: floorBytes * 8 }))
+      .toMatchObject({ accepted: true, evidence: 'beyond-evidence' });
+    // An unknown host figure proves nothing, so it must not become a refusal.
+    expect(estimateHardwareResources(beyond, profile, { totalMemoryBytes: null }))
+      .toMatchObject({ accepted: true, evidence: 'beyond-evidence' });
+    // Inside the envelope a small machine is still never blocked by this rule.
+    expect(estimateHardwareResources(
+      { ...beyond, tokenCount: 200, atomCount: 1_500, outputItemCount: 2 },
+      profile,
+      { totalMemoryBytes: 1_000 },
+    )).toMatchObject({ accepted: true, evidence: 'measured' });
   });
 
   it('derives published VRAM from the measured peak with the required margins', () => {

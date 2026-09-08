@@ -8,6 +8,7 @@
     OPENMM_MAX_SEED,
     OPENMM_RUNTIME_COMPONENT_ID,
     createLiatirRootExecutionIdentity,
+    type LiatirHardwareHostMemory,
   } from '@liatir/core';
   import PageHeader from '$lib/components/layout/PageHeader.svelte';
   import PageContent from '$lib/components/layout/PageContent.svelte';
@@ -27,6 +28,7 @@
     type OpenMMResourcePreflight,
     type OpenMMToolMode,
   } from '$lib/tools/molecular-simulation/openmm';
+  import { aiModelsStore } from '$lib/stores/aiModels.svelte';
   import { analysisRuns, type AnalysisRunMeta } from '$lib/stores/analysisRuns.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
@@ -62,6 +64,8 @@
   let checkedFingerprint = $state('');
   let preflight = $state<OpenMMResourcePreflight | null>(null);
   let preflightError = $state<string | null>(null);
+  let beyondEvidenceAccepted = $state(false);
+  let host = $state<LiatirHardwareHostMemory>({ totalMemoryBytes: null });
   let running = $state(false);
   let activeExecutionRunId = $state<string | null>(null);
   let selectedRunId = $state<string | null>(null);
@@ -86,8 +90,12 @@
   const runActive = $derived(running || !!activeJob);
   const currentFingerprint = $derived(JSON.stringify(buildParams()));
   const canCheck = $derived(runtime?.status === 'installed' && !!inputStructure && !runActive && !checking);
+  const beyondEvidence = $derived(
+    preflight?.estimate.accepted === true && preflight.estimate.confirmationRequired
+  );
   const canRun = $derived(
     canCheck && preflight?.estimate.accepted === true && checkedFingerprint === currentFingerprint
+    && (!beyondEvidence || beyondEvidenceAccepted)
   );
   const structureRequirement = {
     profiles: [{ ...LIATIR_STRUCTURE_PROFILE_V1 }],
@@ -102,6 +110,8 @@
       checkedFingerprint = '';
       preflight = null;
       preflightError = null;
+      // A new input has not been acknowledged, whatever the previous one was.
+      beyondEvidenceAccepted = false;
     }
   });
 
@@ -116,6 +126,9 @@
   });
 
   onMount(() => {
+    void aiModelsStore.ensureHardwareInfo().then((info) => {
+      host = { totalMemoryBytes: info?.totalMemoryBytes ?? null };
+    });
     void toolRuntimesStore.init();
     void analysisRuns.init();
     void dataFiles.init();
@@ -170,7 +183,7 @@
     preflight = null;
     try {
       const fingerprint = currentFingerprint;
-      const result = await preflightOpenMMWithRuntime(runtime, mode, buildParams());
+      const result = await preflightOpenMMWithRuntime(runtime, mode, buildParams(), host);
       if (currentFingerprint !== fingerprint) return;
       preflight = result;
       checkedFingerprint = fingerprint;
@@ -236,7 +249,8 @@
         signal: executionRuns.signal(runId),
         onJobId: (jobId) => void executionRuns.attachJob(runId, jobId).catch(() => {}),
       };
-      const result = await runOpenMMWithRuntime(runtime, mode, params, outputDir, onLog, context);
+      const result = await runOpenMMWithRuntime(runtime, mode, params, outputDir, onLog, context,
+        { host, confirmedBeyondEvidence: beyondEvidenceAccepted });
       const endedAt = Date.now();
       await finalizeExecutionResult(runId, 'done', {
         id: runId,
@@ -371,18 +385,40 @@
             </div>
 
             {#if preflight}
-              <div class="rounded-lg border border-border bg-surface-2 p-3">
-                <p class="text-xs font-medium text-text-secondary mb-2">Run estimate from retained measurements</p>
+              <div class="rounded-lg border border-border bg-surface-2 p-3" data-testid="openmm-estimate">
+                <p class="text-xs font-medium text-text-secondary mb-2">
+                  {preflight.estimate.accepted && preflight.estimate.evidence === 'measured'
+                    ? 'Run estimate from retained measurements'
+                    : 'This run is larger than anything measured'}
+                </p>
                 <div class="grid grid-cols-2 md:grid-cols-6 gap-2 text-xs">
                   <div><span class="text-text-subtle">Prepared atoms (upper estimate)</span><p class="font-medium">{preflight.metrics.atomCount.toLocaleString()}</p></div>
                   <div><span class="text-text-subtle">Saved items</span><p class="font-medium">{preflight.metrics.outputItemCount.toLocaleString()}</p></div>
-                  {#if preflight.estimate.accepted}
+                  {#if preflight.estimate.accepted && preflight.estimate.evidence === 'measured'}
                     <div><span class="text-text-subtle">RAM</span><p class="font-medium">{fmtBytes(preflight.estimate.estimatedRamBytes)}</p></div>
                     <div><span class="text-text-subtle">VRAM</span><p class="font-medium">{preflight.estimate.estimatedVramBytes === null ? 'Not used' : fmtBytes(preflight.estimate.estimatedVramBytes)}</p></div>
                     <div><span class="text-text-subtle">Time</span><p class="font-medium">{durationLabel(preflight.estimate.estimatedTimeMs)}</p></div>
                     <div><span class="text-text-subtle">Output</span><p class="font-medium">{fmtBytes(preflight.estimate.estimatedOutputBytes)}</p></div>
+                  {:else if preflight.estimate.accepted}
+                    <div><span class="text-text-subtle">Largest measured so far</span><p class="font-medium">{preflight.estimate.maxValidatedAtomCount.toLocaleString()} atoms</p></div>
+                    <div><span class="text-text-subtle">At least</span><p class="font-medium">{preflight.estimate.minimumRamBytes === null ? 'Unknown' : fmtBytes(preflight.estimate.minimumRamBytes)}</p></div>
+                    <div><span class="text-text-subtle">This computer has</span><p class="font-medium">{host.totalMemoryBytes === null ? 'Unknown' : fmtBytes(host.totalMemoryBytes)}</p></div>
                   {/if}
                 </div>
+              </div>
+            {/if}
+            {#if preflight?.estimate.accepted && preflight.estimate.confirmationRequired}
+              <div class="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                <p>
+                  Nobody has measured a run this size on this kind of computer, so the memory and time
+                  it needs are unknown. It may work, it may be slow, or it may run out of memory and
+                  stop. Nothing else you have open is affected, and the result will record that this
+                  run went beyond measured evidence.
+                </p>
+                <label class="mt-2 flex items-center gap-2 font-medium">
+                  <input type="checkbox" data-testid="openmm-accept-beyond-evidence" bind:checked={beyondEvidenceAccepted} />
+                  Run it anyway
+                </label>
               </div>
             {/if}
             {#if preflightError}<div class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{preflightError}</div>{/if}

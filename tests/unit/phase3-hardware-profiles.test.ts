@@ -58,35 +58,46 @@ describe('Phase 3 retained hardware envelopes', () => {
     })).toBe(null);
   });
 
-  it('accepts a measured relaxation and refuses anything larger than the retained samples', () => {
+  it('measures what it can, confirms what it cannot, and refuses only what cannot finish', () => {
     const profile = phase3HardwareValidationProfile({
       componentId: OPENMM_RUNTIME_COMPONENT_ID,
       componentVersion: OPENMM_VERSION,
       runtimeBoxRelease: '8.5.1-beta.1',
       target: { platform: 'macos', arch: 'aarch64', accelerator: 'cpu' },
     })!;
-    const accepted = estimateHardwareResources({
+    const relaxation = {
       workloadId: 'openmm:relaxation:none:standard',
       tokenCount: 1,
-      atomCount: 33,
       stepCount: 5000,
       outputItemCount: 1,
-    }, profile);
-    expect(accepted).toMatchObject({
+    };
+    expect(estimateHardwareResources({ ...relaxation, atomCount: 33 }, profile)).toMatchObject({
       accepted: true,
+      evidence: 'measured',
+      confirmationRequired: false,
       hardwareProfileId: profile.profileId,
       estimatedRamBytes: 81985536,
       estimatedVramBytes: null,
     });
 
-    const tooLarge = estimateHardwareResources({
-      workloadId: 'openmm:relaxation:none:standard',
-      tokenCount: 1,
-      atomCount: 34,
-      stepCount: 5000,
-      outputItemCount: 1,
-    }, profile);
-    expect(tooLarge).toMatchObject({ accepted: false, maxValidatedAtomCount: 33 });
+    // One atom past the measured fixture. Under the old rule this refused every real protein;
+    // it is now a confirmable run whose floor is the heaviest 33-atom sample it already exceeds.
+    const larger = estimateHardwareResources({ ...relaxation, atomCount: 34 }, profile);
+    expect(larger).toMatchObject({
+      accepted: true,
+      evidence: 'beyond-evidence',
+      confirmationRequired: true,
+      floorFixtureId: 'add-missing-hydrogens',
+      minimumRamBytes: 83443712,
+      maxValidatedAtomCount: 33,
+    });
+
+    // A real protein on a real machine stays runnable; the same run on a tiny host cannot finish.
+    const protein = { ...relaxation, atomCount: 12_000 };
+    expect(estimateHardwareResources(protein, profile, { totalMemoryBytes: 17_179_869_184 }))
+      .toMatchObject({ accepted: true, evidence: 'beyond-evidence' });
+    expect(estimateHardwareResources(protein, profile, { totalMemoryBytes: 67_108_864 }))
+      .toMatchObject({ accepted: false, reason: 'impossible' });
 
     // A workload the validator never ran has no envelope, whatever its size.
     expect(estimateHardwareResources({
@@ -95,6 +106,6 @@ describe('Phase 3 retained hardware envelopes', () => {
       atomCount: 10,
       stepCount: 10,
       outputItemCount: 1,
-    }, profile)).toMatchObject({ accepted: false });
+    }, profile)).toMatchObject({ accepted: false, reason: 'no-evidence' });
   });
 });

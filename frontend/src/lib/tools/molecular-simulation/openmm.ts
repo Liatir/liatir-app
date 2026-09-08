@@ -20,7 +20,9 @@ import {
   validateRelaxationEnergyReduction,
   type JsonValue,
   type LiatirFileArtifactRole,
+  type LiatirHardwareHostMemory,
   type LiatirHardwareResourceEstimate,
+  type LiatirHardwareResourceExtrapolation,
   type LiatirHardwareResourcePreflight,
   type LiatirHardwareValidationProfile,
   type LiatirHardwareWorkloadMetrics,
@@ -52,6 +54,11 @@ import type { ToolOutput } from '$lib/types/tool-output';
 import { OPENMM_SCRIPT } from './python-scripts/openmm';
 
 export type OpenMMToolMode = 'relaxation' | 'dynamics';
+
+/** Either accepted outcome may start a run; only the measured one carries real figures. */
+export type OpenMMAcceptedEstimate =
+  | LiatirHardwareResourceEstimate
+  | LiatirHardwareResourceExtrapolation;
 
 const structureRequirement = {
   profiles: [{ ...LIATIR_STRUCTURE_PROFILE_V1 }],
@@ -236,7 +243,7 @@ interface OpenMMCommonSummary {
   preparedAtomCount: number;
   ligandAtomCount: number;
   networkAccess: false;
-  hardwareEstimate: LiatirHardwareResourceEstimate;
+  hardwareEstimate: OpenMMAcceptedEstimate;
   seed: number;
   preparation: LiatirOpenMMPreparationOptions;
 }
@@ -380,7 +387,7 @@ function pythonInput(
   parsed: ParsedOpenMMInputs,
   activation: LiatirRuntimeBoxActivationMetadata,
   runtimePath: string,
-  options: { outputDir?: string; estimate?: LiatirHardwareResourceEstimate } = {},
+  options: { outputDir?: string; estimate?: OpenMMAcceptedEstimate } = {},
 ): Record<string, JsonValue> {
   return {
     action,
@@ -405,6 +412,7 @@ export async function preflightOpenMMWithRuntime(
   runtime: LiatirToolRuntimeRecord,
   mode: OpenMMToolMode,
   inputs: Record<string, string>,
+  host: LiatirHardwareHostMemory = { totalMemoryBytes: null },
 ): Promise<OpenMMResourcePreflight> {
   if (runtime.status !== 'installed' || !runtime.runtimePath) {
     throw new Error(`Tool Runtime is not installed: ${runtime.name}`);
@@ -430,9 +438,10 @@ export async function preflightOpenMMWithRuntime(
     target: activation.selectedTarget,
   });
   const estimate: LiatirHardwareResourcePreflight = profile
-    ? estimateHardwareResources(metrics, profile)
+    ? estimateHardwareResources(metrics, profile, host)
     : {
         accepted: false,
+        reason: 'no-evidence',
         error: 'No retained measured hardware envelope is available for this exact OpenMM release and target.',
         maxValidatedTokenCount: 0,
         maxValidatedAtomCount: 0,
@@ -545,6 +554,7 @@ function phase3Provenance(
       archiveSha256: activation.release.archive.sha256,
     },
     hardwareProfileId: summary.hardwareEstimate.hardwareProfileId,
+    hardwareEvidence: summary.hardwareEstimate.evidence,
   };
 }
 
@@ -558,6 +568,9 @@ function provenanceRows(summary: OpenMMCommonSummary, provenance: LiatirPhase3Re
     ['Ligand force field', summary.forceField.ligand ?? 'No ligand SDF'],
     ['Network access', 'Disabled'],
     ['Hardware evidence', summary.hardwareEstimate.hardwareProfileId],
+    ['Within measured evidence', provenance.hardwareEvidence === 'measured'
+      ? 'Yes'
+      : 'No — the user confirmed a run larger than any retained measurement'],
     ['Runtime Box', `${provenance.scrollcase.releaseVersion} · ${runtimeBoxTargetId(provenance.scrollcase.target)}`],
     ['Runtime Box archive SHA-256', provenance.scrollcase.archiveSha256],
   ] satisfies (string | number)[][];
@@ -776,6 +789,7 @@ export async function runOpenMMWithRuntime(
   outputDir: string,
   onLog: (line: string) => void,
   runContext?: AIRunContext | ToolRuntimeDirectRunContext,
+  options: { host?: LiatirHardwareHostMemory; confirmedBeyondEvidence?: boolean } = {},
 ) {
   if (runtime.status !== 'installed' || !runtime.runtimePath) {
     throw new Error(`Tool Runtime is not installed: ${runtime.name}`);
@@ -783,12 +797,17 @@ export async function runOpenMMWithRuntime(
   const runtimePath = runtime.runtimePath;
   const parsed = parsedInputs(mode, inputs);
   const activation = activationFor(runtime);
-  const preflight = await preflightOpenMMWithRuntime(runtime, mode, inputs);
+  const preflight = await preflightOpenMMWithRuntime(runtime, mode, inputs, options.host);
   if (!preflight.estimate.accepted) throw new Error(preflight.estimate.error);
+  // The acknowledgement is enforced here, not only in the screen: a pipeline step or a future
+  // caller must not be able to start an unmeasured run without one.
+  if (preflight.estimate.confirmationRequired && !options.confirmedBeyondEvidence) {
+    throw new Error('This run is larger than any retained measurement and was not confirmed.');
+  }
   onLog(`tool-runtime ${runtime.id}`);
   onLog(`input ${basename(inputs.inputStructure)}`);
   onLog(`preflight ${preflight.metrics.atomCount} atoms · ${preflight.metrics.outputItemCount} output items`);
-  onLog(`hardware evidence ${preflight.estimate.hardwareProfileId}`);
+  onLog(`hardware evidence ${preflight.estimate.hardwareProfileId} (${preflight.estimate.evidence})`);
   const definition = mode === 'relaxation' ? molecularRelaxationDefinition : molecularDynamicsDefinition;
   const result = await runToolRuntimePython(
     runtime,

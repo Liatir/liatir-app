@@ -71,6 +71,15 @@ Remaining bounded actions:
 
 ## Current evidence
 
+- Operational lesson, learned by losing a day's artifact: **never put a Runtime Box build workspace
+  or its signing key under `/tmp`.** macOS cleared `/tmp/liatir-openmm-phase3.*` overnight, taking
+  the development key pair with it. The signed archive itself survived in `.runtime-box-dist`, but a
+  box whose key is gone can never be verified again — the release document carries only a key id and
+  a signature, not the public key, and `runtime-boxes/trust/development-public.json` holds a
+  different key (`liatir-runtime-box-development-2026`). The archive was therefore dead weight and
+  the box had to be rebuilt. Use the workspace defaults, which are gitignored and durable:
+  `.runtime-box-local` for keys and `.rb` for build scratch.
+
 - The retained macOS arm64 CPU measurement is now a real run envelope. `LIATIR_PHASE3_HARDWARE_VALIDATION_PROFILES`
   carries one profile, `openmm-8.5.1-beta.1-macos-aarch64-cpu-development-2026-09-06`, whose samples
   `tests/unit/phase3-hardware-profiles.test.ts` compares byte-for-byte against
@@ -108,26 +117,28 @@ Remaining bounded actions:
   - OpenMM candidate binary: release-candidate plus `runtime-box-openmm-native` — 2 passed, 0 failed.
   - Boltz-2 candidate binary (`LIATIR_STRUCTURE_EDITOR_E2E=1`): release-candidate plus
     `structure-prediction-editor` — 2 passed, 0 failed, including the new affinity leg.
-- **The OpenMM macOS CPU product lifecycle passed in the real app.** `npm run runtime-box:product-lifecycle`
-  ran `runtime-box-release-candidate.e2e.mjs` and the new `runtime-box-openmm-native.e2e.mjs` against
-  a release-candidate test binary and a loopback candidate registry: 2 passed, 0 failed, twice
-  (22:00 UTC on 2026-09-06, ~102 s for the OpenMM spec). It proves install, killed-Job cancellation,
-  explicit refusal of an unmeasured preparation, a real relaxation of the box's own official
-  `test-ala-3.pdb`, the Job, the finalized Result with four artifacts, the provenance rows, energy
-  reduction, navigation back to the Result, removal, and result artifacts surviving removal.
-  Measured: 33 prepared atoms, −1.691218992097177 → −119.53121642948675 kJ/mol, a reduction of
-  117.83999743738957 kJ/mol. Retained record:
-  `runtime-boxes/measurements/openmm-macos-aarch64-cpu-product-lifecycle-development-2026-09-06.json`.
-  The refusal case is the page's own default: hydrogens on takes the 33-atom fixture to a 165-atom
-  preflight bound, outside every retained sample, and the Run button stays closed.
-- That lifecycle used a **second** development build, rebuilt only so its release document points at
-  the loopback registry (`--asset-base-url http://127.0.0.1:8790/objects`). It is the same scroll,
-  version and lock as the scientific measurement, but a different archive:
-  `c78db875fb91c8be0088a22547062af3ed40efb614f88f23ee056d94ce2b23a6`, 580872984 bytes, installed
-  1945943879 bytes, signed `liatir-openmm-development`. Its own build self-test passed. So macOS CPU
-  now has scientific evidence on one development archive and product evidence on another; a
-  production CI build must be measured and exercised again before publication. Neither archive is
-  publishable: dirty tree, development key.
+- **The OpenMM macOS CPU product lifecycle passed in the real app, with the corrected hardware rule.**
+  `npm run runtime-box:product-lifecycle` ran `runtime-box-release-candidate.e2e.mjs` and
+  `runtime-box-openmm-native.e2e.mjs` against a release-candidate test binary and a loopback
+  candidate registry: 2 passed, 0 failed. It proves install, killed-Job cancellation, a real
+  relaxation of the box's own official `test-ala-3.pdb`, the Job, the finalized Result with four
+  artifacts, the provenance rows, energy reduction, navigation back to the Result, removal, and
+  result artifacts surviving removal. Measured: 33 prepared atoms, −1.691218992097177 →
+  −119.61344153048529 kJ/mol, a reduction of 117.92222253838811 kJ/mol. Retained record:
+  `runtime-boxes/measurements/openmm-macos-aarch64-cpu-product-lifecycle-development-2026-09-08.json`.
+  Both reachable hardware states are exercised on the same input: with hydrogens on, the 33-atom
+  fixture reaches a 165-atom preflight bound, the page says the run is larger than anything measured
+  and keeps Run closed until the acknowledgement is ticked, and closes it again when the tick is
+  withdrawn; with hydrogens off the run is inside the envelope and no acknowledgement appears at all.
+  The Result records `Within measured evidence: Yes`.
+- That lifecycle used a **development** build whose release document points at the loopback registry
+  (`--asset-base-url http://127.0.0.1:8790/objects`) — the same scroll, version and lock as the
+  scientific measurement, but a different archive:
+  `e5e1f3ba48bb0e2affe006b0b2cbbc793ee4b7af2475589e6f047d827b8c97d1`, 580872708 bytes, installed
+  1945943501 bytes, signed `liatir-openmm-development`. Its own build self-test passed. So macOS CPU
+  has scientific evidence on one development archive and product evidence on another; a production CI
+  build must be measured and exercised again before publication. Neither archive is publishable:
+  dirty tree, development key.
 - `.github/workflows/phase3-dependency-lock.yml` replaces the Boltz-only authoring workflow and
   resolves any of Boltz-2, Protenix v2 or Protenix Mini Default on `ubuntu-24.04`, manual only, with
   no GPU, no weights, no signer and no R2 write. It has not been dispatched: `workflow_dispatch`
@@ -223,12 +234,17 @@ by this audit; production actions require the owner's separate confirmation.
 - [ ] Per-run Jobs/Results/provenance/cancellation/navigation/restart/offline isolation and complete
   runtime install/update/rollback/remove/revocation lifecycle on **each declared host environment**,
   not each payload: native Linux and Windows-through-WSL2 are two proofs of one signed box.
-- [ ] Rework the hardware gate to the corrected rule of 2026-09-07: warn and take one explicit
-  confirmation above the measured envelope, refuse only above the host's usable physical memory.
-  `estimateHardwareResources` returns a flat rejection today and both pages disable Run on it, so
-  this is a three-state contract change plus reading host memory, not a copy edit. Measurements
-  still include preparation and simulation duration, publish measured VRAM times 1.25/1.5 and retain
-  the exact release/target evidence; they now move the warning boundary rather than gate the tool.
+- [x] Hardware gate reworked to the corrected rule of 2026-09-07, and proven in the real app.
+  `estimateHardwareResources` now returns three outcomes: `measured` (real figures from the smallest
+  dominating sample), `beyond-evidence` (`confirmationRequired`, carrying no invented estimate — only
+  the heaviest measured point the request already exceeds, as a floor), and a single size refusal,
+  `impossible`, when that floor exceeds the host's installed memory. An unknown host figure never
+  refuses. The acknowledgement is enforced in `runOpenMMWithRuntime`, not only in the screen, so a
+  pipeline step cannot start an unmeasured run silently; the Result records
+  `Within measured evidence`. Host memory comes from the existing `ensureHardwareInfo` probe, so no
+  new bridge command was needed. Still open: measurements including preparation and simulation
+  duration, published VRAM ×1.25/×1.5, and larger retained samples — which now move the warning
+  boundary rather than gate the tool.
 - [ ] Final `test:verify`, applicable Rust tests/clippy and real `test:ui`; reviewed commit/push and
   independent signed public readback for each released component.
 
