@@ -116,9 +116,9 @@
     "docs:build": "vitepress build docs",
     "docs:deploy": "npm run deploy --prefix docs/",
     "docs:preview": "vitepress preview docs",
-    "docs:internal:dev": "vitepress dev .mind --port 5176",
-    "docs:internal:build": "vitepress build .mind",
-    "docs:internal:preview": "vitepress preview .mind",
+    "docs:internal:dev": "vitepress dev .context --port 5176",
+    "docs:internal:build": "vitepress build .context",
+    "docs:internal:preview": "vitepress preview .context",
     "docs:all:build": "npm run docs:build && npm run docs:internal:build",
 
     "runtime-box": "node scripts/runtime-box.mjs",

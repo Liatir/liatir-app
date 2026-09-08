@@ -89,6 +89,6 @@ release service account. It can sign only catalog entries whose complete
 scientific identity and source checksums are approved in `referenceIndexes`.
 
 See the internal
-[Runtime Box production report](../../.mind/roadmap/runtime-box-production-report.md)
+[Runtime Box production report](../../.context/history/runtime-box-production-report.md)
 for the exact WIF principal forms, release environment, evidence matrix,
 rotation boundary, and incident procedures.

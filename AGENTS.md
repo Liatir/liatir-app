@@ -1,5 +1,15 @@
 # AGENTS.md
 
+<!-- syngraphe:start version="1" -->
+<!-- Managed by Syngraphe. Do not edit this block manually. -->
+
+This repository maintains shared project context in `.context/`.
+
+Before substantial work, read `.context/index.md` and the relevant context documents.
+Keep that context accurate: when a change makes it out of date, update it in the same change.
+If Syngraphe is available, run `syngraphe check` before completing substantial work.
+<!-- syngraphe:end -->
+
 Operational instructions for AI coding agents working in this repository. Read this before implementing anything.
 
 **Liatir** is a **local-first** Rust/Tauri desktop app for bioinformatics: native tools, visual pipelines, `.lia` Node/WASM plugins, API Connectors, AI Models and AI Tools, all speaking a single shared I/O contract.
@@ -25,20 +35,39 @@ back-and-forth. These rules outrank your instinct to be thorough.
   to choose; handing the choice back unanswered is a failure, not neutrality.
 - **Answer the question that was asked.** Do not start work, measurements, builds or
   edits when the question was "are you ready?" or "what do you think?".
-- **Write durable decisions into `.mind/`** so they are never re-derived or re-argued in
+- **Write durable decisions into `.context/`** so they are never re-derived or re-argued in
   a later session.
 
 ## Memory lives in this repository, and nowhere else
 
 **Never write anything to an agent-local memory store outside this repository.** Not
 `~/.claude`, not a scratch directory, not any host-local note file. The only memory is
-`.mind/`, which is tracked, reviewable, and travels with the code.
+`.context/`, which is tracked, reviewable, and travels with the code.
 
 An agent-local memory is invisible to everyone else on the project, invisible to every
 other machine and agent, and cannot be linked from a tracked document without producing
 a dangling reference. If you learn something durable — a decision, a constraint, a
-preference, a measured fact — it goes in `.mind/` in the same turn you learn it. If your
+preference, a measured fact — it goes in `.context/` in the same turn you learn it. If your
 harness offers a memory tool, do not use it here.
+
+`.context/` is managed with **Syngraphe** (`syngraphe`, or the shorthand `syg`) — a small
+offline command-line tool that keeps repository context versioned and verifiable; see
+[syngraphe.dev](https://syngraphe.dev). It does not own the content: the directory is plain
+Markdown and stays complete without it. Place a new document by lifecycle, not by topic:
+
+- `truth/` — stable: architecture, conventions, domain concepts, constraints, invariants.
+- `state/` — volatile: `current.md` is the canonical project status; `state/roadmap/` holds
+  the plans and ledgers that are still live.
+- `decisions/` — append-only: a significant technical decision, why it was taken, and what
+  was rejected.
+- `history/` — archive: completed, closed or superseded operational context. A plan that
+  closes moves here; it is never deleted.
+
+Run **`syngraphe check`** before completing substantial work. It is deterministic and
+offline: it fails when a context document points at a path that does not exist, and warns
+when `state/current.md` has gone stale behind the repository. `syngraphe status` summarizes
+the context. Never run `syngraphe init` in a repository that already has `.context/`
+content — it is idempotent, but there is nothing to initialize.
 
 ## Naming (canonical terms — use exactly these)
 
@@ -85,7 +114,7 @@ For every run or process, verify:
 - `runtime-boxes/` — Runtime Box data: `recipes/`, `catalog.json`, `trust/`, `evidence/`, `measurements/`, `legal/`. `infra/runtime-box-ci/` is the CI side; `services/runtime-box-signer` and `workers/runtime-box-registry` are the remote services.
 - `scripts/` — build, conf, publishing and Runtime Box orchestration entry points behind the npm scripts.
 - `tests/` — `unit/` (vitest), `e2e/` (a real compiled binary driven over WebDriver), and `test-matrix.mjs`, which declares every suite and profile as data.
-- `.mind/` — the project's memory: internal knowledge shared by people and agents (see Repository continuity), with `.agents/` for agent-specific working agreements. `docs/` is the public product site. `quenta-knowledge/` is curated scientific content.
+- `.context/` — the project's memory: internal knowledge shared by people and agents (see Repository continuity), with `truth/agents/` for agent-specific working agreements. `docs/` is the public product site. `quenta-knowledge/` is curated scientific content.
 
 This list is not complete — read the files for more.
 
@@ -125,7 +154,7 @@ Learned the hard way. These are not style preferences.
 - **GPU CI runners cost real money.** Never trigger, re-run, or "just try" a GPU Runtime Box workflow to see what happens. Prepare the change so the first run passes, and ask before launching one.
 - **Heavy AI tests download and run real models** (`test:heavy:ai`, `LIATIR_RUN_HEAVY_AI=1`, `--include-heavy`). Do not run them casually, and never as a substitute for `test:verify`.
 - **Never perform a paid, remote, publishing, release, deployment, or destructive action from memory or name inference.** Read back the exact action definition and its inputs, confirm they match the intent, then immediately verify the created identity, revision, target and mode. Stop or cancel on any mismatch.
-- **Windows CUDA is currently out of CI** (the hosted runner driver is too old for the required CUDA version). Do not "fix" it by loosening version constraints; see `.mind/roadmap/runtime-box-ci-foundation.md`.
+- **Windows CUDA is currently out of CI** (the hosted runner driver is too old for the required CUDA version). Do not "fix" it by loosening version constraints; see `.context/state/roadmap/runtime-box-ci-foundation.md`.
 
 ## Boundaries — do not touch
 
@@ -145,9 +174,9 @@ Learned the hard way. These are not style preferences.
 
 ## Repository continuity
 
-- `.mind/` is the project's memory, shared by everyone who works on Liatir — people and agents alike. It is not decoration. Keep `current-project-status.md` up to date.
+- `.context/` is the project's memory, shared by everyone who works on Liatir — people and agents alike. It is not decoration. Keep `.context/state/current.md` up to date, and run `syngraphe check` before closing substantial work.
 - Durable plans, implementation status, and handoff context live there and nowhere else. There is no separate agent memory: see "Memory lives in this repository, and nowhere else" above.
-- The canonical Runtime Box CI plan and gate status live in `.mind/roadmap/runtime-box-ci-foundation.md`. Read it before starting a Runtime Box CI gate, and update it when a gate is completed or re-scoped.
+- The canonical Runtime Box CI plan and gate status live in `.context/state/roadmap/runtime-box-ci-foundation.md`. Read it before starting a Runtime Box CI gate, and update it when a gate is completed or re-scoped.
 
 ## Working discipline
 
@@ -158,4 +187,4 @@ Learned the hard way. These are not style preferences.
 
 ## Designing multi-step LLM systems
 
-**Before proposing, designing, or building any multi-step LLM system — a workflow, an autonomous agent, a multi-agent setup, or AI Tool orchestration — read `.mind/.agents/multi-step-llm-systems.md` first.** It is not needed for ordinary code work; skip it otherwise. The rest of `.mind/.agents/` holds the other agent-specific working agreements.
+**Before proposing, designing, or building any multi-step LLM system — a workflow, an autonomous agent, a multi-agent setup, or AI Tool orchestration — read `.context/truth/agents/multi-step-llm-systems.md` first.** It is not needed for ordinary code work; skip it otherwise. The rest of `.context/truth/agents/` holds the other agent-specific working agreements.
