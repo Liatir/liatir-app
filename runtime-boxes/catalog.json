@@ -846,7 +846,7 @@
           "target": { "platform": "macos", "arch": "aarch64", "accelerator": "cpu" },
           "hostEnvironments": ["native"],
           "recipeId": "openmm-macos-aarch64-cpu",
-          "runnerProfileId": "macos-arm64-heavy",
+          "runnerProfileId": "macos-arm64-standard",
           "status": "planned",
           "validationModes": ["build", "scientific", "native-lifecycle"],
           "timeoutMinutes": 180,

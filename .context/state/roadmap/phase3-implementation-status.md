@@ -63,11 +63,17 @@ Remaining bounded actions:
   and the WSL2 proof workflow does not select any Phase 3 component. Supporting Windows through WSL2
   needs explicit compatibility and real Windows-app evidence. The three AI Model manifests currently
   target Linux CUDA only; macOS support for all models is not an established plan or verified fact.
-- After owner approval and scientific/product readiness, the OpenMM production sequence remains:
-  deploy signer policy, enable only the reviewed target's `nativeCiEnabled` on clean committed main,
-  start its ephemeral runner, then dispatch `runtime-box-release.yml`. Every R2 upload must run in
-  GitHub Actions; verify public signatures and complete bytes before catalog exposure. Immutable
-  upload alone is not product release: the workflow promotes beta only after its real app test.
+- After owner approval and scientific/product readiness, the OpenMM production sequence is: deploy
+  the signer policy, enable that one target's `nativeCiEnabled` on clean committed main, then
+  dispatch `runtime-box-release.yml`. **No self-hosted runner is involved any more**: the macOS
+  target moved from `macos-arm64-heavy` to the GitHub-hosted `macos-arm64-standard` (`macos-15`) —
+  see [the decision](../../decisions/runtime-box-publication-runs-on-hosted-ci.md). The heavy profile
+  had been copied from pVACtools, a far larger box; OpenMM's real footprint is ~2.3 GB payload plus
+  ~0.55 GB archive. Every R2 upload runs in GitHub Actions; the workflow verifies public signatures
+  and complete bytes, and promotes beta only after its real app test. The dispatch stays manual on
+  purpose: an immutable upload cannot be withdrawn.
+  Note that a production build produces a **different archive** from any development one, so the
+  workflow re-measures and re-exercises it; the local evidence does not transfer to it.
 
 ## Current evidence
 
