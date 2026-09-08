@@ -146,10 +146,10 @@ try {
   const base = { runtimePath: runtimeDir, runtimeBoxRelease: recipe.version, targetId,
     accelerator: recipe.target.accelerator, inputStructure: official, preparation };
 
-  async function productCase(id, input, expectedAtoms) {
+  async function productCase(id, input, expectedAtoms, options = {}) {
     const payload = { ...base, ...input, outputDir: join(workDir, id) };
     const metrics = parseResult(await execute(productPath, { ...payload, action: 'preflight' }, { accelerator: 'cpu' }), `${id} preflight`);
-    const execution = await execute(productPath, { ...payload, action: 'run', measurementMode: true });
+    const execution = await execute(productPath, { ...payload, action: 'run', measurementMode: true }, options);
     const result = parseResult(execution, id);
     assert.equal(result.kind, 'liatir.openmm-result');
     assert.equal(result.summary.openmmVersion, '8.5.1');
@@ -213,6 +213,38 @@ try {
   assert.equal(long.summary.checkpoint.currentStep, 50000);
   assert.equal(long.summary.frameCount, 10);
 
+  // Real proteins, at the sizes people actually bring. Every structure below already ships inside
+  // the signed payload — OpenMM's own published benchmark set — so the envelope grows without
+  // adding a downloaded asset or a hash nobody has checked.
+  const examples = join(runtimeDir, 'venv/share/openmm/examples');
+  const multiResidue = join(runtimeDir, 'source/openmmforcefields/openmmforcefields/data/test-aa.pdb');
+  const dhfr = join(examples, 'benchmarks/5dfr_minimized.pdb');
+  const realFixtures = { 'openmmforcefields-test-aa': multiResidue, 'openmm-benchmark-5dfr': dhfr };
+  const realFixtureSha256 = Object.fromEntries(await Promise.all(
+    Object.entries(realFixtures).map(async ([id, path]) => [id, sha256(await readFile(path))]),
+  ));
+
+  await productCase('multi-residue-relaxation', { mode: 'relaxation', relaxation,
+    inputStructure: multiResidue }, 407);
+  // Dihydrofolate reductase: the standard molecular-dynamics benchmark protein, 2,489 atoms.
+  const dhfrRelaxed = await productCase('dhfr-protein-relaxation', { mode: 'relaxation', relaxation,
+    inputStructure: dhfr }, 2489, { timeoutMs: 3_600_000 });
+  assert.ok(dhfrRelaxed.summary.energyReductionKilojoulePerMole > 0);
+
+  // The realistic production shape: a real protein the runner puts in explicit water, so the system
+  // is periodic and uses PME rather than the all-pairs path every smaller fixture above exercises.
+  const solvatedPreparation = { ...preparation, addHydrogens: true, solvent: 'tip3p-fb',
+    solventPaddingNm: 1, ionicStrengthM: 0.15 };
+  const dhfrSolvated = await productCase('dhfr-solvated-relaxation', { mode: 'relaxation', relaxation,
+    inputStructure: dhfr, preparation: solvatedPreparation }, undefined, { timeoutMs: 3_600_000 });
+  assert.ok(dhfrSolvated.summary.preparedAtomCount > 20_000,
+    `Solvated DHFR should exceed 20,000 atoms, got ${dhfrSolvated.summary.preparedAtomCount}`);
+  const dhfrDynamics = await productCase('dhfr-solvated-dynamics-10ps', { mode: 'dynamics',
+    dynamics: { ...dynamics, pressureBar: 1 }, inputStructure: dhfr, preparation: solvatedPreparation },
+    dhfrSolvated.summary.preparedAtomCount, { timeoutMs: 7_200_000 });
+  assert.equal(dhfrDynamics.summary.frameCount, 10);
+  assert.equal(dhfrDynamics.summary.trajectoryFiniteCoordinates, true);
+
   const solvatedInput = { mode: 'dynamics', dynamics: { ...dynamics, preset: 'custom', customDurationPs: 0.02,
     saveIntervalPs: 0.01, pressureBar: 1 },
     preparation: { ...preparation, addHydrogens: true, solvent: 'tip3p-fb', solventPaddingNm: 1, ionicStrengthM: 0.15 } };
@@ -273,6 +305,8 @@ try {
     evidence: {
       fixture: { id: 'openmmforcefields-0.16.0-official-ala3-and-ethanol-v1', sha256: officialSha256,
         inputShapes: { proteinAtoms: [33], proteinLigandAtoms: [42] } },
+      // Real-protein fixtures, all shipped inside the verified payload rather than downloaded.
+      realProteinFixtures: realFixtureSha256,
       framework: { name: 'openmm', version: '8.5.1', backend: recipe.target.accelerator,
         reportedCudaCompatibility: recipe.target.cudaVersion ?? null },
       accelerator: { kind: recipe.target.accelerator, gpuModel: null, driverVersion: null,

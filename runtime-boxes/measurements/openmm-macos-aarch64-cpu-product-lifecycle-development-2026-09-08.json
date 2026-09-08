@@ -9,7 +9,7 @@
   "hostEnvironment": "native",
   "version": "8.5.1-beta.1",
   "jobId": "job_2",
-  "analysisRunId": "2cb41fd9-c9c7-46ba-a4d1-8945547114bc",
+  "analysisRunId": "15157090-c1a4-4cb1-9e01-ae37bbab1b97",
   "accelerator": "CPU",
   "resultArtifactCount": 4,
   "release": {
@@ -21,11 +21,11 @@
     ]
   },
   "measured": {
-    "hardwareProfileId": "openmm-8.5.1-beta.1-macos-aarch64-cpu-development-2026-09-06",
+    "hardwareProfileId": "openmm-8.5.1-beta.1-macos-aarch64-cpu-development-2026-09-08",
     "preparedAtomCount": 33,
     "initialPotentialEnergyKilojoulePerMole": -1.691218992097177,
-    "finalPotentialEnergyKilojoulePerMole": -119.61344153048529,
-    "energyReductionKilojoulePerMole": 117.92222253838811
+    "finalPotentialEnergyKilojoulePerMole": -119.63427581518567,
+    "energyReductionKilojoulePerMole": 117.9430568230885
   },
   "assertions": {
     "install": "passed",

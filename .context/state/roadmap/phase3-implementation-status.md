@@ -71,6 +71,37 @@ Remaining bounded actions:
 
 ## Current evidence
 
+- **OpenMM is measured on real proteins, not toys.** The macOS arm64 CPU validator now runs a
+  size ladder whose structures all ship inside the signed payload — OpenMM's own published benchmark
+  set — so the envelope grew without a downloaded asset or an unchecked hash. All 17 cases passed:
+
+  | fixture | atoms | peak RAM | elapsed |
+  | --- | ---: | ---: | ---: |
+  | `official-protein-relaxation` | 33 | 78.7 MiB | 0.4 s |
+  | `multi-residue-relaxation` (`test-aa`) | 407 | 87.2 MiB | 0.5 s |
+  | `dhfr-protein-relaxation` (5dfr, DHFR) | 2,489 | 116.3 MiB | 12.7 s |
+  | `dhfr-solvated-relaxation` | 29,419 | 320.9 MiB | 121.5 s |
+  | `dhfr-solvated-dynamics-10ps` | 29,419 | 330.7 MiB | 197.1 s |
+
+  Dihydrofolate reductase is the standard molecular-dynamics benchmark protein; the solvated cases
+  are the real production shape, periodic with PME rather than the all-pairs path every smaller
+  fixture uses. Host: Apple M1, 16 GiB. Retained:
+  `runtime-boxes/measurements/openmm-macos-aarch64-cpu-development-2026-09-08.json`, and the
+  registered profile `openmm-8.5.1-beta.1-macos-aarch64-cpu-development-2026-09-08` is transcribed
+  from it. The Reference-platform parity difference is unchanged at 0.0000231632 kJ/mol.
+- Scientific and product evidence now share **one** archive,
+  `e5e1f3ba48bb0e2affe006b0b2cbbc793ee4b7af2475589e6f047d827b8c97d1`: the validator verified the
+  signed payload it measured, and the product lifecycle installed that same box. Previously the two
+  sat on different development builds.
+- Consequence for the product: a real protein is now inside the envelope and runs with no
+  acknowledgement at all. The end-to-end spec had to change to keep covering the beyond-evidence
+  path — it now exceeds the measured 5,000 minimization steps instead of relying on the atom count,
+  because the old oversized case became a measured one. That is the intended direction: measurements
+  move the boundary.
+- `apoa1`, OpenMM's 92,224-atom benchmark, is **not** a size limit but a chemistry limit: it contains
+  POPC lipids, and the reviewed amber19 protein force field has no parameters for them. Membranes are
+  outside what this Tool Runtime can prepare, whatever the machine.
+
 - Operational lesson, learned by losing a day's artifact: **never put a Runtime Box build workspace
   or its signing key under `/tmp`.** macOS cleared `/tmp/liatir-openmm-phase3.*` overnight, taking
   the development key pair with it. The signed archive itself survived in `.runtime-box-dist`, but a

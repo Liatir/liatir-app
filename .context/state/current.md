@@ -83,6 +83,13 @@ manifest needs Linux-side resolution for source-only dependencies; no Boltz pack
 Structure and affinity candidate routes own saved input drafts by workspace and draft ID, and the
 serial UI gate now passes those rendered editor and candidate checks: 37 native scenarios, zero
 failures (report `2026-09-06T21-25-49-220Z`), after the paired verification `2026-09-06T21-24-16-023Z`.
+OpenMM is now measured on real proteins on macOS: dihydrofolate reductase at 2,489 atoms, and the
+same protein in explicit water at 29,419 atoms for both relaxation and 10 ps of dynamics — the real
+production shape — in 320–331 MiB and two to three minutes on an Apple M1. Every structure ships
+inside the signed payload, so the envelope grew with no downloaded asset, and the scientific and
+product evidence now share one archive. A membrane system (`apoa1`) is refused for chemistry, not
+size: amber19 has no lipid parameters.
+
 The retained macOS CPU measurement is a registered run envelope, and the corrected hardware rule is
 now implemented: inside it Molecular Relaxation runs on measured figures, past it the screen says the
 run is larger than anything measured and runs only after one explicit acknowledgement, and the single

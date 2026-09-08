@@ -7,8 +7,8 @@
  * because its Result carries scientific provenance (force field, seed, energy reduction) that no other
  * tool produces. Both reachable states are exercised here on the same input.
  *
- * The input is the official `test-ala-3.pdb` shipped inside the installed box, so the run reproduces the exact
- * 33-atom fixture the retained macOS CPU measurement was taken from rather than an invented structure.
+ * The input is the official `test-ala-3.pdb` shipped inside the installed box, so the run reproduces a fixture
+ * the retained macOS CPU measurement was taken from rather than an invented structure.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -27,6 +27,7 @@ import {
   readDataJson,
   reloadLiatirApp,
   selectFileFromPicker,
+  setAppInputValue,
 } from '../support/liatir-app.mjs';
 
 const BOX_ID = 'openmm';
@@ -140,8 +141,10 @@ print(json.dumps({
 
     await selectFileFromPicker(browser, 'openmm-input-structure', path.basename(officialPath));
 
-    // The page default adds hydrogens, whose preflight bound (5 atoms per input atom) is past every
-    // retained sample. That must not block the run: it must say so and ask once.
+    // More minimization steps than any retained sample measured. That must not block the run: the
+    // screen has to say so and ask once. Steps are the cheapest dimension to push past the
+    // envelope, and this configuration is never actually run.
+    await setAppInputValue(browser, '#openmm-iterations', '6000');
     await checkButton.click();
     await browser.waitUntil(
       async () => browser.execute(() => document.body.innerText.includes('larger than anything measured')),
@@ -162,7 +165,7 @@ print(json.dumps({
     });
 
     // Back inside the measured envelope: no acknowledgement is asked for at all.
-    await (await browser.$('[data-testid="openmm-add-hydrogens"]')).click();
+    await setAppInputValue(browser, '#openmm-iterations', '5000');
     await checkButton.click();
     await browser.waitUntil(() => runButton.isEnabled(), {
       timeout: 120_000, timeoutMsg: 'OpenMM Run did not become enabled for the measured fixture',
@@ -215,7 +218,7 @@ print(json.dumps({
       'Ligand force field': 'No ligand SDF',
       Seed: 17,
       'Network access': 'Disabled',
-      'Hardware evidence': 'openmm-8.5.1-beta.1-macos-aarch64-cpu-development-2026-09-06',
+      'Hardware evidence': 'openmm-8.5.1-beta.1-macos-aarch64-cpu-development-2026-09-08',
       'Within measured evidence': 'Yes',
       'Runtime Box': `${VERSION} · ${TARGET_ID}`,
       'Runtime Box archive SHA-256': installed.activation.release.archive.sha256,

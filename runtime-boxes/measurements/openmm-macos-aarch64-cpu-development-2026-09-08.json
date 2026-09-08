@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "liatir.openmm-scientific-validation",
-  "createdAt": "2026-09-06T12:23:08.255Z",
+  "createdAt": "2026-09-08T14:14:11.029Z",
   "status": "passed",
   "modelId": "openmm-openmm",
   "sourceRevision": "8.5.1+openmmforcefields-0.16.0+openff-toolkit-0.17.1+openff-sage-2.3.0+nagl-0.5.5",
@@ -26,13 +26,13 @@
       },
       "preparedAtoms": 33,
       "measurement": {
-        "elapsedMs": 452,
-        "peakRamBytes": 81985536,
+        "elapsedMs": 437,
+        "peakRamBytes": 82558976,
         "peakVramBytes": null,
         "vramSamplingIntervalMs": null,
         "vramMeasurementErrors": []
       },
-      "outputBytes": 13739
+      "outputBytes": 13738
     },
     {
       "id": "add-missing-hydrogens",
@@ -52,8 +52,8 @@
       },
       "preparedAtoms": 33,
       "measurement": {
-        "elapsedMs": 421,
-        "peakRamBytes": 83443712,
+        "elapsedMs": 474,
+        "peakRamBytes": 84525056,
         "peakVramBytes": null,
         "vramSamplingIntervalMs": null,
         "vramMeasurementErrors": []
@@ -78,13 +78,13 @@
       },
       "preparedAtoms": 42,
       "measurement": {
-        "elapsedMs": 13406,
-        "peakRamBytes": 581861376,
+        "elapsedMs": 12244,
+        "peakRamBytes": 583417856,
         "peakVramBytes": null,
         "vramSamplingIntervalMs": null,
         "vramMeasurementErrors": []
       },
-      "outputBytes": 18491
+      "outputBytes": 18490
     },
     {
       "id": "protein-dynamics-10ps",
@@ -104,13 +104,13 @@
       },
       "preparedAtoms": 33,
       "measurement": {
-        "elapsedMs": 3556,
-        "peakRamBytes": 82460672,
+        "elapsedMs": 3674,
+        "peakRamBytes": 85966848,
         "peakVramBytes": null,
         "vramSamplingIntervalMs": null,
         "vramMeasurementErrors": []
       },
-      "outputBytes": 461069
+      "outputBytes": 461067
     },
     {
       "id": "protein-checkpoint-resume",
@@ -130,13 +130,13 @@
       },
       "preparedAtoms": 33,
       "measurement": {
-        "elapsedMs": 3253,
-        "peakRamBytes": 64700416,
+        "elapsedMs": 3400,
+        "peakRamBytes": 69894144,
         "peakVramBytes": null,
         "vramSamplingIntervalMs": null,
         "vramMeasurementErrors": []
       },
-      "outputBytes": 461921
+      "outputBytes": 461910
     },
     {
       "id": "protein-dynamics-100ps",
@@ -156,13 +156,117 @@
       },
       "preparedAtoms": 33,
       "measurement": {
-        "elapsedMs": 31891,
-        "peakRamBytes": 86966272,
+        "elapsedMs": 32612,
+        "peakRamBytes": 91570176,
         "peakVramBytes": null,
         "vramSamplingIntervalMs": null,
         "vramMeasurementErrors": []
       },
-      "outputBytes": 461075
+      "outputBytes": 461074
+    },
+    {
+      "id": "multi-residue-relaxation",
+      "metrics": {
+        "schemaVersion": 1,
+        "kind": "liatir.openmm-preflight",
+        "mode": "relaxation",
+        "workloadId": "openmm:relaxation:none:standard",
+        "tokenCount": 1,
+        "atomCount": 407,
+        "inputAtomCount": 407,
+        "stepCount": 5000,
+        "ligandAtomCount": 0,
+        "outputItemCount": 1,
+        "inputBytes": 34083,
+        "networkAccess": false
+      },
+      "preparedAtoms": 407,
+      "measurement": {
+        "elapsedMs": 528,
+        "peakRamBytes": 91455488,
+        "peakVramBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 144599
+    },
+    {
+      "id": "dhfr-protein-relaxation",
+      "metrics": {
+        "schemaVersion": 1,
+        "kind": "liatir.openmm-preflight",
+        "mode": "relaxation",
+        "workloadId": "openmm:relaxation:none:standard",
+        "tokenCount": 1,
+        "atomCount": 2489,
+        "inputAtomCount": 2489,
+        "stepCount": 5000,
+        "ligandAtomCount": 0,
+        "outputItemCount": 1,
+        "inputBytes": 192005,
+        "networkAccess": false
+      },
+      "preparedAtoms": 2489,
+      "measurement": {
+        "elapsedMs": 12693,
+        "peakRamBytes": 121962496,
+        "peakVramBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 831590
+    },
+    {
+      "id": "dhfr-solvated-relaxation",
+      "metrics": {
+        "schemaVersion": 1,
+        "kind": "liatir.openmm-preflight",
+        "mode": "relaxation",
+        "workloadId": "openmm:relaxation:tip3p-fb:standard",
+        "tokenCount": 1,
+        "atomCount": 117913,
+        "inputAtomCount": 2489,
+        "stepCount": 5000,
+        "ligandAtomCount": 0,
+        "outputItemCount": 1,
+        "inputBytes": 192005,
+        "networkAccess": false
+      },
+      "preparedAtoms": 29419,
+      "measurement": {
+        "elapsedMs": 121503,
+        "peakRamBytes": 336445440,
+        "peakVramBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 9907557
+    },
+    {
+      "id": "dhfr-solvated-dynamics-10ps",
+      "metrics": {
+        "schemaVersion": 1,
+        "kind": "liatir.openmm-preflight",
+        "mode": "dynamics",
+        "workloadId": "openmm:dynamics:tip3p-fb:standard",
+        "tokenCount": 1,
+        "atomCount": 117913,
+        "inputAtomCount": 2489,
+        "stepCount": 5000,
+        "ligandAtomCount": 0,
+        "outputItemCount": 10,
+        "inputBytes": 192005,
+        "networkAccess": false
+      },
+      "preparedAtoms": 29419,
+      "measurement": {
+        "elapsedMs": 197062,
+        "peakRamBytes": 346718208,
+        "peakVramBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 31317251
     },
     {
       "id": "solvated-dynamics-custom",
@@ -182,8 +286,8 @@
       },
       "preparedAtoms": 974,
       "measurement": {
-        "elapsedMs": 4027,
-        "peakRamBytes": 90439680,
+        "elapsedMs": 3899,
+        "peakRamBytes": 89620480,
         "peakVramBytes": null,
         "vramSamplingIntervalMs": null,
         "vramMeasurementErrors": []
@@ -208,13 +312,13 @@
       },
       "preparedAtoms": 974,
       "measurement": {
-        "elapsedMs": 186,
-        "peakRamBytes": 74514432,
+        "elapsedMs": 209,
+        "peakRamBytes": 73498624,
         "peakVramBytes": null,
         "vramSamplingIntervalMs": null,
         "vramMeasurementErrors": []
       },
-      "outputBytes": 1268427
+      "outputBytes": 1268429
     },
     {
       "id": "changed-release",
@@ -245,10 +349,10 @@
       "maxAtomCount": 33,
       "maxStepCount": 5000,
       "maxOutputItemCount": 1,
-      "peakRamBytes": 81985536,
+      "peakRamBytes": 82558976,
       "peakVramBytes": null,
-      "elapsedMs": 452,
-      "outputBytes": 13739
+      "elapsedMs": 437,
+      "outputBytes": 13738
     },
     {
       "fixtureId": "add-missing-hydrogens",
@@ -257,9 +361,9 @@
       "maxAtomCount": 33,
       "maxStepCount": 5000,
       "maxOutputItemCount": 1,
-      "peakRamBytes": 83443712,
+      "peakRamBytes": 84525056,
       "peakVramBytes": null,
-      "elapsedMs": 421,
+      "elapsedMs": 474,
       "outputBytes": 13737
     },
     {
@@ -269,10 +373,10 @@
       "maxAtomCount": 42,
       "maxStepCount": 5000,
       "maxOutputItemCount": 1,
-      "peakRamBytes": 581861376,
+      "peakRamBytes": 583417856,
       "peakVramBytes": null,
-      "elapsedMs": 13406,
-      "outputBytes": 18491
+      "elapsedMs": 12244,
+      "outputBytes": 18490
     },
     {
       "fixtureId": "protein-dynamics-10ps",
@@ -281,10 +385,10 @@
       "maxAtomCount": 33,
       "maxStepCount": 5000,
       "maxOutputItemCount": 10,
-      "peakRamBytes": 82460672,
+      "peakRamBytes": 85966848,
       "peakVramBytes": null,
-      "elapsedMs": 3556,
-      "outputBytes": 461069
+      "elapsedMs": 3674,
+      "outputBytes": 461067
     },
     {
       "fixtureId": "protein-checkpoint-resume",
@@ -293,10 +397,10 @@
       "maxAtomCount": 33,
       "maxStepCount": 5000,
       "maxOutputItemCount": 10,
-      "peakRamBytes": 64700416,
+      "peakRamBytes": 69894144,
       "peakVramBytes": null,
-      "elapsedMs": 3253,
-      "outputBytes": 461921
+      "elapsedMs": 3400,
+      "outputBytes": 461910
     },
     {
       "fixtureId": "protein-dynamics-100ps",
@@ -305,10 +409,58 @@
       "maxAtomCount": 33,
       "maxStepCount": 50000,
       "maxOutputItemCount": 10,
-      "peakRamBytes": 86966272,
+      "peakRamBytes": 91570176,
       "peakVramBytes": null,
-      "elapsedMs": 31891,
-      "outputBytes": 461075
+      "elapsedMs": 32612,
+      "outputBytes": 461074
+    },
+    {
+      "fixtureId": "multi-residue-relaxation",
+      "workloadId": "openmm:relaxation:none:standard",
+      "maxTokenCount": 1,
+      "maxAtomCount": 407,
+      "maxStepCount": 5000,
+      "maxOutputItemCount": 1,
+      "peakRamBytes": 91455488,
+      "peakVramBytes": null,
+      "elapsedMs": 528,
+      "outputBytes": 144599
+    },
+    {
+      "fixtureId": "dhfr-protein-relaxation",
+      "workloadId": "openmm:relaxation:none:standard",
+      "maxTokenCount": 1,
+      "maxAtomCount": 2489,
+      "maxStepCount": 5000,
+      "maxOutputItemCount": 1,
+      "peakRamBytes": 121962496,
+      "peakVramBytes": null,
+      "elapsedMs": 12693,
+      "outputBytes": 831590
+    },
+    {
+      "fixtureId": "dhfr-solvated-relaxation",
+      "workloadId": "openmm:relaxation:tip3p-fb:standard",
+      "maxTokenCount": 1,
+      "maxAtomCount": 29419,
+      "maxStepCount": 5000,
+      "maxOutputItemCount": 1,
+      "peakRamBytes": 336445440,
+      "peakVramBytes": null,
+      "elapsedMs": 121503,
+      "outputBytes": 9907557
+    },
+    {
+      "fixtureId": "dhfr-solvated-dynamics-10ps",
+      "workloadId": "openmm:dynamics:tip3p-fb:standard",
+      "maxTokenCount": 1,
+      "maxAtomCount": 29419,
+      "maxStepCount": 5000,
+      "maxOutputItemCount": 10,
+      "peakRamBytes": 346718208,
+      "peakVramBytes": null,
+      "elapsedMs": 197062,
+      "outputBytes": 31317251
     },
     {
       "fixtureId": "solvated-dynamics-custom",
@@ -317,9 +469,9 @@
       "maxAtomCount": 974,
       "maxStepCount": 10,
       "maxOutputItemCount": 2,
-      "peakRamBytes": 90439680,
+      "peakRamBytes": 89620480,
       "peakVramBytes": null,
-      "elapsedMs": 4027,
+      "elapsedMs": 3899,
       "outputBytes": 1267554
     },
     {
@@ -329,28 +481,28 @@
       "maxAtomCount": 974,
       "maxStepCount": 10,
       "maxOutputItemCount": 2,
-      "peakRamBytes": 74514432,
+      "peakRamBytes": 73498624,
       "peakVramBytes": null,
-      "elapsedMs": 186,
-      "outputBytes": 1268427
+      "elapsedMs": 209,
+      "outputBytes": 1268429
     }
   ],
   "runtimeEvidence": {
     "kind": "signed-payload",
     "signedPayloadVerified": true,
-    "releaseManifestSha256": "7ebdd89d1a4f179cf409e3ceca4bc399a26f8a28acb424b0470bfb87d2b67d86",
-    "archiveSha256": "c1a52a1a6fa5ae46fbb5d0e6546ceba3aa0a281ad8fea965e96845c134a3f48e",
-    "payloadDigestSha256": "81a3f47e3be89065e7a679543048f016d4425e27da65c4052a817694b1092df5",
+    "releaseManifestSha256": "64dce0eeaa7294edba6f51feebfd88637efb5bbe89979d87670e691cf36786f8",
+    "archiveSha256": "e5e1f3ba48bb0e2affe006b0b2cbbc793ee4b7af2475589e6f047d827b8c97d1",
+    "payloadDigestSha256": "ae61f0ed73519f953d4ba82409b436108df74414bb8c5ffc4bc6e3a70b6d8e3e",
     "provenance": {
       "scrollId": "openmm-macos-aarch64-cpu",
       "scrollVersion": "1.0.0",
-      "builderRevision": "a584df0a36e6da91756a5a3c28e18e7e2fd1dcb1",
+      "builderRevision": "3bdf3b69ef0a82999cbe171f0af1e427641a5ada",
       "sourceTreeDirty": true,
       "sourceRevision": "8.5.1+openmmforcefields-0.16.0+openff-toolkit-0.17.1+openff-sage-2.3.0+nagl-0.5.5",
       "pythonVersion": "3.11.16",
       "pixiVersion": "0.73.0",
       "dependencyLockSha256": "246bd4d7806162ce80574582430eed261c7549451e79e28b6abd13e23da7386b",
-      "builtAt": "2026-09-02T12:50:11+02:00"
+      "builtAt": "2026-09-08T02:08:54+02:00"
     }
   },
   "measurementHost": {
@@ -362,9 +514,9 @@
     "totalMemoryBytes": 17179869184
   },
   "validatorSource": {
-    "gitCommit": "a584df0a36e6da91756a5a3c28e18e7e2fd1dcb1",
+    "gitCommit": "56d6377e1f45998202bdd27ee74a81059cd0e0d5",
     "sourceTreeDirty": true,
-    "scriptSha256": "3075c387d95273e53acbe1c2f95f9a1888cb66e04e75c02259d2e4c609a06ef8",
+    "scriptSha256": "4ad6628f730f0b593a2cda6ba70a75c19e2bc3c2d79406921a4f7c31a6a69f74",
     "measurementScriptSha256": "7fcd22434ad44a9cc55846f4f5e2a2398b0d8e3a81628602b400f31a03d469eb",
     "fixturePreparationSha256": "fa5b41c16c093eb225371eef061b3696c292129d1451c1c54bf6510522f30beb",
     "recipeSha256": "90298ad9d7d597137ceece83151ea8c7062e04a8194aedf8f423bdad08f7d9a9"
@@ -388,6 +540,10 @@
           42
         ]
       }
+    },
+    "realProteinFixtures": {
+      "openmmforcefields-test-aa": "ea3ecac772926c1a4a2c1d8fa45dd0b793096de044d28afa9c45265d4502719b",
+      "openmm-benchmark-5dfr": "6416f9d769431dec6f343a4896b63a7fb4d99d048cef5253f3ec66bc1411fa6d"
     },
     "framework": {
       "name": "openmm",
@@ -430,7 +586,7 @@
       "meanAbsoluteDifference": 0.000023163204190268516,
       "minimumCosineSimilarity": null
     },
-    "peakRamBytes": 581861376,
+    "peakRamBytes": 583417856,
     "peakVramBytes": null,
     "outputContract": "passed",
     "provenanceContract": "passed"

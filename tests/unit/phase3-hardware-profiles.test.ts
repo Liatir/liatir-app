@@ -40,7 +40,7 @@ describe('Phase 3 retained hardware envelopes', () => {
       runtimeBoxRelease: '8.5.1-beta.1',
       target,
     });
-    expect(profile?.profileId).toBe('openmm-8.5.1-beta.1-macos-aarch64-cpu-development-2026-09-06');
+    expect(profile?.profileId).toBe('openmm-8.5.1-beta.1-macos-aarch64-cpu-development-2026-09-08');
     expect(publishedVramRequirements(profile!)).toBe(null);
 
     // A different release or target of the same component still has no measurement of its own.
@@ -76,27 +76,47 @@ describe('Phase 3 retained hardware envelopes', () => {
       evidence: 'measured',
       confirmationRequired: false,
       hardwareProfileId: profile.profileId,
-      estimatedRamBytes: 81985536,
+      sampleFixtureId: 'official-protein-relaxation',
+      estimatedRamBytes: 82558976,
       estimatedVramBytes: null,
     });
 
-    // One atom past the measured fixture. Under the old rule this refused every real protein;
-    // it is now a confirmable run whose floor is the heaviest 33-atom sample it already exceeds.
-    const larger = estimateHardwareResources({ ...relaxation, atomCount: 34 }, profile);
-    expect(larger).toMatchObject({
+    // Dihydrofolate reductase, the standard benchmark protein, is now measured rather than refused.
+    expect(estimateHardwareResources({ ...relaxation, atomCount: 2489 }, profile)).toMatchObject({
+      accepted: true,
+      evidence: 'measured',
+      sampleFixtureId: 'dhfr-protein-relaxation',
+      estimatedRamBytes: 121962496,
+      estimatedTimeMs: 12693,
+    });
+
+    // And the production shape: a real protein the runner put in explicit water, 29,419 atoms.
+    expect(estimateHardwareResources({
+      workloadId: 'openmm:dynamics:tip3p-fb:standard',
+      tokenCount: 1,
+      atomCount: 29_419,
+      stepCount: 5000,
+      outputItemCount: 10,
+    }, profile)).toMatchObject({
+      accepted: true,
+      evidence: 'measured',
+      sampleFixtureId: 'dhfr-solvated-dynamics-10ps',
+      estimatedRamBytes: 346718208,
+    });
+
+    // Past the largest measured protein the run is confirmable, with a floor and no invented figure.
+    const huge = { ...relaxation, atomCount: 60_000 };
+    expect(estimateHardwareResources(huge, profile)).toMatchObject({
       accepted: true,
       evidence: 'beyond-evidence',
       confirmationRequired: true,
-      floorFixtureId: 'add-missing-hydrogens',
-      minimumRamBytes: 83443712,
-      maxValidatedAtomCount: 33,
+      floorFixtureId: 'dhfr-protein-relaxation',
+      minimumRamBytes: 121962496,
+      maxValidatedAtomCount: 2489,
     });
-
-    // A real protein on a real machine stays runnable; the same run on a tiny host cannot finish.
-    const protein = { ...relaxation, atomCount: 12_000 };
-    expect(estimateHardwareResources(protein, profile, { totalMemoryBytes: 17_179_869_184 }))
+    expect(estimateHardwareResources(huge, profile, { totalMemoryBytes: 17_179_869_184 }))
       .toMatchObject({ accepted: true, evidence: 'beyond-evidence' });
-    expect(estimateHardwareResources(protein, profile, { totalMemoryBytes: 67_108_864 }))
+    expect(estimateHardwareResources(huge, profile, { totalMemoryBytes: 67_108_864 }))
       .toMatchObject({ accepted: false, reason: 'impossible' });
 
     // A workload the validator never ran has no envelope, whatever its size.
