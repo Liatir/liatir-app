@@ -40,7 +40,7 @@ describe('Phase 3 retained hardware envelopes', () => {
       runtimeBoxRelease: '8.5.1-beta.1',
       target,
     });
-    expect(profile?.profileId).toBe('openmm-8.5.1-beta.1-macos-aarch64-cpu-development-2026-09-08');
+    expect(profile?.profileId).toBe('openmm-8.5.1-beta.1-macos-aarch64-cpu-development-2026-09-09');
     expect(publishedVramRequirements(profile!)).toBe(null);
 
     // A different release or target of the same component still has no measurement of its own.
@@ -77,7 +77,7 @@ describe('Phase 3 retained hardware envelopes', () => {
       confirmationRequired: false,
       hardwareProfileId: profile.profileId,
       sampleFixtureId: 'official-protein-relaxation',
-      estimatedRamBytes: 82558976,
+      estimatedRamBytes: 83886080,
       estimatedVramBytes: null,
     });
 
@@ -86,8 +86,23 @@ describe('Phase 3 retained hardware envelopes', () => {
       accepted: true,
       evidence: 'measured',
       sampleFixtureId: 'dhfr-protein-relaxation',
-      estimatedRamBytes: 121962496,
-      estimatedTimeMs: 12693,
+      estimatedRamBytes: 115703808,
+      estimatedTimeMs: 10676,
+    });
+
+    // That protein with an approved drug bound to it: the ligand path costs an order of magnitude
+    // more memory than the same protein alone, because it loads the charge model.
+    expect(estimateHardwareResources({
+      workloadId: 'openmm:relaxation:none:openff',
+      tokenCount: 1,
+      atomCount: 2530,
+      stepCount: 5000,
+      outputItemCount: 1,
+    }, profile)).toMatchObject({
+      accepted: true,
+      evidence: 'measured',
+      sampleFixtureId: 'dhfr-drug-ligand-relaxation',
+      estimatedRamBytes: 604307456,
     });
 
     // And the production shape: a real protein the runner put in explicit water, 29,419 atoms.
@@ -101,7 +116,7 @@ describe('Phase 3 retained hardware envelopes', () => {
       accepted: true,
       evidence: 'measured',
       sampleFixtureId: 'dhfr-solvated-dynamics-10ps',
-      estimatedRamBytes: 346718208,
+      estimatedRamBytes: 365821952,
     });
 
     // Past the largest measured protein the run is confirmable, with a floor and no invented figure.
@@ -111,7 +126,7 @@ describe('Phase 3 retained hardware envelopes', () => {
       evidence: 'beyond-evidence',
       confirmationRequired: true,
       floorFixtureId: 'dhfr-protein-relaxation',
-      minimumRamBytes: 121962496,
+      minimumRamBytes: 115703808,
       maxValidatedAtomCount: 2489,
     });
     expect(estimateHardwareResources(huge, profile, { totalMemoryBytes: 17_179_869_184 }))

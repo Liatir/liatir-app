@@ -83,12 +83,16 @@ manifest needs Linux-side resolution for source-only dependencies; no Boltz pack
 Structure and affinity candidate routes own saved input drafts by workspace and draft ID, and the
 serial UI gate now passes those rendered editor and candidate checks: 37 native scenarios, zero
 failures (report `2026-09-06T21-25-49-220Z`), after the paired verification `2026-09-06T21-24-16-023Z`.
-OpenMM is now measured on real proteins on macOS: dihydrofolate reductase at 2,489 atoms, and the
-same protein in explicit water at 29,419 atoms for both relaxation and 10 ps of dynamics — the real
-production shape — in 320–331 MiB and two to three minutes on an Apple M1. Every structure ships
-inside the signed payload, so the envelope grew with no downloaded asset, and the scientific and
-product evidence now share one archive. A membrane system (`apoa1`) is refused for chemistry, not
-size: amber19 has no lipid parameters.
+OpenMM is now measured on real proteins on macOS: dihydrofolate reductase at 2,489 atoms, that same
+protein with the approved drug ruxolitinib bound to it at 2,530 atoms, and the protein in explicit
+water at 29,419 atoms for both relaxation and 10 ps of dynamics — the real production shape — in
+343–349 MiB and two to four minutes on an Apple M1. The drug case is the one that changed the
+picture: an arbitrary molecule costs 576 MiB against the protein's 110 MiB, because parameterizing
+it loads the charge model. Every structure and molecule ships inside the signed payload, so the
+envelope grew with no downloaded asset, and the scientific and product evidence share one archive.
+A membrane system (`apoa1`) is refused for chemistry, not size: amber19 has no lipid parameters.
+Still unmeasured, and recorded as such: nanosecond durations, sizes above ~30,000 atoms, and every
+GPU target.
 
 The retained macOS CPU measurement is a registered run envelope, and the corrected hardware rule is
 now implemented: inside it Molecular Relaxation runs on measured figures, past it the screen says the
@@ -98,7 +102,7 @@ five `planned` targets, a caller workflow, a signer-policy entry and a product l
 **Its macOS CPU product lifecycle passes in the real app** — install, cancellation, both reachable
 hardware states on the same input, a real relaxation reducing potential energy by 117.92 kJ/mol,
 Jobs, Results, provenance, navigation and removal with artifacts preserved — retained as
-`runtime-boxes/measurements/openmm-macos-aarch64-cpu-product-lifecycle-development-2026-09-08.json`.
+`runtime-boxes/measurements/openmm-macos-aarch64-cpu-product-lifecycle-development-2026-09-09.json`.
 That is the first real Phase 3 product evidence, on a development-signed local build; it is not
 publication evidence. No signer deploy, no CI dispatch and no publication happened.
 Protenix v2 and exact Mini Default have separate candidate inputs and Linux manifests at source
@@ -108,6 +112,9 @@ HTTP 403; Mini metadata is readable, but no weights or byte hashes have been obt
 workflow now covers Boltz-2 and both Protenix components; it has not been dispatched, and cannot be
 until it reaches the default branch. Scientific runners, hardware limits for realistic input sizes,
 complete per-component product lifecycles and production publication remain open.
+All three model components, and OpenMM's two CUDA targets, now need a Linux x86_64 host with an
+NVIDIA GPU — Windows with WSL2 counts as one. The brief for that session is the
+[Linux + NVIDIA handoff](./roadmap/phase3-linux-nvidia-handoff.md).
 
 ## Oncology Phase 2 Linux and WSL2 expansion is complete (2026-09-02)
 

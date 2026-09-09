@@ -77,24 +77,37 @@ Remaining bounded actions:
 
 ## Current evidence
 
-- **OpenMM is measured on real proteins, not toys.** The macOS arm64 CPU validator now runs a
-  size ladder whose structures all ship inside the signed payload — OpenMM's own published benchmark
-  set — so the envelope grew without a downloaded asset or an unchecked hash. All 17 cases passed:
+- **OpenMM is measured on real proteins with a real drug, not toys.** The macOS arm64 CPU validator
+  runs a size ladder whose structures and molecules all ship inside the signed payload — OpenMM's
+  published benchmark set and the OpenFF toolkit's test molecules — so the envelope grew without a
+  downloaded asset or an unchecked hash. All 18 cases passed (13 successes, 5 required refusals):
 
   | fixture | atoms | peak RAM | elapsed |
   | --- | ---: | ---: | ---: |
-  | `official-protein-relaxation` | 33 | 78.7 MiB | 0.4 s |
-  | `multi-residue-relaxation` (`test-aa`) | 407 | 87.2 MiB | 0.5 s |
-  | `dhfr-protein-relaxation` (5dfr, DHFR) | 2,489 | 116.3 MiB | 12.7 s |
-  | `dhfr-solvated-relaxation` | 29,419 | 320.9 MiB | 121.5 s |
-  | `dhfr-solvated-dynamics-10ps` | 29,419 | 330.7 MiB | 197.1 s |
+  | `official-protein-relaxation` | 33 | 80.0 MiB | 0.5 s |
+  | `multi-residue-relaxation` (`test-aa`) | 407 | 85.8 MiB | 0.6 s |
+  | `dhfr-protein-relaxation` (5dfr, DHFR) | 2,489 | 110.3 MiB | 10.7 s |
+  | `dhfr-drug-ligand-relaxation` (DHFR + ruxolitinib) | 2,530 | 576.3 MiB | 27.4 s |
+  | `dhfr-solvated-relaxation` | 29,419 | 343.2 MiB | 130.1 s |
+  | `dhfr-solvated-dynamics-10ps` | 29,419 | 348.9 MiB | 218.8 s |
 
   Dihydrofolate reductase is the standard molecular-dynamics benchmark protein; the solvated cases
   are the real production shape, periodic with PME rather than the all-pairs path every smaller
-  fixture uses. Host: Apple M1, 16 GiB. Retained:
-  `runtime-boxes/measurements/openmm-macos-aarch64-cpu-development-2026-09-08.json`, and the
-  registered profile `openmm-8.5.1-beta.1-macos-aarch64-cpu-development-2026-09-08` is transcribed
+  fixture uses. Ruxolitinib is an approved JAK inhibitor, 41 atoms of which 23 are heavy — inside the
+  drug-like range that the 9-atom ethanol fixture never reached — and it shows what the ligand path
+  actually costs: **5.2× the memory of the same protein alone** (576 MiB against 110 MiB), because
+  parameterizing an arbitrary molecule loads the NAGL charge model. It needs no new legal record: it
+  is OpenFF Toolkit 0.17.1 test data, MIT, already inside the payload and its licence inventory.
+  Host: Apple M1, 16 GiB. Retained:
+  `runtime-boxes/measurements/openmm-macos-aarch64-cpu-development-2026-09-09.json`, and the
+  registered profile `openmm-8.5.1-beta.1-macos-aarch64-cpu-development-2026-09-09` is transcribed
   from it. The Reference-platform parity difference is unchanged at 0.0000231632 kJ/mol.
+- **What is still not measured**, stated plainly so nobody reads the ladder as complete:
+  *duration* — 10 ps is a verification run and production dynamics is nanoseconds, so one nanosecond
+  of solvated DHFR would be roughly 5.5 hours on this CPU, a projection and not a measurement;
+  *size above ~30,000 atoms* — large complexes reach 50,000–200,000 atoms and land in the
+  beyond-evidence path; *GPU* — every figure above is CPU, and no CUDA target has ever been built.
+  See the [Linux + NVIDIA handoff](./phase3-linux-nvidia-handoff.md).
 - Scientific and product evidence now share **one** archive,
   `e5e1f3ba48bb0e2affe006b0b2cbbc793ee4b7af2475589e6f047d827b8c97d1`: the validator verified the
   signed payload it measured, and the product lifecycle installed that same box. Previously the two
@@ -117,19 +130,16 @@ Remaining bounded actions:
   the box had to be rebuilt. Use the workspace defaults, which are gitignored and durable:
   `.runtime-box-local` for keys and `.rb` for build scratch.
 
-- The retained macOS arm64 CPU measurement is now a real run envelope. `LIATIR_PHASE3_HARDWARE_VALIDATION_PROFILES`
-  carries one profile, `openmm-8.5.1-beta.1-macos-aarch64-cpu-development-2026-09-06`, whose samples
-  `tests/unit/phase3-hardware-profiles.test.ts` compares byte-for-byte against
-  `runtime-boxes/measurements/openmm-macos-aarch64-cpu-development-2026-09-06.json`; an edited
-  literal fails the suite. Boltz-2, Protenix v2 and Mini Default still have no profile and therefore
-  still fail closed. A different release or target of OpenMM also resolves to no profile.
-  Consequence worth knowing: the measured relaxation envelope is small. Without added hydrogens the
-  official 33-atom fixture is accepted; with the page default (hydrogens on, a five-atoms-per-input
-  preflight bound) the same file is refused at 165 atoms. A real protein is thousands of atoms, so
-  under the old rule the tool refused every realistic input. That rule is superseded by the corrected
-  hardware policy of 2026-09-07 — warn and confirm above the envelope, refuse only above the host's
-  physical memory — which is not implemented yet: the code still refuses. Until it is reworked, the
-  envelope is a hard ceiling in practice.
+- The retained macOS arm64 CPU measurement is a real run envelope. `LIATIR_PHASE3_HARDWARE_VALIDATION_PROFILES`
+  carries one profile, `openmm-8.5.1-beta.1-macos-aarch64-cpu-development-2026-09-09`, whose thirteen
+  samples `tests/unit/phase3-hardware-profiles.test.ts` compares byte-for-byte against
+  `runtime-boxes/measurements/openmm-macos-aarch64-cpu-development-2026-09-09.json`; an edited
+  literal fails the suite, and the literal itself is emitted from that record rather than typed.
+  Boltz-2, Protenix v2 and Mini Default still have no profile and therefore still fail closed. A
+  different release or target of OpenMM also resolves to no profile. The corrected hardware policy of
+  2026-09-07 is implemented (commit `56d6377`): inside the envelope the run uses measured figures,
+  past it the engine requires one explicit confirmation, and the only refusal is a floor above the
+  host's installed memory. The earlier note that the envelope was a hard ceiling no longer holds.
 - OpenMM is now a `runtime-boxes/catalog.json` component with all five authored targets at
   `planned` / `nativeCiEnabled: false`, plus `.github/workflows/runtime-box-openmm.yml` and an
   `openmm` entry in `services/runtime-box-signer/policy.json`. `validateRuntimeBoxCiCatalog` passes
@@ -160,14 +170,40 @@ Remaining bounded actions:
   candidate registry: 2 passed, 0 failed. It proves install, killed-Job cancellation, a real
   relaxation of the box's own official `test-ala-3.pdb`, the Job, the finalized Result with four
   artifacts, the provenance rows, energy reduction, navigation back to the Result, removal, and
-  result artifacts surviving removal. Measured: 33 prepared atoms, −1.691218992097177 →
-  −119.61344153048529 kJ/mol, a reduction of 117.92222253838811 kJ/mol. Retained record:
-  `runtime-boxes/measurements/openmm-macos-aarch64-cpu-product-lifecycle-development-2026-09-08.json`.
+  result artifacts surviving removal. Re-run on 2026-09-09 against the drug-ligand envelope, so the
+  Result's `Hardware evidence` row names the current profile rather than a deleted one: 2 passed,
+  0 failed, 14 assertions, 33 prepared atoms, −1.691218992097177 → −119.59347627898691 kJ/mol, a
+  reduction of 117.90225728688974 kJ/mol. Retained record:
+  `runtime-boxes/measurements/openmm-macos-aarch64-cpu-product-lifecycle-development-2026-09-09.json`.
   Both reachable hardware states are exercised on the same input: with hydrogens on, the 33-atom
   fixture reaches a 165-atom preflight bound, the page says the run is larger than anything measured
   and keeps Run closed until the acknowledgement is ticked, and closes it again when the tick is
   withdrawn; with hydrogens off the run is inside the envelope and no acknowledgement appears at all.
   The Result records `Within measured evidence: Yes`.
+- **Running that lifecycle locally needs its full environment, and silently targets production
+  without it.** `npm run runtime-box:product-lifecycle` starts the loopback registry, but the app
+  only reaches it when the spec is told to: with no `LIATIR_RUNTIME_BOX_REGISTRY_BASE_URL` the
+  install goes to `https://models.liatir.com/v1` and fails as *No beta Runtime Box is available*,
+  which reads like a broken box rather than a missing variable. The working local invocation, after
+  `VITE_LIATIR_RUNTIME_BOX_RELEASE_CANDIDATE_ID=openmm-openmm npm run test:tauri:prepare`:
+
+  ```sh
+  LIATIR_RUNTIME_BOX_REGISTRY_BASE_URL=http://127.0.0.1:8790/v1 \
+  LIATIR_RUNTIME_BOX_RELEASE_CANDIDATE_ID=openmm-openmm \
+  LIATIR_RUNTIME_BOX_MODEL_ID=openmm-openmm \
+  LIATIR_RUNTIME_BOX_TARGET_ID=macos-aarch64-cpu \
+  LIATIR_RUNTIME_BOX_EXPECTED_VERSION=8.5.1-beta.1 \
+  LIATIR_RUNTIME_BOX_TRUSTED_KEY_FILE="$PWD/.runtime-box-local/signing-public.json" \
+  LIATIR_RUNTIME_BOX_PRODUCT_EVIDENCE=.runtime-box-ci/product-lifecycle-openmm-macos-aarch64-cpu.json \
+  LIATIR_E2E_REPORT=.runtime-box-ci/product-lifecycle-e2e.json \
+  npm run runtime-box:product-lifecycle
+  ```
+
+  The trusted-key file is the local development public key and is honoured only in a debug build;
+  CI needs none of it, because there the archive carries a production signature already in
+  `runtime-boxes/trust/`. The candidate id must be present twice — once with the `VITE_` prefix when
+  the binary is compiled, once without it when the spec runs — and a binary built without it renders
+  no runtime controls at all.
 - That lifecycle used a **development** build whose release document points at the loopback registry
   (`--asset-base-url http://127.0.0.1:8790/objects`) — the same scroll, version and lock as the
   scientific measurement, but a different archive:

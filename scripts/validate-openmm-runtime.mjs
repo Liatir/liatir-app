@@ -98,6 +98,28 @@ complex = Modeller(protein.topology, protein.positions)
 complex.add(ligand.to_topology().to_openmm(), ligand.conformers[0].to_openmm())
 with open(root/'protein-ligand.pdb', 'w') as handle:
     PDBFile.writeFile(complex.topology, complex.positions, handle)
+# A real approved drug on a real protein: the shape a drug-discovery user actually brings.
+# Ruxolitinib ships inside the signed payload as OpenFF test data, so measuring it downloads
+# nothing. It is placed clear of the protein because this fixture measures the cost of
+# parameterizing and relaxing a drug-sized molecule, not the correctness of a docked pose.
+drug = Chem.SDMolSupplier(p['drugLigand'], removeHs=False)[0]
+assert drug is not None and drug.GetNumAtoms() == 41
+target = PDBFile(p['dhfr'])
+target_positions = target.positions.value_in_unit(unit.angstrom)
+drug_conformer = drug.GetConformer()
+offset = (max(point.x for point in target_positions)
+          - min(drug_conformer.GetAtomPosition(index).x for index in range(drug.GetNumAtoms())) + 15)
+for index in range(drug.GetNumAtoms()):
+    point = drug_conformer.GetAtomPosition(index)
+    drug_conformer.SetAtomPosition(index, (point.x + offset, point.y, point.z))
+with Chem.SDWriter(str(root/'drug-ligand.sdf')) as writer:
+    writer.write(drug)
+drug_molecule = Molecule.from_file(str(root/'drug-ligand.sdf'), allow_undefined_stereo=False)
+assert not isinstance(drug_molecule, list)
+drug_complex = Modeller(target.topology, target.positions)
+drug_complex.add(drug_molecule.to_topology().to_openmm(), drug_molecule.conformers[0].to_openmm())
+with open(root/'dhfr-drug-complex.pdb', 'w') as handle:
+    PDBFile.writeFile(drug_complex.topology, drug_complex.positions, handle)
 # Independent upstream Reference platform energy at identical coordinates.
 forcefield = ForceField('amber19-all.xml', 'amber19/tip3pfb.xml')
 system = forcefield.createSystem(protein.topology, nonbondedMethod=NoCutoff, constraints=HBonds,
@@ -107,7 +129,10 @@ simulation = Simulation(protein.topology, system, VerletIntegrator(0.001*unit.pi
 simulation.context.setPositions(protein.positions)
 energy = simulation.context.getState(getEnergy=True).getPotentialEnergy().value_in_unit(unit.kilojoule_per_mole)
 print(json.dumps({'proteinAtoms': 33, 'complexAtoms': complex.topology.getNumAtoms(),
-                  'ligandAtoms': ligand.n_atoms, 'referenceInitialEnergy': float(energy)}))
+                  'ligandAtoms': ligand.n_atoms, 'referenceInitialEnergy': float(energy),
+                  'drugLigandAtoms': drug_molecule.n_atoms,
+                  'drugLigandHeavyAtoms': sum(1 for atom in drug_molecule.atoms if atom.atomic_number != 1),
+                  'drugComplexAtoms': drug_complex.topology.getNumAtoms()}))
 `;
 
 try {
@@ -140,8 +165,27 @@ try {
   await writeFile(fixturesPath, PREPARE_FIXTURES);
   const official = join(runtimeDir, 'source/openmmforcefields/openmmforcefields/data/test-ala-3.pdb');
   const officialSha256 = sha256(await readFile(official));
-  const fixture = parseResult(await execute(fixturesPath, { root: workDir, official }, { accelerator: 'cpu' }), 'Fixture preparation');
+
+  // Real inputs, at the sizes people actually bring. Every structure and molecule below already
+  // ships inside the signed payload — OpenMM's published benchmark set and the OpenFF toolkit's
+  // test molecules — so the envelope grows without a downloaded asset or an unchecked hash.
+  const examples = join(runtimeDir, 'venv/share/openmm/examples');
+  const multiResidue = join(runtimeDir, 'source/openmmforcefields/openmmforcefields/data/test-aa.pdb');
+  const dhfr = join(examples, 'benchmarks/5dfr_minimized.pdb');
+  const drugLigand = join(runtimeDir,
+    'venv/lib/python3.11/site-packages/openff/toolkit/data/molecules/ruxolitinib_conformers.sdf');
+  const realFixtures = { 'openmmforcefields-test-aa': multiResidue, 'openmm-benchmark-5dfr': dhfr,
+    'openff-toolkit-ruxolitinib': drugLigand };
+  const realFixtureSha256 = Object.fromEntries(await Promise.all(
+    Object.entries(realFixtures).map(async ([id, path]) => [id, sha256(await readFile(path))]),
+  ));
+
+  const fixture = parseResult(await execute(fixturesPath, { root: workDir, official, dhfr, drugLigand },
+    { accelerator: 'cpu' }), 'Fixture preparation');
   assert.equal(fixture.complexAtoms, fixture.proteinAtoms + fixture.ligandAtoms);
+  assert.equal(fixture.drugLigandAtoms, 41);
+  assert.equal(fixture.drugLigandHeavyAtoms, 23);
+  assert.equal(fixture.drugComplexAtoms, 2489 + fixture.drugLigandAtoms);
   const preparation = { addHydrogens: false, ph: 7.4, solvent: 'none' };
   const base = { runtimePath: runtimeDir, runtimeBoxRelease: recipe.version, targetId,
     accelerator: recipe.target.accelerator, inputStructure: official, preparation };
@@ -213,23 +257,22 @@ try {
   assert.equal(long.summary.checkpoint.currentStep, 50000);
   assert.equal(long.summary.frameCount, 10);
 
-  // Real proteins, at the sizes people actually bring. Every structure below already ships inside
-  // the signed payload — OpenMM's own published benchmark set — so the envelope grows without
-  // adding a downloaded asset or a hash nobody has checked.
-  const examples = join(runtimeDir, 'venv/share/openmm/examples');
-  const multiResidue = join(runtimeDir, 'source/openmmforcefields/openmmforcefields/data/test-aa.pdb');
-  const dhfr = join(examples, 'benchmarks/5dfr_minimized.pdb');
-  const realFixtures = { 'openmmforcefields-test-aa': multiResidue, 'openmm-benchmark-5dfr': dhfr };
-  const realFixtureSha256 = Object.fromEntries(await Promise.all(
-    Object.entries(realFixtures).map(async ([id, path]) => [id, sha256(await readFile(path))]),
-  ));
-
   await productCase('multi-residue-relaxation', { mode: 'relaxation', relaxation,
     inputStructure: multiResidue }, 407);
   // Dihydrofolate reductase: the standard molecular-dynamics benchmark protein, 2,489 atoms.
   const dhfrRelaxed = await productCase('dhfr-protein-relaxation', { mode: 'relaxation', relaxation,
     inputStructure: dhfr }, 2489, { timeoutMs: 3_600_000 });
   assert.ok(dhfrRelaxed.summary.energyReductionKilojoulePerMole > 0);
+
+  // The drug-discovery shape: that same real protein with an approved drug bound to it.
+  // Ruxolitinib has 23 heavy atoms, inside the drug-like range that the 9-atom ethanol fixture
+  // never reaches, and it drives the runner's slowest path — OpenFF parameterization with NAGL
+  // charges — at a protein size that matters rather than on a tripeptide.
+  const drugComplex = await productCase('dhfr-drug-ligand-relaxation', { mode: 'relaxation', relaxation,
+    inputStructure: join(workDir, 'dhfr-drug-complex.pdb'), ligandSdf: join(workDir, 'drug-ligand.sdf') },
+    fixture.drugComplexAtoms, { timeoutMs: 3_600_000 });
+  assert.equal(drugComplex.summary.ligandAtomCount, fixture.drugLigandAtoms);
+  assert.ok(drugComplex.summary.energyReductionKilojoulePerMole > 0);
 
   // The realistic production shape: a real protein the runner puts in explicit water, so the system
   // is periodic and uses PME rather than the all-pairs path every smaller fixture above exercises.
@@ -304,8 +347,9 @@ try {
       ...builderVersionFields(recipe), dependencyLockSha256 },
     evidence: {
       fixture: { id: 'openmmforcefields-0.16.0-official-ala3-and-ethanol-v1', sha256: officialSha256,
-        inputShapes: { proteinAtoms: [33], proteinLigandAtoms: [42] } },
-      // Real-protein fixtures, all shipped inside the verified payload rather than downloaded.
+        inputShapes: { proteinAtoms: [33], proteinLigandAtoms: [42],
+          drugLikeComplexAtoms: [fixture.drugComplexAtoms] } },
+      // Real fixtures, all shipped inside the verified payload rather than downloaded.
       realProteinFixtures: realFixtureSha256,
       framework: { name: 'openmm', version: '8.5.1', backend: recipe.target.accelerator,
         reportedCudaCompatibility: recipe.target.cudaVersion ?? null },

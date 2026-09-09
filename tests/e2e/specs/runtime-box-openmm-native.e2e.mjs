@@ -218,7 +218,7 @@ print(json.dumps({
       'Ligand force field': 'No ligand SDF',
       Seed: 17,
       'Network access': 'Disabled',
-      'Hardware evidence': 'openmm-8.5.1-beta.1-macos-aarch64-cpu-development-2026-09-08',
+      'Hardware evidence': 'openmm-8.5.1-beta.1-macos-aarch64-cpu-development-2026-09-09',
       'Within measured evidence': 'Yes',
       'Runtime Box': `${VERSION} · ${TARGET_ID}`,
       'Runtime Box archive SHA-256': installed.activation.release.archive.sha256,
