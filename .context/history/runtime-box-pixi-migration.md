@@ -648,7 +648,7 @@ about work still open are superseded by this completion record.
 >   channel:`, exit 0), and `verify --self-test` passed (`Verified scgpt-whole-human 0.2.5-beta.1
 >   (macos-aarch64-metal)`), loading `best_model.pt` and asserting tensor shapes on torch 2.8.0
 >   Metal. **Measured archive 655,752,216 B (≈0.61 GB)**; `.runtime-box-build` and
->   `.runtime-box-dist/` were deleted afterwards. No production code changed and nothing was signed
+>   the gitignored `.runtime-box-dist` build output were deleted afterwards. No production code changed and nothing was signed
 >   for release, published, or promoted. Once the maintainer gives the go-ahead (and after a prior
 >   `runtime-box:signer:deploy`), only the protected release (KMS sign + R2 publish + beta) is left.
 > - **Known conservatism:** the migrated recipes carry only the *source* prune list — the conda

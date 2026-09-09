@@ -35,6 +35,15 @@ context is initialized, structurally complete, that every path referenced from a
 context document exists, and that the state document has not gone stale behind
 the repository. See [syngraphe.dev](https://syngraphe.dev) for the finding codes.
 
+**Never cite a build artifact or a per-run report directory as a path.** `syngraphe check`
+resolves every referenced path against the working tree, and a gitignored build output or a test
+report written during one session exists on the machine that produced it and nowhere else. On
+2026-09-08, moving development from macOS to the Windows/WSL2 host turned fourteen such references
+into `LINK001` errors at once, and the check could not go green on the new machine while they
+stood. The evidence those lines carry is still worth keeping — name the report by its timestamp
+alone, the way "report `2026-09-07T14-45-29-324Z`" does, never as a directory the tool will try to
+open, and keep the durable proof (hashes, run IDs, measured figures) in the sentence itself.
+
 ## Naming (canonical terms — use exactly these)
 
 - **"Plugins"** means only `.lia` plugins.

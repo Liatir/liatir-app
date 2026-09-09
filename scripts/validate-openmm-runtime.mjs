@@ -353,7 +353,13 @@ try {
       realProteinFixtures: realFixtureSha256,
       framework: { name: 'openmm', version: '8.5.1', backend: recipe.target.accelerator,
         reportedCudaCompatibility: recipe.target.cudaVersion ?? null },
-      accelerator: { kind: recipe.target.accelerator, gpuModel: null, driverVersion: null,
+      // Identity comes from the measured runs themselves, so a GPU figure always names the card
+      // and driver that produced it rather than leaving the reader to guess the host.
+      accelerator: { kind: recipe.target.accelerator,
+        gpuModel: cases.find((item) => item.measurement?.gpuName)?.measurement.gpuName ?? null,
+        driverVersion: cases.find((item) => item.measurement?.gpuDriverVersion)?.measurement.gpuDriverVersion ?? null,
+        vramMeasurementMethod: cases.find((item) => item.measurement?.vramMeasurementMethod)
+          ?.measurement.vramMeasurementMethod ?? null,
         reportedCudaCompatibility: recipe.target.cudaVersion ?? null },
       outputShapes: { relaxedStructure: [33, 3], ligandStructure: [42, 3], trajectory: [10, 33, 3] },
       finiteValues: true, tolerances: { absolute: 0.01, relative: 0 },

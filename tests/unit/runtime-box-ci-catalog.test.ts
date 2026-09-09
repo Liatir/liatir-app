@@ -25,6 +25,48 @@ describe('Runtime Box CI catalog', () => {
     expect(() => validateRuntimeBoxCiCatalog(catalog, { requireWorkflows: false })).not.toThrow();
   });
 
+  // Owner decision of 2026-09-09: Windows is an app host, never a payload platform. It reaches a
+  // component through WSL2 running the Linux box, so no new native Windows target may be authored.
+  // The three entries below are permanent legacy — signed, published and installable before the
+  // decision, and deliberately left in place rather than withdrawn. The rule is forward-looking, so
+  // this list exists to reject a fourth entry, not to count down to zero.
+  it('authors no native Windows target beyond the three already published', () => {
+    const nativeWindows = catalog.components.flatMap((component) => component.targets
+      .filter((target) => target.target.platform === 'windows')
+      .map((target) => `${component.componentId}/${target.targetId}/${target.status}`));
+
+    expect(nativeWindows).toEqual([
+      'ctheodoris-geneformer-v1-10m/windows-x86_64-cuda12.8/published',
+      'bowang-scgpt-whole-human/windows-x86_64-cpu/published',
+      'bowang-scgpt-whole-human/windows-x86_64-cuda12.8/published',
+    ]);
+  });
+
+  it('reaches Windows through WSL2 on every component that supports it', () => {
+    const wsl2 = catalog.components.flatMap((component) => component.targets
+      .filter((target) => target.hostEnvironments?.includes('windows-wsl2'))
+      .map((target) => `${component.componentId}/${target.targetId}`));
+
+    expect(wsl2).toEqual([
+      'openvax-mhcflurry-class1-presentation/linux-x86_64-cpu',
+      'openvax-mhcflurry-class1-presentation/linux-x86_64-cuda12.9',
+      'griffithlab-pvactools-pvacseq/linux-x86_64-cpu',
+      'openmm-openmm/linux-x86_64-cpu',
+      'openmm-openmm/linux-x86_64-cuda12.9',
+    ]);
+    // A WSL2 claim is only real if the signed scroll carries it too.
+    for (const entry of wsl2) {
+      const [componentId, targetId] = entry.split('/');
+      const component = catalog.components.find((item) => item.componentId === componentId)!;
+      const boxId = component.boxId;
+      const scroll = JSON.parse(readFileSync(
+        new URL(`../../runtime-boxes/scrolls/${boxId}/${targetId}/scroll.json`, import.meta.url),
+        'utf8',
+      ));
+      expect(scroll.compatibility.hostEnvironments, entry).toEqual(['native', 'windows-wsl2']);
+    }
+  });
+
   it('enables only the reviewed macOS and Linux CPU oncology native targets', () => {
     const oncologyIds = new Set([
       'openvax-mhcflurry-class1-presentation',

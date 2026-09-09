@@ -6,14 +6,10 @@ on:
       - "runtime-boxes/catalog.json"
       - "runtime-boxes/scrolls/openmm/macos-aarch64-cpu/**"
       - "runtime-boxes/scrolls/openmm/linux-x86_64-cpu/**"
-      - "runtime-boxes/scrolls/openmm/windows-x86_64-cpu/**"
       - "runtime-boxes/scrolls/openmm/linux-x86_64-cuda12.9/**"
-      - "runtime-boxes/scrolls/openmm/windows-x86_64-cuda12.9/**"
       - "runtime-boxes/legal/audits/openmm-macos-aarch64-cpu.json"
       - "runtime-boxes/legal/audits/openmm-linux-x86_64-cpu.json"
-      - "runtime-boxes/legal/audits/openmm-windows-x86_64-cpu.json"
       - "runtime-boxes/legal/audits/openmm-linux-x86_64-cuda12.9.json"
-      - "runtime-boxes/legal/audits/openmm-windows-x86_64-cuda12.9.json"
       - "runtime-boxes/legal/openmm.md"
       - "scripts/validate-openmm-runtime.mjs"
       - "scripts/runtime-box/evidence.mjs"
@@ -30,14 +26,10 @@ on:
       - "runtime-boxes/catalog.json"
       - "runtime-boxes/scrolls/openmm/macos-aarch64-cpu/**"
       - "runtime-boxes/scrolls/openmm/linux-x86_64-cpu/**"
-      - "runtime-boxes/scrolls/openmm/windows-x86_64-cpu/**"
       - "runtime-boxes/scrolls/openmm/linux-x86_64-cuda12.9/**"
-      - "runtime-boxes/scrolls/openmm/windows-x86_64-cuda12.9/**"
       - "runtime-boxes/legal/audits/openmm-macos-aarch64-cpu.json"
       - "runtime-boxes/legal/audits/openmm-linux-x86_64-cpu.json"
-      - "runtime-boxes/legal/audits/openmm-windows-x86_64-cpu.json"
       - "runtime-boxes/legal/audits/openmm-linux-x86_64-cuda12.9.json"
-      - "runtime-boxes/legal/audits/openmm-windows-x86_64-cuda12.9.json"
       - "runtime-boxes/legal/openmm.md"
       - "scripts/validate-openmm-runtime.mjs"
       - "scripts/runtime-box/evidence.mjs"
@@ -57,9 +49,7 @@ on:
         options:
           - macos-aarch64-cpu
           - linux-x86_64-cpu
-          - windows-x86_64-cpu
           - linux-x86_64-cuda12.9
-          - windows-x86_64-cuda12.9
       mode:
         description: Native validation depth
         required: true

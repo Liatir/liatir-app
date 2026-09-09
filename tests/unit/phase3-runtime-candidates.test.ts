@@ -36,9 +36,9 @@ describe('Phase 3 Runtime Box candidate boundary', () => {
     expect(candidates[1].inference).toEqual({ recycles: 4, diffusionSteps: 5, loadStrict: true });
   });
 
+  // Windows reaches OpenMM through WSL2 on the Linux payload, so there is no native Windows target.
   it.each([
-    'macos-aarch64-cpu', 'linux-x86_64-cpu', 'windows-x86_64-cpu',
-    'linux-x86_64-cuda12.9', 'windows-x86_64-cuda12.9',
+    'macos-aarch64-cpu', 'linux-x86_64-cpu', 'linux-x86_64-cuda12.9',
   ])('keeps the OpenMM %s payload reproducible and its validation data intact', (target) => {
     const root = resolve(import.meta.dirname, '../..');
     const directory = resolve(root, 'runtime-boxes/scrolls/openmm', target);

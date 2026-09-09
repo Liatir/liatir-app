@@ -49,7 +49,13 @@ function run(payload: Record<string, unknown>) {
   });
 }
 
-describe('OpenMM product Python script', () => {
+// The script runs inside the installed OpenMM box, and since the 2026-09-09 decision that box is
+// only ever macOS, Linux, or Linux inside WSL2 — never native Windows. Exercising it against a
+// Windows interpreter tests a configuration the product does not have, and fails for two reasons
+// that say nothing about the script: `python -c` cannot carry 48 KB past Windows' 32,767-character
+// command-line limit, and `socket.AF_UNIX`, which `deny_network()` uses to let local IPC through,
+// does not exist on Windows. CI still runs this suite on both platforms the box targets.
+describe.skipIf(process.platform === 'win32')('OpenMM product Python script', () => {
   it('runs the bounded standard-library preflight without importing OpenMM', () => {
     const root = mkdtempSync(join(tmpdir(), 'liatir-openmm-preflight-'));
     const result = run(dynamicsPayload(root));

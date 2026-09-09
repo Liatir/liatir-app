@@ -17,7 +17,7 @@ bytes`, exit 0, no runner root created, runner inventory empty. **Part B** (opti
 scGPT `0.2.5-beta.1` macos-aarch64-metal box built and dev-signed on the pixi substrate and
 `verify --self-test` passed (`Verified scgpt-whole-human 0.2.5-beta.1 (macos-aarch64-metal)`),
 loading `best_model.pt` on torch 2.8.0 Metal; measured archive **655,752,216 B (≈0.61 GB)**;
-`.runtime-box-build`/`.runtime-box-dist/` cleaned up. No production code changed; no defect found.
+`.runtime-box-build`/the gitignored `.runtime-box-dist` build output cleaned up. No production code changed; no defect found.
 Linux CPU and Windows CPU are fully validated on self-hosted CI (build + scientific +
 native-lifecycle). The scGPT macOS box itself was already built end-to-end on the pixi substrate in
 Phase 1.
@@ -88,7 +88,7 @@ node scripts/runtime-box.mjs verify \
 **Expected:** the build ends with `Signed release:` / `Signed channel:`, and verify prints
 `Verified scgpt-whole-human 0.2.5-beta.1 (macos-aarch64-metal)`. The self-test loads `best_model.pt`
 and asserts the tensor shapes on torch 2.8.0 with Metal. Record the measured payload and archive
-sizes (`ls -l .runtime-box-dist/`), then delete `.runtime-box-build` and `.runtime-box-dist/`.
+sizes (`ls -l .runtime-box-dist/`), then delete `.runtime-box-build` and the gitignored `.runtime-box-dist` build output.
 
 ### Output (write it back into the repo)
 

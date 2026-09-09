@@ -362,7 +362,11 @@ the change and its reason stay visible.
 | `jwohlwend-boltz-2` | `linux-x86_64-cuda12.9`, native Linux and Windows through WSL2 | macOS |
 | `bytedance-protenix-v2` | `linux-x86_64-cuda12.9`, native Linux and Windows through WSL2 | macOS |
 | `bytedance-protenix-mini-default-v0-5-0` | `linux-x86_64-cuda12.9`, native Linux and Windows through WSL2 | macOS |
-| `openmm-openmm` | `macos-aarch64-cpu` native; `linux-x86_64-cpu`; `windows-x86_64-cpu`; `linux-x86_64-cuda12.9`; `windows-x86_64-cuda12.9` | — |
+| `openmm-openmm` | `macos-aarch64-cpu` native; `linux-x86_64-cpu` and `linux-x86_64-cuda12.9`, each serving native Linux and Windows through WSL2 | native Windows |
+
+> Corrected on 2026-09-09: OpenMM's two native Windows targets are deleted. Windows is an app host,
+> never a payload platform — see
+> [No native Windows Runtime Box targets](../../decisions/no-native-windows-runtime-box-targets.md).
 
 Why the three AI Models exclude macOS: Protenix pins Triton, DeepSpeed and cuEquivariance, none of
 which exist on macOS, so as specified it cannot start there. Boltz-2 is a different case — upstream
@@ -379,7 +383,8 @@ component:
 - the scroll's `compatibility.hostEnvironments` lists `windows-wsl2`, and the catalog target's
   `hostEnvironments` matches it exactly;
 - a real product lifecycle has passed inside the Windows app through WSL2, not only on Linux;
-- OpenMM's Linux targets currently declare only `native` and must be corrected first.
+- OpenMM's Linux targets were corrected on 2026-09-09 and now declare
+  `["native", "windows-wsl2"]` in both catalog and scroll.
 
 No component is published for a host environment it has not actually been exercised in.
 

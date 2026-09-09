@@ -37,13 +37,17 @@ def peak_ram_bytes():
     return int(counters.PeakWorkingSetSize)
 
 
-def cuda_process_memory_bytes():
+def nvidia_smi(query):
     result = subprocess.run(
-        ["nvidia-smi", "--query-compute-apps=pid,used_gpu_memory", "--format=csv,noheader,nounits"],
+        ["nvidia-smi", query, "--format=csv,noheader,nounits"],
         check=True, capture_output=True, text=True, timeout=5,
     )
+    return result.stdout
+
+
+def cuda_process_memory_bytes():
     total = 0
-    for row in result.stdout.splitlines():
+    for row in nvidia_smi("--query-compute-apps=pid,used_gpu_memory").splitlines():
         fields = [field.strip() for field in row.split(",")]
         if fields[0] == str(os.getpid()):
             if len(fields) != 2 or not fields[1].isdigit():
@@ -52,30 +56,78 @@ def cuda_process_memory_bytes():
     return total
 
 
+def cuda_device_used_bytes():
+    """Device-wide used VRAM. Always available, including where per-process is not."""
+    value = nvidia_smi("--query-gpu=memory.used").strip().splitlines()[0].strip()
+    if not value.isdigit():
+        raise RuntimeError("This GPU driver cannot report device memory usage.")
+    return int(value) * 1024 * 1024
+
+
+def cuda_device_identity():
+    fields = [f.strip() for f in nvidia_smi("--query-gpu=name,driver_version").strip().split(",")]
+    return {"gpuName": fields[0], "gpuDriverVersion": fields[1]} if len(fields) == 2 else {}
+
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--accelerator", choices=("cpu", "cuda"), required=True)
 parser.add_argument("script")
 args = parser.parse_args()
 stopped = threading.Event()
 gpu_peak = [0]
+device_peak = [0]
+device_baseline = [0]
+gpu_identity = {}
 gpu_errors = []
+
+
+# Each nvidia-smi call costs ~80 ms, so the pair plus the old 200 ms wait sampled under three
+# times a second — few enough to miss a short run's whole GPU window. 50 ms roughly doubles the
+# rate for both the per-process and the device-wide figure.
+SAMPLE_WAIT_SECONDS = 0.05
 
 
 def sample_gpu():
     while not stopped.is_set():
         try:
             gpu_peak[0] = max(gpu_peak[0], cuda_process_memory_bytes())
+            device_peak[0] = max(device_peak[0], cuda_device_used_bytes())
         except Exception as error:
             gpu_errors.append(str(error))
             return
-        stopped.wait(0.2)
+        stopped.wait(SAMPLE_WAIT_SECONDS)
 
 
 sampler = None
 if args.accelerator == "cuda":
     cuda_process_memory_bytes()
+    # The baseline has to be read before the workload creates its CUDA context, so that a host
+    # whose driver cannot enumerate compute apps can still be charged only for what this run added.
+    device_baseline[0] = cuda_device_used_bytes()
+    device_peak[0] = device_baseline[0]
+    gpu_identity = cuda_device_identity()
     sampler = threading.Thread(target=sample_gpu, daemon=True)
     sampler.start()
+
+
+def vram_measurement():
+    """
+    Per-process VRAM where the driver reports it, and only otherwise a device-wide delta.
+
+    `nvidia-smi --query-compute-apps` returns an empty list under WSL2 — no error, no rows — so a
+    real GPU run is indistinguishable from one that touched no GPU memory unless the two cases are
+    separated here. The fallback is a coarser number: it charges this run for everything the device
+    gained while it ran, including any other process, so it can only over-state. The method travels
+    with the sample because a device-wide delta must never be compared against a per-process one.
+    """
+    if gpu_peak[0] > 0:
+        return {"peakVramBytes": gpu_peak[0], "vramMeasurementMethod": "per-process",
+                "vramDeviceBaselineBytes": None}
+    if args.accelerator == "cuda" and device_peak[0] > device_baseline[0]:
+        return {"peakVramBytes": device_peak[0] - device_baseline[0],
+                "vramMeasurementMethod": "device-wide-delta",
+                "vramDeviceBaselineBytes": device_baseline[0]}
+    return {"peakVramBytes": None, "vramMeasurementMethod": None, "vramDeviceBaselineBytes": None}
 started = time.monotonic()
 try:
     sys.argv = [args.script]
@@ -87,7 +139,8 @@ finally:
     print("LIATIR_SCIENTIFIC_MEASUREMENT " + json.dumps({
         "elapsedMs": max(1, round((time.monotonic() - started) * 1000)),
         "peakRamBytes": peak_ram_bytes(),
-        "peakVramBytes": gpu_peak[0] or None,
-        "vramSamplingIntervalMs": 200 if sampler is not None else None,
+        **vram_measurement(),
+        **gpu_identity,
+        "vramSamplingIntervalMs": round(SAMPLE_WAIT_SECONDS * 1000) if sampler is not None else None,
         "vramMeasurementErrors": gpu_errors,
     }), file=sys.stderr, flush=True)

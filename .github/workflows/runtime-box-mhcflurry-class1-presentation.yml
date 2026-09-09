@@ -6,14 +6,10 @@ on:
       - "runtime-boxes/catalog.json"
       - "runtime-boxes/scrolls/mhcflurry-class1-presentation/macos-aarch64-metal/**"
       - "runtime-boxes/scrolls/mhcflurry-class1-presentation/linux-x86_64-cpu/**"
-      - "runtime-boxes/scrolls/mhcflurry-class1-presentation/windows-x86_64-cpu/**"
       - "runtime-boxes/scrolls/mhcflurry-class1-presentation/linux-x86_64-cuda12.9/**"
-      - "runtime-boxes/scrolls/mhcflurry-class1-presentation/windows-x86_64-cuda12.8/**"
       - "runtime-boxes/legal/audits/mhcflurry-class1-presentation-macos-aarch64-metal.json"
       - "runtime-boxes/legal/audits/mhcflurry-class1-presentation-linux-x86_64-cpu.json"
-      - "runtime-boxes/legal/audits/mhcflurry-class1-presentation-windows-x86_64-cpu.json"
       - "runtime-boxes/legal/audits/mhcflurry-class1-presentation-linux-x86_64-cuda12.9.json"
-      - "runtime-boxes/legal/audits/mhcflurry-class1-presentation-windows-x86_64-cuda12.8.json"
       - "runtime-boxes/legal/mhcflurry-class1-presentation.md"
       - "scripts/validate-mhcflurry-runtime.mjs"
       - "scripts/runtime-box/evidence.mjs"
@@ -30,14 +26,10 @@ on:
       - "runtime-boxes/catalog.json"
       - "runtime-boxes/scrolls/mhcflurry-class1-presentation/macos-aarch64-metal/**"
       - "runtime-boxes/scrolls/mhcflurry-class1-presentation/linux-x86_64-cpu/**"
-      - "runtime-boxes/scrolls/mhcflurry-class1-presentation/windows-x86_64-cpu/**"
       - "runtime-boxes/scrolls/mhcflurry-class1-presentation/linux-x86_64-cuda12.9/**"
-      - "runtime-boxes/scrolls/mhcflurry-class1-presentation/windows-x86_64-cuda12.8/**"
       - "runtime-boxes/legal/audits/mhcflurry-class1-presentation-macos-aarch64-metal.json"
       - "runtime-boxes/legal/audits/mhcflurry-class1-presentation-linux-x86_64-cpu.json"
-      - "runtime-boxes/legal/audits/mhcflurry-class1-presentation-windows-x86_64-cpu.json"
       - "runtime-boxes/legal/audits/mhcflurry-class1-presentation-linux-x86_64-cuda12.9.json"
-      - "runtime-boxes/legal/audits/mhcflurry-class1-presentation-windows-x86_64-cuda12.8.json"
       - "runtime-boxes/legal/mhcflurry-class1-presentation.md"
       - "scripts/validate-mhcflurry-runtime.mjs"
       - "scripts/runtime-box/evidence.mjs"
@@ -54,7 +46,7 @@ on:
         description: Checked Runtime Box target
         required: true
         type: choice
-        options: [macos-aarch64-metal, linux-x86_64-cpu, windows-x86_64-cpu, linux-x86_64-cuda12.9, windows-x86_64-cuda12.8]
+        options: [macos-aarch64-metal, linux-x86_64-cpu, linux-x86_64-cuda12.9]
       mode:
         description: Native validation depth
         required: true

@@ -58,6 +58,51 @@ describe('Phase 3 retained hardware envelopes', () => {
     })).toBe(null);
   });
 
+  // The project's first GPU envelope, and the first published VRAM figures derived from one. The
+  // peaks behind them are device-wide deltas, because WSL2 reports no per-process GPU memory; they
+  // over-state rather than under-state, which is the safe direction for a minimum.
+  it('resolves the retained OpenMM Linux CUDA envelope and publishes VRAM from its peak', () => {
+    const target = {
+      platform: 'linux', arch: 'x86_64', accelerator: 'cuda', cudaVersion: '12.9',
+    } as const;
+    const profile = phase3HardwareValidationProfile({
+      componentId: OPENMM_RUNTIME_COMPONENT_ID,
+      componentVersion: OPENMM_VERSION,
+      runtimeBoxRelease: '8.5.1-beta.1',
+      target,
+    });
+    expect(profile?.profileId)
+      .toBe('openmm-8.5.1-beta.1-linux-x86_64-cuda12.9-development-2026-09-09');
+
+    // 185 MiB measured on an 8 GiB card: OpenMM's GPU cost is the CUDA context, not the system size.
+    expect(publishedVramRequirements(profile!)).toEqual({
+      measuredPeakVramBytes: 193986560,
+      minimumVramBytes: 242483200,
+      recommendedVramBytes: 290979840,
+    });
+
+    // Solvated DHFR, the real production shape, is inside the measured envelope on this target.
+    expect(estimateHardwareResources({
+      workloadId: 'openmm:dynamics:tip3p-fb:standard',
+      tokenCount: 1,
+      atomCount: 29419,
+      stepCount: 5000,
+      outputItemCount: 2,
+    }, profile!)).toMatchObject({
+      accepted: true,
+      evidence: 'measured',
+      sampleFixtureId: 'dhfr-solvated-dynamics-10ps',
+    });
+
+    // CUDA 12.8 is a different target and still has no measurement of its own.
+    expect(phase3HardwareValidationProfile({
+      componentId: OPENMM_RUNTIME_COMPONENT_ID,
+      componentVersion: OPENMM_VERSION,
+      runtimeBoxRelease: '8.5.1-beta.1',
+      target: { ...target, cudaVersion: '12.8' },
+    })).toBe(null);
+  });
+
   it('measures what it can, confirms what it cannot, and refuses only what cannot finish', () => {
     const profile = phase3HardwareValidationProfile({
       componentId: OPENMM_RUNTIME_COMPONENT_ID,

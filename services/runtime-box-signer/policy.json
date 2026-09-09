@@ -70,9 +70,7 @@
       "targets": [
         "macos-aarch64-metal",
         "linux-x86_64-cpu",
-        "windows-x86_64-cpu",
-        "linux-x86_64-cuda12.9",
-        "windows-x86_64-cuda12.8"
+        "linux-x86_64-cuda12.9"
       ]
     },
     {
@@ -91,9 +89,7 @@
       "targets": [
         "macos-aarch64-cpu",
         "linux-x86_64-cpu",
-        "windows-x86_64-cpu",
-        "linux-x86_64-cuda12.9",
-        "windows-x86_64-cuda12.9"
+        "linux-x86_64-cuda12.9"
       ]
     }
   ]

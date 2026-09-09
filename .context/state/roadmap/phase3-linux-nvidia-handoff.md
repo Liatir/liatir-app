@@ -27,12 +27,21 @@ which holds the evidence, and the
 
 Checked on 2026-09-09, not inferred:
 
+Updated 2026-09-09 after the first session on this machine.
+
 | component | scroll | lock | catalog | box | measurement |
 | --- | --- | --- | --- | --- | --- |
-| `openmm-openmm` | all 5 targets | all 5 targets | 5 targets, `planned` | macOS CPU only, development key | macOS CPU only |
-| `jwohlwend-boltz-2` | `pixi.toml` only | none | absent | none | none |
+| `openmm-openmm` | all 3 targets | all 3 targets | 3 targets, `planned` | macOS CPU **and Linux CUDA**, development key | macOS CPU **and Linux CUDA** |
+| `jwohlwend-boltz-2` | `pixi.toml` only | **resolved** | absent | none | none |
 | `bytedance-protenix-v2` | `pixi.toml` only | none | absent | none | none |
 | `bytedance-protenix-mini-default-v0-5-0` | `pixi.toml` only | none | absent | none | none |
+
+OpenMM went from five targets to three: its two native Windows targets were deleted on 2026-09-09,
+and both Linux targets now declare `["native", "windows-wsl2"]`. No new component gets a native
+Windows target — see
+[No native Windows Runtime Box targets](../../decisions/no-native-windows-runtime-box-targets.md).
+Every component here is developed for Linux and Windows-through-WSL2, plus macOS where possible;
+for the three AI Models macOS is out of scope by the 2026-09-07 decision.
 
 `candidate-inputs.json` exists for both Protenix components at the component level, not under
 the target directory. Neither Protenix nor Boltz-2 has a `scroll.json`, a legal record in
@@ -55,15 +64,20 @@ OpenMM is the complete worked example to imitate: `runtime-boxes/scrolls/openmm/
 
 ## Order of work
 
-1. **Verify the hardware from inside WSL2**, not from Windows: `nvidia-smi` must work and the
-   driver must be at least `525.60.13`. Record the GPU model and total VRAM — the measurements
-   need them.
-2. **Build and measure OpenMM `linux-x86_64-cuda12.9` first.** It is the fastest real result
-   available on this machine: the scroll and the lock already exist, so it is a build plus
-   `node scripts/validate-openmm-runtime.mjs`, and it produces the project's first CUDA hardware
-   profile. It also proves the GPU toolchain works before the harder components depend on it.
-3. **Resolve the Boltz-2 lock** with pixi exactly `0.73.0`, locally — no CI needed on Linux.
-   Inspect the dependency graph before committing a lock.
+1. ~~**Verify the hardware from inside WSL2**~~ — done 2026-09-09. RTX 4060 Ti, 8188 MiB VRAM,
+   driver 610.62, Ubuntu 26.04, 6 CPUs, 24 GiB to WSL2, 893 GiB free in the Linux filesystem. The
+   full record is in the
+   [Phase 3 status](./phase3-implementation-status.md#the-linux-cuda-authoring-and-measurement-host-2026-09-08).
+2. ~~**Build and measure OpenMM `linux-x86_64-cuda12.9`**~~ — done 2026-09-09. Built, signed,
+   `verify --self-test` passed on a fresh extraction, and the scientific validator passed 18 cases
+   on the GPU. The toolchain is therefore proven end to end — driver, WSL2, CUDA 12.9, OpenMM — and
+   the harder components can rely on it. Figures and the measurement defect this run exposed are in
+   the [Phase 3 status](./phase3-implementation-status.md#openmm-cuda-is-built-self-tested-and-measured-on-a-real-gpu-2026-09-09).
+   Building needs `--allow-dirty` while the tree has uncommitted work, `--conda-pack` pointing at
+   the pixi-global binary, and `--build-dir` inside the Linux filesystem.
+3. ~~**Resolve the Boltz-2 lock**~~ — done 2026-09-09 with pixi 0.73.0 in WSL2, graph inspected.
+   `pixi.lock` is `f1e4a595010fe5c2d98e103c0b6b77ee8a80408ea80e25c661df29b2c4a1e88f`; findings are
+   in the [Boltz source review](./phase3-boltz-source-review.md).
 4. **Write the Boltz-2 scroll**: assets with pinned SHA-256 (use the revision and hashes already
    in the source review), an offline self-test, a legal record with the source revision, a
    licence inventory.

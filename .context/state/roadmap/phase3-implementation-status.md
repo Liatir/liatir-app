@@ -34,7 +34,7 @@ untracked `AGENT-POLICY.md` was read without modification; the requested plural 
 No workflow dispatch, GPU execution, signer deployment, upload or publication was initiated.
 
 Local audit verification passed `npm run test:verify`: six suites, 76 files / 567 tests, zero
-failures; report `tests/.artifacts/reports/2026-09-07T14-45-29-324Z/`. This does not validate
+failures; report `2026-09-07T14-45-29-324Z`. This does not validate
 GitHub expression contexts or run advisory ESLint, so it does not close either diagnosed defect.
 `test:ui` was not repeated because only memory documents changed; no UI or lifecycle code changed.
 
@@ -59,10 +59,12 @@ Remaining bounded actions:
 - OpenMM still needs larger retained measurements, the Dynamics product lifecycle, remaining target
   validation and full legal review. Production scientific/product tests must exercise the production
   artifact rather than borrow evidence from either development archive.
-- Windows native is not WSL2: OpenMM Linux targets currently sign only `hostEnvironments: ["native"]`,
-  and the WSL2 proof workflow does not select any Phase 3 component. Supporting Windows through WSL2
-  needs explicit compatibility and real Windows-app evidence. The three AI Model manifests currently
-  target Linux CUDA only; macOS support for all models is not an established plan or verified fact.
+- Both OpenMM Linux targets now declare `hostEnvironments: ["native", "windows-wsl2"]` in catalog and
+  scroll, following the 2026-09-09 decision that deleted every native Windows target. The declaration
+  is the authorization, not the proof: the WSL2 proof workflow still selects no Phase 3 component, so
+  Windows support stays unclaimed until a real product lifecycle passes inside the Windows app.
+  The three AI Model manifests target Linux CUDA only; macOS is out of scope for them by the
+  2026-09-07 decision.
 - After owner approval and scientific/product readiness, the OpenMM production sequence is: deploy
   the signer policy, enable that one target's `nativeCiEnabled` on clean committed main, then
   dispatch `runtime-box-release.yml`. **No self-hosted runner is involved any more**: the macOS
@@ -75,8 +77,158 @@ Remaining bounded actions:
   Note that a production build produces a **different archive** from any development one, so the
   workflow re-measures and re-exercises it; the local evidence does not transfer to it.
 
+## OpenMM CUDA is built, self-tested and measured on a real GPU (2026-09-09)
+
+The first GPU execution in this project's history. Everything OpenMM had before this was Apple M1
+CPU. Built and measured locally inside WSL2 on the host described below — local execution is not CI,
+and no workflow was dispatched.
+
+**Build and signature.** `openmm-linux-x86_64-cuda12.9` built with pixi 0.73.0 and conda-pack 0.9.2,
+channel `beta`, weights `embed`. Its build-time self-test reported
+`{"platform": "CUDA", "status": "passed"}` — the CUDA platform, not a Reference or CPU fallback.
+Archive `54d8e87d8e026638ab23b4c4feb6cb9d3df25a58e200c1f436ac64464e929cbc`, 1,272,963,609 bytes;
+release document `e29d1caf3102bd252e1c29d4e06e48f47879400ce95eef2c4660af9a79079ecc`. An independent
+`runtime-box verify --self-test` on a fresh extraction passed. Lock
+`0bf2cb447cde30e8ee2ca1b262c88fec72c890519728ed52588a0c59c2afb39f`, matching the catalog entry.
+
+**Scientific validation: 18 cases, all passed** — 13 scientific runs and 5 required refusals. The
+validator verified the signed payload it measured, so the scientific evidence and the signed archive
+are one artifact (`signedPayloadVerified: true`). Reference-platform parity passed with a maximum
+absolute difference of 0.00017122510064382368 kJ/mol against a 0.01 limit, on both the CPU baseline
+and the accelerator. Retained: `openmm-linux-x86_64-cuda12.9-development-2026-09-09.json`.
+
+| fixture | atoms | peak RAM | peak VRAM | elapsed |
+| --- | ---: | ---: | ---: | ---: |
+| `official-protein-relaxation` | 33 | 268.5 MiB | 122.0 MiB | 1.8 s |
+| `multi-residue-relaxation` | 407 | 305.0 MiB | 121.0 MiB | 2.0 s |
+| `dhfr-protein-relaxation` | 2,489 | 312.1 MiB | 123.0 MiB | 4.1 s |
+| `dhfr-drug-ligand-relaxation` | 2,530 | 856.7 MiB | 123.0 MiB | 9.8 s |
+| `dhfr-solvated-relaxation` | 29,419 | 456.1 MiB | 169.0 MiB | 14.1 s |
+| `dhfr-solvated-dynamics-10ps` | 29,419 | 462.1 MiB | 185.0 MiB | 13.7 s |
+
+Two results worth stating plainly. **The GPU is roughly nine to fourteen times faster** on the real
+production shape: solvated DHFR relaxation went from 121.5 s to 14.1 s and its 10 ps of dynamics from
+197.1 s to 13.7 s against the retained M1 CPU figures. And **VRAM is not the constraint anyone
+feared** — the heaviest case peaked at 185 MiB on an 8,188 MiB card, because OpenMM's cost here is
+dominated by the CUDA context itself rather than by the system size. That is a measured fact about
+OpenMM on this hardware, and says nothing about Boltz-2 or Protenix, which have not run.
+
+### The first CUDA run found a defect in how VRAM is measured
+
+`scripts/runtime-box/measure-python.py` is shared by every validator, and its CUDA path had never
+executed. It sums `nvidia-smi --query-compute-apps` rows matching its own PID. **Under WSL2 that
+query returns nothing at all** — empty output, exit code 0, no error — verified here against a live
+CUDA context, not inferred. So a real GPU run was indistinguishable from one that touched no GPU
+memory, and the `RuntimeError` written for incapable drivers never fired, because it only triggers on
+a malformed row for a PID that is present. The validator then failed on a misleading assertion, `No
+measured per-process CUDA memory`.
+
+The correction keeps per-process measurement exactly as it was wherever the driver reports it, so
+the existing native-host CUDA evidence for scGPT and Geneformer stays valid and comparable. Only
+when per-process yields nothing does it fall back to a **device-wide delta**: total card usage minus
+a baseline read before the workload creates its context. The method travels with the sample as
+`vramMeasurementMethod` and `vramDeviceBaselineBytes`, because a device-wide number must never be
+compared against a per-process one. The measurement also now records `gpuName` and
+`gpuDriverVersion`, which the validator writes into `evidence.accelerator` — previously `null`, so
+the project's first GPU evidence would not have named the card that produced it.
+
+A second, smaller defect surfaced on the way: `nvidia-smi` costs about 80 ms per call here, so two
+calls plus the old 200 ms wait sampled under three times a second and missed the whole GPU window of
+a short case. The wait is now 50 ms. **This is an improvement for native hosts too**, not a WSL2
+workaround — per-process sampling was equally coarse there, and only long workloads hid it.
+
+**Confirmed by the owner on 2026-09-09**, so the CUDA envelope is registered:
+`openmm-8.5.1-beta.1-linux-x86_64-cuda12.9-development-2026-09-09` is now in
+`LIATIR_PHASE3_HARDWARE_VALIDATION_PROFILES`, transcribed from the retained measurement. Its peak of
+193,986,560 bytes publishes a minimum of 242,483,200 and a recommended 290,979,840 under the
+standing ×1.25 / ×1.5 rule — roughly 231 and 278 MiB. A device-wide delta can only over-state, which
+for a minimum asks the user for more headroom than needed rather than less; the method label travels
+with the sample so the figure is never silently compared against a per-process one. Practically,
+solvated DHFR at 29,419 atoms is now inside a measured envelope on GPU, so it runs with no
+acknowledgement. `tests/unit/phase3-hardware-profiles.test.ts` pins the transcription and the three
+published figures, and both were observed failing on a single altered byte.
+
+**What this is not.** A development-key build from a dirty tree (`sourceTreeDirty: true`), so it is
+not publication evidence. A production CI build produces a different archive and must be re-measured
+and re-exercised there. The product lifecycle for CUDA in the real app has not run, and Molecular
+Dynamics still has no product lifecycle on any target.
+
+## The Linux CUDA authoring and measurement host (2026-09-08)
+
+Boltz-2, Protenix v2 and Protenix Mini target Linux x86_64 with NVIDIA. Until now no machine in this
+project could run any of them: the previous development host was an Apple M1. The maintainer's
+Windows 11 desktop, through WSL2, is the first one that can, and it is therefore both the authoring
+host for their locks and the host every hardware measurement for these three will be taken on. Its
+exact figures matter, because a measured envelope is only meaningful against the machine that
+produced it.
+
+| | |
+| --- | --- |
+| Host OS | Windows 11 Pro 26200, WSL2 |
+| Guest | Ubuntu 26.04 LTS, `x86_64`, 6 logical CPUs |
+| GPU | NVIDIA GeForce RTX 4060 Ti, **8188 MiB VRAM** |
+| NVIDIA driver | 610.62 (minimum required for CUDA 12.9 is 525.60.13) |
+| Host RAM | 32 GiB, of which **24 GiB** is the WSL2 ceiling plus 16 GiB swap |
+| Free space, Linux filesystem | 893 GiB of 1007 GiB |
+
+WSL2's memory ceiling was raised from its 50 % default through `%USERPROFILE%\.wslconfig`
+(`memory=24GB`, `swap=16GB`, `autoMemoryReclaim=gradual`) so real workloads are not limited by the
+default split. **VRAM is not configurable**: 8 GiB is physically on the card, and it is the binding
+constraint for these three models, not system RAM. Whether an 8 GiB card is enough for a realistic
+Boltz-2 or Protenix complex is an open question to be answered by measurement, not by estimate. If
+it is not, that is a fact about this host, not about the component, and it belongs in the published
+minimum/recommended VRAM figures.
+
+Everything for these components stays in the Linux filesystem under `~`. Cross-filesystem I/O over
+`/mnt/<drive>` is far too slow for a multi-gigabyte conda prefix, and it is the same boundary the
+Windows-through-WSL2 product proof will have to exercise deliberately.
+
+## Two defects the Windows host exposed, both now closed (2026-09-08, resolved 2026-09-09)
+
+`npm run test:verify` on the WSL2 host's Windows side failed for the first time: 1 file failed,
+76 passed; 9 tests failed, 582 passed — every failure inside `tests/unit/openmm-product-script.test.ts`.
+Neither failure was caused by the Boltz-2 lock, which adds one untracked file that no test in that
+suite reads. Both were pre-existing and invisible until then, because every previous `test:verify`
+in this project ran on macOS.
+
+**1. `socket.AF_UNIX` does not exist on Windows — closed on 2026-09-09, unreachable rather than
+fixed.** `deny_network()` in `frontend/src/lib/tools/molecular-simulation/python-scripts/openmm.ts`
+compares `sock.family` against `socket.AF_UNIX` in three interceptors (`blocked_connect`,
+`blocked_connect_ex`, `blocked_sendto`). Python on Windows has no such attribute, so the first
+intercepted socket call would raise `AttributeError` instead of the intended clean refusal. Its only
+reachable scope was OpenMM's two native Windows targets, and the owner's decision of 2026-09-09
+deleted them: [no native Windows Runtime Box targets](../../decisions/no-native-windows-runtime-box-targets.md).
+The script now only ever runs on macOS, Linux, or Linux inside WSL2, all of which define the
+attribute. No correction is owed, and the class of defect is gone rather than patched.
+
+**2. The test harness passes a 48 KB script on the command line — a test defect, closed by skipping
+the suite on Windows.** The suite's own `run()` helper spawns `python -c OPENMM_SCRIPT`. Windows caps
+a command line at 32,767 characters, so the spawn failed outright: `status` `null` and `stderr`
+`undefined`, which is what the other eight failures were. **The product never does this** —
+`runToolRuntimePython` hands the script to the bridge, and `src-tauri/src/bridge/python_env.rs`
+writes it to a file and executes it with `runpy.run_path`, feeding stdin from a second file.
+
+The fix is a platform skip rather than a rewrite, and for the same reason as defect 1: the installed
+OpenMM box is macOS, Linux, or Linux inside WSL2, never native Windows, so a native Windows
+interpreter is a configuration the product does not have. `describe.skipIf(process.platform ===
+'win32')` states that contract at the top of the suite, which still runs in full on both platforms
+the box targets. Evidence: `npm run test:verify` on this Windows host now passes all six suites —
+76 files passed, 1 skipped; 581 tests passed, 10 skipped, zero failed; report
+`2026-09-09T12-09-33-168Z`.
+
 ## Current evidence
 
+- **Boltz-2's dependency lock is resolved** — the first Phase 3 AI Model to get one, and the step
+  that was impossible on macOS because `fairscale==0.4.13` ships only an sdist. Resolved locally on
+  the WSL2 host above with pixi 0.73.0, running the same `pixi lock` / `pixi lock --check` pair as
+  `.github/workflows/phase3-dependency-lock.yml`; the check reported the lock already up to date.
+  `pixi.lock` is `f1e4a595010fe5c2d98e103c0b6b77ee8a80408ea80e25c661df29b2c4a1e88f` against manifest
+  `9a9ce69316b8b122288bfca10d4c397ca7bf096b5c2c64b05e088690cdacc6ec`, unchanged from the reviewed
+  candidate. Resolution only: nothing installed, no weights, no GPU execution, no workflow dispatch.
+  The inspected graph, the three findings it raised — Boltz hard-requires `wandb` and `sentry-sdk`,
+  the loose `pandas>=2.2.2` bound resolved to `pandas 3.0.5`, and `fsspec` no longer has the `http`
+  extra — and the remaining gates are in the [Boltz source review](./phase3-boltz-source-review.md).
+  Boltz-2 still has no scroll, self-test, legal record, catalog entry, runner or measurement.
 - **OpenMM is measured on real proteins with a real drug, not toys.** The macOS arm64 CPU validator
   runs a size ladder whose structures and molecules all ship inside the signed payload — OpenMM's
   published benchmark set and the OpenFF toolkit's test molecules — so the envelope grew without a
@@ -157,9 +309,9 @@ Remaining bounded actions:
   the 56/128 atom rules need the ligand parsed inside the installed box. Covered by a unit
   regression and by the affinity leg added to `structure-prediction-editor.e2e.mjs`.
 - Final serial gates, run one at a time and never overlapping:
-  - `test:verify` — six suites, 76 files, 567 tests: `tests/.artifacts/reports/2026-09-06T22-09-00-118Z/`.
+  - `test:verify` — six suites, 76 files, 567 tests: report `2026-09-06T22-09-00-118Z`.
   - `test:ui` — seven applicable suites, zero failed, two platform-only skips, 35 native scenarios:
-    `tests/.artifacts/reports/2026-09-06T22-00-35-399Z/`. The candidate-only specs skip here by
+    report `2026-09-06T22-00-35-399Z`. The candidate-only specs skip here by
     design, so each was run against its own candidate binary instead:
   - OpenMM candidate binary: release-candidate plus `runtime-box-openmm-native` — 2 passed, 0 failed.
   - Boltz-2 candidate binary (`LIATIR_STRUCTURE_EDITOR_E2E=1`): release-candidate plus
@@ -226,15 +378,15 @@ Remaining bounded actions:
   simple input and malformed advanced text, and serialize writes to avoid navigation races.
   Four storage/restore regressions pass; full model execution and rendered evidence remain required.
 - The corrected serial pair is green and closes the candidate/editor recheck below. `test:verify`
-  passed all six suites: `tests/.artifacts/reports/2026-09-06T21-24-16-023Z/`. The following serial
+  passed all six suites: report `2026-09-06T21-24-16-023Z`. The following serial
   `test:ui` passed seven applicable suites, zero failed, two platform-only skips:
-  `tests/.artifacts/reports/2026-09-06T21-25-49-220Z/` — 37 native scenarios passed, 0 failed,
+  report `2026-09-06T21-25-49-220Z` — 37 native scenarios passed, 0 failed,
   including both previously failing checks (`structure-prediction-editor.e2e.mjs` and
   `runtime-box-release-candidate.e2e.mjs`). No process from either run remained on recovery.
 - The earlier serial `test:verify` passed six suites / 75 files / 561 tests:
-  `tests/.artifacts/reports/2026-09-06T21-15-33-748Z/`.
+  report `2026-09-06T21-15-33-748Z`.
 - The serial full verification passed all six suites / 74 files / 555 tests:
-  `tests/.artifacts/reports/2026-09-06T20-47-52-355Z/`. Session `71498` was terminal on recovery,
+  report `2026-09-06T20-47-52-355Z`. Session `71498` was terminal on recovery,
   confirmed by that completed report and absence of any remaining build process.
 - Recovered native UI baseline: session `40812` completed successfully at 20:53:10 UTC.
   `tests/.artifacts/reports/2026-09-06T20-49-14-363Z/report.json` proves seven applicable suites
@@ -242,9 +394,9 @@ Remaining bounded actions:
   not cover the unmounted complex editor or prove any Phase 3 model execution.
 
 - Boltz-2 immutable source/model inputs and offline-cache requirements are recorded in the
-  [source review](./phase3-boltz-source-review.md). Its Linux CUDA candidate manifest exists;
-  resolving source-only dependencies requires a Linux authoring host. No lock, completed box,
-  downloaded weights or GPU execution is claimed.
+  [source review](./phase3-boltz-source-review.md). Its Linux CUDA candidate manifest and, since
+  2026-09-08, its resolved lock both exist. No completed box, downloaded weights or GPU execution is
+  claimed.
 - `.github/workflows/phase3-dependency-lock.yml` prepares a manual Linux CPU-only authoring path
   using Pixi 0.73.0 for Boltz-2 and both Protenix components, with source/manifest/lock receipts and
   no production environment, signer, R2 upload or GPU job. It has not been dispatched and does not
@@ -298,7 +450,9 @@ by this audit; production actions require the owner's separate confirmation.
   lifecycle (only relaxation is covered), the other four targets, CI builds on production keys from
   a clean tree, a signer redeploy, and publication.
 - [ ] Boltz-2: official source and structure/affinity checkpoints, legal review, reproducible Linux
-  CUDA box, real product runner and validator, bounded Windows/Metal feasibility review.
+  CUDA box, real product runner and validator. The dependency lock is done (2026-09-08); the scroll,
+  self-test, legal record, catalog entry, runner and measurements are not. macOS is out of scope by
+  the owner's 2026-09-07 decision, so no Metal feasibility review is owed.
 - [ ] Protenix: separate v2 and Mini Default boxes, local MSA/templates, real runners, validators and
   hardware measurements; Mini must never install ESM2-3B.
 - [ ] Structure/affinity pages: simple complex builder, advanced contract input, file validation,
@@ -329,7 +483,7 @@ indefinitely: the page captured `workspaceStore.activeId` once in `onMount`, bef
 its workspace after full navigation, and returned without scheduling a load. The load now follows the
 workspace identity reactively in a `$effect`, and the draft child snapshots reactive state before
 `structuredClone`. The single allowed retry passed both checks
-(`tests/.artifacts/reports/2026-09-06T21-25-49-220Z/`), so no further rebuild was spent. The same
+(report `2026-09-06T21-25-49-220Z`), so no further rebuild was spent. The same
 native navigation/editor scenarios remain the regression coverage.
 
 Native UI build correction: the first run (`20896`) rendered a blank window and was stopped through
@@ -345,7 +499,7 @@ and a copied entity `A` could generate the same chain identity as a separate ent
 Both adapters now reject invalid requests before translation; shared validation rejects ambiguous
 identities without expanding copy arrays. Six regressions cover Boltz-2, Protenix v2 and Mini Default,
 including non-colliding suffixes. Full verification passed six suites / 536 tests:
-`tests/.artifacts/reports/2026-09-06T20-32-27-656Z/`. This is input-contract proof, not model execution.
+report `2026-09-06T20-32-27-656Z`. This is input-contract proof, not model execution.
 
 1. Corrected ligand duplication: SDF parameterizes the existing residue. The real 33-atom protein
    plus 9-atom ligand stayed at 42 atoms; an absent ligand is rejected.
@@ -374,9 +528,9 @@ including non-colliding suffixes. Full verification passed six suites / 536 test
    passed 529 of 530 tests but the existing pVACseq multiprocessing fixture could not bind its local
    socket (`PermissionError: Operation not permitted`). The identical full gate with local IPC
    permission passed all 74 files / 530 tests and all six verification suites. Retained report:
-   `tests/.artifacts/reports/2026-09-06T12-18-33-156Z/`. No test was weakened. Validator provenance
+   report `2026-09-06T12-18-33-156Z`. No test was weakened. Validator provenance
    fields were added afterward; the subsequent full gate also passed all six suites / 530 tests:
-   `tests/.artifacts/reports/2026-09-06T20-29-50-330Z/`. Real product UI/lifecycle proof remains open.
+   report `2026-09-06T20-29-50-330Z`. Real product UI/lifecycle proof remains open.
 
 Each scientific failure permits one retry after a diagnosed correction and cheap regression checks;
 a distinct failure must be recorded before another retry. GPU CI remains manual and requires its

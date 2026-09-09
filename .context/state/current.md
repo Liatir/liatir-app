@@ -1,5 +1,125 @@
 # Current project status
 
+## OpenMM ran on a GPU, for the first time ever (2026-09-09)
+
+Every OpenMM number this project had was Apple M1 CPU. `openmm-linux-x86_64-cuda12.9` is now built,
+signed, self-tested and scientifically validated on a real NVIDIA GPU inside WSL2. Its build-time
+self-test reported `{"platform": "CUDA", "status": "passed"}`, an independent
+`runtime-box verify --self-test` passed on a fresh extraction, and the scientific validator passed
+**18 cases — 13 real runs and 5 required refusals** — against the same signed payload it measured.
+Reference parity held to 0.00017122510064382368 kJ/mol against a 0.01 limit. Archive
+`54d8e87d8e026638ab23b4c4feb6cb9d3df25a58e200c1f436ac64464e929cbc`; retained measurement
+`openmm-linux-x86_64-cuda12.9-development-2026-09-09.json`. Local execution is not CI and no
+workflow was dispatched.
+
+Two measured results that change what we can promise. **The GPU is nine to fourteen times faster on
+the production shape**: solvated DHFR at 29,419 atoms relaxed in 14.1 s against 121.5 s on the M1,
+and its 10 ps of dynamics took 13.7 s against 197.1 s. And **VRAM is not the constraint** — the
+heaviest case peaked at 185 MiB on an 8,188 MiB card, because OpenMM's GPU cost here is dominated by
+the CUDA context rather than the system size. That is a fact about OpenMM on this hardware and says
+nothing about Boltz-2 or Protenix, neither of which has ever run.
+
+That first CUDA run also exposed a real defect in the shared measurement helper: `nvidia-smi`
+reports no per-process GPU memory at all under WSL2 — silently, with exit code 0 — so a genuine GPU
+run looked identical to one that never touched the card. Per-process measurement is unchanged where
+the driver supports it, so existing scGPT and Geneformer evidence stays valid; a labelled
+device-wide fallback covers the rest. Sampling also went from 200 ms to 50 ms, which was too coarse
+on every host, not only this one. See
+[how VRAM is measured](../decisions/vram-measurement-method.md).
+
+The owner confirmed the method the same day, so **the CUDA envelope is registered**:
+`openmm-8.5.1-beta.1-linux-x86_64-cuda12.9-development-2026-09-09`, transcribed from the retained
+measurement, publishing a minimum of 242,483,200 bytes and a recommended 290,979,840 from its
+193,986,560-byte peak. Solvated DHFR at 29,419 atoms now sits inside a measured envelope on GPU and
+runs with no acknowledgement. The pinning test compares samples byte-for-byte and pins those three
+figures; both halves were observed failing on one altered byte.
+
+Gate: `npm run test:verify` passed all six suites — 76 files passed, 1 skipped; 582 tests passed,
+10 skipped, zero failed; report `2026-09-09T14-42-03-395Z`. `syngraphe check` reports no problems.
+
+**Still open before publication.** This build is development-signed from a dirty tree, so it is not
+publication evidence: a production CI build makes a different archive and must be re-measured and
+re-exercised there. The CUDA product lifecycle has not run in the real app, and Molecular Dynamics
+still has no product lifecycle on any target. GPU CI and publication each need the owner's separate
+explicit authorization, which this session did not have and did not use.
+
+## Windows is an app host, not a payload platform (2026-09-09)
+
+Owner decision: **no new Runtime Box target may be native Windows.** The desktop app is native
+Windows; the scientific payloads it runs are Linux boxes executed inside WSL2. Windows support now
+lives on the Linux target, as `hostEnvironments: ["native", "windows-wsl2"]` in both the catalog
+entry and the signed scroll, which must match exactly. MHCflurry and pVACseq already worked this
+way; it is now the rule. Every component from here on is developed for Linux x86_64 and
+Windows-through-WSL2, plus **macOS where that is possible** — worth having, never owed, and absent
+without apology when upstream dependencies do not exist there. Rationale and what was rejected:
+[No native Windows Runtime Box targets](../decisions/no-native-windows-runtime-box-targets.md).
+
+Applied: the four `planned` native Windows targets — MHCflurry `windows-x86_64-cpu` and
+`windows-x86_64-cuda12.8`, OpenMM `windows-x86_64-cpu` and `windows-x86_64-cuda12.9` — are deleted
+with their scrolls, locks, licence audits, signer-policy entries and workflow references. None was
+ever built or signed, so nothing is withdrawn. Three unbuilt Linux targets gained `windows-wsl2`:
+both OpenMM Linux targets and MHCflurry `linux-x86_64-cuda12.9`. `runtime-box:catalog:check` passes
+and two new guards in `runtime-box-ci-catalog.test.ts` pin the rule, both observed failing first.
+
+Evidence: `npm run test:verify` passed all six suites on this Windows host — 76 files passed,
+1 skipped; 581 tests passed, 10 skipped, zero failed; report `2026-09-09T12-09-33-168Z`. The signer
+policy's own 16 tests pass, and `syngraphe check` reports no problems. `test:ui` was not run: no UI,
+navigation or Job/Result code changed. Nothing was committed, dispatched, signed or published.
+
+One consequence worth recording: the `socket.AF_UNIX` defect found on 2026-09-08 in OpenMM's
+`deny_network()` is now **unreachable, not fixed**. That code only ever runs on macOS, Linux or
+Linux inside WSL2, all of which define the attribute. No correction is owed.
+
+**The three already-published native Windows targets stay**, by the owner's decision in the same
+conversation: Geneformer `windows-x86_64-cuda12.8`, scGPT `windows-x86_64-cpu` and scGPT
+`windows-x86_64-cuda12.8`. They are signed and installable; withdrawing them would take a working
+box away from those users and give nothing back until three new signed Linux releases carried
+`windows-wsl2`. The rule stops new native Windows work, it does not undo shipped work. Their
+catalog entries, scrolls, signer-policy entries and evidence are untouched, and the guard pins
+exactly this list so a fourth is rejected.
+
+## Boltz-2's lock is resolved, on the first machine that can run it (2026-09-08)
+
+Boltz-2, Protenix v2 and Protenix Mini run only on Linux x86_64 with NVIDIA. Every prior session
+worked from an Apple M1, where none of them could even be resolved, let alone executed. The
+maintainer's Windows 11 desktop, through WSL2, is the first host in this project that can, and it is
+now both the authoring host for their locks and the host their hardware measurements will come from.
+Its exact specification is recorded in the
+[Phase 3 status](./roadmap/phase3-implementation-status.md#the-linux-cuda-authoring-and-measurement-host-2026-09-08):
+Ubuntu 26.04 in WSL2, 6 CPUs, RTX 4060 Ti with **8 GiB VRAM**, driver 610.62, 32 GiB host RAM
+(WSL2 ceiling raised from the 50 % default to 24 GiB plus 16 GiB swap), 893 GiB free on the Linux
+filesystem. VRAM is physical and cannot be raised; whether 8 GiB is enough for a realistic complex
+is a question for measurement, not estimate.
+
+`runtime-boxes/scrolls/boltz-2/linux-x86_64-cuda12.9/pixi.lock` now exists —
+`f1e4a595010fe5c2d98e103c0b6b77ee8a80408ea80e25c661df29b2c4a1e88f`, against the unchanged reviewed
+manifest `9a9ce69316b8b122288bfca10d4c397ca7bf096b5c2c64b05e088690cdacc6ec`. It was produced by
+pixi 0.73.0 running the same `pixi lock` / `pixi lock --check` pair as the manual authoring workflow;
+running locally on a Linux host is not CI, and no workflow was dispatched. **This is dependency
+resolution and nothing more**: nothing installed, no model weight downloaded, no GPU execution, no
+publication. `fairscale==0.4.13`, which ships only as source and was the exact macOS blocker,
+resolved from its sdist. No upstream constraint was loosened.
+
+Three graph findings are recorded for the runner and the legal inventory rather than fixed now:
+Boltz hard-requires the `wandb` telemetry client and `sentry-sdk`, so the runner must neutralise
+both; its one loose bound, `pandas>=2.2.2`, resolved to the major-version `pandas 3.0.5`, to be
+settled by the offline self-test rather than pre-emptively pinned; and `fsspec` no longer exposes the
+`http` extra, so `aiohttp` is absent. Details in the
+[Boltz source review](./roadmap/phase3-boltz-source-review.md).
+
+Boltz-2 still has no scroll, self-test, legal record, catalog entry, signer-policy entry, product
+runner, scientific validator or measurement — and Protenix v2 and Mini have not been resolved yet.
+Protenix v2's official checkpoint was last observed returning HTTP 403. No Phase 3 component is
+published or visible in the normal product catalog.
+
+This was the first `test:verify` ever run on Windows, and it failed — nine tests, all in
+`tests/unit/openmm-product-script.test.ts`, none caused by the lock. Both underlying defects are now
+closed by the 2026-09-09 host-target decision rather than by patching: that suite exercises the
+OpenMM product script against a native Windows interpreter, a configuration the product no longer
+has, and it is skipped on `win32` with the contract stated at the top of the file. It still runs in
+full on macOS and Linux. Details:
+[Phase 3 status](./roadmap/phase3-implementation-status.md#two-defects-the-windows-host-exposed-both-now-closed-2026-09-08-resolved-2026-09-09).
+
 ## The memory moved to `.context/` and is managed with Syngraphe (2026-09-07)
 
 `.mind` is deleted. Everything it held is in `.context/`, which is now the
@@ -48,8 +168,9 @@ in this audit. Runner inventory was independently confirmed empty. The pre-exist
 No Phase 3 component is ready for publication. OpenMM still needs practical workload measurements,
 Molecular Dynamics in the real app, remaining per-platform evidence and production signing/builds.
 Its authored Windows targets are native Windows, not WSL2; its Linux catalog entries authorize only
-native hosts. Boltz-2 and both Protenix models still lack resolved locks, complete packages/runners
-and scientific/product evidence; v2 official checkpoint access was last observed denied. Their
+native hosts. Boltz-2 and both Protenix models still lack complete packages/runners
+and scientific/product evidence; v2 official checkpoint access was last observed denied.
+(Boltz-2's lock was resolved on 2026-09-08; both Protenix locks are still unresolved.) Their
 current candidate environments are Linux CUDA, not established macOS or Windows+WSL2 support.
 See the [updated audit and release checklist](./roadmap/phase3-implementation-status.md#github-audit-2026-09-07).
 Production build/publication requires fresh owner approval in this continuation, and GPU CI requires
@@ -112,8 +233,9 @@ HTTP 403; Mini metadata is readable, but no weights or byte hashes have been obt
 workflow now covers Boltz-2 and both Protenix components; it has not been dispatched, and cannot be
 until it reaches the default branch. Scientific runners, hardware limits for realistic input sizes,
 complete per-component product lifecycles and production publication remain open.
-All three model components, and OpenMM's two CUDA targets, now need a Linux x86_64 host with an
-NVIDIA GPU — Windows with WSL2 counts as one. The brief for that session is the
+All three model components, and OpenMM's `linux-x86_64-cuda12.9` target, now need a Linux x86_64
+host with an NVIDIA GPU — Windows with WSL2 counts as one, and after the 2026-09-09 decision it is
+the only way Windows reaches them. The brief for that session is the
 [Linux + NVIDIA handoff](./roadmap/phase3-linux-nvidia-handoff.md).
 
 ## Oncology Phase 2 Linux and WSL2 expansion is complete (2026-09-02)

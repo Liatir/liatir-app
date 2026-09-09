@@ -17,7 +17,8 @@
   "compatibility": {
     "minLiatirVersion": "0.2.1",
     "minRamGb": 8,
-    "minNvidiaDriverVersion": "525.60.13"
+    "minNvidiaDriverVersion": "525.60.13",
+    "hostEnvironments": ["native", "windows-wsl2"]
   },
   "pythonVersion": "3.11.16",
   "pixiVersion": "0.73.0",
