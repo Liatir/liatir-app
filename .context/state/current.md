@@ -1,5 +1,18 @@
 # Current project status
 
+## This machine is now the project's Linux self-hosted runner (2026-09-10)
+
+The owner's Windows/WSL2 machine carries both self-hosted Linux runner labels, and the owner has
+authorized its runs standing, without asking before each one. `openmm-openmm/linux-x86_64-cpu` and
+`openmm-openmm/linux-x86_64-cuda12.9` are switched to `nativeCiEnabled: true`;
+`macos-aarch64-cpu` stays off because it runs on a paid hosted macOS runner. The runner is
+ephemeral — one job, then it deregisters and deletes its work root — so there is no standing
+connection to keep alive. Rationale, the exact two-command sequence, and what was rejected are in
+[Linux GPU CI runs on the owner's machine](../decisions/linux-gpu-ci-on-the-owner-machine.md).
+
+Every remaining Phase 3 component is a Linux CUDA payload, so until today none of them could leave
+`planned` for want of a machine, not for want of sources.
+
 ## OpenMM on the GPU works in the real app, from Windows through WSL2 (2026-09-10)
 
 The first GPU product evidence in this project, and the first Windows-through-WSL2 proof for a
