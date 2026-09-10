@@ -4,10 +4,13 @@ Verification date: 2026-09-11
 
 ## Decision
 
-**Not yet approved.** The code and the model weights are cleanly MIT, and every one of the 144
-locked distributions now carries a reviewed licence. Two questions remain open, both recorded below:
-the redistribution basis of the bundled molecule dictionary, and whether a copyleft dependency
-(`frozendict`, LGPL-3.0-or-later) is acceptable inside a signed Liatir box.
+**Not yet approved**, on one remaining question: the redistribution basis of the bundled molecule
+dictionary. The code and the model weights are cleanly MIT, and every one of the 144 locked
+distributions now carries a reviewed licence.
+
+The copyleft question is answered: `frozendict==2.4.7` (LGPL-3.0-or-later) may ship, because it
+travels as an unmodified, replaceable package inside the box's own packed environment with its licence text —
+see [Copyleft dependencies in signed boxes](../../.context/decisions/copyleft-dependencies-in-signed-boxes.md).
 
 This is an engineering compliance record, not legal advice.
 
@@ -69,16 +72,18 @@ Four distributions needed a human reading rather than a machine-readable field:
 - **`python-dateutil==2.9.0.post0`** declares `Dual License`; its classifiers resolve it to
   Apache-2.0 OR BSD-3-Clause.
 
-## Open questions, both blocking approval
+## Settled: the one copyleft dependency
 
-**1. `frozendict==2.4.7` is LGPL-3.0-or-later.** It is the only copyleft dependency in the graph and
-reaches Boltz indirectly. LGPL permits redistribution inside a larger work provided the licence text
-travels with it and the user can replace the library, which an unmodified Python package inside a
-box satisfies. Whether Liatir accepts any copyleft term in a signed box is a policy decision that
-has not been taken, because until now no box had one: every published box is pure conda and
-permissive.
+`frozendict==2.4.7` is LGPL-3.0-or-later, the only copyleft dependency in the graph, reached
+indirectly rather than by Boltz's own choice. It ships. LGPL permits redistribution inside a larger
+work provided the licence text travels with it and the user can replace the library, and an
+unmodified Python package inside the box's packed environment satisfies both. The policy, and the boundary it
+draws, are in
+[Copyleft dependencies in signed boxes](../../.context/decisions/copyleft-dependencies-in-signed-boxes.md).
 
-**2. The molecule dictionary `mols.tar` has no separate stated licence.** It is 1.86 GB of small
+## Open question, blocking approval
+
+**The molecule dictionary `mols.tar` has no separate stated licence.** It is 1.86 GB of small
 molecule definitions distributed under the model repository's blanket `mit`. The underlying chemical
 component data originates upstream of Boltz, and the repository does not say where. Redistributing
 it inside a Liatir box needs that provenance established, not assumed from the repository tag.
