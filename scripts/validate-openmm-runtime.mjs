@@ -216,7 +216,7 @@ try {
     assert.ok(execution.measurement?.peakRamBytes > 0, 'No measured OS peak memory');
     if (recipe.target.accelerator === 'cuda') {
       assert.deepEqual(execution.measurement.vramMeasurementErrors, []);
-      assert.ok(execution.measurement.peakVramBytes > 0, 'No measured per-process CUDA memory');
+      assert.ok(execution.measurement.peakVramBytes > 0, 'No measured CUDA memory');
     }
     // The envelope must never claim more atoms were measured than the System actually contained.
     samples.push({ fixtureId: id, workloadId: metrics.workloadId, maxTokenCount: metrics.tokenCount,

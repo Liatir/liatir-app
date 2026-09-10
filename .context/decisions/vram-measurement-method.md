@@ -25,13 +25,28 @@ and driver that produced it is not evidence anyone can act on.
 
 Sampling waits 50 ms between rounds rather than 200 ms.
 
+## Amended 2026-09-10: WSL2 has two shapes, not one
+
+The first CI run of this validator failed where every local run had passed, on
+`vramMeasurementErrors` carrying `This GPU driver cannot report per-process memory usage.` A direct
+probe against a live OpenMM CUDA context settled it: under WSL2 `--query-compute-apps` lists
+nothing while no context exists, and lists **this very process with `[N/A]` for its memory** once
+one does. Both were observed on the same machine, days apart.
+
+So the malformed-row guard was firing on the ordinary WSL2 case. It now returns "not attributable"
+instead of raising: the run falls back to the device-wide delta exactly as when no row appears, and
+`vramMeasurementErrors` stays empty and keeps its meaning — a genuine measurement fault, worth
+failing a validation over. The query is also dropped for the rest of a run once the driver has
+declined, rather than paying about 80 ms a round for an answer that will not change.
+
+Measurements already retained are unaffected: they were taken by the device-wide path either way.
+
 ## Why
 
-`nvidia-smi --query-compute-apps` returns an empty list under WSL2 — no rows, no error, exit code 0.
-This was verified against a live CUDA context on 2026-09-09, not inferred from documentation. The
-old code summed matching PIDs, found none, and returned zero, which is indistinguishable from a run
-that never touched the GPU. Its guard for incapable drivers could not fire, because it only
-triggers on a malformed row for a PID that is present.
+`nvidia-smi --query-compute-apps` attributes no memory to the calling process under WSL2 — no
+error, exit code 0. This was verified against a live CUDA context on 2026-09-09, not inferred from
+documentation. The old code summed matching PIDs, found none, and returned zero, which is
+indistinguishable from a run that never touched the GPU.
 
 That mattered the moment Windows-through-WSL2 became the only Windows path
 ([no native Windows Runtime Box targets](./no-native-windows-runtime-box-targets.md)) and the only

@@ -46,12 +46,21 @@ def nvidia_smi(query):
 
 
 def cuda_process_memory_bytes():
+    """
+    Per-process VRAM for this process, or None where the driver refuses to attribute it.
+
+    A paravirtualised GPU answers this query two different ways. Under WSL2 it lists nothing at
+    all until a CUDA context exists, and once one does it lists this very process with `[N/A]`
+    for its memory — measured on 2026-09-10 against a live OpenMM CUDA context. Neither shape is
+    a fault to report: both mean the same thing, that the driver knows the process but not its
+    share, and the caller answers by measuring the device instead.
+    """
     total = 0
     for row in nvidia_smi("--query-compute-apps=pid,used_gpu_memory").splitlines():
         fields = [field.strip() for field in row.split(",")]
         if fields[0] == str(os.getpid()):
             if len(fields) != 2 or not fields[1].isdigit():
-                raise RuntimeError("This GPU driver cannot report per-process memory usage.")
+                return None
             total += int(fields[1]) * 1024 * 1024
     return total
 
@@ -79,6 +88,7 @@ device_peak = [0]
 device_baseline = [0]
 gpu_identity = {}
 gpu_errors = []
+per_process_unattributed = [False]
 
 
 # Each nvidia-smi call costs ~80 ms, so the pair plus the old 200 ms wait sampled under three
@@ -90,7 +100,14 @@ SAMPLE_WAIT_SECONDS = 0.05
 def sample_gpu():
     while not stopped.is_set():
         try:
-            gpu_peak[0] = max(gpu_peak[0], cuda_process_memory_bytes())
+            # Once the driver has declined to attribute memory to this process it will not start,
+            # so the query is dropped for the rest of the run rather than paid for ~80 ms a round.
+            if not per_process_unattributed[0]:
+                measured = cuda_process_memory_bytes()
+                if measured is None:
+                    per_process_unattributed[0] = True
+                else:
+                    gpu_peak[0] = max(gpu_peak[0], measured)
             device_peak[0] = max(device_peak[0], cuda_device_used_bytes())
         except Exception as error:
             gpu_errors.append(str(error))
@@ -100,7 +117,8 @@ def sample_gpu():
 
 sampler = None
 if args.accelerator == "cuda":
-    cuda_process_memory_bytes()
+    if cuda_process_memory_bytes() is None:
+        per_process_unattributed[0] = True
     # The baseline has to be read before the workload creates its CUDA context, so that a host
     # whose driver cannot enumerate compute apps can still be charged only for what this run added.
     device_baseline[0] = cuda_device_used_bytes()
@@ -114,13 +132,14 @@ def vram_measurement():
     """
     Per-process VRAM where the driver reports it, and only otherwise a device-wide delta.
 
-    `nvidia-smi --query-compute-apps` returns an empty list under WSL2 — no error, no rows — so a
-    real GPU run is indistinguishable from one that touched no GPU memory unless the two cases are
-    separated here. The fallback is a coarser number: it charges this run for everything the device
-    gained while it ran, including any other process, so it can only over-state. The method travels
-    with the sample because a device-wide delta must never be compared against a per-process one.
+    `nvidia-smi --query-compute-apps` attributes nothing to this process under WSL2 — no error,
+    either no rows or `[N/A]` — so a real GPU run is indistinguishable from one that touched no
+    GPU memory unless the two cases are separated here. The fallback is a coarser number: it
+    charges this run for everything the device gained while it ran, including any other process,
+    so it can only over-state. The method travels with the sample because a device-wide delta must
+    never be compared against a per-process one.
     """
-    if gpu_peak[0] > 0:
+    if not per_process_unattributed[0] and gpu_peak[0] > 0:
         return {"peakVramBytes": gpu_peak[0], "vramMeasurementMethod": "per-process",
                 "vramDeviceBaselineBytes": None}
     if args.accelerator == "cuda" and device_peak[0] > device_baseline[0]:
