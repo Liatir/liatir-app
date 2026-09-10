@@ -74,8 +74,23 @@ def cuda_device_used_bytes():
 
 
 def cuda_device_identity():
-    fields = [f.strip() for f in nvidia_smi("--query-gpu=name,driver_version").strip().split(",")]
-    return {"gpuName": fields[0], "gpuDriverVersion": fields[1]} if len(fields) == 2 else {}
+    """
+    The card, as the measuring process itself sees it.
+
+    The same four fields are read independently by the CI host probe, and the evidence contract
+    then requires the two readings to agree. Deriving them from one shared reading here would turn
+    that cross-check into a tautology, so this stays a separate query on purpose.
+    """
+    query = "--query-gpu=name,driver_version,memory.total,compute_cap"
+    fields = [f.strip() for f in nvidia_smi(query).strip().splitlines()[0].split(",")]
+    if len(fields) != 4:
+        return {}
+    return {
+        "gpuName": fields[0],
+        "gpuDriverVersion": fields[1],
+        "gpuMemoryBytes": int(fields[2]) * 1024 * 1024 if fields[2].isdigit() else None,
+        "gpuComputeCapability": fields[3] or None,
+    }
 
 
 parser = argparse.ArgumentParser()

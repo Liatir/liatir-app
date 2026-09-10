@@ -328,6 +328,10 @@ try {
   assert.ok(corrupted.stderr.includes('systemXml does not match its recorded hash'), corrupted.stderr);
   cases.push({ id: 'corrupted-checkpoint-system', rejected: true });
 
+  // Accelerator identity comes from the measured runs themselves, so a GPU figure always names the
+  // card, driver and capability that produced it rather than leaving the reader to guess the host.
+  const measuredField = (field) => cases.find((item) => item.measurement?.[field] != null)?.measurement[field] ?? null;
+
   const validation = { schemaVersion: 1, kind: 'liatir.openmm-scientific-validation',
     createdAt: new Date().toISOString(), status: 'passed', modelId: COMPONENT_ID, sourceRevision: SOURCE_REVISION,
     targetId, productRunnerSha256: sha256(productRunner), cases, hardwareSamples: samples,
@@ -353,13 +357,12 @@ try {
       realProteinFixtures: realFixtureSha256,
       framework: { name: 'openmm', version: '8.5.1', backend: recipe.target.accelerator,
         reportedCudaCompatibility: recipe.target.cudaVersion ?? null },
-      // Identity comes from the measured runs themselves, so a GPU figure always names the card
-      // and driver that produced it rather than leaving the reader to guess the host.
       accelerator: { kind: recipe.target.accelerator,
-        gpuModel: cases.find((item) => item.measurement?.gpuName)?.measurement.gpuName ?? null,
-        driverVersion: cases.find((item) => item.measurement?.gpuDriverVersion)?.measurement.gpuDriverVersion ?? null,
-        vramMeasurementMethod: cases.find((item) => item.measurement?.vramMeasurementMethod)
-          ?.measurement.vramMeasurementMethod ?? null,
+        gpuModel: measuredField('gpuName'),
+        gpuMemoryBytes: measuredField('gpuMemoryBytes'),
+        computeCapability: measuredField('gpuComputeCapability'),
+        driverVersion: measuredField('gpuDriverVersion'),
+        vramMeasurementMethod: measuredField('vramMeasurementMethod'),
         reportedCudaCompatibility: recipe.target.cudaVersion ?? null },
       outputShapes: { relaxedStructure: [33, 3], ligandStructure: [42, 3], trajectory: [10, 33, 3] },
       finiteValues: true, tolerances: { absolute: 0.01, relative: 0 },
