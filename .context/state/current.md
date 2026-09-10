@@ -28,6 +28,18 @@ A third, smaller one was cleared before the first dispatch: the Linux product-de
 asked for root unconditionally, which fails on a prepared self-hosted host that withholds
 passwordless sudo.
 
+**`linux-x86_64-cpu` followed on the first attempt**, run
+[34515765891](https://github.com/Liatir/liatir-stack/actions/runs/34515765891) — same machine, no
+GPU involved, 22 m 40 s, archive
+`bf92d7a1877139f757fb019e0f743f290fd654f22d224dc0c93086c11ee7d764`, parity
+0.0000632175252945899 kJ/mol, peak RAM 663,326,720 bytes. It is the target that serves a WSL2 user
+without an NVIDIA card, and it is now `native-lifecycle-validated` too. That both CI legs of the
+Windows-through-WSL2 story are green is what makes the earlier local evidence reproducible rather
+than anecdotal.
+
+`macos-aarch64-cpu` is the only OpenMM target still `planned`; it needs a hosted macOS runner,
+which is paid and separately decided.
+
 The published hardware envelope still comes from the retained 2026-09-09 local measurement and is
 unchanged; publication remains a separate, unauthorized step.
 
@@ -139,7 +151,7 @@ test. Nothing else has been executed here.
 
 | Component | Reality |
 | --- | --- |
-| `openmm-openmm` | Linux CUDA is `native-lifecycle-validated` in CI on this machine's GPU; macOS CPU built, measured and product-proven locally but still `planned`; Linux CPU never built |
+| `openmm-openmm` | both Linux targets are `native-lifecycle-validated` in CI on this machine; macOS CPU built, measured and product-proven locally but still `planned` |
 | `jwohlwend-boltz-2` | dependency lock only; no scroll, no box, never executed |
 | `bytedance-protenix-v2` | nothing, and the official checkpoint still returns HTTP 403 |
 | `bytedance-protenix-mini-default-v0-5-0` | nothing |

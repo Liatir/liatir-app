@@ -826,7 +826,7 @@
           "hostEnvironments": ["native", "windows-wsl2"],
           "recipeId": "openmm-linux-x86_64-cpu",
           "runnerProfileId": "linux-x64-selfhosted",
-          "status": "planned",
+          "status": "native-lifecycle-validated",
           "validationModes": ["build", "scientific", "native-lifecycle"],
           "timeoutMinutes": 180,
           "requiredBuildDiskBytes": 8589934592,
