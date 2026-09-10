@@ -1,57 +1,15 @@
 <script setup lang="ts">
 import { withBase } from 'vitepress'
 import MailingListForm from './MailingListForm.vue'
-
-const pillars = [
-  {
-    icon: 'shield',
-    title: 'Private by design',
-    text: 'Stay on your machine. You can work without API calls, servers, cloud, nor telemetry — Liatir runs the same on an air-gapped workstation with no access to the web as on a connected laptop.',
-  },
-  {
-    icon: 'bolt',
-    title: 'Native performance',
-    text: 'Every file read, process spawn, and parse runs in Rust through Tauri. Open a 40 GB BAM, stream gzipped FASTQ, or scan a dense VCF without freezing the UI or exhausting memory.',
-  },
-  {
-    icon: 'puzzle',
-    title: 'Endlessly extensible',
-    text: 'Package anything as a .lia plugin — Node or WASM — and it becomes a first-class analysis step. If you can build it in Node or WASM, you can plug it into Liatir.',
-  },
-]
-
-const capabilities = [
-  {
-    icon: 'terminal',
-    title: 'Powerful tools',
-    text: 'AI Models, FastQC, fastp, seqkit, samtools, bcftools, BWA-MEM, minimap2, SnpEff and more, ready to run — no setup, no containers.',
-  },
-  {
-    icon: 'flow',
-    title: 'Visual pipelines',
-    text: 'Connect tools, AI Models, custom plugins and more with a modern visual pipeline builder. No-code required, unless you want it.',
-  },
-  {
-    icon: 'spark',
-    title: 'Local AI models & tools',
-    text: 'Install runtimes only when needed, then run single-cell annotation, sequence embeddings, structure prediction and variant scoring on your own hardware.',
-  },
-  {
-    icon: 'layers',
-    title: 'Unified data layer',
-    text: 'Import a file once and use it everywhere. Liatir tracks every file by path, shows type-aware previews, and notices when one moves or disappears.',
-  },
-  {
-    icon: 'plug',
-    title: 'API connectors',
-    text: 'If needed, you can wire external services into your workflows and drop them into pipelines as ordinary nodes — configured visually, not hand-coded.',
-  },
-  {
-    icon: 'eye',
-    title: 'Built-in viewers',
-    text: 'Inspect genome tracks, protein and molecular structures, and single-cell data inline, right next to the step that produced them.',
-  },
-]
+import HomeIcon from './HomeIcon.vue'
+import {
+  capabilities,
+  heroHeadline,
+  heroTagline,
+  heroTrust,
+  pillars,
+  sectionHead,
+} from './home-content'
 </script>
 
 <template>
@@ -84,11 +42,16 @@ const capabilities = [
 
         <h1 class="name">Liatir</h1>
 
-        <p class="headline">Bioinformatics on your machine.<br>Under your control.</p>
+        <p class="headline">
+          <template v-for="(line, index) in heroHeadline" :key="line">
+            <br v-if="index" />{{ line }}
+          </template>
+        </p>
 
         <p class="tagline">
-          A desktop app that runs bioinformatics tools, AI, and pipelines locally.<br>Your data never leaves your machine 
-          — Rust-powered native speed, even on multi-gigabyte files.
+          <template v-for="(line, index) in heroTagline" :key="line">
+            <br v-if="index" />{{ line }}
+          </template>
         </p>
 
         <div class="actions">
@@ -97,20 +60,14 @@ const capabilities = [
         </div>
 
         <div class="trust-metrics">
-          <div class="metric">
-            <span class="metric-val"></span>
-            <span class="metric-label">No cloud or server</span>
-          </div>
-          <div class="metric-divider hide-on-small-screens"></div>
-          <div class="metric hide-on-small-screens">
-            <span class="metric-val"></span>
-            <span class="metric-label">Endlessly Extensible</span>
-          </div>
-          <div class="metric-divider"></div>
-          <div class="metric">
-            <span class="metric-val"></span>
-            <span class="metric-label">100% Free Forever</span>
-          </div>
+          <template v-for="(claim, index) in heroTrust" :key="claim">
+            <!-- The middle claim is the one that goes when the row is too narrow for three. -->
+            <div class="metric-divider" v-if="index" :class="{ 'hide-on-small-screens': index === 1 }"></div>
+            <div class="metric" :class="{ 'hide-on-small-screens': index === 1 }">
+              <span class="metric-val"></span>
+              <span class="metric-label">{{ claim }}</span>
+            </div>
+          </template>
         </div>
       </div>
 
@@ -129,21 +86,7 @@ const capabilities = [
     <section class="container band">
       <div class="pillars">
         <article v-for="p in pillars" :key="p.title" class="card pillar">
-          <span class="icon-chip">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"
-                 stroke-linecap="round" stroke-linejoin="round">
-              <template v-if="p.icon === 'shield'">
-                <path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z" />
-                <path d="M9 12l2 2 4-4" />
-              </template>
-              <template v-else-if="p.icon === 'bolt'">
-                <path d="M13 2L4 14h6l-1 8 9-12h-6z" />
-              </template>
-              <template v-else-if="p.icon === 'puzzle'">
-                <path d="M9 4a2 2 0 114 0v1h3a1 1 0 011 1v3h1a2 2 0 110 4h-1v3a1 1 0 01-1 1h-3v-1a2 2 0 10-4 0v1H5a1 1 0 01-1-1v-3H3a2 2 0 110-4h1V6a1 1 0 011-1h4z" />
-              </template>
-            </svg>
-          </span>
+          <span class="icon-chip"><HomeIcon :name="p.icon" /></span>
           <h3>{{ p.title }}</h3>
           <p>{{ p.text }}</p>
         </article>
@@ -153,43 +96,13 @@ const capabilities = [
     <!-- ── Capabilities ─────────────────────────────────────── -->
     <section class="container band">
       <div class="section-head">
-        <h2>Everything in one place</h2>
-        <p>From raw reads to annotated results — without leaving your desktop.</p>
+        <h2>{{ sectionHead.title }}</h2>
+        <p>{{ sectionHead.text }}</p>
       </div>
 
       <div class="grid">
         <article v-for="c in capabilities" :key="c.title" class="card cap">
-          <span class="icon-chip sm">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"
-                 stroke-linecap="round" stroke-linejoin="round">
-              <template v-if="c.icon === 'terminal'">
-                <rect x="3" y="4" width="18" height="16" rx="2" />
-                <path d="M7 9l3 3-3 3M13 15h4" />
-              </template>
-              <template v-else-if="c.icon === 'flow'">
-                <circle cx="6" cy="6" r="2.5" />
-                <circle cx="18" cy="6" r="2.5" />
-                <circle cx="12" cy="18" r="2.5" />
-                <path d="M8 7.5l3 8M16 7.5l-3 8" />
-              </template>
-              <template v-else-if="c.icon === 'spark'">
-                <path d="M12 3l1.8 4.7L18.5 9l-4.7 1.8L12 15l-1.8-4.2L5.5 9l4.7-1.3z" />
-                <path d="M18 15l.8 2.2L21 18l-2.2.8L18 21l-.8-2.2L15 18l2.2-.8z" />
-              </template>
-              <template v-else-if="c.icon === 'layers'">
-                <path d="M12 3l9 5-9 5-9-5z" />
-                <path d="M3 13l9 5 9-5" />
-              </template>
-              <template v-else-if="c.icon === 'plug'">
-                <path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 01-12 0z" />
-                <path d="M12 17v4" />
-              </template>
-              <template v-else-if="c.icon === 'eye'">
-                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" />
-                <circle cx="12" cy="12" r="2.5" />
-              </template>
-            </svg>
-          </span>
+          <span class="icon-chip sm"><HomeIcon :name="c.icon" /></span>
           <div>
             <h3>{{ c.title }}</h3>
             <p>{{ c.text }}</p>

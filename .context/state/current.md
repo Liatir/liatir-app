@@ -1,5 +1,28 @@
 # Current project status
 
+## The home page leads with what is actually distinctive (2026-09-11)
+
+The public home page sold native speed, privacy and extensibility. Two of those are true and one —
+extensibility — is potential rather than a differentiator today, because a plugin system is worth
+its ecosystem and the templates are still toy examples. The three pillars are now **private by
+design**, **models that simply install**, and **everything speaks one language**, and the capability
+grid names the Nextflow handoff and the MCP boundary explicitly.
+
+The second pillar is the one the product was underselling. Model weights are public and free;
+installing them is the day of work, and delivering them as signed, verifiable, revocable packages
+that install in one click and run offline is the rare part. The third is the answer to "isn't this
+just aggregation": a bundle of installers is aggregation, one contract that native tools, AI models,
+plugins, API calls and Nextflow all obey is what makes any step feed any other — and what lets an
+assistant drive the whole thing.
+
+**A claim was removed rather than rewritten**: the AI card promised structure prediction and variant
+scoring, which are not built. Boltz-2 and Protenix are open Phase 3 work, so the page now says what
+runs today and that a family is added only once it is validated end to end.
+
+The copy lived in both `HomePage.vue` and `HomePage.released.vue`, which is how a released page ships
+last year's promises. It is now one `home-content.ts` that both read, with the icon set in one
+`HomeIcon.vue`: 52 lines added, 220 removed. Both components were compiled, not only the active one.
+
 ## Connecting a client to Local MCP is now one copy (2026-09-11)
 
 Settings showed a URL and a bearer token and stopped there. The **Connect a client** panel now
