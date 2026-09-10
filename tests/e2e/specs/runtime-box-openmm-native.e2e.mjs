@@ -39,6 +39,21 @@ const VERSION = process.env.LIATIR_RUNTIME_BOX_EXPECTED_VERSION ?? '8.5.1-beta.1
 const REGISTRY_BASE_URL = process.env.LIATIR_RUNTIME_BOX_REGISTRY_BASE_URL
   ?? 'https://models.liatir.com/v1';
 const PRODUCT_EVIDENCE_PATH = process.env.LIATIR_RUNTIME_BOX_PRODUCT_EVIDENCE ?? null;
+// One signed Linux payload serves native Linux and Windows through WSL2, and those are two separate
+// proofs: the WSL2 boundary is application behaviour a native Linux run never exercises. Same idiom
+// as the two oncology specs, which already cross it.
+const EXPECTED_HOST_ENVIRONMENT = process.platform === 'win32' && TARGET_ID.startsWith('linux-')
+  ? 'windows-wsl2'
+  : 'native';
+// The product reads the accelerator off the installed target rather than a menu, and refuses a
+// result whose accelerator disagrees with it, so the target is the honest source for both of these.
+const EXPECTED_ACCELERATOR = TARGET_ID.includes('-cuda') ? 'CUDA' : 'CPU';
+// Named per target, because a measured envelope belongs to the machine that produced it. A target
+// with no retained measurement has no entry and fails here rather than borrowing another's numbers.
+const EXPECTED_HARDWARE_PROFILE = {
+  'macos-aarch64-cpu': 'openmm-8.5.1-beta.1-macos-aarch64-cpu-development-2026-09-09',
+  'linux-x86_64-cuda12.9': 'openmm-8.5.1-beta.1-linux-x86_64-cuda12.9-development-2026-09-09',
+}[TARGET_ID];
 const OFFICIAL_FIXTURE = 'source/openmmforcefields/openmmforcefields/data/test-ala-3.pdb';
 const RUN_TIMEOUT_MS = 15 * 60 * 1000;
 
@@ -69,7 +84,7 @@ export const tests = [{
       channel: 'beta', registryBaseUrl: REGISTRY_BASE_URL, targetCandidates, downloadId,
     });
     await waitForRuntimeBoxInstall(browser, downloadId, {
-      hostEnvironment: 'native',
+      hostEnvironment: EXPECTED_HOST_ENVIRONMENT,
       timeoutMsg: 'OpenMM Runtime Box install did not complete',
     });
     const installError = await runtimeBoxInstallError(browser, downloadId);
@@ -80,7 +95,7 @@ export const tests = [{
     expect(installError).toBe(null);
     const installed = await runtimeBoxInstallResult(browser, downloadId);
     expect(installed.version).toBe(VERSION);
-    expect(installed.activation.hostEnvironment).toBe('native');
+    expect(installed.activation.hostEnvironment).toBe(EXPECTED_HOST_ENVIRONMENT);
 
     // A cancelled runtime process must reach a killed Job rather than a silently abandoned run.
     const cancelled = await browser.execute(async (input) => {
@@ -218,7 +233,7 @@ print(json.dumps({
       'Ligand force field': 'No ligand SDF',
       Seed: 17,
       'Network access': 'Disabled',
-      'Hardware evidence': 'openmm-8.5.1-beta.1-macos-aarch64-cpu-development-2026-09-09',
+      'Hardware evidence': EXPECTED_HARDWARE_PROFILE,
       'Within measured evidence': 'Yes',
       'Runtime Box': `${VERSION} · ${TARGET_ID}`,
       'Runtime Box archive SHA-256': installed.activation.release.archive.sha256,
@@ -255,9 +270,9 @@ print(json.dumps({
         schemaVersion: 1,
         kind: 'liatir.runtime-box.product-lifecycle-evidence',
         status: 'passed', boxId: BOX_ID, modelId: MODEL_ID, runtimeId: RUNTIME_ID,
-        targetId: TARGET_ID, hostEnvironment: 'native',
+        targetId: TARGET_ID, hostEnvironment: EXPECTED_HOST_ENVIRONMENT,
         version: VERSION, jobId: productJob.id, analysisRunId: result.id,
-        accelerator: 'CPU', resultArtifactCount: result.outputFiles.length,
+        accelerator: EXPECTED_ACCELERATOR, resultArtifactCount: result.outputFiles.length,
         // The exact bytes this lifecycle exercised. Without them the record cannot be tied back to
         // one build, and a later run of a different archive would look indistinguishable.
         release: {

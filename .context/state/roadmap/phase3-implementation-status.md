@@ -153,6 +153,76 @@ not publication evidence. A production CI build produces a different archive and
 and re-exercised there. The product lifecycle for CUDA in the real app has not run, and Molecular
 Dynamics still has no product lifecycle on any target.
 
+## OpenMM CUDA passes its product lifecycle in the real app, through WSL2 (2026-09-10)
+
+The first GPU product evidence in this project, and the first Windows-through-WSL2 proof for a
+Phase 3 component. `npm run runtime-box:product-lifecycle` ran
+`runtime-box-release-candidate.e2e.mjs` and `runtime-box-openmm-native.e2e.mjs` against a
+release-candidate binary and a loopback candidate registry: **2 passed, 0 failed**.
+
+| | |
+| --- | --- |
+| Host environment | `windows-wsl2` — the Windows app, the payload executing in Linux |
+| Target / accelerator | `linux-x86_64-cuda12.9` / **CUDA** |
+| Energy | −1.6910709302007945 → −119.11212442123042 kJ/mol, a reduction of 117.42105349102962 |
+| Hardware evidence | `openmm-8.5.1-beta.1-linux-x86_64-cuda12.9-development-2026-09-09` |
+| Archive / installed | `5f0a7a5cdde058cba877c1b1de017dd002ac93b4f6a85964204a79884ca62970`, 1,272,963,604 → 3,753,506,056 bytes |
+| Retained | `openmm-linux-x86_64-cuda12.9-product-lifecycle-development-2026-09-10.json` |
+
+It proves install, killed-Job cancellation, both reachable hardware states on the same input, a real
+CUDA relaxation of the box's own `test-ala-3.pdb`, the Job, the finalized Result with four
+artifacts, provenance, navigation back, removal, and result artifacts surviving removal.
+
+The archive differs from the one the scientific validator measured on 2026-09-09
+(`54d8e87d…`): this build points its release document at the loopback registry so the app can
+actually download it. Same scroll, lock and version; different bytes. Scientific and product
+evidence therefore sit on two development archives, as they briefly did on macOS, and a production
+CI build must be measured and exercised again regardless.
+
+### Five gates stood between a working GPU and a working product, and every one was real
+
+Nothing here was a test-harness artifact. Each was a genuine refusal that a Windows user with an
+NVIDIA card would have hit, invisible until a machine existed that could reach this path at all.
+
+1. **`select_target_candidate` routed only CPU payloads through WSL2.** The comment said CUDA stayed
+   native-only "until it has separate product proof" — a gate whose unlock condition could not be
+   met, because producing the proof required passing the gate. Lifted together with the proof.
+2. **The GPU probe asked Windows, not the distribution.** Windows reporting a driver says nothing
+   about whether the GPU is reachable from WSL2, and a machine can have one without the other. The
+   app now probes inside WSL2, and when Windows sees a GPU that WSL2 cannot, it says exactly that
+   and names `wsl --update` instead of blaming a current driver. Without this the app would have
+   downloaded gigabytes before failing.
+3. **The probe itself was wrong in a way that reads as correct.** `wsl.exe --exec` runs a program
+   with no shell, so it never searches `/usr/lib/wsl/lib`, where WSL2 keeps `nvidia-smi`. The
+   failure — "No such file or directory" — is indistinguishable from an absent GPU on a machine
+   whose GPU works perfectly. Verified against a live CUDA context rather than inferred; the probe
+   now goes through `/bin/sh -c`, the idiom the WSL helper already uses.
+4. **The WSL2 consumer hardcoded `linux-x86_64-cpu`.** `tools/native-tools-box-consumer` pinned the
+   accepted target to a constant, so no GPU box could ever install through WSL2 whatever the catalog
+   published. The target now comes from the app, which has already selected and signature-checked
+   it, and the consumer still compares it against the signed release — the caller says which release
+   it approved, it is not believed about what the release contains. The Native Tools check keeps the
+   constant, because that box genuinely is CPU-only.
+5. **A validator rejected the target's own name.** Introduced in this session: `identifier()` allows
+   no underscore, and every target id carries one in `x86_64`. Target ids now have their own shape
+   check rather than a loosened shared one.
+
+A sixth failure was a test, not a product defect, and it is worth recording because it will bite
+again: `native-tools-scrollcase.test.ts` anchors on multi-line source snippets with `\n`, while
+`.gitattributes` gives `.rs` and `.ts` no `eol=lf` rule, so a Windows checkout (`core.autocrlf=true`)
+holds CRLF and the substring silently stops matching. The assertion then fails for the platform
+rather than for the thing it guards. Those source reads now normalise line endings, which keeps the
+exact argument-order guard intact and makes it work on any checkout.
+
+The consumer's `runtime-install` argument list changed, so `src-tauri/resources/native-tools/native-tools-box-consumer`
+had to be rebuilt for Linux musl inside WSL2. It is a build artifact and is not committed; the app
+verifies it against a hash `src-tauri/build.rs` computes at compile time, so nothing is pinned by
+hand. Rebuilding it needs `rustup target add x86_64-unknown-linux-musl` in the distribution.
+
+Signing used the machine's local development key through `LIATIR_RUNTIME_BOX_TRUSTED_KEY_FILE`,
+which only debug builds honour. The trust roots in `runtime-boxes/trust/` were not touched, and a
+distributed build has no such escape hatch.
+
 ## The Linux CUDA authoring and measurement host (2026-09-08)
 
 Boltz-2, Protenix v2 and Protenix Mini target Linux x86_64 with NVIDIA. Until now no machine in this

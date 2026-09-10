@@ -25,16 +25,14 @@ which holds the evidence, and the
 
 ## Verified starting state
 
-Checked on 2026-09-09, not inferred:
+Checked on 2026-09-09 and updated 2026-09-10, not inferred:
 
-Updated 2026-09-09 after the first session on this machine.
-
-| component | scroll | lock | catalog | box | measurement |
-| --- | --- | --- | --- | --- | --- |
-| `openmm-openmm` | all 3 targets | all 3 targets | 3 targets, `planned` | macOS CPU **and Linux CUDA**, development key | macOS CPU **and Linux CUDA** |
-| `jwohlwend-boltz-2` | `pixi.toml` only | **resolved** | absent | none | none |
-| `bytedance-protenix-v2` | `pixi.toml` only | none | absent | none | none |
-| `bytedance-protenix-mini-default-v0-5-0` | `pixi.toml` only | none | absent | none | none |
+| component | scroll | lock | catalog | box | measurement | product lifecycle |
+| --- | --- | --- | --- | --- | --- | --- |
+| `openmm-openmm` | all 3 targets | all 3 targets | 3 targets, `planned` | macOS CPU **and Linux CUDA**, development key | macOS CPU **and Linux CUDA** | macOS CPU native **and Linux CUDA through WSL2** |
+| `jwohlwend-boltz-2` | `pixi.toml` only | **resolved** | absent | none | none | none |
+| `bytedance-protenix-v2` | `pixi.toml` only | none | absent | none | none | none |
+| `bytedance-protenix-mini-default-v0-5-0` | `pixi.toml` only | none | absent | none | none | none |
 
 OpenMM went from five targets to three: its two native Windows targets were deleted on 2026-09-09,
 and both Linux targets now declare `["native", "windows-wsl2"]`. No new component gets a native
@@ -78,6 +76,14 @@ OpenMM is the complete worked example to imitate: `runtime-boxes/scrolls/openmm/
 3. ~~**Resolve the Boltz-2 lock**~~ — done 2026-09-09 with pixi 0.73.0 in WSL2, graph inspected.
    `pixi.lock` is `f1e4a595010fe5c2d98e103c0b6b77ee8a80408ea80e25c661df29b2c4a1e88f`; findings are
    in the [Boltz source review](./phase3-boltz-source-review.md).
+   Running a **product lifecycle** for a GPU box on this machine additionally needs: the box built
+   with `--asset-base-url http://127.0.0.1:8790/objects` so the app can download it from the
+   loopback registry; `LIATIR_RUNTIME_BOX_TRUSTED_KEY_FILE` pointing at
+   `.runtime-box-local/signing-public.json`, which only a debug build honours; and, whenever
+   `tools/native-tools-box-consumer` changes, a rebuild inside WSL2 after
+   `rustup target add x86_64-unknown-linux-musl`. Done for OpenMM on 2026-09-10 — the five gates it
+   had to clear first are in the
+   [Phase 3 status](./phase3-implementation-status.md#openmm-cuda-passes-its-product-lifecycle-in-the-real-app-through-wsl2-2026-09-10).
 4. **Write the Boltz-2 scroll**: assets with pinned SHA-256 (use the revision and hashes already
    in the source review), an offline self-test, a legal record with the source revision, a
    licence inventory.

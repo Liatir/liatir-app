@@ -71,6 +71,22 @@ fn identifier<'a>(value: &'a str, label: &str) -> Result<&'a str, String> {
         .ok_or_else(|| format!("The Runtime Box {label} is invalid."))
 }
 
+/// Target ids carry an underscore that box, component and runtime ids never do — `x86_64` — so
+/// they need their own rule rather than a looser [`identifier`] shared with all of them. This is a
+/// shape check only: the value's authority comes from being compared against the signed release.
+fn target_identifier<'a>(value: &'a str, label: &str) -> Result<&'a str, String> {
+    let valid = !value.is_empty()
+        && value.len() <= 96
+        && value.chars().all(|character| {
+            character.is_ascii_lowercase()
+                || character.is_ascii_digit()
+                || matches!(character, '-' | '.' | '_')
+        });
+    valid
+        .then_some(value)
+        .ok_or_else(|| format!("The Runtime Box {label} is invalid."))
+}
+
 fn component_root(kind: &str) -> Result<PathBuf, String> {
     if !matches!(kind, "ai-runtimes" | "tool-runtimes") {
         return Err("The Runtime Component kind is invalid.".into());
@@ -308,15 +324,27 @@ fn run_self_test(python: &Path, imports: &[String], timeout_seconds: u64) -> Res
     }
 }
 
+/// Installs a Runtime Component's box inside the distribution.
+///
+/// The target comes from the app rather than a constant here. Windows reaches every payload
+/// through WSL2, GPU boxes included, so pinning this to `linux-x86_64-cpu` would have made a CUDA
+/// box uninstallable on Windows no matter what the catalog published. The app has already selected
+/// and signature-checked that target, and every field below is still compared against the signed
+/// release, so nothing is taken on trust — the caller only says *which* release it approved.
 fn install_runtime(arguments: &[String]) -> Result<RuntimeState, String> {
-    let [kind, expected_box, expected_component, expected_runtime, release_path, trusted_key, archive_path, archive_digest, expected_release_digest, activation_path] =
+    let [kind, expected_box, expected_component, expected_runtime, expected_target, release_path, trusted_key, archive_path, archive_digest, expected_release_digest, activation_path] =
         arguments
     else {
-        return Err("Usage: native-tools-box-consumer runtime-install <kind> <box-id> <component-id> <runtime-id> <release> <trusted-key> <archive> <archive-sha256> <release-payload-sha256> <activation>".into());
+        return Err("Usage: native-tools-box-consumer runtime-install <kind> <box-id> <component-id> <runtime-id> <target-id> <release> <trusted-key> <archive> <archive-sha256> <release-payload-sha256> <activation>".into());
     };
     identifier(expected_box, "box id")?;
     identifier(expected_component, "component id")?;
     identifier(expected_runtime, "runtime id")?;
+    target_identifier(expected_target, "target id")?;
+    // A Linux payload is the only thing WSL2 can run, whatever accelerator it carries.
+    if !expected_target.starts_with("linux-") {
+        return Err("A WSL2 Runtime Box target must be a Linux target.".into());
+    }
     digest(archive_digest)?;
     digest(expected_release_digest)?;
     let release_path = Path::new(release_path);
@@ -330,7 +358,7 @@ fn install_runtime(arguments: &[String]) -> Result<RuntimeState, String> {
     if release.box_id != *expected_box
         || release.model_id != *expected_component
         || release.runtime_id != *expected_runtime
-        || target != RUNTIME_BOX_TARGET
+        || target != *expected_target
         || inspected.signed.payload_sha256 != *expected_release_digest
         || release.archive.sha256 != *archive_digest
         || !release
@@ -370,7 +398,7 @@ fn install_runtime(arguments: &[String]) -> Result<RuntimeState, String> {
         .map_err(|error| error.to_string())?;
         if prepared.box_id() != expected_box
             || prepared.runtime_id() != expected_runtime
-            || prepared.target_id() != RUNTIME_BOX_TARGET
+            || prepared.target_id() != expected_target
             || prepared.release_payload_sha256() != expected_release_digest
         {
             return Err(

@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "kind": "liatir.runtime-box.product-lifecycle-evidence",
+  "status": "passed",
+  "boxId": "openmm",
+  "modelId": "openmm-openmm",
+  "runtimeId": "molecular-simulation-openmm-8-5-1",
+  "targetId": "linux-x86_64-cuda12.9",
+  "hostEnvironment": "windows-wsl2",
+  "version": "8.5.1-beta.1",
+  "jobId": "job_2",
+  "analysisRunId": "db993e06-cca3-474b-9df4-1afe566f2f59",
+  "accelerator": "CUDA",
+  "resultArtifactCount": 4,
+  "release": {
+    "archiveSha256": "5f0a7a5cdde058cba877c1b1de017dd002ac93b4f6a85964204a79884ca62970",
+    "archiveSizeBytes": 1272963604,
+    "installedSizeBytes": 3753506056,
+    "signingKeyIds": [
+      "liatir-runtime-box-86498bfa36685c24"
+    ]
+  },
+  "measured": {
+    "hardwareProfileId": "openmm-8.5.1-beta.1-linux-x86_64-cuda12.9-development-2026-09-09",
+    "preparedAtomCount": 33,
+    "initialPotentialEnergyKilojoulePerMole": -1.6910709302007945,
+    "finalPotentialEnergyKilojoulePerMole": -119.11212442123042,
+    "energyReductionKilojoulePerMole": 117.42105349102962
+  },
+  "assertions": {
+    "install": "passed",
+    "cancellation": "passed",
+    "unmeasuredRunConfirmable": "passed",
+    "officialFixture": "passed",
+    "realRelaxation": "passed",
+    "energyReduced": "passed",
+    "jobs": "passed",
+    "navigationResume": "passed",
+    "results": "passed",
+    "provenance": "passed",
+    "offline": "passed",
+    "interpretationNotice": "passed",
+    "removal": "passed",
+    "resultArtifactsSurvivedRemoval": "passed"
+  }
+}

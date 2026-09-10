@@ -237,6 +237,11 @@ struct RuntimeBoxHostCapabilities {
     arch: String,
     total_memory_bytes: Option<u64>,
     nvidia_driver_version: Option<String>,
+    /// The driver as seen *inside* WSL2, which is the environment a Linux payload actually runs in.
+    /// Windows reporting a driver says nothing about whether the GPU is reachable from the
+    /// distribution: pass-through needs a current WSL kernel and its driver libraries, and without
+    /// them a CUDA box would install several gigabytes and only then fail.
+    wsl_nvidia_driver_version: Option<String>,
 }
 
 /// Signed kill-list, letting a released box be withdrawn after the fact (e.g. because a
@@ -922,9 +927,39 @@ async fn fetch_control_document(url: &str) -> Result<Option<Vec<u8>>, String> {
     Ok(Some(bytes.to_vec()))
 }
 
+/// Reads the NVIDIA driver as the WSL2 distribution sees it, or `None` when the GPU is not
+/// reachable from there. Only ever called on Windows, and only when Windows itself reports a
+/// driver, so a machine with no NVIDIA hardware never pays for a WSL2 round trip.
+#[cfg(target_os = "windows")]
+fn wsl_nvidia_driver_version() -> Option<String> {
+    // Through a shell, not as a bare program: WSL2 keeps `nvidia-smi` in `/usr/lib/wsl/lib`, which
+    // `wsl.exe --exec` does not search, so naming it directly fails with "No such file or
+    // directory" on a machine whose GPU works perfectly. That reads exactly like an absent GPU.
+    let output = crate::helpers::wsl::run_wsl(
+        None,
+        &[
+            "/bin/sh".to_string(),
+            "-c".to_string(),
+            "nvidia-smi --query-gpu=driver_version --format=csv,noheader,nounits".to_string(),
+        ],
+    )
+    .ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    crate::bridge::ai_hardware::parse_nvidia_driver_output(&String::from_utf8_lossy(&output.stdout))
+        .map(|capability| capability.driver_version)
+}
+
+#[cfg(not(target_os = "windows"))]
+fn wsl_nvidia_driver_version() -> Option<String> {
+    None
+}
+
 /// Describes the native machine facts used for per-install target selection.
 fn current_host_capabilities() -> RuntimeBoxHostCapabilities {
     let nvidia = nvidia_capability();
+    let host_driver = nvidia.map(|capability| capability.driver_version);
     RuntimeBoxHostCapabilities {
         platform: match std::env::consts::OS {
             "macos" => "macos".to_string(),
@@ -935,7 +970,10 @@ fn current_host_capabilities() -> RuntimeBoxHostCapabilities {
             value => value.to_string(),
         },
         total_memory_bytes: total_memory_bytes(),
-        nvidia_driver_version: nvidia.map(|capability| capability.driver_version),
+        wsl_nvidia_driver_version: host_driver
+            .as_ref()
+            .and_then(|_| wsl_nvidia_driver_version()),
+        nvidia_driver_version: host_driver,
     }
 }
 
@@ -957,7 +995,11 @@ struct SelectedTargetCandidate<'a> {
 /// Selects the first published target compatible with this exact host.
 ///
 /// Native targets are preferred. Windows x86_64 may then consume an explicitly validated Linux
-/// x86_64 CPU payload through WSL2; CUDA remains native-only until it has separate product proof.
+/// x86_64 payload through WSL2, CUDA included — Windows is an app host rather than a payload
+/// platform, so WSL2 is the only route a GPU box has to a Windows user. A CUDA box routed that way
+/// is checked against the driver *inside* the distribution, never the one Windows reports: those
+/// disagree exactly when GPU pass-through is missing, which is the case worth catching before
+/// several gigabytes are downloaded.
 fn select_target_candidate<'a>(
     candidates: &'a [RuntimeBoxTargetCandidate],
     host: &RuntimeBoxHostCapabilities,
@@ -1026,7 +1068,7 @@ fn select_target_candidate<'a>(
                 && host.arch == "x86_64"
                 && candidate.target.platform == "linux"
                 && candidate.target.arch == "x86_64"
-                && candidate.target.accelerator == "cpu"
+                && matches!(candidate.target.accelerator.as_str(), "cpu" | "cuda")
                 && candidate
                     .host_environments
                     .iter()
@@ -1062,9 +1104,16 @@ fn select_target_candidate<'a>(
 
     let mut required_memory_gb = None;
     let mut required_driver = None;
+    // Records that a CUDA box was rejected only because the GPU is not reachable from WSL2, so the
+    // message can say that rather than blaming a driver Windows reports as perfectly current.
+    let mut wsl_gpu_unreachable = false;
     let mut candidates_after_memory_check = 0usize;
     for selected in routed_candidates {
         let candidate = selected.candidate;
+        let available_driver = match selected.host_environment {
+            RuntimeBoxHostEnvironment::WindowsWsl2 => host.wsl_nvidia_driver_version.as_deref(),
+            RuntimeBoxHostEnvironment::Native => host.nvidia_driver_version.as_deref(),
+        };
         if let (Some(minimum_gb), Some(installed_bytes)) =
             (candidate.min_ram_gb, host.total_memory_bytes)
         {
@@ -1079,7 +1128,10 @@ fn select_target_candidate<'a>(
             "cuda" => {
                 let minimum = candidate.min_nvidia_driver_version.as_deref().unwrap();
                 required_driver = Some(minimum);
-                let Some(installed) = host.nvidia_driver_version.as_deref() else {
+                let Some(installed) = available_driver else {
+                    wsl_gpu_unreachable |= selected.host_environment
+                        == RuntimeBoxHostEnvironment::WindowsWsl2
+                        && host.nvidia_driver_version.is_some();
                     continue;
                 };
                 if version_parts(installed) < version_parts(minimum) {
@@ -1104,6 +1156,14 @@ fn select_target_candidate<'a>(
         }
     }
     if let Some(minimum) = required_driver {
+        // Naming the real obstacle matters here: the GPU works, Windows sees it, and telling the
+        // user to update a current driver would send them to fix the wrong thing.
+        if wsl_gpu_unreachable {
+            return Err(
+                "This Runtime Component runs on the GPU through WSL2, but no NVIDIA GPU is visible inside your WSL2 installation. Run `wsl --update` in a terminal, restart WSL2, then try again"
+                    .to_string(),
+            );
+        }
         return match host.nvidia_driver_version.as_deref() {
             Some(installed) => Err(format!(
                 "This Runtime Component needs NVIDIA driver {minimum} or newer, but this computer has {installed}; no compatible CPU Runtime Box is published"
@@ -2187,6 +2247,7 @@ async fn install_runtime_box(
                 &box_id,
                 &component_id,
                 &release.runtime_id,
+                &target_id(&activation.selected_target)?,
                 release_document.path(),
                 trust_document.path(),
                 &archive_path,
@@ -2772,7 +2833,60 @@ mod tests {
             arch: arch.to_string(),
             total_memory_bytes: Some(64 * 1024 * 1024 * 1024),
             nvidia_driver_version: driver.map(str::to_string),
+            wsl_nvidia_driver_version: None,
         }
+    }
+
+    /// A Windows host whose GPU may or may not be reachable from the distribution. The two drivers
+    /// are separate arguments because the interesting cases are exactly the ones where they differ.
+    fn windows_host(driver: Option<&str>, wsl_driver: Option<&str>) -> RuntimeBoxHostCapabilities {
+        RuntimeBoxHostCapabilities {
+            wsl_nvidia_driver_version: wsl_driver.map(str::to_string),
+            ..host("windows", "x86_64", driver)
+        }
+    }
+
+    /// Windows is an app host, never a payload platform, so a GPU box reaches a Windows user only
+    /// through WSL2. What decides compatibility there is the driver inside the distribution: those
+    /// two figures agree on a working machine and disagree exactly when pass-through is missing,
+    /// which is the case that must be caught before gigabytes are downloaded.
+    #[test]
+    fn routes_a_linux_cuda_box_through_wsl2_on_the_distribution_gpu() {
+        let mut cuda_linux = candidate(
+            target("linux", "x86_64", "cuda", Some("12.9")),
+            Some("525.60.13"),
+        );
+        cuda_linux.host_environments = vec!["native".to_string(), "windows-wsl2".to_string()];
+
+        let reachable = [cuda_linux.clone()];
+        let selected =
+            select_target_candidate(&reachable, &windows_host(Some("610.62"), Some("610.62")))
+                .expect("a reachable WSL2 GPU must accept the Linux CUDA box");
+        assert_eq!(
+            selected.host_environment,
+            RuntimeBoxHostEnvironment::WindowsWsl2
+        );
+        assert_eq!(selected.candidate.target.accelerator, "cuda");
+
+        // Windows sees the GPU, the distribution does not. Telling the user to update a current
+        // driver would send them to fix the wrong thing, so the message names WSL2 instead.
+        let error = select_target_candidate(&[cuda_linux.clone()], &windows_host(Some("610.62"), None))
+            .unwrap_err();
+        assert!(error.contains("visible inside your WSL2 installation"), "{error}");
+        assert!(error.contains("wsl --update"), "{error}");
+
+        // A distribution whose driver is genuinely too old is refused on the driver, not on WSL2.
+        let error =
+            select_target_candidate(&[cuda_linux.clone()], &windows_host(Some("610.62"), Some("470.10")))
+                .unwrap_err();
+        assert!(error.contains("525.60.13"), "{error}");
+        assert!(!error.contains("visible inside your WSL2 installation"), "{error}");
+
+        // A machine with no NVIDIA hardware at all keeps the plain no-GPU wording.
+        let error =
+            select_target_candidate(&[cuda_linux], &windows_host(None, None)).unwrap_err();
+        assert!(error.contains("needs an NVIDIA GPU"), "{error}");
+        assert!(!error.contains("visible inside your WSL2 installation"), "{error}");
     }
 
     #[test]
@@ -2864,10 +2978,16 @@ mod tests {
             min_ram_gb: None,
             min_nvidia_driver_version: Some("550.54".to_string()),
         };
+        // This used to report "no Runtime Box for Windows", because a CUDA box was never routed
+        // through WSL2 at all. It is now routed and judged on the distribution's own GPU, so a
+        // Windows host that cannot reach one is told exactly that instead.
         let error =
             select_target_candidate(&[wsl_only], &host("windows", "x86_64", Some("590.48.01")))
                 .unwrap_err();
-        assert!(error.contains("Windows"));
+        assert!(
+            error.contains("visible inside your WSL2 installation"),
+            "{error}"
+        );
 
         let wsl_cpu = RuntimeBoxTargetCandidate {
             target: target("linux", "x86_64", "cpu", None),

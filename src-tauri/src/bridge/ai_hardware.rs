@@ -11,7 +11,7 @@ pub(crate) struct NvidiaCapability {
 }
 
 /// Parses the first driver reported by `nvidia-smi` and rejects diagnostic/error text.
-fn parse_nvidia_driver_output(output: &str) -> Option<NvidiaCapability> {
+pub(crate) fn parse_nvidia_driver_output(output: &str) -> Option<NvidiaCapability> {
     let version = output
         .lines()
         .map(str::trim)

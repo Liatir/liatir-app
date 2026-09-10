@@ -1,5 +1,43 @@
 # Current project status
 
+## OpenMM on the GPU works in the real app, from Windows through WSL2 (2026-09-10)
+
+The first GPU product evidence in this project, and the first Windows-through-WSL2 proof for a
+Phase 3 component. The release-candidate app installed the signed CUDA box into WSL2 and ran it:
+**2 passed, 0 failed**. Host environment `windows-wsl2`, accelerator **CUDA**, a real relaxation of
+the box's own `test-ala-3.pdb` taking the potential energy from −1.6910709302007945 to
+−119.11212442123042 kJ/mol — a reduction of 117.42105349102962. Install, killed-Job cancellation,
+both reachable hardware states on one input, the Job, the Result with four artifacts, provenance,
+navigation, removal, and artifacts surviving removal all passed. Retained:
+`openmm-linux-x86_64-cuda12.9-product-lifecycle-development-2026-09-10.json`.
+
+**Five real gates stood between a working GPU and a working product, and none was a test artifact.**
+Each was a refusal a Windows user with an NVIDIA card would have hit, invisible until a machine
+existed that could reach this path. In order: the app routed only CPU payloads through WSL2; the GPU
+probe asked Windows instead of the distribution; that probe used `wsl.exe --exec`, which never
+searches `/usr/lib/wsl/lib` where WSL2 keeps `nvidia-smi`, so a working GPU looked absent; the WSL2
+consumer hardcoded `linux-x86_64-cpu`; and a validator introduced here rejected the underscore in
+`x86_64`. All five are fixed, with the reasoning in the
+[Phase 3 status](./roadmap/phase3-implementation-status.md#openmm-cuda-passes-its-product-lifecycle-in-the-real-app-through-wsl2-2026-09-10).
+
+The consumer's `runtime-install` argument list gained the target id, so
+`src-tauri/resources/native-tools/native-tools-box-consumer` must be rebuilt for Linux musl inside
+WSL2 (`rustup target add x86_64-unknown-linux-musl`). It is a build artifact, never committed, and
+the app verifies it against a hash computed at compile time.
+
+Signing used the machine's local development key through `LIATIR_RUNTIME_BOX_TRUSTED_KEY_FILE`,
+which only debug builds honour; `runtime-boxes/trust/` was not touched. This remains development
+evidence: a production CI build makes a different archive and must be measured and exercised there.
+Molecular Dynamics still has no product lifecycle on any target.
+
+Gates, run serially and never overlapping: `test:verify` passed all six suites — 582 tests, zero
+failed, report `2026-09-10T12-06-23-642Z`. `test:ui` passed 35 native scenarios with zero failures
+and 30 platform- or candidate-only skips, plus every companion suite and the Windows app
+install/migration/restart/uninstall lifecycle, report `2026-09-10T12-08-09-114Z`. Rust passed 98
+tests with 2 heavy fixtures ignored and Clippy reported no errors — the first time the Rust suite
+has compiled on Windows, after two of its tests were found calling functions the platform compiles
+out. `syngraphe check` reports no problems.
+
 ## OpenMM ran on a GPU, for the first time ever (2026-09-09)
 
 Every OpenMM number this project had was Apple M1 CPU. `openmm-linux-x86_64-cuda12.9` is now built,

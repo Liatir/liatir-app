@@ -20,19 +20,21 @@ const metadata = JSON.parse(readFileSync(
   new URL('../../runtime-boxes/native-tools/native-tools.json', import.meta.url),
   'utf8',
 ));
-const resolver = readFileSync(
-  new URL('../../src-tauri/src/bridge/native_tools.rs', import.meta.url),
-  'utf8',
-);
-const builder = readFileSync(
-  new URL('../../scripts/build-native-tools-box.mjs', import.meta.url),
-  'utf8',
-);
-const wslConsumer = readFileSync(
-  new URL('../../tools/native-tools-box-consumer/src/main.rs', import.meta.url),
-  'utf8',
-);
-const rustBuild = readFileSync(new URL('../../src-tauri/build.rs', import.meta.url), 'utf8');
+/**
+ * Reads a source file with its line endings normalised.
+ *
+ * These assertions anchor on multi-line snippets. `.rs` and `.ts` carry no `eol=lf` rule, so a
+ * Windows checkout gets CRLF and a `\n` in an expected string silently stops matching — the
+ * assertion then fails for the platform rather than for the thing it guards.
+ */
+function source(relativePath: string): string {
+  return readFileSync(new URL(relativePath, import.meta.url), 'utf8').replace(/\r\n/gu, '\n');
+}
+
+const resolver = source('../../src-tauri/src/bridge/native_tools.rs');
+const builder = source('../../scripts/build-native-tools-box.mjs');
+const wslConsumer = source('../../tools/native-tools-box-consumer/src/main.rs');
+const rustBuild = source('../../src-tauri/build.rs');
 const selfTest = readFileSync(
   new URL('../../runtime-boxes/native-tools/native-tools-self-test.py', import.meta.url),
   'utf8',

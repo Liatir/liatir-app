@@ -772,22 +772,30 @@ mod tests {
         assert!(!is_bundled_tool("piscem"));
     }
 
+    // `simpleaf_home` and `native_environment` are compiled out on Windows, where every box runs
+    // through WSL2 instead. Referring to them unconditionally stopped the whole crate's tests from
+    // compiling there, so the WSL2 half — the half that is actually Windows' path — runs everywhere
+    // and only the native half is gated.
     #[test]
     fn keeps_simpleaf_configuration_beside_the_boxes_rather_than_inside_one() {
-        let root = Path::new("/data/native-tools/abcdef");
-        assert_eq!(
-            simpleaf_home(root),
-            Path::new("/data/native-tools/simpleaf-home"),
-        );
         assert_eq!(
             wsl_plan::simpleaf_home("/home/bio/.local/share/liatir/native-tools/abcdef"),
             "/home/bio/.local/share/liatir/native-tools/simpleaf-home",
         );
-        // The box environment carries it, so every simpleaf invocation finds its engines.
-        assert!(native_environment(root)
-            .iter()
-            .any(|(name, value)| name == "ALEVIN_FRY_HOME"
-                && value == "/data/native-tools/simpleaf-home"));
+
+        #[cfg(not(target_os = "windows"))]
+        {
+            let root = Path::new("/data/native-tools/abcdef");
+            assert_eq!(
+                simpleaf_home(root),
+                Path::new("/data/native-tools/simpleaf-home"),
+            );
+            // The box environment carries it, so every simpleaf invocation finds its engines.
+            assert!(native_environment(root)
+                .iter()
+                .any(|(name, value)| name == "ALEVIN_FRY_HOME"
+                    && value == "/data/native-tools/simpleaf-home"));
+        }
     }
 
     #[test]

@@ -342,6 +342,11 @@ pub(crate) fn trust_document() -> Result<String, String> {
     .map_err(|error| error.to_string())
 }
 
+/// Installs a signed Runtime Box inside the distribution.
+///
+/// `target_id` is the target the app selected and signature-checked. The consumer compares it
+/// against the signed release instead of assuming CPU, which is what lets a CUDA box reach a
+/// Windows user — WSL2 is the only route it has.
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn install(
     app: &AppHandle,
@@ -349,6 +354,7 @@ pub(crate) fn install(
     box_id: &str,
     component_id: &str,
     runtime_id: &str,
+    target_id: &str,
     release_path: &Path,
     trust_path: &Path,
     archive_path: &Path,
@@ -374,6 +380,7 @@ pub(crate) fn install(
         box_id.into(),
         component_id.into(),
         runtime_id.into(),
+        target_id.into(),
         mapped[1].clone(),
         mapped[2].clone(),
         mapped[3].clone(),

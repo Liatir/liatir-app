@@ -35,6 +35,12 @@ context is initialized, structurally complete, that every path referenced from a
 context document exists, and that the state document has not gone stale behind
 the repository. See [syngraphe.dev](https://syngraphe.dev) for the finding codes.
 
+**Never anchor a test on a multi-line source snippet with a bare `\n`.** Only the paths listed in
+`.gitattributes` carry `eol=lf`; everything else follows `* text=auto`, so a Windows checkout
+(`core.autocrlf=true`) holds CRLF and a `\n` in an expected string stops matching without saying
+why. The assertion then fails for the platform rather than for the thing it guards, and on
+2026-09-10 one did exactly that. Normalise line endings when reading a source file to assert on it.
+
 **Never cite a build artifact or a per-run report directory as a path.** `syngraphe check`
 resolves every referenced path against the working tree, and a gitignored build output or a test
 report written during one session exists on the machine that produced it and nowhere else. On
