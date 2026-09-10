@@ -48,7 +48,7 @@ const NAV_PAGES = [
     { href: '/results', label: 'Results', icon: 'lucide:inbox', match: '/results', global: false },
     { href: '/jobs', label: 'Jobs', icon: 'lucide:radio', match: '/jobs', global: false },
     { divider: true, global: true },
-    { href: '/quenta', label: 'Ask Quenta', icon: 'mingcute:quill-pen-ai-line', match: '/quenta', global: false},
+    { href: '/quenta', label: 'Ask Quenta', icon: 'lucide:sparkles', match: '/quenta', global: false},
 ] as const satisfies readonly SidebarItem[];
 
 const NAV_PAGES_BOTTOM = [

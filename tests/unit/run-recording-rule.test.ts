@@ -244,7 +244,13 @@ describe('the results view', () => {
     expect(record).toContain('revealRunDir');
     expect(record).toContain('Open run folder');
     for (const path of RUN_VIEWERS) {
-      expect(read(path)).toContain('<RunRecord ');
+      const source = read(path);
+      expect(source).toContain('<RunRecord ');
+      // A screen may move the folder up among the run's own actions — the Results screen does, and
+      // switches it off here to avoid offering it twice — but it may not end up offering it nowhere.
+      if (source.includes('showOpenFolder={false}')) {
+        expect(source, `${path} hides the run folder without offering it itself`).toContain('revealRunDir');
+      }
     }
   });
 

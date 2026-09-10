@@ -1126,6 +1126,19 @@ It is the one bordered control in that row. Small is right — it is not the poi
 the screen — but as plain 11px text beside **View log** it read as a footnote and went
 unnoticed; the border is what makes it look like something you press.
 
+**On the Results screen it sits with the run's other actions instead** (2026-09-11).
+That screen is the one place a run already has a header of its own, and having
+**Explain** and **Export HTML** at the top with the folder alone further down split
+the same run's actions across two places. It now joins them there, so `RunRecord`
+takes `showOpenFolder={false}` on that screen only — the flag exists to prevent the
+duplicate, never to drop the affordance, and `run-recording-rule.test.ts` fails any
+screen that sets it without revealing the folder itself. The three actions are one
+`runActions` snippet rendered either as a row or, under `ACTIONS_INLINE_MIN_WIDTH`
+(560px measured on the header row, not the window — the run list beside it takes
+width too), stacked in an **Actions** menu. `revealFailureMessage` in `run-storage.ts`
+is the shared wording for a folder that did not open; the header raises it as a toast,
+because the menu it was clicked from is closed by then.
+
 ## Native Tools are one signed Scrollcase box (2026-08-22)
 
 The six process-backed tools — `samtools`, `bcftools`, `seqkit`, `fastp`, `bwa`

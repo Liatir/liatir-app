@@ -9,13 +9,21 @@
   import { analysisRuns, type AnalysisRunMeta } from '$lib/stores/analysisRuns.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
-  import { runDirPath } from '$lib/execution/run-storage';
+  import { revealFailureMessage, revealRunDir, runDirPath } from '$lib/execution/run-storage';
+  import { clickOutside } from '$lib/actions/clickOutside';
 
   /**
    * How many runs the prune action keeps. Not a cap: nothing is removed until the user asks, and
    * this only sets what "older runs" means when they do.
    */
   const KEEP_RECENT_RUNS = 100;
+
+  /**
+   * Below this width the run's actions no longer fit on the title row and collapse into a menu.
+   * Measured on the row itself rather than the window: what changes width here is the detail panel,
+   * which also depends on the run list beside it.
+   */
+  const ACTIONS_INLINE_MIN_WIDTH = 560;
   import { fmtDuration, fmtBytes, sanitizeLocalPathsForDisplay } from '$lib/utils';
   import { liatir } from '$lib/api';
   import { exportToHtml } from '$lib/utils/export-result';
@@ -77,8 +85,14 @@
 
   const selectedRun = $derived(filtered.find(r => r.id === selectedId) ?? null);
 
+  // The run's actions: one row while there is space for it, a menu when there is not.
+  let headerWidth = $state(0);
+  let actionsOpen = $state(false);
+  const compactActions = $derived(headerWidth > 0 && headerWidth < ACTIONS_INLINE_MIN_WIDTH);
+
   $effect(() => {
     const id = selectedId;
+    actionsOpen = false;
     if (!id) { loadedOutput = null; return; }
     loadingOutput = true;
     analysisRuns.loadOutput(id).then(out => {
@@ -158,7 +172,16 @@
     toast.success(`Deleted ${doomed.length} ${doomed.length === 1 ? 'run' : 'runs'}.`);
   }
 
+  /** Shows the run's folder in Finder or Explorer. Says so when it could not, as the menu it may
+   *  have been fired from is already closed by then. */
+  async function openRunFolder(run: AnalysisRunMeta) {
+    actionsOpen = false;
+    const note = revealFailureMessage(await revealRunDir(run.id));
+    if (note) toast.error(note);
+  }
+
   async function exportRun() {
+    actionsOpen = false;
     if (!selectedRun || !loadedOutput) return;
     const api = liatir();
     if (!api) return;
@@ -176,6 +199,7 @@
   }
 
   async function openQuentaForRun(run: AnalysisRunMeta, intent: 'explain-result' | 'explain-failure') {
+    actionsOpen = false;
     try {
       await openQuentaWindow(quentaDraftUrl(intent, { kind: 'result', entityId: run.id }));
     } catch {
@@ -190,6 +214,100 @@
     });
   }
 </script>
+
+<!--
+  Everything you can do with the selected run, in one place at the top of it: explain it, export it,
+  and open the folder it wrote. The folder used to sit alone under the result, which put the same
+  run's actions in two different places — so `RunRecord` below is told not to repeat it here.
+
+  `inMenu` is the same set stacked in the collapsed menu, so there is one definition of each action
+  rather than two that can drift apart.
+-->
+{#snippet runActions(run: AnalysisRunMeta, failed: boolean, inMenu: boolean)}
+  {@const itemClass = inMenu ? 'w-full' : ''}
+  {@const itemStyle = inMenu ? 'justify-content: flex-start' : ''}
+  <Button
+    variant="secondary"
+    size="sm"
+    class="whitespace-nowrap {itemClass}"
+    style={itemStyle}
+    testId={failed ? 'result-explain-failure' : 'result-explain'}
+    onclick={() => openQuentaForRun(run, failed ? 'explain-failure' : 'explain-result')}
+  >
+    <Icon icon="lucide:sparkles" class="h-3.5 w-3.5 shrink-0" />
+    {failed ? 'Explain failure' : 'Explain result'}
+  </Button>
+
+  {#if !failed && loadedOutput}
+    <Button
+      variant="secondary"
+      size="sm"
+      class="whitespace-nowrap {itemClass}"
+      style={itemStyle}
+      loading={exporting}
+      testId="result-export-html"
+      onclick={exportRun}
+    >
+      {#if !exporting}
+        <Icon icon="lucide:download" class="h-3.5 w-3.5 shrink-0" />
+      {/if}
+      {exporting ? 'Exporting…' : 'Export HTML'}
+    </Button>
+  {/if}
+
+  <Button
+    variant="secondary"
+    size="sm"
+    class="whitespace-nowrap {itemClass}"
+    style={itemStyle}
+    testId="open-run-folder"
+    onclick={() => openRunFolder(run)}
+  >
+    <Icon icon="lucide:folder-open" class="h-3.5 w-3.5 shrink-0" />
+    Open run folder
+  </Button>
+{/snippet}
+
+{#snippet runHeader(run: AnalysisRunMeta, failed: boolean)}
+  <div class="flex items-start justify-between gap-3 mb-4" bind:clientWidth={headerWidth}>
+    <div class="min-w-0">
+      <p class="text-sm font-semibold text-text truncate" title={run.label}>{run.label}</p>
+      <p class="text-xs text-text-subtle mt-0.5 truncate">
+        {toolLabel(run.tool)} · {fmtDate(run.startedAt)} · {fmtDuration(run.startedAt, run.endedAt)}{run.outputSize != null ? ' · ' + fmtBytes(run.outputSize) : ''}
+      </p>
+    </div>
+
+    {#if compactActions}
+      <div
+        class="relative shrink-0"
+        use:clickOutside={{ enabled: actionsOpen, onOutside: () => actionsOpen = false }}
+      >
+        <Button
+          variant="secondary"
+          size="sm"
+          testId="result-actions-menu"
+          onclick={() => actionsOpen = !actionsOpen}
+        >
+          Actions
+          <Icon
+            icon="lucide:chevron-down"
+            class="h-3.5 w-3.5 shrink-0 transition-transform {actionsOpen ? 'rotate-180' : ''}"
+          />
+        </Button>
+        {#if actionsOpen}
+          <div class="absolute right-0 top-full z-20 mt-1 flex min-w-44 flex-col gap-1 rounded-lg
+                      border border-border bg-surface p-1 shadow-lg">
+            {@render runActions(run, failed, true)}
+          </div>
+        {/if}
+      </div>
+    {:else}
+      <div class="flex items-center gap-2 shrink-0">
+        {@render runActions(run, failed, false)}
+      </div>
+    {/if}
+  </div>
+{/snippet}
 
 <div class="flex h-full overflow-hidden">
 
@@ -309,22 +427,7 @@
 
         {:else if selectedRun.status === 'error' || selectedRun.status === 'cancelled'}
           <div>
-            <div class="flex items-center justify-between mb-4">
-              <div>
-                <p class="text-sm font-semibold text-text">{selectedRun.label}</p>
-                <p class="text-xs text-text-subtle mt-0.5">
-                  {toolLabel(selectedRun.tool)} · {fmtDate(selectedRun.startedAt)} · {fmtDuration(selectedRun.startedAt, selectedRun.endedAt)}{selectedRun.outputSize != null ? ' · ' + fmtBytes(selectedRun.outputSize) : ''}
-                </p>
-              </div>
-              <button
-                onclick={() => openQuentaForRun(selectedRun, 'explain-failure')}
-                class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border
-                      text-xs text-text-secondary hover:text-text hover:bg-surface-2 transition-colors"
-                data-testid="result-explain-failure"
-              >
-                Explain failure
-              </button>
-            </div>
+            {@render runHeader(selectedRun, true)}
             <div class="rounded-xl border px-4 py-3 text-sm font-mono
               {selectedRun.status === 'cancelled'
                 ? 'border-amber-200 bg-amber-50 text-amber-700'
@@ -340,7 +443,7 @@
                 />
               </div>
             {/if}
-            <RunRecord runId={selectedId} />
+            <RunRecord runId={selectedId} showOpenFolder={false} />
           </div>
 
         {:else if loadingOutput}
@@ -353,46 +456,7 @@
 
         {:else}
           <div>
-            <div class="flex items-center justify-between mb-4">
-              <div>
-                <p class="text-sm font-semibold text-text">{selectedRun.label}</p>
-                <p class="text-xs text-text-subtle mt-0.5">
-                  {toolLabel(selectedRun.tool)} · {fmtDate(selectedRun.startedAt)} · {fmtDuration(selectedRun.startedAt, selectedRun.endedAt)}{selectedRun.outputSize != null ? ' · ' + fmtBytes(selectedRun.outputSize) : ''}
-                </p>
-              </div>
-              <div class="flex items-center gap-2">
-                <button
-                  onclick={() => openQuentaForRun(selectedRun, 'explain-result')}
-                  class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border
-                        text-xs text-text-secondary hover:text-text hover:bg-surface-2 transition-colors"
-                  data-testid="result-explain"
-                >
-                  Explain result
-                </button>
-                {#if loadedOutput}
-                  <button
-                    onclick={exportRun}
-                    disabled={exporting}
-                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border
-                          text-xs text-text-secondary hover:text-text hover:bg-surface-2
-                          disabled:opacity-50 disabled:cursor-default transition-colors"
-                  >
-                    {#if exporting}
-                      <svg class="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"/>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
-                      </svg>
-                      Exporting…
-                    {:else}
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-                      </svg>
-                      Export HTML
-                    {/if}
-                  </button>
-                {/if}
-              </div>
-            </div>
+            {@render runHeader(selectedRun, false)}
             {#if loadedOutput}
                   <ToolResultView output={loadedOutput} outputFiles={selectedRun.outputFiles ?? []} resultFolder={toolLabel(selectedRun.tool)} />
             {:else}
@@ -400,7 +464,7 @@
                 This Result has no structured preview. Quenta can still use its metadata, files, and logs.
               </div>
             {/if}
-            <RunRecord runId={selectedId} />
+            <RunRecord runId={selectedId} showOpenFolder={false} />
           </div>
         {/if}
       </div>

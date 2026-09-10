@@ -193,7 +193,7 @@
       </p>
       <p class="text-[10px] text-text-subtle mt-0.5">
         Reports, indexes and working files the tool wrote along the way. They are kept with the run —
-        <span class="text-text-secondary">Open run folder</span> below shows them.
+        <span class="text-text-secondary">Open run folder</span> shows them.
       </p>
     </Card>
   {/if}

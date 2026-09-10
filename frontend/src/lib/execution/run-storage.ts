@@ -89,6 +89,17 @@ export async function revealRunDir(runId: string): Promise<RevealOutcome> {
 }
 
 /**
+ * What to tell the user when the folder did not open, in one wording for every screen that offers
+ * it. `null` means it opened and there is nothing to say.
+ */
+export function revealFailureMessage(outcome: RevealOutcome): string | null {
+  if (outcome.ok) return null;
+  return outcome.reason === 'no-directory'
+    ? 'This run wrote no files.'
+    : `Could not open the folder: ${outcome.reason}`;
+}
+
+/**
  * Ensure this run's `output/` exists and return its absolute path.
  *
  * Called only by something about to write a file, which is what keeps a run that produces nothing
