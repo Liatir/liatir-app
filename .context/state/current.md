@@ -1,5 +1,22 @@
 # Current project status
 
+## Connecting a client to Local MCP is now one copy (2026-09-11)
+
+Settings showed a URL and a bearer token and stopped there. The **Connect a client** panel now
+writes the configuration itself — Claude Code, Claude Desktop, Cursor, VS Code, or the three plain
+facts any other client needs — generated from the live endpoint, with the token masked on screen and
+copied in full. The recipes are data in `frontend/src/lib/mcp/clients.ts`, their shapes were read
+from each vendor's documentation rather than recalled, and `tests/unit/mcp-client-recipes.test.ts`
+pins them.
+
+**A hosted assistant cannot connect, and the panel says so.** ChatGPT on the web and anything else
+running on someone else's servers has no route to 127.0.0.1; that is the boundary working, not a
+missing integration, and per-vendor plugins were rejected for the same reason. See
+[Connecting a client to Local MCP](../decisions/mcp-client-connection.md).
+
+Verified on macOS arm64: `test:verify` 6/6 suites, 78 files / 601 unit tests. The UI profile has not
+been re-run for this panel.
+
 ## Boltz-2 is blocked on where a PyPI licence is written down (2026-09-11)
 
 All three remaining Phase 3 models — Boltz-2 and both Protenix variants — are the only recipes in

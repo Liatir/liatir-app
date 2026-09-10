@@ -18,17 +18,24 @@ using Liatir normally.
    **Source files from Data**.
 6. Optionally select **Allow Results** if the client may read Results that it
    did not create itself.
-7. Copy the current **Server URL** and **Bearer token** into your MCP client.
+7. Under **Connect a client**, select the client you use, then select **Copy**
+   and paste what you copied where the panel says it goes.
 
-Configure the client to use Streamable HTTP and send the token as:
+The panel writes the settings for you, already filled in with the current
+address and token. The token is hidden on screen and copied in full, so you
+never need to read it; select **Show** if you want to see it anyway. For a
+client that is not listed, choose **Another client**: it gives you the same
+three facts every MCP client asks for — Streamable HTTP, the URL, and the
+header `Authorization: Bearer <token>`.
 
-```text
-Authorization: Bearer <token copied from Liatir>
-```
+Only a program running on **this computer** can connect. An assistant that runs
+on someone else's servers, such as ChatGPT on the web, has no way to reach
+Liatir. This is deliberate: the server accepts connections from your computer
+only, and never from the internet.
 
 The server URL uses a local address such as
 `http://127.0.0.1:49152/mcp`. Its port can change when Liatir restarts, so copy
-the current URL again after restarting the app. Liatir must remain open while a
+the settings again after restarting the app. Liatir must remain open while a
 client is connected.
 
 Treat the bearer token like a password. **Rotate token** immediately disconnects

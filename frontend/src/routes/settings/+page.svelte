@@ -21,6 +21,7 @@
   import { pipelineStore } from '$lib/stores/pipeline.svelte';
   import { dataFiles, type DataFile } from '$lib/stores/dataFiles.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
+  import McpConnectPanel from '$lib/components/mcp/McpConnectPanel.svelte';
 
   let apiVersion = $state<string | null>(null);
   let appVersion = $state<string | null>(null);
@@ -551,6 +552,16 @@
               <p class="text-[11px] text-text-subtle">Treat this token like a password. Rotating it disconnects current clients.</p>
             </div>
             <Button size="sm" variant="secondary" loading={mcpBusy === 'rotate'} testId="mcp-rotate-token" onclick={() => void rotateMcpToken()}>Rotate token</Button>
+
+            {#if mcpStatus.endpoint}
+              <div class="border-t border-border pt-3">
+                <McpConnectPanel
+                  endpoint={mcpStatus.endpoint}
+                  token={mcpStatus.bearerToken}
+                  revealToken={showMcpToken}
+                />
+              </div>
+            {/if}
           </div>
         {/if}
 

@@ -104,6 +104,14 @@ self-reported audit metadata only. They grant no authority.
 - Rotate the token without changing grants. The previous token stops working
   immediately.
 
+Settings turns that policy into a working connection: a Connect panel builds the
+configuration for each supported local client from the live endpoint, masking
+the token on screen while copying it in full. The recipes are data in
+`frontend/src/lib/mcp/clients.ts`, pinned by `tests/unit/mcp-client-recipes.test.ts`.
+No per-assistant integration exists or should be added, and a hosted assistant
+cannot connect at all; see
+[Connecting a client to Local MCP](../../decisions/mcp-client-connection.md).
+
 The app process must remain open. The endpoint port is not durable and clients
 must read the current URL after restart. No TLS or remote-network mode exists;
 loopback binding plus bearer authentication is the deliberate local-only

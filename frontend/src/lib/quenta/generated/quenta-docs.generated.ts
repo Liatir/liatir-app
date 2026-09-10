@@ -3,7 +3,7 @@
 
 import type { LiatirQuentaContextDocument } from '@liatir/core';
 
-export const QUENTA_DOCS_SEED_HASH = "da8875bc1d3dbe28817fbcbeae5cdfeeccbfac2a5d6d39fda43f0ec493f846fd";
+export const QUENTA_DOCS_SEED_HASH = "8718ef263fe04c9793c967802ebcaeafe5c7cadd6c4de265e7c82880bf0a7b06";
 
 export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
   {
@@ -788,7 +788,7 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "title": "Local MCP — Connect a client",
     "locator": "Docs / Mcp / Overview / Connect a client",
     "excerpt": "Connect a client 1. Build and save the pipeline you want to reuse. 2. Open **Settings → Local MCP**. 3. Select **Turn on**. 4. Select **Allow** beside the saved pipeline. 5. If the pipeline accepts source files, allow only the files it may use under **Source…",
-    "content": "Connect a client\n1. Build and save the pipeline you want to reuse.\n2. Open **Settings → Local MCP**.\n3. Select **Turn on**.\n4. Select **Allow** beside the saved pipeline.\n5. If the pipeline accepts source files, allow only the files it may use under\n   **Source files from Data**.\n6. Optionally select **Allow Results** if the client may read Results that it\n   did not create itself.\n7. Copy the current **Server URL** and **Bearer token** into your MCP client.\n\nConfigure the client to use Streamable HTTP and send the token as:\n\n```text\nAuthorization: Bearer <token copied from Liatir>\n```\n\nThe server URL uses a local address such as\n`http://127.0.0.1:49152/mcp`. Its port can change when Liatir restarts, so copy\nthe current URL again after restarting the app. Liatir must remain open while a\nclient is connected.\n\nTreat the bearer token like a password. **Rotate token** immediately disconnects\nclients that still use the old token."
+    "content": "Connect a client\n1. Build and save the pipeline you want to reuse.\n2. Open **Settings → Local MCP**.\n3. Select **Turn on**.\n4. Select **Allow** beside the saved pipeline.\n5. If the pipeline accepts source files, allow only the files it may use under\n   **Source files from Data**.\n6. Optionally select **Allow Results** if the client may read Results that it\n   did not create itself.\n7. Under **Connect a client**, select the client you use, then select **Copy**\n   and paste what you copied where the panel says it goes.\n\nThe panel writes the settings for you, already filled in with the current\naddress and token. The token is hidden on screen and copied in full, so you\nnever need to read it; select **Show** if you want to see it anyway. For a\nclient that is not listed, choose **Another client**: it gives you the same\nthree facts every MCP client asks for — Streamable HTTP, the URL, and the\nheader `Authorization: Bearer <token>`.\n\nOnly a program running on **this computer** can connect. An assistant that runs\non someone else's servers, such as ChatGPT on the web, has no way to reach\nLiatir. This is deliberate: the server accepts connections from your computer\nonly, and never from the internet.\n\nThe server URL uses a local address such as\n`http://127.0.0.1:49152/mcp`. Its port can change when Liatir restarts, so copy\nthe settings again after restarting the app. Liatir must remain open while a\nclient is connected.\n\nTreat the bearer token like a password. **Rotate token** immediately disconnects\nclients that still use the old token."
   },
   {
     "id": "docs:mcp/overview#what-a-client-can-do",
