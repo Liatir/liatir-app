@@ -846,7 +846,7 @@
           "hostEnvironments": ["native", "windows-wsl2"],
           "recipeId": "openmm-linux-x86_64-cuda12.9",
           "runnerProfileId": "linux-x64-cuda-selfhosted",
-          "status": "planned",
+          "status": "native-lifecycle-validated",
           "validationModes": ["build", "scientific", "native-lifecycle"],
           "timeoutMinutes": 180,
           "requiredBuildDiskBytes": 17179869184,

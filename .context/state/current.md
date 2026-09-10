@@ -1,5 +1,36 @@
 # Current project status
 
+## OpenMM CUDA is validated in CI, not just locally (2026-09-10)
+
+`openmm-openmm/linux-x86_64-cuda12.9` is **`native-lifecycle-validated`** — the first CUDA target
+this project has ever taken past `planned`. Run
+[34514107583](https://github.com/Liatir/liatir-stack/actions/runs/34514107583) built the box from
+committed bytes on this machine's GPU through GitHub Actions and passed every stage: build
+(330.5 s), signature and self-test, the scientific validator (86.3 s, reference parity
+0.00017122510064382368 kJ/mol against a 0.01 limit), and the Rust product lifecycle. Archive
+`9f9fd9e2f0d5c637be0358a2e8672b583c126b57dd0cc015b80260e4023413ea`, commit `2383642`, clean tree,
+peak VRAM 185,597,952 bytes by device-wide delta on an RTX 4060 Ti (8,585,740,288 bytes,
+capability 8.9, driver 610.62).
+
+It took three dispatches, and the two failures were both real contract defects rather than flakes:
+
+1. **The VRAM sampler failed on WSL2's own answer.** `nvidia-smi --query-compute-apps` lists the
+   calling process with `[N/A]` once a CUDA context exists, and nothing at all before — two shapes
+   of the same "not attributable", of which the code knew only one. Probed directly against a live
+   context, then folded into the existing device-wide fallback. See
+   [How VRAM is measured](../decisions/vram-measurement-method.md).
+2. **OpenMM's GPU evidence named only half the card.** The evidence contract requires memory and
+   compute capability, cross-checked against CI's own host probe; the validator reported model and
+   driver alone. The measuring process now reads all four itself, deliberately as a separate query
+   so the cross-check stays a real one.
+
+A third, smaller one was cleared before the first dispatch: the Linux product-dependency script
+asked for root unconditionally, which fails on a prepared self-hosted host that withholds
+passwordless sudo.
+
+The published hardware envelope still comes from the retained 2026-09-09 local measurement and is
+unchanged; publication remains a separate, unauthorized step.
+
 ## This machine is now the project's Linux self-hosted runner (2026-09-10)
 
 The owner's Windows/WSL2 machine carries both self-hosted Linux runner labels, and the owner has
@@ -108,7 +139,7 @@ test. Nothing else has been executed here.
 
 | Component | Reality |
 | --- | --- |
-| `openmm-openmm` | macOS CPU and Linux CUDA built, measured and product-proven locally; all three targets still `planned` in the catalog |
+| `openmm-openmm` | Linux CUDA is `native-lifecycle-validated` in CI on this machine's GPU; macOS CPU built, measured and product-proven locally but still `planned`; Linux CPU never built |
 | `jwohlwend-boltz-2` | dependency lock only; no scroll, no box, never executed |
 | `bytedance-protenix-v2` | nothing, and the official checkpoint still returns HTTP 403 |
 | `bytedance-protenix-mini-default-v0-5-0` | nothing |
@@ -116,11 +147,12 @@ test. Nothing else has been executed here.
 | `griffithlab-pvactools-pvacseq` | published for macOS CPU and Linux CPU |
 | Geneformer, scGPT, UCE | published earlier from other machines; untouched and unverified here |
 
-**No self-hosted runner is registered** (`gh api repos/Liatir/liatir-stack/actions/runners` returned
-`0` on 2026-09-10), so no CUDA target can be built in CI at all today, whatever its local evidence.
-The nearest real publication is therefore OpenMM `macos-aarch64-cpu`, which
+This machine now serves as the GPU runner on demand, which is what unblocked the CUDA target; see
+[Linux GPU CI runs on the owner's machine](../decisions/linux-gpu-ci-on-the-owner-machine.md).
+Publication is still a separate step from validation and still unauthorized: OpenMM
+`macos-aarch64-cpu` remains the nearest one, because it
 [runs on hosted CI](../decisions/runtime-box-publication-runs-on-hosted-ci.md) and needs no GPU
-machine; a CUDA release needs a GPU runner registered first, and that is separately authorized.
+machine at all.
 
 ## Windows is an app host, not a payload platform (2026-09-09)
 
