@@ -127,6 +127,7 @@ fn default_config() -> Value {
         "allowlist": [],
         "resultWorkspaces": [],
         "dataAllowlist": [],
+        "dataFolderAllowlist": [],
         "updatedAt": now_ms(),
     })
 }
@@ -213,6 +214,10 @@ fn load_config(app: &AppHandle) -> Result<Value, String> {
                 config["dataAllowlist"] = json!([]);
                 migrated = true;
             }
+            if config.get("dataFolderAllowlist").is_none() {
+                config["dataFolderAllowlist"] = json!([]);
+                migrated = true;
+            }
             if let Some(grants) = config.get_mut("allowlist").and_then(Value::as_array_mut) {
                 let previous_len = grants.len();
                 grants.retain(|grant| {
@@ -248,6 +253,10 @@ fn validate_config(config: &Value) -> Result<(), String> {
         || config.get("allowlist").and_then(Value::as_array).is_none()
         || config.get("resultWorkspaces").and_then(Value::as_array).is_none()
         || config.get("dataAllowlist").and_then(Value::as_array).is_none()
+        || config
+            .get("dataFolderAllowlist")
+            .and_then(Value::as_array)
+            .is_none()
     {
         return Err("Invalid MCP configuration".to_string());
     }
@@ -422,6 +431,61 @@ fn data_file(app: &AppHandle, workspace_id: &str, artifact_id: &str) -> Result<V
         .ok_or_else(|| format!("Workspace artifact not found: {artifact_id}"))
 }
 
+/// The reserved Data folder holding Results. Mirrors `LIATIR_MCP_RESULTS_FOLDER`.
+const RESULTS_FOLDER: &str = "Results";
+
+fn normalize_folder(folder: &str) -> &str {
+    folder.trim().trim_matches('/')
+}
+
+/// A source folder is any Data folder outside the reserved Results tree.
+///
+/// Results readability is the separate workspace Result grant, so a Data folder grant must never
+/// reach into it. This is enforced here rather than only in the Settings list, because the list is
+/// a view and this is authority.
+fn is_source_folder(folder: &str) -> bool {
+    let normalized = normalize_folder(folder);
+    normalized != RESULTS_FOLDER && !normalized.starts_with(&format!("{RESULTS_FOLDER}/"))
+}
+
+/// Whether a folder may carry a standing grant. Mirrors `liatirMcpGrantableFolder`.
+///
+/// The Data root is excluded: a grant covers nested folders, so granting the root would mean every
+/// present and future file in the workspace — the unbounded default-allow this grant exists to
+/// avoid.
+fn is_grantable_folder(folder: &str) -> bool {
+    let normalized = normalize_folder(folder);
+    !normalized.is_empty() && is_source_folder(normalized)
+}
+
+/// A folder grant covers the folder itself and everything nested under it.
+/// Mirrors `liatirMcpDataFolderCovers`.
+fn data_folder_covers(grant_folder: &str, file_folder: &str) -> bool {
+    if !is_grantable_folder(grant_folder) || !is_source_folder(file_folder) {
+        return false;
+    }
+    let granted = normalize_folder(grant_folder);
+    let file = normalize_folder(file_folder);
+    file == granted || file.starts_with(&format!("{granted}/"))
+}
+
+/// Whether a standing folder grant of the workspace covers this registered file.
+fn folder_grant_allows(config: &Value, workspace_id: &str, file: &Value) -> bool {
+    let file_folder = file.get("folder").and_then(Value::as_str).unwrap_or_default();
+    config
+        .get("dataFolderAllowlist")
+        .and_then(Value::as_array)
+        .is_some_and(|grants| {
+            grants.iter().any(|grant| {
+                grant.get("workspaceId").and_then(Value::as_str) == Some(workspace_id)
+                    && grant
+                        .get("folder")
+                        .and_then(Value::as_str)
+                        .is_some_and(|granted| data_folder_covers(granted, file_folder))
+            })
+        })
+}
+
 fn analysis_results(app: &AppHandle, workspace_id: &str) -> Result<Vec<Value>, String> {
     let rel = format!("workspaces/{workspace_id}/analysis-runs/index.json");
     read_json(app, &rel, json!([]))?
@@ -494,7 +558,7 @@ fn artifact_access(
     if results_read_allowed(config, workspace_id) && !linked_results.is_empty() {
         return Ok(Some(("workspace-results", linked_results)));
     }
-    let explicitly_allowed = config
+    let file_allowed = config
         .get("dataAllowlist")
         .and_then(Value::as_array)
         .is_some_and(|grants| {
@@ -503,6 +567,9 @@ fn artifact_access(
                     && grant.get("artifactId").and_then(Value::as_str) == Some(artifact_id)
             })
         });
+    // A folder grant and a per-file grant carry the same authority, so both report `data-grant`:
+    // how the user granted access is Liatir's business, not the client's.
+    let explicitly_allowed = file_allowed || folder_grant_allows(config, workspace_id, file);
     Ok(explicitly_allowed.then_some(("data-grant", linked_results)))
 }
 
@@ -920,19 +987,23 @@ fn status_value(app: &AppHandle, config: &Value, requests: &[Value]) -> Value {
                 entry.get("workspaceId").and_then(Value::as_str) == Some(id)
             }))
     });
-    let data_allowlist = config
-        .get("dataAllowlist")
-        .and_then(Value::as_array)
-        .map(|grants| {
-            grants
-                .iter()
-                .filter(|grant| {
-                    grant.get("workspaceId").and_then(Value::as_str) == workspace_id.as_deref()
-                })
-                .cloned()
-                .collect::<Vec<_>>()
-        })
-        .unwrap_or_default();
+    let workspace_grants = |key: &str| {
+        config
+            .get(key)
+            .and_then(Value::as_array)
+            .map(|grants| {
+                grants
+                    .iter()
+                    .filter(|grant| {
+                        grant.get("workspaceId").and_then(Value::as_str) == workspace_id.as_deref()
+                    })
+                    .cloned()
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default()
+    };
+    let data_allowlist = workspace_grants("dataAllowlist");
+    let data_folder_allowlist = workspace_grants("dataFolderAllowlist");
     json!({
         "schemaVersion": SCHEMA_VERSION,
         "enabled": enabled,
@@ -941,6 +1012,7 @@ fn status_value(app: &AppHandle, config: &Value, requests: &[Value]) -> Value {
         "allowlist": config.get("allowlist").cloned().unwrap_or_else(|| json!([])),
         "readResults": read_results,
         "dataAllowlist": data_allowlist,
+        "dataFolderAllowlist": data_folder_allowlist,
         "pendingCount": requests.iter().filter(|request| {
             request.get("status").and_then(Value::as_str) == Some("awaiting-authorization")
         }).count(),
@@ -1412,6 +1484,128 @@ pub fn lia_mcp_set_read_results(
     Ok(status_value(&app, &config, &requests))
 }
 
+/// How many artifact identities a bulk audit record spells out before it reports only a count.
+const BULK_AUDIT_DETAIL_IDS: usize = 10;
+
+/// The audit detail for one file permission change.
+///
+/// A bulk action is one ledger entry, not one per file: the audit index is capped at
+/// `MAX_AUDIT_RECORDS`, and a single click that allows hundreds of files must not erase the
+/// history it belongs to. Identities stay spelled out while the list is short enough to read.
+fn bulk_detail(artifact_ids: &[String]) -> String {
+    match artifact_ids.len() {
+        1 => artifact_ids[0].clone(),
+        count if count <= BULK_AUDIT_DETAIL_IDS => {
+            format!("{count} files: {}", artifact_ids.join(", "))
+        }
+        count => format!("{count} files"),
+    }
+}
+
+/// Allow or revoke a set of registered files in one atomic configuration write.
+///
+/// Bulk is a single operation rather than a loop over the single-file one because a partially
+/// applied "allow everything shown" leaves a permission state nobody chose. Callers must already
+/// hold the MCP storage lock.
+fn set_data_files_allowed(
+    app: &AppHandle,
+    workspace_id: &str,
+    artifact_ids: &[String],
+    allowed: bool,
+) -> Result<Value, String> {
+    let mut config = load_config(app)?;
+    let mut additions: Vec<Value> = Vec::new();
+    let mut changed: Vec<String> = Vec::new();
+
+    if allowed {
+        let workspace = active_workspace(app)?;
+        if workspace.get("id").and_then(Value::as_str) != Some(workspace_id) {
+            return Err("Only a file in the active workspace can be allowed".to_string());
+        }
+        // Read the Data index once: the caller may be allowing every file in the workspace.
+        let files = data_files(app, workspace_id)?;
+        for artifact_id in artifact_ids {
+            if changed.contains(artifact_id) {
+                continue;
+            }
+            let file = files
+                .iter()
+                .find(|file| file.get("id").and_then(Value::as_str) == Some(artifact_id.as_str()))
+                .ok_or_else(|| format!("Workspace artifact not found: {artifact_id}"))?;
+            if file.get("missing").and_then(Value::as_bool) == Some(true)
+                || file.get("path").and_then(Value::as_str).is_none()
+            {
+                return Err("This workspace artifact is unavailable".to_string());
+            }
+            changed.push(artifact_id.clone());
+            additions.push(json!({
+                "schemaVersion": SCHEMA_VERSION,
+                "workspaceId": workspace_id,
+                "artifactId": artifact_id,
+                "name": file.get("name").and_then(Value::as_str).unwrap_or("Artifact"),
+                "allowedAt": now_ms(),
+            }));
+        }
+    }
+
+    let grants = config
+        .get_mut("dataAllowlist")
+        .and_then(Value::as_array_mut)
+        .ok_or_else(|| "Invalid MCP Data allowlist".to_string())?;
+    if !allowed {
+        for artifact_id in artifact_ids {
+            let previous_len = grants.len();
+            grants.retain(|grant| {
+                grant.get("workspaceId").and_then(Value::as_str) != Some(workspace_id)
+                    || grant.get("artifactId").and_then(Value::as_str) != Some(artifact_id.as_str())
+            });
+            if grants.len() != previous_len {
+                changed.push(artifact_id.clone());
+            }
+        }
+    } else {
+        // Re-allowing a file refreshes its grant rather than duplicating it.
+        grants.retain(|grant| {
+            grant.get("workspaceId").and_then(Value::as_str) != Some(workspace_id)
+                || !grant
+                    .get("artifactId")
+                    .and_then(Value::as_str)
+                    .is_some_and(|id| changed.iter().any(|allowed_id| allowed_id == id))
+        });
+        grants.append(&mut additions);
+    }
+
+    if !changed.is_empty() {
+        config["updatedAt"] = json!(now_ms());
+        write_json(app, CONFIG_PATH, &config, true)?;
+        append_audit(
+            app,
+            audit_record(
+                if allowed { "data-file-allowed" } else { "data-file-revoked" },
+                "completed",
+                None,
+                Some(workspace_id),
+                None,
+                None,
+                Some(&bulk_detail(&changed)),
+            ),
+        )?;
+    }
+
+    let mut requests = load_requests(app)?;
+    if !allowed {
+        deny_waiting_requests_with_invalid_inputs(
+            app,
+            &config,
+            &mut requests,
+            "A requested Data artifact was revoked before this run was approved.",
+        )?;
+        save_requests(app, requests.clone())?;
+    }
+    emit_state_changed(app);
+    Ok(status_value(app, &config, &requests))
+}
+
 #[tauri::command]
 pub fn lia_mcp_allow_data_file(
     app: AppHandle,
@@ -1422,49 +1616,7 @@ pub fn lia_mcp_allow_data_file(
     ensure_main_window(&window)?;
     let state = app.state::<McpRuntimeState>();
     let _guard = state.lock()?;
-    let workspace = active_workspace(&app)?;
-    if workspace.get("id").and_then(Value::as_str) != Some(workspace_id.as_str()) {
-        return Err("Only a file in the active workspace can be allowed".to_string());
-    }
-    let file = data_file(&app, &workspace_id, &artifact_id)?;
-    if file.get("missing").and_then(Value::as_bool) == Some(true)
-        || file.get("path").and_then(Value::as_str).is_none()
-    {
-        return Err("This workspace artifact is unavailable".to_string());
-    }
-    let mut config = load_config(&app)?;
-    let grants = config
-        .get_mut("dataAllowlist")
-        .and_then(Value::as_array_mut)
-        .ok_or_else(|| "Invalid MCP Data allowlist".to_string())?;
-    grants.retain(|grant| {
-        grant.get("workspaceId").and_then(Value::as_str) != Some(workspace_id.as_str())
-            || grant.get("artifactId").and_then(Value::as_str) != Some(artifact_id.as_str())
-    });
-    grants.push(json!({
-        "schemaVersion": SCHEMA_VERSION,
-        "workspaceId": workspace_id,
-        "artifactId": artifact_id,
-        "name": file.get("name").and_then(Value::as_str).unwrap_or("Artifact"),
-        "allowedAt": now_ms(),
-    }));
-    config["updatedAt"] = json!(now_ms());
-    write_json(&app, CONFIG_PATH, &config, true)?;
-    append_audit(
-        &app,
-        audit_record(
-            "data-file-allowed",
-            "completed",
-            None,
-            Some(&workspace_id),
-            None,
-            None,
-            Some(&artifact_id),
-        ),
-    )?;
-    let requests = load_requests(&app)?;
-    emit_state_changed(&app);
-    Ok(status_value(&app, &config, &requests))
+    set_data_files_allowed(&app, &workspace_id, std::slice::from_ref(&artifact_id), true)
 }
 
 #[tauri::command]
@@ -1477,31 +1629,148 @@ pub fn lia_mcp_revoke_data_file(
     ensure_main_window(&window)?;
     let state = app.state::<McpRuntimeState>();
     let _guard = state.lock()?;
+    set_data_files_allowed(&app, &workspace_id, std::slice::from_ref(&artifact_id), false)
+}
+
+/// Allow or revoke a list of registered files in one write, one audit record and one outcome.
+#[tauri::command]
+pub fn lia_mcp_set_data_files_allowed(
+    app: AppHandle,
+    window: WebviewWindow,
+    workspace_id: String,
+    artifact_ids: Vec<String>,
+    allowed: bool,
+) -> Result<Value, String> {
+    ensure_main_window(&window)?;
+    let state = app.state::<McpRuntimeState>();
+    let _guard = state.lock()?;
+    set_data_files_allowed(&app, &workspace_id, &artifact_ids, allowed)
+}
+
+/// Grant or withdraw standing access to one named Data folder, including files added to it later.
+#[tauri::command]
+pub fn lia_mcp_set_data_folder_allowed(
+    app: AppHandle,
+    window: WebviewWindow,
+    workspace_id: String,
+    folder: String,
+    allowed: bool,
+) -> Result<Value, String> {
+    ensure_main_window(&window)?;
+    let state = app.state::<McpRuntimeState>();
+    let _guard = state.lock()?;
+    let folder = normalize_folder(&folder).to_string();
+    if allowed {
+        let workspace = active_workspace(&app)?;
+        if workspace.get("id").and_then(Value::as_str) != Some(workspace_id.as_str()) {
+            return Err("Only a folder in the active workspace can be allowed".to_string());
+        }
+        if !is_grantable_folder(&folder) {
+            return Err(
+                "Only a named Data folder outside Results can be allowed as a whole".to_string(),
+            );
+        }
+    }
     let mut config = load_config(&app)?;
     let grants = config
-        .get_mut("dataAllowlist")
+        .get_mut("dataFolderAllowlist")
         .and_then(Value::as_array_mut)
-        .ok_or_else(|| "Invalid MCP Data allowlist".to_string())?;
+        .ok_or_else(|| "Invalid MCP Data folder allowlist".to_string())?;
     let previous_len = grants.len();
     grants.retain(|grant| {
         grant.get("workspaceId").and_then(Value::as_str) != Some(workspace_id.as_str())
-            || grant.get("artifactId").and_then(Value::as_str) != Some(artifact_id.as_str())
+            || grant.get("folder").and_then(Value::as_str) != Some(folder.as_str())
     });
-    if grants.len() != previous_len {
+    let removed = grants.len() != previous_len;
+    if allowed {
+        grants.push(json!({
+            "schemaVersion": SCHEMA_VERSION,
+            "workspaceId": workspace_id,
+            "folder": folder,
+            "allowedAt": now_ms(),
+        }));
+    }
+    if allowed || removed {
         config["updatedAt"] = json!(now_ms());
         write_json(&app, CONFIG_PATH, &config, true)?;
         append_audit(
             &app,
             audit_record(
-                "data-file-revoked",
+                if allowed { "data-folder-allowed" } else { "data-folder-revoked" },
                 "completed",
                 None,
                 Some(&workspace_id),
                 None,
                 None,
-                Some(&artifact_id),
+                Some(&folder),
             ),
         )?;
+    }
+    let mut requests = load_requests(&app)?;
+    if !allowed {
+        deny_waiting_requests_with_invalid_inputs(
+            &app,
+            &config,
+            &mut requests,
+            "A requested Data artifact was revoked before this run was approved.",
+        )?;
+        save_requests(&app, requests.clone())?;
+    }
+    emit_state_changed(&app);
+    Ok(status_value(&app, &config, &requests))
+}
+
+/// Withdraw every Data file and folder grant in one workspace.
+///
+/// Distinct from revoking the listed files: it also clears folder grants and grants left behind by
+/// files that are no longer registered, so "revoke everything" cannot leave residue the Settings
+/// list never showed. The workspace Result permission is separate and deliberately untouched.
+#[tauri::command]
+pub fn lia_mcp_revoke_all_data_access(
+    app: AppHandle,
+    window: WebviewWindow,
+    workspace_id: String,
+) -> Result<Value, String> {
+    ensure_main_window(&window)?;
+    let state = app.state::<McpRuntimeState>();
+    let _guard = state.lock()?;
+    let mut config = load_config(&app)?;
+    let mut cleared: Vec<(&'static str, usize)> = Vec::new();
+    for (key, action) in [
+        ("dataAllowlist", "data-file-revoked"),
+        ("dataFolderAllowlist", "data-folder-revoked"),
+    ] {
+        let grants = config
+            .get_mut(key)
+            .and_then(Value::as_array_mut)
+            .ok_or_else(|| "Invalid MCP Data allowlist".to_string())?;
+        let previous_len = grants.len();
+        grants.retain(|grant| {
+            grant.get("workspaceId").and_then(Value::as_str) != Some(workspace_id.as_str())
+        });
+        let removed = previous_len - grants.len();
+        if removed > 0 {
+            cleared.push((action, removed));
+        }
+    }
+    if !cleared.is_empty() {
+        config["updatedAt"] = json!(now_ms());
+        write_json(&app, CONFIG_PATH, &config, true)?;
+        for (action, removed) in cleared {
+            let unit = if action == "data-file-revoked" { "files" } else { "folders" };
+            append_audit(
+                &app,
+                audit_record(
+                    action,
+                    "completed",
+                    None,
+                    Some(&workspace_id),
+                    None,
+                    None,
+                    Some(&format!("{removed} {unit}")),
+                ),
+            )?;
+        }
     }
     let mut requests = load_requests(&app)?;
     deny_waiting_requests_with_invalid_inputs(
@@ -2814,6 +3083,53 @@ mod tests {
         assert!(!allowed("https://localhost:1420"));
         assert!(!allowed("http://localhost.example:1420"));
         assert!(!allowed("http://127.0.0.1:@example.test"));
+    }
+
+    #[test]
+    fn a_folder_grant_covers_its_own_tree_and_never_results() {
+        assert!(data_folder_covers("Inputs", "Inputs"));
+        assert!(data_folder_covers("Inputs", "Inputs/patient-1"));
+        assert!(!data_folder_covers("Inputs", "Inputs-archive"));
+        assert!(!data_folder_covers("Inputs", ""));
+        // Results readability is the workspace Result grant, never a Data folder grant.
+        assert!(!data_folder_covers("Results", "Results"));
+        assert!(!data_folder_covers("Inputs", "Results/run-1"));
+    }
+
+    #[test]
+    fn only_a_named_source_folder_can_carry_a_standing_grant() {
+        assert!(is_grantable_folder("Inputs"));
+        assert!(is_grantable_folder("Inputs/patient-1"));
+        // The Data root would mean every present and future file in the workspace.
+        assert!(!is_grantable_folder(""));
+        assert!(!is_grantable_folder("   "));
+        assert!(!is_grantable_folder("/"));
+        assert!(!is_grantable_folder("Results"));
+        assert!(!is_grantable_folder("Results/run-1"));
+    }
+
+    #[test]
+    fn a_folder_grant_authorizes_a_file_exactly_like_a_file_grant() {
+        let config = json!({
+            "dataFolderAllowlist": [
+                { "workspaceId": "ws-1", "folder": "Inputs" },
+            ],
+        });
+        let file = |folder: &str| json!({ "id": "artifact-1", "folder": folder });
+        assert!(folder_grant_allows(&config, "ws-1", &file("Inputs")));
+        assert!(folder_grant_allows(&config, "ws-1", &file("Inputs/patient-1")));
+        assert!(!folder_grant_allows(&config, "ws-1", &file("Other")));
+        // Grants never cross workspaces.
+        assert!(!folder_grant_allows(&config, "ws-2", &file("Inputs")));
+    }
+
+    #[test]
+    fn a_bulk_permission_change_is_one_audit_entry() {
+        let ids = |count: usize| (0..count).map(|n| format!("artifact-{n}")).collect::<Vec<_>>();
+        // A single file keeps the plain identity the per-file action has always recorded.
+        assert_eq!(bulk_detail(&ids(1)), "artifact-0");
+        assert_eq!(bulk_detail(&ids(2)), "2 files: artifact-0, artifact-1");
+        assert_eq!(bulk_detail(&ids(300)), "300 files");
     }
 
     #[test]

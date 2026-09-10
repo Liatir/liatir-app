@@ -1,5 +1,33 @@
 # Current project status
 
+## MCP file permissions scale past a handful of files (2026-09-10)
+
+The MCP Settings surface offered one Allow/Revoke button per registered file in a scrollable list,
+with no filter and no bulk action: correct, and unusable at real workspace sizes. It now has a
+filter over the file list, a bulk allow bound to the filtered list and labelled with the exact
+number of files it will change, a per-folder standing grant, and a revoke-all that clears every
+file and folder grant in the workspace in one write.
+
+**The one control that was asked for and deliberately not built is a global "allow new files by
+default" toggle**, because it grants authority over files the user has not seen and leaves no
+authorization event in the audit. The folder grant replaces it with a named, visible, revocable
+scope; the Data root is not grantable, since with nested coverage it would be the same toggle under
+another name. The reasoning is in
+[MCP Data access controls](../decisions/mcp-data-access-controls.md).
+
+Three native commands carry the bulk work — `lia_mcp_set_data_files_allowed`,
+`lia_mcp_set_data_folder_allowed`, `lia_mcp_revoke_all_data_access` — so a bulk change is one atomic
+configuration write and one audit record instead of N round trips through the single-file command.
+The folder coverage rule is exported from `packages/liatir-core` and mirrored in Rust.
+
+Verified on macOS arm64: `test:verify` 6/6 suites, 77 files / 596 unit tests; `cargo test` 102
+passed / 2 ignored; Clippy clean at the existing warning baseline. The native Tauri E2E was run for
+this change (`--suite tauri-prepare --suite tauri-e2e`): 35 passed, 0 failed, 30 environment-skipped,
+including the Gate 8 MCP scenario, which drives the rewritten Settings rows through the real app and
+asserts the `data-file-allowed` and `data-file-revoked` audit actions the shared bulk path now emits.
+The remaining UI suites (packaging and install lifecycle) were not run; they do not touch this
+change.
+
 ## OpenMM CUDA is validated in CI, not just locally (2026-09-10)
 
 `openmm-openmm/linux-x86_64-cuda12.9` is **`native-lifecycle-validated`** — the first CUDA target

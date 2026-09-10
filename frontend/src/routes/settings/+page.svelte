@@ -13,8 +13,14 @@
 	import { LIATIR_DOCS_URL } from '$lib/_constants';
   import type { NavHref } from '$lib/sidebarUtils';
   import type { LiatirMcpAuditRecord, LiatirMcpServerStatus } from '@liatir/core';
+  import {
+    liatirMcpDataFolderCovers,
+    liatirMcpGrantableFolder,
+    liatirMcpIsSourceFolder,
+  } from '@liatir/core';
   import { pipelineStore } from '$lib/stores/pipeline.svelte';
-  import { dataFiles } from '$lib/stores/dataFiles.svelte';
+  import { dataFiles, type DataFile } from '$lib/stores/dataFiles.svelte';
+  import { confirm } from '$lib/stores/confirm.svelte';
 
   let apiVersion = $state<string | null>(null);
   let appVersion = $state<string | null>(null);
@@ -33,6 +39,7 @@
   let mcpError = $state<string | null>(null);
   let showMcpToken = $state(false);
   let copiedMcp = $state<string | null>(null);
+  let mcpFileFilter = $state('');
 
   async function refreshMcp() {
     const api = liatir();
@@ -227,10 +234,105 @@
     ) ?? null;
   }
 
-  function mcpSourceFiles() {
-    return dataFiles.files.filter((file) =>
-      !file.missing && file.folder !== 'Results' && !file.folder.startsWith('Results/')
+  /** The folder grant covering this file, if any: a file may sit below an allowed parent folder. */
+  function coveringFolderGrant(file: DataFile) {
+    return mcpStatus?.dataFolderAllowlist.find((grant) =>
+      grant.workspaceId === workspaceStore.activeId
+        && liatirMcpDataFolderCovers(grant.folder, file.folder)
+    ) ?? null;
+  }
+
+  function folderGrantFor(folder: string) {
+    return mcpStatus?.dataFolderAllowlist.find((grant) =>
+      grant.workspaceId === workspaceStore.activeId && grant.folder === folder
+    ) ?? null;
+  }
+
+  /** Registered files a client could be given: Results are governed by the Result permission. */
+  const mcpSourceFiles = $derived(
+    dataFiles.files.filter((file) => !file.missing && liatirMcpIsSourceFolder(file.folder)),
+  );
+
+  /** Folders that can carry a standing grant, including empty ones the user already created. */
+  const mcpGrantableFolders = $derived([...new Set([
+    ...dataFiles.folders,
+    ...mcpSourceFiles.map((file) => file.folder),
+  ])].filter(liatirMcpGrantableFolder).sort());
+
+  const mcpVisibleFiles = $derived.by(() => {
+    const needle = mcpFileFilter.trim().toLowerCase();
+    if (!needle) return mcpSourceFiles;
+    return mcpSourceFiles.filter((file) =>
+      file.name.toLowerCase().includes(needle) || file.folder.toLowerCase().includes(needle)
     );
+  });
+
+  /** Files the bulk action would actually change — already readable ones are left alone. */
+  const mcpAllowableFiles = $derived(
+    mcpVisibleFiles.filter((file) => !dataGrantFor(file.id) && !coveringFolderGrant(file)),
+  );
+
+  const mcpGrantCount = $derived(
+    (mcpStatus?.dataAllowlist.length ?? 0) + (mcpStatus?.dataFolderAllowlist.length ?? 0),
+  );
+
+  /** One place for every Data permission call, so each one refreshes status and audit alike. */
+  async function runMcpDataAction(
+    key: string,
+    action: (workspaceId: string) => Promise<LiatirMcpServerStatus>,
+  ) {
+    const workspaceId = workspaceStore.activeId;
+    if (!liatir() || !workspaceId) return;
+    mcpBusy = key;
+    mcpError = null;
+    try {
+      mcpStatus = await action(workspaceId);
+      mcpAudit = await liatir()!.desktop.mcp.auditRecords();
+    } catch (error) {
+      mcpError = readableError(error);
+    } finally {
+      mcpBusy = null;
+    }
+  }
+
+  async function allowVisibleFiles() {
+    const files = mcpAllowableFiles;
+    const count = files.length;
+    if (count === 0) return;
+    const accepted = await confirm({
+      title: `Allow ${count} file${count === 1 ? '' : 's'}?`,
+      message: `A connected client will be able to read ${count === 1 ? 'this file' : 'these files'} and use ${count === 1 ? 'it' : 'them'} as a pipeline input. Files added later are not included.`,
+      confirmLabel: 'Allow',
+    });
+    if (!accepted) return;
+    const artifactIds = files.map((file) => file.id);
+    await runMcpDataAction('files:bulk', (workspaceId) =>
+      liatir()!.desktop.mcp.setDataFilesAllowed(workspaceId, artifactIds, true));
+  }
+
+  async function revokeAllDataAccess() {
+    if (mcpGrantCount === 0) return;
+    const accepted = await confirm({
+      title: 'Revoke all file access?',
+      message: `This removes every allowed file and folder in this workspace (${mcpGrantCount}). Results permission is separate and stays as it is.`,
+      confirmLabel: 'Revoke all',
+    });
+    if (!accepted) return;
+    await runMcpDataAction('files:revoke-all', (workspaceId) =>
+      liatir()!.desktop.mcp.revokeAllDataAccess(workspaceId));
+  }
+
+  async function setFolderAllowed(folder: string, allowed: boolean) {
+    if (allowed) {
+      const accepted = await confirm({
+        title: `Allow the folder “${folder}”?`,
+        message: 'Every file in this folder and its subfolders becomes readable, including files you add later. You can revoke it at any time.',
+        confirmLabel: 'Allow folder',
+      });
+      if (!accepted) return;
+    }
+    await runMcpDataAction(`folder:${folder}`, (workspaceId) =>
+      liatir()!.desktop.mcp.setDataFolderAllowed(workspaceId, folder, allowed));
   }
 
   async function setResultsReadable(enabled: boolean) {
@@ -249,21 +351,10 @@
   }
 
   async function setDataFileAllowed(artifactId: string, allowed: boolean) {
-    const api = liatir();
-    const workspaceId = workspaceStore.activeId;
-    if (!api || !workspaceId) return;
-    mcpBusy = `file:${artifactId}`;
-    mcpError = null;
-    try {
-      mcpStatus = allowed
-        ? await api.desktop.mcp.allowDataFile(workspaceId, artifactId)
-        : await api.desktop.mcp.revokeDataFile(workspaceId, artifactId);
-      mcpAudit = await api.desktop.mcp.auditRecords();
-    } catch (error) {
-      mcpError = readableError(error);
-    } finally {
-      mcpBusy = null;
-    }
+    await runMcpDataAction(`file:${artifactId}`, (workspaceId) =>
+      allowed
+        ? liatir()!.desktop.mcp.allowDataFile(workspaceId, artifactId)
+        : liatir()!.desktop.mcp.revokeDataFile(workspaceId, artifactId));
   }
 
   async function copyMcp(label: string, value: string | null | undefined) {
@@ -517,33 +608,96 @@
           </p>
         </div>
 
-        <div class="space-y-2 border-t border-border pt-4">
-          <div>
-            <p class="text-sm text-text-secondary">Source files from Data</p>
-            <p class="max-w-2xl text-[11px] leading-relaxed text-text-subtle">
-              Allow individual registered files so a client can read them or pass their artifact ID to a pipeline file input. Liatir never exposes their filesystem paths.
-            </p>
+        <div class="space-y-3 border-t border-border pt-4">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <p class="text-sm text-text-secondary">Source files from Data</p>
+              <p class="max-w-2xl text-[11px] leading-relaxed text-text-subtle">
+                Allow registered files so a client can read them or pass their artifact ID to a pipeline file input. Liatir never exposes their filesystem paths.
+              </p>
+            </div>
+            <Button
+              size="sm"
+              variant="danger"
+              disabled={mcpGrantCount === 0}
+              loading={mcpBusy === 'files:revoke-all'}
+              testId="mcp-revoke-all-data"
+              onclick={() => void revokeAllDataAccess()}
+            >Revoke all</Button>
           </div>
-          {#if mcpSourceFiles().length === 0}
-            <p class="rounded-lg border border-dashed border-border px-3 py-3 text-xs text-text-subtle">Add a source file to Data first.</p>
-          {:else}
-            <div class="max-h-64 divide-y divide-border overflow-y-auto rounded-xl border border-border">
-              {#each mcpSourceFiles() as file (file.id)}
-                {@const allowed = Boolean(dataGrantFor(file.id))}
-                <div class="flex items-center justify-between gap-3 bg-surface-2 px-3 py-3" data-testid={`mcp-data-file-${file.id}`}>
-                  <div class="min-w-0">
-                    <p class="truncate text-sm text-text-secondary">{file.name}</p>
-                    <p class="truncate text-[11px] text-text-subtle">{file.folder || 'Data'} · {file.ext || 'file'}{file.size != null ? ` · ${file.size.toLocaleString()} bytes` : ''}</p>
-                  </div>
+
+          {#if mcpGrantableFolders.length > 0}
+            <div class="space-y-1.5">
+              <p class="text-[11px] font-medium text-text-muted">Whole folders</p>
+              <p class="max-w-2xl text-[11px] leading-relaxed text-text-subtle">
+                A folder stays allowed for the files you add to it later. Results are never included.
+              </p>
+              <div class="flex flex-wrap gap-2">
+                {#each mcpGrantableFolders as folder (folder)}
+                  {@const allowed = Boolean(folderGrantFor(folder))}
                   <Button
                     size="sm"
                     variant={allowed ? 'danger' : 'secondary'}
-                    loading={mcpBusy === `file:${file.id}`}
-                    onclick={() => void setDataFileAllowed(file.id, !allowed)}
-                  >{allowed ? 'Revoke' : 'Allow'}</Button>
-                </div>
-              {/each}
+                    loading={mcpBusy === `folder:${folder}`}
+                    testId={`mcp-data-folder-${folder}`}
+                    onclick={() => void setFolderAllowed(folder, !allowed)}
+                  >{allowed ? `Revoke ${folder}` : `Allow ${folder}`}</Button>
+                {/each}
+              </div>
             </div>
+          {/if}
+
+          {#if mcpSourceFiles.length === 0}
+            <p class="rounded-lg border border-dashed border-border px-3 py-3 text-xs text-text-subtle">Add a source file to Data first.</p>
+          {:else}
+            <div class="flex flex-wrap items-center gap-2">
+              <input
+                type="search"
+                bind:value={mcpFileFilter}
+                placeholder="Filter by file or folder name"
+                aria-label="Filter Data files"
+                data-testid="mcp-data-filter"
+                class="min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs
+                       placeholder:text-text-subtle focus:outline-none focus:ring-2 focus:ring-brand/30"
+              />
+              <Button
+                size="sm"
+                variant="secondary"
+                disabled={mcpAllowableFiles.length === 0}
+                loading={mcpBusy === 'files:bulk'}
+                testId="mcp-allow-visible-data"
+                onclick={() => void allowVisibleFiles()}
+              >{mcpAllowableFiles.length === 0
+                  ? 'Nothing left to allow'
+                  : `Allow ${mcpAllowableFiles.length} shown file${mcpAllowableFiles.length === 1 ? '' : 's'}`}</Button>
+            </div>
+
+            {#if mcpVisibleFiles.length === 0}
+              <p class="rounded-lg border border-dashed border-border px-3 py-3 text-xs text-text-subtle">No file matches this filter.</p>
+            {:else}
+              <div class="max-h-64 divide-y divide-border overflow-y-auto rounded-xl border border-border">
+                {#each mcpVisibleFiles as file (file.id)}
+                  {@const allowed = Boolean(dataGrantFor(file.id))}
+                  {@const byFolder = coveringFolderGrant(file)}
+                  <div class="flex items-center justify-between gap-3 bg-surface-2 px-3 py-3" data-testid={`mcp-data-file-${file.id}`}>
+                    <div class="min-w-0">
+                      <p class="truncate text-sm text-text-secondary">{file.name}</p>
+                      <p class="truncate text-[11px] text-text-subtle">{file.folder || 'Data'} · {file.ext || 'file'}{file.size != null ? ` · ${file.size.toLocaleString()} bytes` : ''}</p>
+                    </div>
+                    {#if byFolder}
+                      <span class="shrink-0 text-[11px] text-emerald-500">Allowed by folder “{byFolder.folder}”</span>
+                    {:else}
+                      <Button
+                        size="sm"
+                        variant={allowed ? 'danger' : 'secondary'}
+                        loading={mcpBusy === `file:${file.id}`}
+                        onclick={() => void setDataFileAllowed(file.id, !allowed)}
+                      >{allowed ? 'Revoke' : 'Allow'}</Button>
+                    {/if}
+                  </div>
+                {/each}
+              </div>
+            {/if}
           {/if}
         </div>
 

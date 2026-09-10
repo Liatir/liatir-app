@@ -1424,6 +1424,17 @@ function buildMcp(core) {
     setReadResults: (enabled) => core.invoke("lia_mcp_set_read_results", { enabled }),
     allowDataFile: (workspaceId, artifactId) => core.invoke("lia_mcp_allow_data_file", { workspaceId, artifactId }),
     revokeDataFile: (workspaceId, artifactId) => core.invoke("lia_mcp_revoke_data_file", { workspaceId, artifactId }),
+    setDataFilesAllowed: (workspaceId, artifactIds, allowed) => core.invoke("lia_mcp_set_data_files_allowed", {
+      workspaceId,
+      artifactIds,
+      allowed
+    }),
+    setDataFolderAllowed: (workspaceId, folder, allowed) => core.invoke("lia_mcp_set_data_folder_allowed", {
+      workspaceId,
+      folder,
+      allowed
+    }),
+    revokeAllDataAccess: (workspaceId) => core.invoke("lia_mcp_revoke_all_data_access", { workspaceId }),
     pendingRequests: () => core.invoke("lia_mcp_pending_requests"),
     requests: () => core.invoke("lia_mcp_requests"),
     resolveAuthorization: (runId, approved) => core.invoke("lia_mcp_resolve_authorization", { runId, approved }),

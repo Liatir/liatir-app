@@ -44,7 +44,7 @@ pipeline revision.
 | Entity | Owner and persistence | Identity and isolation |
 | --- | --- | --- |
 | HTTP listener | App process; runtime-only ephemeral loopback port | One listener for the app lifetime; policy can remain disabled |
-| MCP policy | App-global `mcp/config.json` | Enabled flag, 64-hex bearer token, revision/input grants, Result-workspace grants and Data-artifact grants |
+| MCP policy | App-global `mcp/config.json` | Enabled flag, 64-hex bearer token, revision/input grants, Result-workspace grants, Data-artifact grants and Data-folder grants |
 | Pipeline grant | MCP policy | Workspace ID + pipeline ID + exact saved `updatedAt` revision + derived input schema snapshot |
 | Run request | App-global `mcp/requests.json`, capped at 500 | Stable UUID allocated before approval; workspace, pipeline revision, input schema/values and client metadata |
 | Pipeline execution | Existing frontend pipeline store and common execution spine | Same UUID is the root Pipeline Run and Result identity; independent pipelines remain independent |
@@ -169,9 +169,28 @@ The server exposes only:
 Run resources require the run to belong to MCP and to the current active
 workspace. An artifact is readable only when it is linked to an MCP-owned
 Result, linked to any Result while workspace Result reads are enabled, or
-individually granted from Data. The artifact ID is resolved against the active
-workspace's Data index; a caller-supplied path never enters the read or pipeline
-input boundary.
+granted from Data — individually, or through a standing grant on the folder it
+sits in. The artifact ID is resolved against the active workspace's Data index;
+a caller-supplied path never enters the read or pipeline input boundary.
+
+A Data folder grant covers the named folder and everything nested under it,
+including files registered later, and never reaches into `Results`, which the
+separate workspace Result grant governs. The Data root cannot be granted: with
+nested coverage it would authorize every present and future file in the
+workspace, which is the standing default-allow the boundary exists to refuse.
+`liatirMcpDataFolderCovers` in `packages/liatir-core` is the rule, mirrored by
+`data_folder_covers` in Rust so the Settings list and the server cannot disagree
+about what was granted. Both grant kinds carry the same authority, so an
+artifact descriptor reports `access: "data-grant"` for either.
+
+Settings administers Data access with a filter over the registered files, a bulk
+allow bound to the filtered list and labelled with the exact number of files it
+will change, a per-folder grant, and a revoke-all that clears every file and
+folder grant in the workspace in one write. Bulk changes are one native command,
+one atomic configuration write and one audit record, never a loop over the
+single-file command: a half-applied bulk change is a permission state nobody
+chose, and one click must not be able to fill a capped audit index. See
+[MCP Data access controls](../../decisions/mcp-data-access-controls.md).
 
 Result metadata omits stored inputs and parameters, replaces output files with
 artifact descriptors and recursively replaces registered paths in structured
@@ -191,6 +210,7 @@ expected requests.
 | Plugin privilege escalation | Separate endpoint/token and dispatcher; every admin command is main-window-only | Main-window compromise has the same authority as the user-facing app |
 | Arbitrary execution | Three closed JSON schemas, revision-frozen inputs, no graph references, shell or generic invoke tool | Tools already present in the saved graph retain their configured capability |
 | Arbitrary file disclosure | Artifact IDs resolved against active Data; Result/Data grants; no path arguments; regular non-symlink files; 64 KiB chunks; path-free metadata | Permitted scientific files and Result content remain sensitive by definition |
+| Unnoticed widening of file access | Only a named folder carries a standing grant, never the Data root or Results; every grant and revocation is audited; one revoke-all clears the workspace | A file added to a granted folder becomes readable without a new decision — the scope the user accepted when granting the folder |
 | Cross-workspace disclosure | Active-workspace filtering and MCP-run ownership checks | Switching workspace makes another workspace's run temporarily unreadable by design |
 | Replay and duplicate work | Durable UUID, one active MCP run per pipeline, terminal-state checks | Different allowed pipelines may run concurrently by product design |
 | False completion after restart | Common execution records, terminal reconciliation, explicit `interrupted` fallback | The MCP control layer does not resurrect an orphaned computation |
@@ -199,7 +219,8 @@ expected requests.
 ## Audit contract
 
 The audit records server enable/disable, token rotation, pipeline/Result/Data
-allow and revoke, resource list/read, run request/authorization/denial/start/
+file and Data folder allow and revoke, resource list/read, run
+request/authorization/denial/start/
 cancel/finish, Job-origin cancellation and rejected tool requests. Each
 accepted protocol operation carries the self-reported client metadata where
 available. Authentication failures are intentionally not persisted; HTTP
@@ -266,6 +287,8 @@ prerequisites and failure/retry history are in
 - pipeline creation, graph mutation, new connections, private Connector
   parameters or undeclared input overrides;
 - automatic approval or trust based on the client-reported name;
+- a global default that allows files not yet registered, or any Data grant that
+  is not a named file or a named folder;
 - autonomous scientific selection, preprocessing or interpretation;
 - cancellation of user-, Plugin- or other non-MCP-owned runs;
 - replacing the Jobs, Results or saved-pipeline runtime with MCP-specific

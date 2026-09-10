@@ -88,6 +88,57 @@ export interface LiatirMcpDataFileGrant {
   allowedAt: number;
 }
 
+/**
+ * Standing access to one named Data folder, covering files added to it later.
+ *
+ * This is the only forward-looking file grant Liatir offers, and it exists so that no global
+ * "allow new files by default" switch has to: its scope is a folder the user named and can see.
+ */
+export interface LiatirMcpDataFolderGrant {
+  schemaVersion: typeof LIATIR_MCP_SCHEMA_VERSION;
+  workspaceId: string;
+  folder: string;
+  allowedAt: number;
+}
+
+/** Results live in this reserved Data folder and are governed by the workspace Result grant. */
+export const LIATIR_MCP_RESULTS_FOLDER = "Results" as const;
+
+/** Data folders nest with `/`, exactly as the workspace Data index stores them. */
+function normalizeFolder(folder: string): string {
+  return folder.trim().replace(/^\/+|\/+$/g, "");
+}
+
+/** A source folder is any Data folder that is not the reserved Results tree. */
+export function liatirMcpIsSourceFolder(folder: string): boolean {
+  const normalized = normalizeFolder(folder);
+  return (
+    normalized !== LIATIR_MCP_RESULTS_FOLDER &&
+    !normalized.startsWith(`${LIATIR_MCP_RESULTS_FOLDER}/`)
+  );
+}
+
+/**
+ * Whether a folder may carry a standing grant.
+ *
+ * The Data root is deliberately excluded: because a grant covers nested folders, granting the
+ * root would mean every present and future file in the workspace — the unbounded default-allow
+ * this grant was designed to avoid.
+ */
+export function liatirMcpGrantableFolder(folder: string): boolean {
+  const normalized = normalizeFolder(folder);
+  return normalized.length > 0 && liatirMcpIsSourceFolder(normalized);
+}
+
+/** A folder grant covers the folder itself and everything nested under it. */
+export function liatirMcpDataFolderCovers(grantFolder: string, fileFolder: string): boolean {
+  if (!liatirMcpGrantableFolder(grantFolder)) return false;
+  if (!liatirMcpIsSourceFolder(fileFolder)) return false;
+  const granted = normalizeFolder(grantFolder);
+  const file = normalizeFolder(fileFolder);
+  return file === granted || file.startsWith(`${granted}/`);
+}
+
 /** Path-free description returned for an MCP-readable registered file. */
 export interface LiatirMcpArtifactDescriptor {
   schemaVersion: typeof LIATIR_MCP_SCHEMA_VERSION;
@@ -148,6 +199,8 @@ export type LiatirMcpAuditAction =
   | "results-read-disabled"
   | "data-file-allowed"
   | "data-file-revoked"
+  | "data-folder-allowed"
+  | "data-folder-revoked"
   | "resource-listed"
   | "resource-read"
   | "run-requested"
@@ -183,6 +236,7 @@ export interface LiatirMcpServerStatus {
   allowlist: LiatirMcpPipelineGrant[];
   readResults: boolean;
   dataAllowlist: LiatirMcpDataFileGrant[];
+  dataFolderAllowlist: LiatirMcpDataFolderGrant[];
   pendingCount: number;
 }
 

@@ -10,6 +10,12 @@ export interface McpInterface {
     setReadResults(enabled: boolean): Promise<LiatirMcpServerStatus>;
     allowDataFile(workspaceId: string, artifactId: string): Promise<LiatirMcpServerStatus>;
     revokeDataFile(workspaceId: string, artifactId: string): Promise<LiatirMcpServerStatus>;
+    /** Allow or revoke many registered files in one atomic change. */
+    setDataFilesAllowed(workspaceId: string, artifactIds: string[], allowed: boolean): Promise<LiatirMcpServerStatus>;
+    /** Grant or withdraw standing access to one Data folder, including files added later. */
+    setDataFolderAllowed(workspaceId: string, folder: string, allowed: boolean): Promise<LiatirMcpServerStatus>;
+    /** Withdraw every Data file and folder grant in the workspace. Results stay separate. */
+    revokeAllDataAccess(workspaceId: string): Promise<LiatirMcpServerStatus>;
     pendingRequests(): Promise<LiatirMcpRunRequest[]>;
     requests(): Promise<LiatirMcpRunRequest[]>;
     resolveAuthorization(runId: string, approved: boolean): Promise<LiatirMcpRunRequest>;
