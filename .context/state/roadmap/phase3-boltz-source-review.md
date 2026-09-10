@@ -80,14 +80,54 @@ rediscovered later:
    consequence is that `aiohttp` is absent, so no remote-filesystem path exists. Harmless, and
    aligned with an offline box, but it is a real difference from a stock Boltz install.
 
+## The licence inventory exists, and it exposed a blocker (2026-09-11)
+
+**Every one of the 144 locked distributions now has a reviewed licence**, and the legal record is
+`runtime-boxes/legal/boltz-2.md`. Getting there uncovered a structural blocker that stops Boltz-2,
+Protenix v2 and Protenix Mini alike, because all three are the project's only recipes with
+`[pypi-dependencies]`; every published box to date is pure conda.
+
+**pixi records an SPDX licence for a conda package and nothing at all for a PyPI one.** Boltz's lock
+has 93 conda and 51 PyPI entries, and the PyPI entries carry only name, version, sha256,
+`requires_dist` and `requires_python`. Verified against pixi 0.73.0 and 0.77.0: both resolve the
+same package set and both record zero PyPI licences.
+
+Scrollcase derives the box's licence inventory from the lock and **refuses to ship a package whose
+licence it cannot name** — `lockedCondaDistributions` throws `<name>==<version> lacks a declared
+license in pixi.lock`. That refusal is correct; the problem is that for PyPI there is nothing in the
+lock to read. Checked in the installed `scrollcase@0.8.0` and in `scrollcase@1.0.0`: identical, and
+1.0.0's new *declared* inventory covers dependencies compiled into shipped binaries (`linkedInto`
+payload files), not PyPI distributions. **No released Scrollcase can build a box whose lock contains
+a PyPI package.** No catalog entry can be added either, because `validatePixiRecipeLockAndAudit`
+requires an audit whose package set equals what that same function returns.
+
+The licences themselves were therefore read from the distributions the lock already pins:
+downloaded, checked against the pinned SHA-256, and their own `METADATA` or `PKG-INFO` parsed, by
+`scripts/runtime-box/pypi-license-inventory.py` into
+`runtime-boxes/legal/audits/boltz-2-linux-x86_64-cuda12.9-pypi.json`. That file is the input any fix
+needs, whichever side it lands on.
+
+Two findings from it block legal approval on their own, and both are in the legal record:
+`frozendict==2.4.7` is **LGPL-3.0-or-later**, the first copyleft dependency the project has met; and
+`mols.tar`, 1.86 GB of molecule definitions, has no licence of its own beyond the model
+repository's blanket `mit`, with its upstream provenance unstated.
+
+`boltz==2.2.1` also declares no licence in its wheel metadata at all; the MIT text inside the wheel
+and the repository `LICENSE` settle it, and `fairscale==0.4.13` declares `UNKNOWN` against a
+`BSD License` classifier.
+
 ## Next gates
 
-- Author the complete scroll: assets pinned to the SHA-256 values above, bounded offline self-test,
-  legal record with the source revision, and the licence inventory.
-- Build the box locally with a development key, then `verify --self-test`.
+- **Decide where PyPI licences are expressed** — in Scrollcase (recommended: it owns the inventory
+  contract) or in a Liatir-side declared inventory. Nothing downstream can start until this is
+  settled; see [current status](../current.md).
+- Answer the two legal questions above.
+- Then: author the scroll with the assets pinned to the SHA-256 values above and a bounded offline
+  self-test; build locally with a development key; `verify --self-test`.
 - Only then: product runner, scientific validator, real inputs, and RAM/VRAM/time measurements.
-- Request separate GPU CI authorization only when the first expensive remote run is prepared.
-- No model weights downloaded, no GPU job launched, no remote write or publication so far.
+- No model weights downloaded, no GPU job launched, no remote write or publication so far. The 51
+  PyPI distributions were downloaded to read their metadata; they are dependency archives, not
+  model weights.
 
 ### Superseded: why this could not be done before
 

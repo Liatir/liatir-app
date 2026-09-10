@@ -1,5 +1,34 @@
 # Current project status
 
+## Boltz-2 is blocked on where a PyPI licence is written down (2026-09-11)
+
+All three remaining Phase 3 models — Boltz-2 and both Protenix variants — are the only recipes in
+the project with `[pypi-dependencies]`; every box published so far is pure conda. That difference
+turns out to stop them at the licence inventory, before any build.
+
+**pixi records an SPDX licence for a conda package and none at all for a PyPI one** (verified on
+0.73.0 and 0.77.0, which resolve the same set). Scrollcase derives the box's inventory from the lock
+and rightly refuses to ship a package whose licence it cannot name, so it throws on all 51 of
+Boltz's PyPI entries. `scrollcase@1.0.0` behaves identically, and its new *declared* inventory is
+for dependencies compiled into shipped binaries, not PyPI distributions. A catalog entry is
+blocked too, since the catalog validator compares against that same refusing function.
+
+**The licences themselves are now known.** All 144 locked distributions were reviewed: the PyPI half
+by downloading each distribution the lock pins, checking its SHA-256, and reading its own metadata
+(`scripts/runtime-box/pypi-license-inventory.py` →
+`runtime-boxes/legal/audits/boltz-2-linux-x86_64-cuda12.9-pypi.json`). That file is the input any
+fix needs. The legal record is `runtime-boxes/legal/boltz-2.md`, and it is **not approved**, for two
+independent reasons: `frozendict==2.4.7` is LGPL-3.0-or-later — the first copyleft dependency this
+project has encountered, and no policy exists for one — and `mols.tar`, 1.86 GB of molecule
+definitions, carries no licence beyond the model repository's blanket `mit` with its upstream
+provenance unstated.
+
+**The decision needed is where a PyPI licence is expressed.** Recommended: in Scrollcase, which owns
+the inventory contract and would take a project-declared file the same way it already takes
+`bundledLicenses`. The alternative — a Liatir-side declared inventory plus a relaxed catalog check —
+re-implements a format Scrollcase's own contract exists to keep single. Details and evidence in
+[the Boltz source review](./roadmap/phase3-boltz-source-review.md).
+
 ## MCP file permissions scale past a handful of files (2026-09-10)
 
 The MCP Settings surface offered one Allow/Revoke button per registered file in a scrollable list,
@@ -180,7 +209,7 @@ test. Nothing else has been executed here.
 | Component | Reality |
 | --- | --- |
 | `openmm-openmm` | both Linux targets are `native-lifecycle-validated` in CI on this machine; macOS CPU built, measured and product-proven locally but still `planned` |
-| `jwohlwend-boltz-2` | dependency lock only; no scroll, no box, never executed |
+| `jwohlwend-boltz-2` | dependency lock and complete licence inventory; legal record open on two points; blocked before any build on where a PyPI licence is expressed |
 | `bytedance-protenix-v2` | nothing, and the official checkpoint still returns HTTP 403 |
 | `bytedance-protenix-mini-default-v0-5-0` | nothing |
 | `openvax-mhcflurry-class1-presentation` | published for macOS Metal and Linux CPU; its CUDA target is `planned` and unbuilt |
