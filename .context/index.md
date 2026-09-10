@@ -31,8 +31,10 @@ Markdown and stays complete and meaningful without the tool.
   canonical [Scientific AI Workbench product plan](./state/roadmap/scientific-ai-workbench.md),
   [Beta 1 readiness](./state/roadmap/beta-readiness.md), the
   [AI batch ledger](./state/roadmap/ai-batches.md), the
-  [Runtime Box CI foundation](./state/roadmap/runtime-box-ci-foundation.md), and
-  the open [signed public distribution gate](./state/roadmap/release-signed-distribution.md).
+  [Runtime Box CI foundation](./state/roadmap/runtime-box-ci-foundation.md), the
+  open [signed public distribution gate](./state/roadmap/release-signed-distribution.md),
+  and [adopting Scrollcase v3](./state/roadmap/scrollcase-v3-adoption.md), which
+  every remaining Phase 3 model now waits on.
 - `.context/truth/` — what is stable: architecture, the `window.Liatir` and
   Rust command surfaces, AI Model and AI Tool boundaries, the testing strategy,
   and the working agreements addressed to agents.

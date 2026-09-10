@@ -23,11 +23,18 @@ project has encountered, and no policy exists for one — and `mols.tar`, 1.86 G
 definitions, carries no licence beyond the model repository's blanket `mit` with its upstream
 provenance unstated.
 
-**The decision needed is where a PyPI licence is expressed.** Recommended: in Scrollcase, which owns
-the inventory contract and would take a project-declared file the same way it already takes
-`bundledLicenses`. The alternative — a Liatir-side declared inventory plus a relaxed catalog check —
-re-implements a format Scrollcase's own contract exists to keep single. Details and evidence in
-[the Boltz source review](./roadmap/phase3-boltz-source-review.md).
+**Decided 2026-09-11: the fix goes in Scrollcase, on the 1.x line only.** Scrollcase owns the
+inventory contract and will take a project-declared file the same way it already takes
+`bundledLicenseDeclaration`. No backport to the 0.8 line Liatir currently pins, which means
+**Liatir must adopt Scrollcase v3 first** — a breaking wire change that also requires rebuilding and
+republishing the nine boxes already in the field. The order of work, and every format field it
+touches, are in [Adopting Scrollcase v3](./roadmap/scrollcase-v3-adoption.md); the blocker's
+evidence is in [the Boltz source review](./roadmap/phase3-boltz-source-review.md).
+
+Also decided the same day: a copyleft dependency **may** ship in a signed box when it travels as a
+replaceable, unmodified package with its licence text — see
+[Copyleft dependencies in signed boxes](../decisions/copyleft-dependencies-in-signed-boxes.md).
+That closes one of the two legal questions; `mols.tar`'s provenance stays open.
 
 ## MCP file permissions scale past a handful of files (2026-09-10)
 
