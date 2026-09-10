@@ -200,13 +200,31 @@ async function replaceDocument(browser, startNavigation, argument, description) 
  * DOM looks empty. Assigning through the native setter and dispatching `input` is what the binding
  * actually listens to.
  */
+/**
+ * Sets a form control's value the way a user would, for Svelte's binding to notice.
+ *
+ * A `<select>` needs `HTMLSelectElement`'s own setter and a `change` event; driving it through the
+ * `HTMLInputElement` setter silently does nothing, because the optional call finds no descriptor
+ * and the element keeps its old value. A test that "sets" a dropdown and never does is worse than
+ * one that fails, so an unknown control is an error rather than a no-op.
+ */
 export async function setAppInputValue(browser, selector, value) {
   await browser.execute((target, next) => {
     const element = document.querySelector(target);
     if (!element) throw new Error(`Input not found: ${target}`);
-    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
-    setter?.call(element, next);
+    const prototype = element instanceof window.HTMLSelectElement
+      ? window.HTMLSelectElement.prototype
+      : element instanceof window.HTMLTextAreaElement
+        ? window.HTMLTextAreaElement.prototype
+        : window.HTMLInputElement.prototype;
+    const setter = Object.getOwnPropertyDescriptor(prototype, 'value')?.set;
+    if (!setter) throw new Error(`Cannot set a value on: ${target}`);
+    setter.call(element, next);
+    if (element.value !== String(next)) {
+      throw new Error(`Value ${next} was rejected by ${target}`);
+    }
     element.dispatchEvent(new Event('input', { bubbles: true }));
+    element.dispatchEvent(new Event('change', { bubbles: true }));
     return true;
   }, selector, value);
 }

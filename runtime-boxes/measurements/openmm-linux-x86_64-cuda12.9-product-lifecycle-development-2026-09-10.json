@@ -9,7 +9,7 @@
   "hostEnvironment": "windows-wsl2",
   "version": "8.5.1-beta.1",
   "jobId": "job_2",
-  "analysisRunId": "db993e06-cca3-474b-9df4-1afe566f2f59",
+  "analysisRunId": "48e51f88-eef8-40e9-b034-c320dc8a6f50",
   "accelerator": "CUDA",
   "resultArtifactCount": 4,
   "release": {
@@ -27,6 +27,15 @@
     "finalPotentialEnergyKilojoulePerMole": -119.11212442123042,
     "energyReductionKilojoulePerMole": 117.42105349102962
   },
+  "dynamics": {
+    "toolId": "molecular-dynamics",
+    "jobId": "job_3",
+    "analysisRunId": "40a90eb1-f463-40e8-a3a7-00fc94e1e53b",
+    "resultArtifactCount": 10,
+    "preparedAtomCount": 33,
+    "frameCount": 10,
+    "trajectoryFiniteCoordinates": true
+  },
   "assertions": {
     "install": "passed",
     "cancellation": "passed",
@@ -41,6 +50,9 @@
     "offline": "passed",
     "interpretationNotice": "passed",
     "removal": "passed",
-    "resultArtifactsSurvivedRemoval": "passed"
+    "resultArtifactsSurvivedRemoval": "passed",
+    "realDynamics": "passed",
+    "dynamicsOutputs": "passed",
+    "dynamicsProvenance": "passed"
   }
 }

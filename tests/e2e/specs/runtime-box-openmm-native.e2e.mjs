@@ -1,5 +1,10 @@
 /**
- * Runs the signed OpenMM Tool Runtime through Liatir's install, preflight, Job, Result, and removal lifecycle.
+ * Runs both OpenMM tools through Liatir's install, preflight, Job, Result, and removal lifecycle.
+ *
+ * Molecular Relaxation and Molecular Dynamics are two products sharing one signed box, and the
+ * second is not a variant of the first: it writes a trajectory, a resumable checkpoint and an
+ * energy series that relaxation has no equivalent of. Both run on a single install, because the
+ * payload is multiple gigabytes and a second download would buy nothing.
  *
  * The generic install/replace/rollback contract is covered by the shared Runtime Box lifecycle spec. This
  * focused gate exists because Molecular Relaxation is the first Phase 3 tool with a three-state hardware
@@ -34,6 +39,7 @@ const BOX_ID = 'openmm';
 const MODEL_ID = 'openmm-openmm';
 const RUNTIME_ID = 'molecular-simulation-openmm-8-5-1';
 const TOOL_ID = 'molecular-relaxation';
+const DYNAMICS_TOOL_ID = 'molecular-dynamics';
 const TARGET_ID = process.env.LIATIR_RUNTIME_BOX_TARGET_ID ?? 'macos-aarch64-cpu';
 const VERSION = process.env.LIATIR_RUNTIME_BOX_EXPECTED_VERSION ?? '8.5.1-beta.1';
 const REGISTRY_BASE_URL = process.env.LIATIR_RUNTIME_BOX_REGISTRY_BASE_URL
@@ -70,7 +76,7 @@ async function jobs(browser) {
 }
 
 export const tests = [{
-  name: 'confirms an unmeasured run, relaxes the official fixture, and preserves its Result',
+  name: 'confirms an unmeasured run, relaxes and simulates the official fixture, and preserves both Results',
   heavy: true,
   async run({ browser, expect, rootDir }) {
     await activateCleanSandbox(browser);
@@ -256,12 +262,124 @@ print(json.dumps({
     expect(await browser.execute(() => document.body.innerText))
       .toContain('does not prove binding affinity, molecular stability, clinical benefit');
 
-    const resultArtifactsBeforeRemoval = runtimeBoxResultArtifactSnapshot(result.outputFiles);
+    // Molecular Dynamics, on the same installed box. It is a second product, not a variant of the
+    // first: it writes a trajectory, a resumable checkpoint and an energy series that relaxation
+    // has no equivalent of, and until now it had no product lifecycle on any target. Reusing this
+    // install rather than taking a second one keeps a multi-gigabyte download out of the gate.
+    await navigateInApp(browser, '/tools/molecular-simulation/dynamics');
+    const dynamicsCheck = await browser.$('[data-testid="openmm-preflight"]');
+    await browser.waitUntil(() => dynamicsCheck.isDisplayed(), {
+      timeout: 20_000, timeoutMsg: 'Molecular Dynamics page did not render its runtime controls',
+    });
+    await selectFileFromPicker(browser, 'openmm-input-structure', path.basename(officialPath));
+    await setAppInputValue(browser, '#openmm-preset', 'verification-10ps');
+    await setAppInputValue(browser, '#openmm-seed', '17');
+
+    // Hydrogens off, deliberately. The page adds them by default, and the preflight then bounds the
+    // input at five atoms per input atom — 165 here. Relaxation absorbs that because this target
+    // measured DHFR at 2,489 atoms, but every retained *dynamics* sample without solvent sits at
+    // exactly 33, so 165 is honestly beyond evidence and the page is right to hold Run closed. The
+    // acknowledgement path is already proven above on the same component; this leg is here to prove
+    // the second tool runs, so it runs on the configuration the measurement actually covers.
+    const addHydrogens = await browser.$('[data-testid="openmm-add-hydrogens"]');
+    if (await addHydrogens.isSelected()) await addHydrogens.click();
+    expect(await addHydrogens.isSelected()).toBe(false);
+    await dynamicsCheck.click();
+
+    // 33 atoms over 5,000 steps without solvent is a measured point on this target, so the run has
+    // to start with no acknowledgement at all — the same rule the relaxation leg proved above.
+    const dynamicsRun = await browser.$('[data-testid="openmm-run"]');
+    await browser.waitUntil(() => dynamicsRun.isEnabled(), {
+      timeout: 120_000, timeoutMsg: 'Molecular Dynamics Run did not become enabled for the measured fixture',
+    });
+    expect(await browser.execute(
+      () => document.querySelectorAll('[data-testid="openmm-accept-beyond-evidence"]').length,
+    )).toBe(0);
+    await dynamicsRun.click();
+    await navigateInApp(browser, '/jobs');
+
+    let dynamicsJob = null;
+    await browser.waitUntil(async () => {
+      dynamicsJob = (await jobs(browser)).find((job) => job.metadata?.toolId === DYNAMICS_TOOL_ID) ?? null;
+      return dynamicsJob && dynamicsJob.status.type !== 'running';
+    }, { timeout: RUN_TIMEOUT_MS, interval: 1_000, timeoutMsg: 'Molecular Dynamics Job did not finish' });
+    if (dynamicsJob.status.type !== 'done') {
+      const output = await browser.execute(
+        async (jobId) => window.Liatir.invoke('lia_jobs_get_output', { jobId, since: 0 }),
+        dynamicsJob.id,
+      );
+      throw new Error(`Molecular Dynamics Job failed: ${JSON.stringify(output).slice(-6000)}`);
+    }
+
+    let dynamicsResult = null;
+    await browser.waitUntil(async () => {
+      try {
+        const index = JSON.parse(await browser.execute(
+          async (rel) => window.Liatir.invoke('lia_app_read_text', { rel }), indexPath,
+        ));
+        dynamicsResult = index.find((run) => run.tool === DYNAMICS_TOOL_ID) ?? null;
+        return dynamicsResult?.status === 'done';
+      } catch { return false; }
+    }, { timeout: 60_000, interval: 1_000, timeoutMsg: 'Molecular Dynamics Job was not finalized into Results' });
+    expect(dynamicsResult.outputFiles.every((file) => file.producer?.id === DYNAMICS_TOOL_ID)).toBe(true);
+
+    // The files that make this tool worth having: a trajectory to watch, an energy series to plot,
+    // and a checkpoint that lets a longer run continue. A Result without them is not a dynamics run.
+    // Named explicitly rather than through `expect`'s message argument: Liatir's embedded matcher
+    // takes one argument only, and a bare "expected null to be truthy" would not say which output
+    // is missing.
+    const dynamicsFile = (fieldKey) => dynamicsResult.outputFiles.find((file) => file.fieldKey === fieldKey);
+    for (const fieldKey of ['trajectoryDcd', 'finalStructure', 'stateCsv', 'checkpoint', 'metricsJson']) {
+      const file = dynamicsFile(fieldKey);
+      if (!file) throw new Error(`Molecular Dynamics did not produce ${fieldKey}`);
+      const size = fs.statSync(file.path).size;
+      if (size <= 0) throw new Error(`Molecular Dynamics wrote an empty ${fieldKey}`);
+    }
+
+    const dynamicsOutput = await readDataJson(
+      browser,
+      `workspaces/__test__/runs/${dynamicsResult.id}/result.json`,
+    );
+    const dynamicsProvenance = dynamicsOutput.sections.find(
+      (section) => section.type === 'table' && section.label === 'Provenance',
+    );
+    expect(Object.fromEntries(dynamicsProvenance.rows)).toMatchObject({
+      'Tool Runtime': 'OpenMM 8.5.1',
+      'Protein force field': 'amber19-all',
+      'Water model': 'No explicit solvent',
+      Seed: 17,
+      'Network access': 'Disabled',
+      'Hardware evidence': EXPECTED_HARDWARE_PROFILE,
+      'Within measured evidence': 'Yes',
+      'Runtime Box': `${VERSION} · ${TARGET_ID}`,
+      'Runtime Box archive SHA-256': installed.activation.release.archive.sha256,
+    });
+
+    const dynamicsMetrics = JSON.parse(fs.readFileSync(dynamicsFile('metricsJson').path, 'utf8'));
+    expect(dynamicsMetrics).toMatchObject({
+      mode: 'dynamics', atomCount: 33, preparedAtomCount: 33, networkAccess: false,
+    });
+    // Frames are what separates a trajectory from a single structure, and a finite-coordinate
+    // check is what separates a physical trajectory from one that blew up into NaN.
+    expect(dynamicsMetrics.frameCount).toBeGreaterThan(0);
+    expect(dynamicsMetrics.trajectoryFiniteCoordinates).toBe(true);
+
+    await navigateInApp(browser, `/results?run=${dynamicsResult.id}`);
+    await browser.waitUntil(
+      async () => browser.execute(() => document.body.innerText.includes('Saved frames')),
+      { timeout: 20_000, timeoutMsg: 'Molecular Dynamics Result did not render after navigation' },
+    );
+
+    const resultArtifactsBeforeRemoval = runtimeBoxResultArtifactSnapshot(
+      [...result.outputFiles, ...dynamicsResult.outputFiles],
+    );
     const removed = await browser.execute(async (input) => window.Liatir.invoke('lia_runtime_box_remove', input), {
       componentKind: 'tool-runtime', runtimeId: RUNTIME_ID, boxId: BOX_ID,
     });
     expect(removed).toBe(true);
-    expect(runtimeBoxResultArtifactSnapshot(result.outputFiles)).toEqual(resultArtifactsBeforeRemoval);
+    expect(runtimeBoxResultArtifactSnapshot(
+      [...result.outputFiles, ...dynamicsResult.outputFiles],
+    )).toEqual(resultArtifactsBeforeRemoval);
 
     if (PRODUCT_EVIDENCE_PATH) {
       const evidencePath = path.resolve(rootDir, PRODUCT_EVIDENCE_PATH);
@@ -288,12 +406,24 @@ print(json.dumps({
           finalPotentialEnergyKilojoulePerMole: metrics.finalPotentialEnergyKilojoulePerMole,
           energyReductionKilojoulePerMole: metrics.energyReductionKilojoulePerMole,
         },
+        // The second tool this box exposes, exercised on the same install rather than borrowing
+        // the relaxation run's evidence: its outputs and its Job are its own.
+        dynamics: {
+          toolId: DYNAMICS_TOOL_ID,
+          jobId: dynamicsJob.id,
+          analysisRunId: dynamicsResult.id,
+          resultArtifactCount: dynamicsResult.outputFiles.length,
+          preparedAtomCount: dynamicsMetrics.preparedAtomCount,
+          frameCount: dynamicsMetrics.frameCount,
+          trajectoryFiniteCoordinates: dynamicsMetrics.trajectoryFiniteCoordinates,
+        },
         assertions: {
           install: 'passed', cancellation: 'passed', unmeasuredRunConfirmable: 'passed',
           officialFixture: 'passed', realRelaxation: 'passed', energyReduced: 'passed',
           jobs: 'passed', navigationResume: 'passed', results: 'passed', provenance: 'passed',
           offline: 'passed', interpretationNotice: 'passed', removal: 'passed',
           resultArtifactsSurvivedRemoval: 'passed',
+          realDynamics: 'passed', dynamicsOutputs: 'passed', dynamicsProvenance: 'passed',
         },
       }, null, 2)}\n`);
     }

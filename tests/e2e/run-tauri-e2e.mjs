@@ -263,6 +263,18 @@ class WebDriverElement {
     return this.client.request('GET', `/element/${await this.resolveId()}/enabled`);
   }
 
+  /**
+   * Whether a checkbox, radio or option is selected.
+   *
+   * Reading `.checked` through `execute` would work too, but this is the standard WebDriver
+   * endpoint and it keeps a spec's intent readable. An absent element reports `false` rather than
+   * throwing, matching `isDisplayed` and `isEnabled`.
+   */
+  async isSelected() {
+    if (!(await this.isExisting())) return false;
+    return this.client.request('GET', `/element/${await this.resolveId()}/selected`);
+  }
+
   async waitForDisplayed(options = {}) {
     await this.client.waitUntil(
       async () => this.isDisplayed(),

@@ -56,9 +56,10 @@ Remaining bounded actions:
 - Boltz-2 and both Protenix components still need verified official assets, redistribution review,
   complete scrolls, offline product runners, validators, measured hardware bounds and real per-target
   product lifecycles. None is in the distribution catalog or release-workflow choices yet.
-- OpenMM still needs larger retained measurements, the Dynamics product lifecycle, remaining target
-  validation and full legal review. Production scientific/product tests must exercise the production
-  artifact rather than borrow evidence from either development archive.
+- OpenMM still needs remaining target validation and full legal review. Its Dynamics product
+  lifecycle is done as of 2026-09-10, and the CUDA envelope now covers real proteins. Production
+  scientific/product tests must exercise the production artifact rather than borrow evidence from
+  any development archive.
 - Both OpenMM Linux targets now declare `hostEnvironments: ["native", "windows-wsl2"]` in catalog and
   scroll, following the 2026-09-09 decision that deleted every native Windows target. The declaration
   is the authorization, not the proof: the WSL2 proof workflow still selects no Phase 3 component, so
@@ -173,6 +174,23 @@ It proves install, killed-Job cancellation, both reachable hardware states on th
 CUDA relaxation of the box's own `test-ala-3.pdb`, the Job, the finalized Result with four
 artifacts, provenance, navigation back, removal, and result artifacts surviving removal.
 
+**Molecular Dynamics has its own product lifecycle too, on the same install** (2026-09-10). It was
+the last Phase 3 tool with none, and it is a second product rather than a variant of the first: it
+writes a trajectory, a resumable checkpoint and an energy series that relaxation has no equivalent
+of. Job `job_3`, run `40a90eb1-f463-40e8-a3a7-00fc94e1e53b`, **10 result artifacts**, 33 prepared
+atoms, **10 saved frames**, and `trajectoryFiniteCoordinates: true` — a trajectory that blew up
+into NaN would still leave files behind, so the finite check is what separates a physical result
+from a plausible-looking one. Both Results survived removal of the box.
+
+It runs with hydrogens off, deliberately. The page adds them by default and the preflight then
+bounds the input at five atoms per input atom — 165 here. Relaxation absorbs that because this
+target measured DHFR at 2,489 atoms, but every retained *dynamics* sample without solvent sits at
+exactly 33, so 165 is honestly beyond evidence and the page is right to hold Run closed. Ticking the
+acknowledgement instead would have made the leg green while quietly running a dynamics simulation
+outside every measurement; the acknowledgement path is already proven by the relaxation leg on the
+same component. Reusing one install rather than taking a second keeps a multi-gigabyte download out
+of the gate.
+
 The archive differs from the one the scientific validator measured on 2026-09-09
 (`54d8e87d…`): this build points its release document at the loopback registry so the app can
 actually download it. Same scroll, lock and version; different bytes. Scientific and product
@@ -207,7 +225,18 @@ NVIDIA card would have hit, invisible until a machine existed that could reach t
    no underscore, and every target id carries one in `x86_64`. Target ids now have their own shape
    check rather than a loosened shared one.
 
-A sixth failure was a test, not a product defect, and it is worth recording because it will bite
+Two gaps in the test harness itself surfaced while adding the Dynamics leg, and both are the kind
+that fail late and expensively — after a real build and a multi-gigabyte install. `setAppInputValue`
+drove every control through `HTMLInputElement`'s value setter, so on a `<select>` it silently did
+nothing and the spec would have "chosen" a duration it never chose; it now uses the right prototype,
+dispatches `change` as well as `input`, and throws when a value is rejected rather than passing on a
+default. And Liatir's deliberately small WebDriver client had no `isSelected`, so the spec died with
+`is not a function` mid-lifecycle — the same way a missing `isEnabled` once cost a remote run. The
+endpoint is added, and the guard that used to check two named oncology specs for one named method
+now scans every routed spec for every element-state method it calls and names any the client lacks.
+It was observed failing on exactly `isSelected` before being accepted.
+
+A further failure was a test, not a product defect, and it is worth recording because it will bite
 again: `native-tools-scrollcase.test.ts` anchors on multi-line source snippets with `\n`, while
 `.gitattributes` gives `.rs` and `.ts` no `eol=lf` rule, so a Windows checkout (`core.autocrlf=true`)
 holds CRLF and the substring silently stops matching. The assertion then fails for the platform
@@ -514,11 +543,12 @@ by this audit; production actions require the owner's separate confirmation.
 
 - [ ] OpenMM: actual source layout and pruned payload verified, dedicated scientific validator,
   retained CPU measurements, real local build, per-target CI/lifecycle and publication.
-  Done locally for macOS arm64 CPU: build, self-test, scientific validation, retained measurement,
-  registered run envelope and a passing real product lifecycle. Still open: larger measured
-  workloads so the tool accepts realistic inputs, Molecular Dynamics through the same product
-  lifecycle (only relaxation is covered), the other four targets, CI builds on production keys from
-  a clean tree, a signer redeploy, and publication.
+  Done locally for **two** targets — macOS arm64 CPU natively, and Linux x86_64 CUDA 12.9 through
+  WSL2 on Windows: build, self-test, scientific validation, retained measurement, registered run
+  envelope, and a passing real product lifecycle covering **both** Molecular Relaxation and
+  Molecular Dynamics. The CUDA envelope reaches solvated DHFR at 29,419 atoms, so realistic inputs
+  are inside measured evidence there. Still open: the remaining `linux-x86_64-cpu` target, CI builds
+  on production keys from a clean tree, a signer redeploy, and publication.
 - [ ] Boltz-2: official source and structure/affinity checkpoints, legal review, reproducible Linux
   CUDA box, real product runner and validator. The dependency lock is done (2026-09-08); the scroll,
   self-test, legal record, catalog entry, runner and measurements are not. macOS is out of scope by

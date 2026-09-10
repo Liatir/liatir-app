@@ -25,15 +25,21 @@ The consumer's `runtime-install` argument list gained the target id, so
 WSL2 (`rustup target add x86_64-unknown-linux-musl`). It is a build artifact, never committed, and
 the app verifies it against a hash computed at compile time.
 
+**Molecular Dynamics now has a product lifecycle too**, on the same install — it was the last
+Phase 3 tool without one. Run `40a90eb1-f463-40e8-a3a7-00fc94e1e53b`, 10 result artifacts, 10 saved
+frames, finite trajectory coordinates. It runs with hydrogens off because that is the configuration
+the retained dynamics envelope actually covers: the default preparation bound of 165 atoms is beyond
+every no-solvent dynamics sample, and ticking the acknowledgement would have made the leg green
+while running outside all measurement.
+
 Signing used the machine's local development key through `LIATIR_RUNTIME_BOX_TRUSTED_KEY_FILE`,
 which only debug builds honour; `runtime-boxes/trust/` was not touched. This remains development
 evidence: a production CI build makes a different archive and must be measured and exercised there.
-Molecular Dynamics still has no product lifecycle on any target.
 
-Gates, run serially and never overlapping: `test:verify` passed all six suites — 582 tests, zero
-failed, report `2026-09-10T12-06-23-642Z`. `test:ui` passed 35 native scenarios with zero failures
+Gates, run serially and never overlapping: `test:verify` passed all six suites — 583 tests, zero
+failed, report `2026-09-10T13-50-55-463Z`. `test:ui` passed 35 native scenarios with zero failures
 and 30 platform- or candidate-only skips, plus every companion suite and the Windows app
-install/migration/restart/uninstall lifecycle, report `2026-09-10T12-08-09-114Z`. Rust passed 98
+install/migration/restart/uninstall lifecycle. Rust passed 98
 tests with 2 heavy fixtures ignored and Clippy reported no errors — the first time the Rust suite
 has compiled on Windows, after two of its tests were found calling functions the platform compiles
 out. `syngraphe check` reports no problems.
@@ -80,6 +86,28 @@ publication evidence: a production CI build makes a different archive and must b
 re-exercised there. The CUDA product lifecycle has not run in the real app, and Molecular Dynamics
 still has no product lifecycle on any target. GPU CI and publication each need the owner's separate
 explicit authorization, which this session did not have and did not use.
+
+### What is verified on this machine, and what is not
+
+OpenMM only. Verifying it proved the *route* — a Windows app running a Linux GPU payload through
+WSL2 — but every component still has to walk it with its own package, dependencies and scientific
+test. Nothing else has been executed here.
+
+| Component | Reality |
+| --- | --- |
+| `openmm-openmm` | macOS CPU and Linux CUDA built, measured and product-proven locally; all three targets still `planned` in the catalog |
+| `jwohlwend-boltz-2` | dependency lock only; no scroll, no box, never executed |
+| `bytedance-protenix-v2` | nothing, and the official checkpoint still returns HTTP 403 |
+| `bytedance-protenix-mini-default-v0-5-0` | nothing |
+| `openvax-mhcflurry-class1-presentation` | published for macOS Metal and Linux CPU; its CUDA target is `planned` and unbuilt |
+| `griffithlab-pvactools-pvacseq` | published for macOS CPU and Linux CPU |
+| Geneformer, scGPT, UCE | published earlier from other machines; untouched and unverified here |
+
+**No self-hosted runner is registered** (`gh api repos/Liatir/liatir-stack/actions/runners` returned
+`0` on 2026-09-10), so no CUDA target can be built in CI at all today, whatever its local evidence.
+The nearest real publication is therefore OpenMM `macos-aarch64-cpu`, which
+[runs on hosted CI](../decisions/runtime-box-publication-runs-on-hosted-ci.md) and needs no GPU
+machine; a CUDA release needs a GPU runner registered first, and that is separately authorized.
 
 ## Windows is an app host, not a payload platform (2026-09-09)
 

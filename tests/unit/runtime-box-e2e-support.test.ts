@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
@@ -42,6 +42,34 @@ describe('Runtime Box product E2E support', () => {
     expect(pvac).toContain('runButton.isEnabled()');
     expect(runner).toContain('async isEnabled()');
     expect(runner).toContain("`/element/${await this.resolveId()}/enabled`");
+  });
+
+  /**
+   * The general form of the guard above. Liatir's WebDriver client is deliberately small, so a spec
+   * can call a perfectly standard element method that simply is not there — and the failure lands
+   * mid-lifecycle, after a real build and a multi-gigabyte install, as `is not a function`.
+   * `isEnabled` cost a remote run that way once, and `isSelected` cost a local one on 2026-09-10.
+   */
+  it('implements every element-state command any routed spec calls', () => {
+    const runner = readFileSync(resolve('tests/e2e/run-tauri-e2e.mjs'), 'utf8');
+    // Static helpers that read as element state but are not: Array.isArray, Number.isFinite, and
+    // the Node stat predicates. Everything else is expected on the element wrapper.
+    const notElementState = new Set([
+      'isArray', 'isFinite', 'isInteger', 'isSafeInteger', 'isNaN', 'isDirectory', 'isFile',
+    ]);
+    const called = new Set<string>();
+    for (const entry of readdirSync(resolve('tests/e2e/specs'))) {
+      if (!entry.endsWith('.e2e.mjs')) continue;
+      const spec = readFileSync(resolve('tests/e2e/specs', entry), 'utf8');
+      for (const match of spec.matchAll(/\.(is[A-Z]\w*)\s*\(/gu)) {
+        if (!notElementState.has(match[1])) called.add(match[1]);
+      }
+    }
+
+    expect(called.size).toBeGreaterThan(0);
+    const missing = [...called].filter((name) => !runner.includes(`async ${name}(`));
+    expect(missing, `Element methods used by a spec but absent from the client: ${missing.join(', ')}`)
+      .toEqual([]);
   });
 
   it('exposes only an exact checked release candidate to the non-distributable test app', () => {
