@@ -103,7 +103,7 @@ repeated. With the eight from Linux, every published box now exists as a v3 deve
 under `.runtime-box-dist/`.
 
 **OpenMM macOS is the one exception, and it is not a build problem.** There is no signing key for
-it under `.runtime-box-local/keys/`, which holds keys for five boxes and not that one. The v2
+it in the machine's local key directory, which holds keys for five boxes and not that one. The v2
 artefact still on disk is from 2026-09-08 and carries `liatir-openmm-development`, so the key
 exists — the Linux machine built both OpenMM Linux targets — just not on this Mac. Minting a fresh
 key here would sign the box under a different identity from its Linux siblings, so it waits.
@@ -111,8 +111,9 @@ key here would sign the box under a different identity from its Linux siblings, 
 **Two things cost real time and are worth knowing before the next run.** A dirty working tree stops
 a build outright — Scrollcase refuses, correctly, and four boxes failed in one second each before
 the cause was visible. And disk is the binding constraint on this machine: `uce-4layer` alone packs
-to 9.2 GB and wants ~20 GB of headroom while every other box packs under 554 MB, so `.rb/` has to be
-cleared between boxes or the disk fills and the machine stops being able to write temporary files.
+to 9.2 GB and wants ~20 GB of headroom while every other box packs under 554 MB, so the build
+scratch has to be cleared between boxes or the disk fills and the machine stops being able to write
+temporary files.
 Both are written up in [Scrollcase v3 adoption](roadmap/scrollcase-v3-adoption.md).
 
 ## The pipeline canvas is covered, and macOS/Linux compile again (2026-09-11)

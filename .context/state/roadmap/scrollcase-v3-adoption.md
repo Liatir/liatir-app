@@ -21,7 +21,7 @@ mhcflurry on `macos-aarch64-metal`, pvactools on `macos-aarch64-cpu`, plus the b
 set — the science was not repeated.
 
 Not done: **the macOS OpenMM target**, which is the one box with no signing key under
-`.runtime-box-local/keys/`. The v2 artefact still on disk is from 2026-09-08 and was signed
+the machine's local key directory. The v2 artefact still on disk is from 2026-09-08 and was signed
 `liatir-openmm-development`, so the key exists somewhere — the Linux machine built both OpenMM Linux
 targets — but not on this Mac. Minting a fresh one here would sign it under a different identity
 from its Linux siblings, so it waits for the owner rather than being worked around.
@@ -46,12 +46,12 @@ Plus `--weights embed`, a flag version 3 removed rather than renamed.
 
 **On macOS the binding constraint was disk, and UCE is why.** Every other box is between 138 MB and
 554 MB packed; `uce-4layer` is **9.2 GB**, and building it needs roughly 20 GB of headroom — about
-11 GB of scratch under `.rb/` on top of the archive it writes. A run that builds the set back to
-back without clearing `.rb/` between boxes will exhaust a disk that looked comfortable when it
-started, and the first symptom is not a build error: the machine stops being able to write
-temporary files at all. Clear each box's scratch as soon as its release document exists. `.rb/` is
-git-ignored scratch and Scrollcase recreates it; `.runtime-box-dist/` is the product and is not
-disposable.
+11 GB of scratch in the build directory on top of the archive it writes. A run that builds the set
+back to back without clearing that scratch between boxes will exhaust a disk that looked comfortable
+when it started, and the first symptom is not a build error: the machine stops being able to write
+temporary files at all. Clear each box's scratch as soon as its release document exists. Scrollcase
+recreates the build directory on demand and Git ignores it; the distribution directory it writes
+releases into is the product, and is not disposable.
 
 ## Which machine rebuilds what
 
@@ -121,8 +121,11 @@ Full evidence for the blocker is in [the Boltz source review](./phase3-boltz-sou
    six on macOS. Only the macOS OpenMM target is left, blocked on its signing key.
 4. ⏳ **Republish**, together with an app build that can read v3. Separately authorized, and the
    reason this is not a quiet dependency bump.
-5. ⏳ **Then Boltz-2**: scroll, local build with a development key, `verify --self-test`, product
-   runner, scientific validator, real inputs, measurements.
+5. ✅ **Then Boltz-2**: scroll, local build with a development key, `verify --self-test`, product
+   runner, scientific validator, real inputs, measurements — all done on 2026-09-11. It predicts
+   ubiquitin to 1.99 Å of the experimental structure from sequence alone. What it does **not** have
+   is a product surface: no execution path in the app, so no Jobs or Results lifecycle, no catalog
+   entry and no CI workflow. See [the Boltz source review](./phase3-boltz-source-review.md).
 
 ## What the format change touches in Liatir
 
