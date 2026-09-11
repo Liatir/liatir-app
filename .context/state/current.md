@@ -1,5 +1,26 @@
 # Current project status
 
+## The macOS boxes are rebuilt as version 3, all but OpenMM (2026-09-11)
+
+**Five published macOS targets plus `native-tools`, rebuilt on a Mac, no failure**: Geneformer,
+scGPT, UCE and mhcflurry on `macos-aarch64-metal`, pvactools on `macos-aarch64-cpu`. Each passed
+its own self-test before signing, on the same terms as the Linux set — the science was not
+repeated. With the eight from Linux, every published box now exists as a v3 development artefact
+under `.runtime-box-dist/`.
+
+**OpenMM macOS is the one exception, and it is not a build problem.** There is no signing key for
+it under `.runtime-box-local/keys/`, which holds keys for five boxes and not that one. The v2
+artefact still on disk is from 2026-09-08 and carries `liatir-openmm-development`, so the key
+exists — the Linux machine built both OpenMM Linux targets — just not on this Mac. Minting a fresh
+key here would sign the box under a different identity from its Linux siblings, so it waits.
+
+**Two things cost real time and are worth knowing before the next run.** A dirty working tree stops
+a build outright — Scrollcase refuses, correctly, and four boxes failed in one second each before
+the cause was visible. And disk is the binding constraint on this machine: `uce-4layer` alone packs
+to 9.2 GB and wants ~20 GB of headroom while every other box packs under 554 MB, so `.rb/` has to be
+cleared between boxes or the disk fills and the machine stops being able to write temporary files.
+Both are written up in [Scrollcase v3 adoption](roadmap/scrollcase-v3-adoption.md).
+
 ## The pipeline canvas is covered, and macOS/Linux compile again (2026-09-11)
 
 **`main` did not compile on macOS or Linux.** `native_tools.rs` asked a prepared box for

@@ -1,7 +1,8 @@
 # Adopting Scrollcase v3, and what it unblocks
 
-Opened 2026-09-11. **Status: the code is migrated and green, and every box outside macOS is
-rebuilt.**
+Opened 2026-09-11. **Status: the code is migrated and green, and every published box is rebuilt on
+every platform.** One artefact is left — the macOS OpenMM target — and it is blocked on a signing
+key, not on a build.
 
 Done: `scrollcase@1.1.1` and `scrollcase-consumer 0.4.0` pinned, all 22 scrolls rewritten and
 accepted by `audit`, the Rust bridge, the WSL2 consumer, the shared contract, every script, the
@@ -14,7 +15,16 @@ Linux CUDA, and both OpenMM Linux targets. Each passed its own self-test before 
 which is the check that says the scroll is right; the science was not repeated, by the owner's
 decision. They are development-key artefacts under `.runtime-box-dist/`, not publications.
 
-Not done: **the five macOS boxes**, which need a Mac.
+**The five macOS boxes are rebuilt too, on a Mac** (2026-09-11): Geneformer, scGPT, UCE and
+mhcflurry on `macos-aarch64-metal`, pvactools on `macos-aarch64-cpu`, plus the bundled
+`native-tools`. Each passed its own self-test before it was signed, on the same terms as the Linux
+set — the science was not repeated.
+
+Not done: **the macOS OpenMM target**, which is the one box with no signing key under
+`.runtime-box-local/keys/`. The v2 artefact still on disk is from 2026-09-08 and was signed
+`liatir-openmm-development`, so the key exists somewhere — the Linux machine built both OpenMM Linux
+targets — but not on this Mac. Minting a fresh one here would sign it under a different identity
+from its Linux siblings, so it waits for the owner rather than being worked around.
 
 ## What the rebuilds cost, and why
 
@@ -34,6 +44,15 @@ the multi-gigabyte environment had been solved and packed:
 
 Plus `--weights embed`, a flag version 3 removed rather than renamed.
 
+**On macOS the binding constraint was disk, and UCE is why.** Every other box is between 138 MB and
+554 MB packed; `uce-4layer` is **9.2 GB**, and building it needs roughly 20 GB of headroom — about
+11 GB of scratch under `.rb/` on top of the archive it writes. A run that builds the set back to
+back without clearing `.rb/` between boxes will exhaust a disk that looked comfortable when it
+started, and the first symptom is not a build error: the machine stops being able to write
+temporary files at all. Clear each box's scratch as soon as its release document exists. `.rb/` is
+git-ignored scratch and Scrollcase recreates it; `.runtime-box-dist/` is the product and is not
+disposable.
+
 ## Which machine rebuilds what
 
 A box is built on the platform it is built *for*, and that is independent of how it is reached.
@@ -43,7 +62,7 @@ natively — there is no WSL2 on a Mac.
 | Platform | Published targets | Rebuilt where | Done |
 | --- | ---: | --- | --- |
 | Linux | 5 | this machine, inside WSL2 | ✅ all five, plus `native-tools` and both OpenMM targets |
-| macOS | 5 | needs a Mac | ⏳ |
+| macOS | 5 | a Mac, natively | ✅ all five, plus `native-tools`; OpenMM waits for its key |
 
 The three native Windows targets were **retired** on 2026-09-11 rather than rebuilt — see
 [no native Windows Runtime Box targets](../../decisions/no-native-windows-runtime-box-targets.md).
@@ -91,8 +110,8 @@ Full evidence for the blocker is in [the Boltz source review](./phase3-boltz-sou
    Boltz needs.
 3. 🟡 **Rebuild every published box** as a v3 artefact, plus the bundled `native-tools` box.
    A rebuild is enough to prove the scroll: each model's science was already validated and does
-   not need repeating, by the owner's decision of 2026-09-11. Eight done on Linux and Windows;
-   five macOS boxes remain.
+   not need repeating, by the owner's decision of 2026-09-11. Eight done on Linux and Windows,
+   six on macOS. Only the macOS OpenMM target is left, blocked on its signing key.
 4. ⏳ **Republish**, together with an app build that can read v3. Separately authorized, and the
    reason this is not a quiet dependency bump.
 5. ⏳ **Then Boltz-2**: scroll, local build with a development key, `verify --self-test`, product
