@@ -87,7 +87,7 @@ provenance unstated.
 inventory contract and will take a project-declared file the same way it already takes
 `bundledLicenseDeclaration`. No backport to the 0.8 line Liatir currently pins, which means
 **Liatir must adopt Scrollcase v3 first** — a breaking wire change that also requires rebuilding and
-republishing the nine boxes already in the field. The order of work, and every format field it
+republishing the thirteen boxes already in the field. The order of work, and every format field it
 touches, are in [Adopting Scrollcase v3](./roadmap/scrollcase-v3-adoption.md); the blocker's
 evidence is in [the Boltz source review](./roadmap/phase3-boltz-source-review.md).
 

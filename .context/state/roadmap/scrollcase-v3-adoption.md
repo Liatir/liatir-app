@@ -7,8 +7,26 @@ accepted by `audit`, the Rust bridge, the WSL2 consumer, the shared contract, ev
 signer service, the registry worker and the whole test suite moved to the v3 shape.
 `test:verify` passes 6/6 with 586 unit tests, `cargo test` 102, Clippy clean.
 
-Not done: **the nine published boxes are still v2 artefacts** and must be rebuilt, and the
+Not done: **the thirteen published boxes are still v2 artefacts** and must be rebuilt, and the
 `native-tools` box bundled in the app must be rebuilt before `test:ui` can run.
+
+## Which machine rebuilds what
+
+A box is built on the platform it is built *for*, and that is independent of how it is reached.
+Windows users get a Linux payload through WSL2, but a macOS box exists because macOS users run one
+natively — there is no WSL2 on a Mac — and three Windows-native boxes remain published by the
+owner's decision to leave shipped artefacts alone.
+
+| Platform | Published targets | Rebuilt where |
+| --- | ---: | --- |
+| Linux | 5 | this machine, inside WSL2 |
+| Windows native | 3 | this machine, natively |
+| macOS | 5 | needs a Mac |
+
+The three Windows-native targets are `geneformer-v1-10m/windows-x86_64-cuda12.8`,
+`scgpt-whole-human/windows-x86_64-cpu` and `scgpt-whole-human/windows-x86_64-cuda12.8`. Only two of
+the published Linux targets declare `windows-wsl2` at all — mhcflurry and pvactools; the other three
+serve Linux hosts.
 
 ## What the migration actually touched
 
@@ -28,7 +46,7 @@ scrolls** do (`scrollcase@1.1.1`).
 
 ## Why this exists
 
-Liatir pins exact `scrollcase@0.8.0`, which produces **version 2** boxes. Scrollcase released
+Liatir pinned exact `scrollcase@0.8.0`, which produces **version 2** boxes. Scrollcase released
 `1.0.0` on 2026-09-02 with the **version 3** format — a deliberate breaking wire change, the only
 one planned. A v3 verifier refuses a v2 box **by name** rather than reinterpreting it. There is no
 dual-read path and no migration tool: *a box is rebuilt from its scroll*.
@@ -49,7 +67,7 @@ Full evidence for the blocker is in [the Boltz source review](./phase3-boltz-sou
    `scripts/runtime-box/pypi-license-inventory.py`.
 2. ✅ **Liatir adopts Scrollcase 1.x.** Done in one pass, to a version that already carries what
    Boltz needs.
-3. ⏳ **Rebuild the nine published boxes** as v3 artefacts, and the bundled `native-tools` box.
+3. ⏳ **Rebuild the thirteen published boxes** as v3 artefacts, and the bundled `native-tools` box.
    A rebuild is enough to prove the scroll: each model's science was already validated and does
    not need repeating, by the owner's decision of 2026-09-11.
 4. ⏳ **Republish**, together with an app build that can read v3. Separately authorized, and the
@@ -59,8 +77,8 @@ Full evidence for the blocker is in [the Boltz source review](./phase3-boltz-sou
 
 ## What the format change touches in Liatir
 
-From the Scrollcase 1.0.0 release notes, each of these is used across Liatir's eleven scrolls and
-its three consumer surfaces:
+From the Scrollcase 1.0.0 release notes, each of these was used across Liatir's twenty-two scrolls
+and its three consumer surfaces:
 
 - `runtime: { id, version, entryPoint }` replaces `pythonVersion` and `pythonEntryPoint`, in the
   scroll, `box.json` and the signed release; `provenance.pythonVersion` becomes
