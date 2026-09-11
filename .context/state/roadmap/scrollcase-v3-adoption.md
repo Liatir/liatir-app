@@ -20,8 +20,11 @@ owner's decision to leave shipped artefacts alone.
 | Platform | Published targets | Rebuilt where |
 | --- | ---: | --- |
 | Linux | 5 | this machine, inside WSL2 |
-| Windows native | 3 | this machine, natively |
 | macOS | 5 | needs a Mac |
+
+The three native Windows targets were **retired** on 2026-09-11 rather than rebuilt — see
+[no native Windows Runtime Box targets](../../decisions/no-native-windows-runtime-box-targets.md).
+Their Linux counterparts now declare `windows-wsl2` and carry those users.
 
 The three Windows-native targets are `geneformer-v1-10m/windows-x86_64-cuda12.8`,
 `scgpt-whole-human/windows-x86_64-cpu` and `scgpt-whole-human/windows-x86_64-cuda12.8`. Only two of

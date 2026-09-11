@@ -25,46 +25,29 @@ const publishedMacosArm64MetalTargets = (minRamGb: number) => [{
 }];
 // Geneformer ships no CPU box: measured CPU throughput is ~160 ms per cell. All three published
 // targets are here: Apple silicon Metal, Linux CUDA 12.9 and native Windows CUDA 12.8.
-// scGPT publishes Apple silicon Metal and Linux x86_64 CPU; Windows and the NVIDIA targets are
-// built and not yet published.
+// scGPT publishes Apple silicon Metal, Linux x86_64 CPU and Linux CUDA. The two native Windows
+// boxes were retired on 2026-09-11: Windows reaches both through WSL2, running the Linux box.
 const publishedScgptTargets = () => [
   ...publishedMacosArm64MetalTargets(16),
   {
     target: { platform: 'linux', arch: 'x86_64', accelerator: 'cpu' },
-    hostEnvironments: ['native'],
-    minRamGb: 16,
-  },
-  {
-    target: { platform: 'windows', arch: 'x86_64', accelerator: 'cpu' },
-    hostEnvironments: ['native'],
+    hostEnvironments: ['native', 'windows-wsl2'],
     minRamGb: 16,
   },
   {
     target: { platform: 'linux', arch: 'x86_64', accelerator: 'cuda', cudaVersion: '12.9' },
-    hostEnvironments: ['native'],
+    hostEnvironments: ['native', 'windows-wsl2'],
     minRamGb: 16,
     minNvidiaDriverVersion: '525.60.13',
-  },
-  {
-    target: { platform: 'windows', arch: 'x86_64', accelerator: 'cuda', cudaVersion: '12.8' },
-    hostEnvironments: ['native'],
-    minRamGb: 16,
-    minNvidiaDriverVersion: '527.41',
   },
 ];
 const publishedGeneformerTargets = () => [
   ...publishedMacosArm64MetalTargets(8),
   {
     target: { platform: 'linux', arch: 'x86_64', accelerator: 'cuda', cudaVersion: '12.9' },
-    hostEnvironments: ['native'],
+    hostEnvironments: ['native', 'windows-wsl2'],
     minRamGb: 16,
     minNvidiaDriverVersion: '525.60.13',
-  },
-  {
-    target: { platform: 'windows', arch: 'x86_64', accelerator: 'cuda', cudaVersion: '12.8' },
-    hostEnvironments: ['native'],
-    minRamGb: 16,
-    minNvidiaDriverVersion: '527.41',
   },
 ];
 

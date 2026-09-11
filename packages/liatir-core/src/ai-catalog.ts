@@ -127,14 +127,8 @@ export const MHCFLURRY_CLASS1_PRESENTATION_RELEASE_CANDIDATE_METADATA =
 
 const LINUX_CUDA_12_9_TARGET: LiatirRuntimeBoxTargetCandidate = {
 	target: { platform: 'linux', arch: 'x86_64', accelerator: 'cuda', cudaVersion: '12.9' },
-	hostEnvironments: ['native'],
+	hostEnvironments: ['native', 'windows-wsl2'],
 	minNvidiaDriverVersion: '525.60.13',
-};
-
-const WINDOWS_CUDA_12_8_TARGET: LiatirRuntimeBoxTargetCandidate = {
-	target: { platform: 'windows', arch: 'x86_64', accelerator: 'cuda', cudaVersion: '12.8' },
-	hostEnvironments: ['native'],
-	minNvidiaDriverVersion: '527.41',
 };
 
 /** Non-distributable candidate metadata; normal product exposure waits for retained release evidence. */
@@ -175,7 +169,6 @@ export const BOLTZ_2_RELEASE_CANDIDATE_METADATA: LiatirAIModelMetadata = {
 			registryBaseUrl: 'https://models.liatir.com/v1',
 			publishedTargets: [
 				LINUX_CUDA_12_9_TARGET,
-				WINDOWS_CUDA_12_8_TARGET,
 				{ target: { platform: 'macos', arch: 'aarch64', accelerator: 'metal' }, hostEnvironments: ['native'] },
 			],
 		},
@@ -275,7 +268,7 @@ export const PROTENIX_MINI_DEFAULT_RELEASE_CANDIDATE_METADATA: LiatirAIModelMeta
 			boxId: PROTENIX_MINI_DEFAULT_BOX_ID,
 			channel: 'beta',
 			registryBaseUrl: 'https://models.liatir.com/v1',
-			publishedTargets: [LINUX_CUDA_12_9_TARGET, WINDOWS_CUDA_12_8_TARGET],
+			publishedTargets: [LINUX_CUDA_12_9_TARGET],
 		},
 		runtimePackages: [
 			{ package: 'protenix', version: PROTENIX_V2_VERSION, importName: 'protenix' },
@@ -322,25 +315,14 @@ function publishedScgptTargets(): readonly LiatirRuntimeBoxTargetCandidate[] {
 		...publishedMacosArm64MetalTarget(16),
 		{
 			target: { platform: 'linux', arch: 'x86_64', accelerator: 'cpu' },
-			hostEnvironments: ['native'],
-			minRamGb: 16
-		},
-		{
-			target: { platform: 'windows', arch: 'x86_64', accelerator: 'cpu' },
-			hostEnvironments: ['native'],
+			hostEnvironments: ['native', 'windows-wsl2'],
 			minRamGb: 16
 		},
 		{
 			target: { platform: 'linux', arch: 'x86_64', accelerator: 'cuda', cudaVersion: '12.9' },
-			hostEnvironments: ['native'],
+			hostEnvironments: ['native', 'windows-wsl2'],
 			minRamGb: 16,
 			minNvidiaDriverVersion: '525.60.13'
-		},
-		{
-			target: { platform: 'windows', arch: 'x86_64', accelerator: 'cuda', cudaVersion: '12.8' },
-			hostEnvironments: ['native'],
-			minRamGb: 16,
-			minNvidiaDriverVersion: '527.41'
 		}
 	];
 }
@@ -351,15 +333,9 @@ function publishedGeneformerTargets(): readonly LiatirRuntimeBoxTargetCandidate[
 		...publishedMacosArm64MetalTarget(8),
 		{
 			target: { platform: 'linux', arch: 'x86_64', accelerator: 'cuda', cudaVersion: '12.9' },
-			hostEnvironments: ['native'],
+			hostEnvironments: ['native', 'windows-wsl2'],
 			minRamGb: 16,
 			minNvidiaDriverVersion: '525.60.13'
-		},
-		{
-			target: { platform: 'windows', arch: 'x86_64', accelerator: 'cuda', cudaVersion: '12.8' },
-			hostEnvironments: ['native'],
-			minRamGb: 16,
-			minNvidiaDriverVersion: '527.41'
 		}
 	];
 }

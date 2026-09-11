@@ -286,12 +286,6 @@ describe('Runtime Box CI cost controls', () => {
         auditPath: 'runtime-boxes/legal/audits/geneformer-v1-10m-linux-x86_64-cuda12.9.json',
         runtime: { id: 'python', version: '3.11.9', entryPoint: 'venv/bin/python' },
       },
-      {
-        scrollId: 'geneformer-v1-10m-windows-x86_64-cuda12.8',
-        auditPath: 'runtime-boxes/legal/audits/geneformer-v1-10m-windows-x86_64-cuda12.8.json',
-        // Windows conda prefixes put the interpreter at the prefix root, not under bin/.
-        runtime: { id: 'python', version: '3.11.9', entryPoint: 'venv/python.exe' },
-      },
     ];
 
     for (const { scrollId, auditPath, runtime } of migrations) {

@@ -357,19 +357,19 @@ describe('Runtime Box product E2E support', () => {
         accelerator: 'cuda',
         cudaVersion: '12.9',
       },
-      hostEnvironments: ['native'],
+      hostEnvironments: ['native', 'windows-wsl2'],
       minRamGb: 16,
       minNvidiaDriverVersion: '525.60.13',
     }]);
   });
 
-  it('derives the Windows CPU candidate from the checked catalog and recipe', () => {
+  it('derives the Linux CPU candidate, which is how Windows reaches scGPT', () => {
     expect(runtimeBoxTargetForNativeTest(
       'bowang-scgpt-whole-human',
-      'windows-x86_64-cpu',
+      'linux-x86_64-cpu',
     )).toEqual([{
-      target: { platform: 'windows', arch: 'x86_64', accelerator: 'cpu' },
-      hostEnvironments: ['native'],
+      target: { platform: 'linux', arch: 'x86_64', accelerator: 'cpu' },
+      hostEnvironments: ['native', 'windows-wsl2'],
       minRamGb: 16,
     }]);
   });

@@ -26,20 +26,16 @@ describe('Runtime Box CI catalog', () => {
   });
 
   // Owner decision of 2026-09-09: Windows is an app host, never a payload platform. It reaches a
-  // component through WSL2 running the Linux box, so no new native Windows target may be authored.
-  // The three entries below are permanent legacy — signed, published and installable before the
-  // decision, and deliberately left in place rather than withdrawn. The rule is forward-looking, so
-  // this list exists to reject a fourth entry, not to count down to zero.
-  it('authors no native Windows target beyond the three already published', () => {
+  // component through WSL2 running the Linux box. Three published boxes predating that decision
+  // were kept at first and retired on 2026-09-11, when version 3 forced a rebuild of all of them
+  // anyway — WSL2 is already a hard requirement of Liatir on Windows, so a native Windows box asks
+  // a user for a second toolchain to get what the Linux one already gives them.
+  it('authors no native Windows target at all', () => {
     const nativeWindows = catalog.components.flatMap((component) => component.targets
       .filter((target) => target.target.platform === 'windows')
       .map((target) => `${component.componentId}/${target.targetId}/${target.status}`));
 
-    expect(nativeWindows).toEqual([
-      'ctheodoris-geneformer-v1-10m/windows-x86_64-cuda12.8/published',
-      'bowang-scgpt-whole-human/windows-x86_64-cpu/published',
-      'bowang-scgpt-whole-human/windows-x86_64-cuda12.8/published',
-    ]);
+    expect(nativeWindows).toEqual([]);
   });
 
   it('reaches Windows through WSL2 on every component that supports it', () => {
@@ -48,6 +44,10 @@ describe('Runtime Box CI catalog', () => {
       .map((target) => `${component.componentId}/${target.targetId}`));
 
     expect(wsl2).toEqual([
+      // The first three replace the native Windows boxes retired on 2026-09-11.
+      'ctheodoris-geneformer-v1-10m/linux-x86_64-cuda12.9',
+      'bowang-scgpt-whole-human/linux-x86_64-cpu',
+      'bowang-scgpt-whole-human/linux-x86_64-cuda12.9',
       'openvax-mhcflurry-class1-presentation/linux-x86_64-cpu',
       'openvax-mhcflurry-class1-presentation/linux-x86_64-cuda12.9',
       'griffithlab-pvactools-pvacseq/linux-x86_64-cpu',
@@ -205,19 +205,22 @@ describe('Runtime Box CI catalog', () => {
     expect(resolved.runner).not.toHaveProperty('expectedComputeCapability');
   });
 
-  it('derives the Windows CPU recipe and self-hosted runner from checked catalog state', () => {
+  it('derives the Linux CPU recipe and self-hosted runner from checked catalog state', () => {
+    // This was the Windows CPU target until it was retired; scGPT now reaches Windows through
+    // WSL2 with the very box a Linux host runs, so that is the one a resolution must find.
     const resolved = resolveCiTarget(
       catalog,
       'bowang-scgpt-whole-human',
       undefined,
-      'windows-x86_64-cpu',
+      'linux-x86_64-cpu',
       'native-lifecycle',
     );
     expect(resolved.target).toMatchObject({
-      recipeId: 'scgpt-whole-human-windows-x86_64-cpu',
-      condaDependencyLicenseAudit: 'runtime-boxes/legal/audits/scgpt-whole-human-windows-x86_64-cpu.json',
+      recipeId: 'scgpt-whole-human-linux-x86_64-cpu',
+      condaDependencyLicenseAudit: 'runtime-boxes/legal/audits/scgpt-whole-human-linux-x86_64-cpu.json',
+      hostEnvironments: ['native', 'windows-wsl2'],
     });
-    expect(resolved.runner).toMatchObject({ runsOn: 'liatir-windows-selfhosted', gpu: false });
+    expect(resolved.runner).toMatchObject({ runsOn: 'liatir-linux-selfhosted', gpu: false });
   });
 
   it('accepts any GPU that clears the declared floors, not one exact card', () => {

@@ -247,7 +247,8 @@
             "cudaVersion": "12.9"
           },
           "hostEnvironments": [
-            "native"
+            "native",
+            "windows-wsl2"
           ],
           "recipeId": "geneformer-v1-10m-linux-x86_64-cuda12.9",
           "runnerProfileId": "linux-x64-cuda-selfhosted",
@@ -278,49 +279,6 @@
             "workflowRunId": "31325208258",
             "workflowRunUrl": "https://github.com/Liatir/liatir-stack/actions/runs/31325208258",
             "evidenceRecord": "runtime-boxes/evidence/geneformer-v1-10m-linux-x86_64-cuda12.9-1.0.0-beta.2-run-31325208258.json"
-          }
-        },
-        {
-          "targetId": "windows-x86_64-cuda12.8",
-          "target": {
-            "platform": "windows",
-            "arch": "x86_64",
-            "accelerator": "cuda",
-            "cudaVersion": "12.8"
-          },
-          "hostEnvironments": [
-            "native"
-          ],
-          "recipeId": "geneformer-v1-10m-windows-x86_64-cuda12.8",
-          "runnerProfileId": "windows-x64-cuda-selfhosted",
-          "status": "published",
-          "validationModes": [
-            "build",
-            "scientific",
-            "native-lifecycle"
-          ],
-          "timeoutMinutes": 120,
-          "requiredBuildDiskBytes": 25769803776,
-          "dependencyLockSha256": "ce2e51ed2985b58607f84082ae7362811b9adc613b4d311e171f5fb06b92b5ec",
-          "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/geneformer-v1-10m-windows-x86_64-cuda12.8.json",
-          "diskPlan": {
-            "estimatedInstalledSizeBytes": 7402549049,
-            "estimatedArchiveSizeBytes": 4310849510,
-            "safetyMarginBytes": 3221225472
-          },
-          "gpuRequired": true,
-          "nativeCiEnabled": true,
-          "linuxValidationPrerequisiteTargetId": "linux-x86_64-cuda12.9",
-          "publication": {
-            "source": "github-actions",
-            "releaseManifestUrl": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/geneformer-v1-10m/1.0.0-beta.2/windows-x86_64-cuda12.8/f3d3b26fe2deebcd5b53d668d27e1bdef83d1860860a8154efc8bace4bdb55ce.release.json",
-            "archiveSha256": "1a187e26dc735506bdac0a5c1046423ff0a94b51c559befd5054fef84bcbaa74",
-            "archiveSizeBytes": 4310849517,
-            "signingKeyId": "liatir-runtime-box-kms-2026",
-            "publishedAt": "2026-08-09T23:25:37.012Z",
-            "workflowRunId": "31339302550",
-            "workflowRunUrl": "https://github.com/Liatir/liatir-stack/actions/runs/31339302550",
-            "evidenceRecord": "runtime-boxes/evidence/geneformer-v1-10m-windows-x86_64-cuda12.8-1.0.0-beta.2-run-31339302550.json"
           }
         }
       ]
@@ -388,7 +346,8 @@
             "accelerator": "cpu"
           },
           "hostEnvironments": [
-            "native"
+            "native",
+            "windows-wsl2"
           ],
           "recipeId": "scgpt-whole-human-linux-x86_64-cpu",
           "runnerProfileId": "linux-x64-selfhosted",
@@ -430,7 +389,8 @@
             "cudaVersion": "12.9"
           },
           "hostEnvironments": [
-            "native"
+            "native",
+            "windows-wsl2"
           ],
           "recipeId": "scgpt-whole-human-linux-x86_64-cuda12.9",
           "runnerProfileId": "linux-x64-cuda-selfhosted",
@@ -461,90 +421,6 @@
             "workflowRunId": "31350903591",
             "workflowRunUrl": "https://github.com/Liatir/liatir-stack/actions/runs/31350903591",
             "evidenceRecord": "runtime-boxes/evidence/scgpt-whole-human-linux-x86_64-cuda12.9-0.2.5-beta.2-run-31350903591.json"
-          }
-        },
-        {
-          "targetId": "windows-x86_64-cpu",
-          "target": {
-            "platform": "windows",
-            "arch": "x86_64",
-            "accelerator": "cpu"
-          },
-          "hostEnvironments": [
-            "native"
-          ],
-          "recipeId": "scgpt-whole-human-windows-x86_64-cpu",
-          "runnerProfileId": "windows-x64-selfhosted",
-          "status": "published",
-          "validationModes": [
-            "build",
-            "scientific",
-            "native-lifecycle"
-          ],
-          "timeoutMinutes": 90,
-          "requiredBuildDiskBytes": 8589934592,
-          "dependencyLockSha256": "223f3996e052be616e6f481e1fa65db376c0da2fa555b7425bc73fa2896682c8",
-          "diskPlan": {
-            "estimatedInstalledSizeBytes": 1481631149,
-            "estimatedArchiveSizeBytes": 584473165,
-            "safetyMarginBytes": 4294967296
-          },
-          "gpuRequired": false,
-          "nativeCiEnabled": true,
-          "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/scgpt-whole-human-windows-x86_64-cpu.json",
-          "publication": {
-            "source": "github-actions",
-            "releaseManifestUrl": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/scgpt-whole-human/0.2.5-beta.2/windows-x86_64-cpu/f0850c2402c15cdc978bc3e386238bc3aeb8b3430227d743e5d5252ff8baee98.release.json",
-            "archiveSha256": "4ff7c43f4c2a12f9e6f0775ba48c3a9553b1a3c70b9f23b40770b9fa9ea734dd",
-            "archiveSizeBytes": 584473168,
-            "signingKeyId": "liatir-runtime-box-kms-2026",
-            "publishedAt": "2026-08-10T02:47:48.009Z",
-            "workflowRunId": "31348613035",
-            "workflowRunUrl": "https://github.com/Liatir/liatir-stack/actions/runs/31348613035",
-            "evidenceRecord": "runtime-boxes/evidence/scgpt-whole-human-windows-x86_64-cpu-0.2.5-beta.2-run-31348613035.json"
-          }
-        },
-        {
-          "targetId": "windows-x86_64-cuda12.8",
-          "target": {
-            "platform": "windows",
-            "arch": "x86_64",
-            "accelerator": "cuda",
-            "cudaVersion": "12.8"
-          },
-          "hostEnvironments": [
-            "native"
-          ],
-          "recipeId": "scgpt-whole-human-windows-x86_64-cuda12.8",
-          "runnerProfileId": "windows-x64-cuda-selfhosted",
-          "status": "published",
-          "validationModes": [
-            "build",
-            "scientific",
-            "native-lifecycle"
-          ],
-          "timeoutMinutes": 120,
-          "requiredBuildDiskBytes": 25769803776,
-          "dependencyLockSha256": "138eaefb4820a0e16288c87f01f799ff440b84e10f77e65639c631be739db6a8",
-          "diskPlan": {
-            "estimatedInstalledSizeBytes": 7056692402,
-            "estimatedArchiveSizeBytes": 4396488741,
-            "safetyMarginBytes": 5368709120
-          },
-          "gpuRequired": true,
-          "nativeCiEnabled": true,
-          "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/scgpt-whole-human-windows-x86_64-cuda12.8.json",
-          "linuxValidationPrerequisiteTargetId": "linux-x86_64-cuda12.9",
-          "publication": {
-            "source": "github-actions",
-            "releaseManifestUrl": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/scgpt-whole-human/0.2.5-beta.2/windows-x86_64-cuda12.8/c8fa0a73f01ff44eea016f8f9fdc6bb632582cb88a1294709255cc8b6e404b73.release.json",
-            "archiveSha256": "66e231014964cac464d9f6d32611cca1c740ded3af02fa782c482319101c7d2b",
-            "archiveSizeBytes": 4396488738,
-            "signingKeyId": "liatir-runtime-box-kms-2026",
-            "publishedAt": "2026-08-10T05:25:55.634Z",
-            "workflowRunId": "31354595144",
-            "workflowRunUrl": "https://github.com/Liatir/liatir-stack/actions/runs/31354595144",
-            "evidenceRecord": "runtime-boxes/evidence/scgpt-whole-human-windows-x86_64-cuda12.8-0.2.5-beta.2-run-31354595144.json"
           }
         }
       ]
@@ -622,12 +498,22 @@
       "targets": [
         {
           "targetId": "macos-aarch64-metal",
-          "target": { "platform": "macos", "arch": "aarch64", "accelerator": "metal" },
-          "hostEnvironments": ["native"],
+          "target": {
+            "platform": "macos",
+            "arch": "aarch64",
+            "accelerator": "metal"
+          },
+          "hostEnvironments": [
+            "native"
+          ],
           "recipeId": "mhcflurry-class1-presentation-macos-aarch64-metal",
           "runnerProfileId": "macos-arm64-heavy",
           "status": "published",
-          "validationModes": ["build", "scientific", "native-lifecycle"],
+          "validationModes": [
+            "build",
+            "scientific",
+            "native-lifecycle"
+          ],
           "timeoutMinutes": 120,
           "requiredBuildDiskBytes": 8589934592,
           "dependencyLockSha256": "5c972d33e8741232bc97bafc6cc7939bbaad01cb660beddf09394a0f24b8fc56",
@@ -654,12 +540,23 @@
         },
         {
           "targetId": "linux-x86_64-cpu",
-          "target": { "platform": "linux", "arch": "x86_64", "accelerator": "cpu" },
-          "hostEnvironments": ["native", "windows-wsl2"],
+          "target": {
+            "platform": "linux",
+            "arch": "x86_64",
+            "accelerator": "cpu"
+          },
+          "hostEnvironments": [
+            "native",
+            "windows-wsl2"
+          ],
           "recipeId": "mhcflurry-class1-presentation-linux-x86_64-cpu",
           "runnerProfileId": "linux-x64-selfhosted",
           "status": "published",
-          "validationModes": ["build", "scientific", "native-lifecycle"],
+          "validationModes": [
+            "build",
+            "scientific",
+            "native-lifecycle"
+          ],
           "timeoutMinutes": 120,
           "requiredBuildDiskBytes": 8589934592,
           "dependencyLockSha256": "9cebf319d9eb350dcdabd85694e2aedc61c20dfd8ab07a77ca826bf5797016ce",
@@ -686,12 +583,24 @@
         },
         {
           "targetId": "linux-x86_64-cuda12.9",
-          "target": { "platform": "linux", "arch": "x86_64", "accelerator": "cuda", "cudaVersion": "12.9" },
-          "hostEnvironments": ["native", "windows-wsl2"],
+          "target": {
+            "platform": "linux",
+            "arch": "x86_64",
+            "accelerator": "cuda",
+            "cudaVersion": "12.9"
+          },
+          "hostEnvironments": [
+            "native",
+            "windows-wsl2"
+          ],
           "recipeId": "mhcflurry-class1-presentation-linux-x86_64-cuda12.9",
           "runnerProfileId": "linux-x64-cuda-selfhosted",
           "status": "planned",
-          "validationModes": ["build", "scientific", "native-lifecycle"],
+          "validationModes": [
+            "build",
+            "scientific",
+            "native-lifecycle"
+          ],
           "timeoutMinutes": 150,
           "requiredBuildDiskBytes": 34359738368,
           "dependencyLockSha256": "95f154e78f10a8d98f9b640e76a49ab7e9cbe64389bdcbcce96087532f71d2a2",
@@ -722,12 +631,22 @@
       "targets": [
         {
           "targetId": "macos-aarch64-cpu",
-          "target": { "platform": "macos", "arch": "aarch64", "accelerator": "cpu" },
-          "hostEnvironments": ["native"],
+          "target": {
+            "platform": "macos",
+            "arch": "aarch64",
+            "accelerator": "cpu"
+          },
+          "hostEnvironments": [
+            "native"
+          ],
           "recipeId": "pvactools-pvacseq-macos-aarch64-cpu",
           "runnerProfileId": "macos-arm64-heavy",
           "status": "published",
-          "validationModes": ["build", "scientific", "native-lifecycle"],
+          "validationModes": [
+            "build",
+            "scientific",
+            "native-lifecycle"
+          ],
           "timeoutMinutes": 180,
           "requiredBuildDiskBytes": 10737418240,
           "dependencyLockSha256": "1c35c27f2e09afc8ed9b47cae2ecde5d920245be644ba85a72acffedbdd29c3b",
@@ -754,12 +673,23 @@
         },
         {
           "targetId": "linux-x86_64-cpu",
-          "target": { "platform": "linux", "arch": "x86_64", "accelerator": "cpu" },
-          "hostEnvironments": ["native", "windows-wsl2"],
+          "target": {
+            "platform": "linux",
+            "arch": "x86_64",
+            "accelerator": "cpu"
+          },
+          "hostEnvironments": [
+            "native",
+            "windows-wsl2"
+          ],
           "recipeId": "pvactools-pvacseq-linux-x86_64-cpu",
           "runnerProfileId": "linux-x64-selfhosted",
           "status": "published",
-          "validationModes": ["build", "scientific", "native-lifecycle"],
+          "validationModes": [
+            "build",
+            "scientific",
+            "native-lifecycle"
+          ],
           "timeoutMinutes": 180,
           "requiredBuildDiskBytes": 10737418240,
           "dependencyLockSha256": "984ef86f75d955cf7abbb97e19b83440d8ee57f5826b32762ef45afde0e22646",
@@ -802,12 +732,22 @@
       "targets": [
         {
           "targetId": "macos-aarch64-cpu",
-          "target": { "platform": "macos", "arch": "aarch64", "accelerator": "cpu" },
-          "hostEnvironments": ["native"],
+          "target": {
+            "platform": "macos",
+            "arch": "aarch64",
+            "accelerator": "cpu"
+          },
+          "hostEnvironments": [
+            "native"
+          ],
           "recipeId": "openmm-macos-aarch64-cpu",
           "runnerProfileId": "macos-arm64-standard",
           "status": "planned",
-          "validationModes": ["build", "scientific", "native-lifecycle"],
+          "validationModes": [
+            "build",
+            "scientific",
+            "native-lifecycle"
+          ],
           "timeoutMinutes": 180,
           "requiredBuildDiskBytes": 8589934592,
           "dependencyLockSha256": "246bd4d7806162ce80574582430eed261c7549451e79e28b6abd13e23da7386b",
@@ -822,12 +762,23 @@
         },
         {
           "targetId": "linux-x86_64-cpu",
-          "target": { "platform": "linux", "arch": "x86_64", "accelerator": "cpu" },
-          "hostEnvironments": ["native", "windows-wsl2"],
+          "target": {
+            "platform": "linux",
+            "arch": "x86_64",
+            "accelerator": "cpu"
+          },
+          "hostEnvironments": [
+            "native",
+            "windows-wsl2"
+          ],
           "recipeId": "openmm-linux-x86_64-cpu",
           "runnerProfileId": "linux-x64-selfhosted",
           "status": "native-lifecycle-validated",
-          "validationModes": ["build", "scientific", "native-lifecycle"],
+          "validationModes": [
+            "build",
+            "scientific",
+            "native-lifecycle"
+          ],
           "timeoutMinutes": 180,
           "requiredBuildDiskBytes": 8589934592,
           "dependencyLockSha256": "c35e17ae7d1373455c0de30a8b7a01868c550a1f988e90f22cae61127fb47cd1",
@@ -842,12 +793,24 @@
         },
         {
           "targetId": "linux-x86_64-cuda12.9",
-          "target": { "platform": "linux", "arch": "x86_64", "accelerator": "cuda", "cudaVersion": "12.9" },
-          "hostEnvironments": ["native", "windows-wsl2"],
+          "target": {
+            "platform": "linux",
+            "arch": "x86_64",
+            "accelerator": "cuda",
+            "cudaVersion": "12.9"
+          },
+          "hostEnvironments": [
+            "native",
+            "windows-wsl2"
+          ],
           "recipeId": "openmm-linux-x86_64-cuda12.9",
           "runnerProfileId": "linux-x64-cuda-selfhosted",
           "status": "native-lifecycle-validated",
-          "validationModes": ["build", "scientific", "native-lifecycle"],
+          "validationModes": [
+            "build",
+            "scientific",
+            "native-lifecycle"
+          ],
           "timeoutMinutes": 180,
           "requiredBuildDiskBytes": 17179869184,
           "dependencyLockSha256": "0bf2cb447cde30e8ee2ca1b262c88fec72c890519728ed52588a0c59c2afb39f",

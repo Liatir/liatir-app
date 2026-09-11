@@ -1,5 +1,29 @@
 # No native Windows Runtime Box targets
 
+## Amended 2026-09-11: the three published ones are retired too
+
+The rule was forward-looking, and three native Windows boxes stayed published because withdrawing a
+shipped artefact is not something to do casually. Adopting Scrollcase v3 removed the reason to keep
+them: **a v3 app refuses a v2 box by name**, so all three had to be rebuilt regardless, and keeping
+them meant rebuilding three extra boxes, maintaining a third platform, and carrying a second CUDA
+version (12.8 on Windows against 12.9 on Linux) for no user benefit.
+
+No user benefit, because **WSL2 is already a hard requirement of Liatir on Windows** — the public
+documentation says so, since the Native Tools the app ships (`samtools`, `bwa`, `minimap2` and the
+rest) have no Windows build and run there. Every Windows user already has it. And each of the three
+had an already-published Linux counterpart:
+`geneformer-v1-10m/windows-x86_64-cuda12.8` → `linux-x86_64-cuda12.9`,
+`scgpt-whole-human/windows-x86_64-cpu` → `linux-x86_64-cpu`,
+`scgpt-whole-human/windows-x86_64-cuda12.8` → `linux-x86_64-cuda12.9`. Those three Linux targets
+now declare `windows-wsl2`, in the catalog, in the scrolls and in the app's model registry.
+
+A user holding one of the retired boxes is no worse off: the app update that reaches them refuses
+their v2 box anyway, and reinstalling gives them the Linux one through WSL2, on the same GPU. The
+published evidence records for all three stay in `runtime-boxes/evidence/`, which is append-only.
+
+**The catalog now contains no native Windows target at all**, and the guard in
+`tests/unit/runtime-box-ci-catalog.test.ts` asserts exactly that rather than counting down to it.
+
 Owner decision, 2026-09-09. It governs every Runtime Box target from now on, and it
 supersedes the per-component Windows choices made before that date.
 
@@ -70,16 +94,21 @@ because all three are unbuilt: `openmm-openmm/linux-x86_64-cpu`,
 `openmm-openmm/linux-x86_64-cuda12.9` and
 `openvax-mhcflurry-class1-presentation/linux-x86_64-cuda12.9`.
 
-`tests/unit/runtime-box-ci-catalog.test.ts` enforces both halves. One guard pins the exact list of
-native Windows targets that remain; the other requires every `windows-wsl2` catalog claim to be
-matched by its scroll's `compatibility.hostEnvironments`. Both were observed failing before being
+`tests/unit/runtime-box-ci-catalog.test.ts` enforces both halves. One guard pins the list of native
+Windows targets that remain — empty since 2026-09-11; the other requires every `windows-wsl2`
+catalog claim to be matched by its scroll's `compatibility.hostEnvironments`. Both were observed failing before being
 accepted — the first would have reported seven entries against the previous catalog, and the
 second was broken deliberately by dropping `hostEnvironments` from the OpenMM Linux CPU scroll,
 which failed naming that exact target.
 
-## The three published native Windows targets stay
+## Superseded: why the three published native Windows targets stayed at first
 
-Decided by the owner on 2026-09-09, in the same conversation: **they are left exactly as they are.**
+Decided by the owner on 2026-09-09 and reversed on 2026-09-11 by the amendment at the top of this
+document. Kept here because the reasoning was sound for as long as its premise held: withdrawing a
+working box costs users something. Version 3 removed that premise — the boxes stop working either
+way.
+
+At the time the decision read: **they are left exactly as they are.**
 
 | Component | Target | Published | Archive |
 | --- | --- | --- | ---: |
@@ -93,7 +122,7 @@ matching Linux targets were re-published carrying `windows-wsl2` — three new s
 no user-visible gain. The rule is forward-looking, not retroactive: it stops new native Windows
 work, it does not undo shipped work.
 
-So these three are permanent legacy. Their catalog entries, scrolls, signer-policy entries and
-evidence records are deliberately untouched, and the guard in
-`tests/unit/runtime-box-ci-catalog.test.ts` pins exactly this list — it exists to reject a fourth,
-not to count down to zero.
+So these three were treated as permanent legacy, with their catalog entries, scrolls,
+signer-policy entries and evidence records deliberately untouched, and the guard in
+`tests/unit/runtime-box-ci-catalog.test.ts` pinning exactly this list. The guard now asserts an
+empty list; only the evidence records remain, because that directory is append-only.
