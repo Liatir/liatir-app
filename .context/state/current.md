@@ -1,5 +1,37 @@
 # Current project status
 
+## The pipeline canvas is covered, and macOS/Linux compile again (2026-09-11)
+
+**`main` did not compile on macOS or Linux.** `native_tools.rs` asked a prepared box for
+`runtime_id()`, a method Scrollcase v3 does not have: v3 dropped `runtimeId` from the format and
+Liatir carries it as a signed label instead, which is exactly what the same check twenty lines above
+already did through `release_label`. One call site was missed. It went unnoticed because it sits
+inside `ensure_prepared`, which is `#[cfg(not(target_os = "windows"))]` — the Windows box work that
+followed the v3 migration compiled cleanly with the broken code switched off. `release_label` now
+delegates to a shared `label` lookup that both a release manifest and a prepared box use.
+
+The lesson is cheap to act on: **a change to `src-tauri` verified only on Windows has left a third
+of the platform-gated bridge unbuilt.** `cargo check` on one other platform would have caught this.
+
+The canvas a user actually builds on had **no coverage at all**. Every other pipeline test seeds
+`pipeline-workspace.json` on disk and presses Run, so a broken step menu, a canvas that mounts
+empty, or a connection drag that silently drops would all have passed the suite.
+`tests/e2e/specs/pipeline-editor.e2e.mjs` now authors a pipeline the way a user does — New pipeline,
+two steps from the real Add step menu, a wire dragged between their handles with real pointer input
+— and reads the result back off the *rendered* canvas, then again after a reload. Five `data-testid`
+hooks were added to the editor and the pipelines list to address the real controls.
+
+Native E2E on macOS arm64: **36 passed, 0 failed, 30 skipped**. `test:verify` 6/6, Clippy clean.
+What the canvas and the WebDriver harness demand of a test — mouse events but no pointer events, a
+node that is invisible until measured, two paths per edge — is written up under *Driving the
+pipeline canvas* in [testing overview](../truth/testing/overview.md).
+
+**Two things stayed broken on purpose, both older than this work.** The stored visual baselines are
+stale: `ai-models` differs from its August baseline by 96%, so `npm run test:visual` is red on
+`main` before anything is touched, and refreshing all eight would silently accept whatever the UI
+looks like now. And the editor is not pixel-stable — captured twice from one binary it differs by
+~2% while `/jobs` differs by 0% — so it is deliberately not in the visual smoke.
+
 ## Liatir runs on Scrollcase v3 (2026-09-11)
 
 The code migration is complete and green: `scrollcase@1.1.1` and `scrollcase-consumer 0.4.0`,

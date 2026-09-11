@@ -133,7 +133,7 @@
         <Icon icon="lucide:upload" width="13" height="13" />
         Import
       </Button>
-      <Button variant="primary" size="sm" onclick={newPipeline}>
+      <Button variant="primary" size="sm" testId="pipeline-new-button" onclick={newPipeline}>
         <Icon icon="lucide:plus" width="13" height="13" />
         New pipeline
       </Button>

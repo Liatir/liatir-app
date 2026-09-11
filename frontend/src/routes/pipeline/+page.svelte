@@ -784,7 +784,7 @@
           </Button>
         {/if}
         <div class={(unsavedChanges && !savedConfirmation && !saving)?"":"opacity-60"}>
-        <Button variant="ghost" size="sm" loading={saving} onclick={savePipeline} disabled={!nameInput.trim() || !unsavedChanges}>
+        <Button variant="ghost" size="sm" testId="pipeline-save-button" loading={saving} onclick={savePipeline} disabled={!nameInput.trim() || !unsavedChanges}>
             <Icon icon={saving ? "svg-spinners:pulse" : (savedConfirmation ? "lucide:check" : "lucide:save")} width="12" height="12" class={(unsavedChanges && !savedConfirmation && !saving) ? "color: text-brand-hover" : ""}/>
             <span class="max-lg:hidden {(unsavedChanges && !savedConfirmation && !saving)?"color: text-brand-hover":""}">
             {saving?"Saving":(savedConfirmation?"Saved":"Save")}
@@ -893,6 +893,7 @@
 
   <div class="border-t border-border bg-surface px-4 py-2 flex items-center gap-3">
     <button
+      data-testid="pipeline-add-step"
       onclick={() => showAddMenu = !showAddMenu}
       disabled={pipelineStore.running}
       class="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5
@@ -959,7 +960,7 @@
 
 {#if showAddMenu}
   <div class="fixed inset-0 z-40 bg-black/30 backdrop-blur-[1px]" role="presentation" onclick={() => { showAddMenu = false; stepSearch = ''; }}></div>
-  <div class="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-120 rounded-xl border border-border bg-surface shadow-2xl overflow-hidden flex flex-col max-h-[70vh]">
+  <div data-testid="pipeline-step-menu" class="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-120 rounded-xl border border-border bg-surface shadow-2xl overflow-hidden flex flex-col max-h-[70vh]">
     <div class="flex items-center gap-2 px-3 py-2.5 border-b border-border bg-surface">
       <Icon icon="lucide:search" width="13" height="13" class="text-text-subtle shrink-0" />
       <input type="text" bind:this={stepSearchInput} bind:value={stepSearch} placeholder="Search steps…"
@@ -978,7 +979,8 @@
         {#if filteredUtility.length > 0}
           <p class="px-3 pt-2.5 pb-1 text-[10px] font-semibold text-text-subtle uppercase tracking-wider bg-surface sticky top-0 z-10">Logic & Control</p>
           {#each filteredUtility as item}
-            <button type="button" onclick={() => { addNode(item.type, item.id); showAddMenu = false; stepSearch = ''; }}
+            <button type="button" data-testid="pipeline-step-option" data-step-option-id={item.id}
+              onclick={() => { addNode(item.type, item.id); showAddMenu = false; stepSearch = ''; }}
               class="w-full text-left flex items-center gap-3 px-4 py-2.5 hover:bg-surface-2 transition-colors">
               <div class="h-7 w-7 rounded-lg flex items-center justify-center shrink-0
                 {item.type === 'variable' ? 'bg-amber-100' : item.type === 'math' ? 'bg-violet-100' :
@@ -1002,7 +1004,8 @@
         {#each Object.entries(toolsByCategory) as [category, tools]}
           <p class="px-3 pt-2.5 pb-1 text-[10px] font-semibold text-text-subtle uppercase tracking-wider bg-surface sticky top-0 z-10">{category}</p>
           {#each tools as tool}
-            <button type="button" onclick={() => { addNode('tool', tool.id); showAddMenu = false; stepSearch = ''; }}
+            <button type="button" data-testid="pipeline-step-option" data-step-option-id={tool.id}
+              onclick={() => { addNode('tool', tool.id); showAddMenu = false; stepSearch = ''; }}
               class="w-full text-left flex flex-col px-4 py-2.5 hover:bg-surface-2 transition-colors">
               <span class="text-sm font-medium text-text">{tool.label}</span>
               <span class="text-xs text-text-subtle mt-0.5">{tool.description}</span>

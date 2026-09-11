@@ -367,6 +367,46 @@ defers the reload by one turn and then confirms it against a new
 `performance.timeOrigin`. The single-cell lighthouse hung exactly this way on its
 first native Windows run.
 
+### Driving the pipeline canvas
+
+`tests/e2e/specs/pipeline-editor.e2e.mjs` authors a pipeline through the UI —
+add two steps from the real menu, drag a wire between their handles, then read
+the result back off the rendered canvas. Four things about the canvas and the
+harness have to be respected together, and each of them was found by a silent
+failure rather than an error.
+
+The embedded WebDriver server synthesizes **mouse events only**. A real
+`POST /actions` pointer sequence arrives in the page as `mousemove` /
+`mousedown` / `mouseup` and never as `pointerdown` / `pointermove` /
+`pointerup`. Connecting two handles works because Svelte Flow binds
+`onmousedown` and then tracks the drag on the document with `mousemove` /
+`mouseup`. **Moving a node does not work at all**: `XYDrag` is built on d3-drag,
+which listens for pointer events, so a node drag is silently ignored — the node
+simply stays where it was. Do not write a test that depends on dragging a node
+until that gap is closed.
+
+A node reaches the DOM **before** xyflow has measured it, and an unmeasured node
+is held at `visibility: hidden`. It then occupies no hit-testable area, so a
+wire cannot be dropped on it and a screenshot does not show it. Counting
+`.svelte-flow__node` elements marches straight past that: wait for every node to
+be `visibility: visible` with a non-zero box before aiming anything at it.
+
+The drop target is resolved by xyflow with `elementFromPoint`, so a wire lands
+only if the target handle is genuinely under the cursor. That is why the drag is
+driven through WebDriver rather than by dispatching events at the handle
+elements: events aimed straight at an element skip the hit test, and with it the
+most likely way for this feature to break.
+
+Each edge draws **two** paths — the visible wire plus a wider transparent one
+that only widens its click target. Count `path.svelte-flow__edge-path`, not
+`path`, or one connection reads as two.
+
+The editor is deliberately **not** in the visual smoke. Captured twice from the
+same binary it differs by about 2% of pixels, diffusely, across the whole window
+— above the suite's 1% threshold — while `/jobs` captured the same way differs
+by 0%. Its coverage is the functional spec above, which asserts real geometry
+instead of pixels.
+
 For the complete macOS regression run, also execute:
 
 ```bash
