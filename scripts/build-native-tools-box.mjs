@@ -207,7 +207,6 @@ function build(placement) {
     ]);
     const arguments_ = [
       'build', `${BOX_ID}/${placement.targetId}`,
-      '--weights', 'embed',
       '--channel', 'beta',
       '--namespace', NAMESPACE,
       '--private-key', privateKey,
@@ -215,6 +214,14 @@ function build(placement) {
       '--pixi', toolchain.pixi,
       '--conda-pack', toolchain.condaPack,
     ];
+    // Building inside WSL2 means the checkout is on `/mnt/<drive>`, which is NTFS: a
+    // case-insensitive filesystem, where the compiler sysroot's `xt_CONNMARK.h` and
+    // `xt_connmark.h` are one file. conda-pack notices the loss and refuses to pack. The archive
+    // and the release document are fine there; only the extracted prefix needs a Linux filesystem,
+    // so this points the build directory at one without moving anything else.
+    if (process.env.SCROLLCASE_BUILD_DIR) {
+      arguments_.push('--build-dir', process.env.SCROLLCASE_BUILD_DIR);
+    }
     if (sourceTreeIsDirty()) arguments_.push('--allow-dirty');
     scrollcase(arguments_);
 

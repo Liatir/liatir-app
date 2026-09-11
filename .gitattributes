@@ -24,3 +24,7 @@ runtime-boxes/scrolls/**/*.py text eol=lf
 runtime-boxes/scrolls/**/*.pth text eol=lf
 runtime-boxes/fixtures/** text eol=lf
 runtime-boxes/legal/** text eol=lf
+# The Native Tools box pins both of its authoring inputs the same way, and they live outside
+# `scrolls/`. A CRLF checkout fails the build at "Local box file SHA-256 mismatch", after the
+# multi-gigabyte environment has already been solved and packed.
+runtime-boxes/native-tools/** text eol=lf
