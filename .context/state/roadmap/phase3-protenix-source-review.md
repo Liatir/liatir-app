@@ -66,6 +66,136 @@ A community mirror was found but was not adopted as an authoritative source. Ful
 review for source, model weights, dictionary data and the complete locked environment remains open;
 the upstream source LICENSE is Apache-2.0 and separately attributes reused LayerNorm/OpenFold code.
 
+## Re-checked 2026-09-11: one blocker is upstream's, the other is ours
+
+### v2's official weights are still unreachable, and there is no second source
+
+`checkpoint/protenix-v2.pt` returned **HTTP 403** again, five days after the first observation, while
+every other object in the same bucket answered 200 on the same request — `protenix_mini_default_v0.5.0.pt`
+(537,049,294 bytes) and `common/components.cif` (490,777,362 bytes) among them. A single object being
+refused while its neighbours are served is not an outage or a regional block; that file is not
+public.
+
+Nothing authoritative replaces it. ByteDance publishes **no** Protenix weights on Hugging Face and
+attaches **no** assets to any GitHub release, `v2.0.0` included — both checked directly through their
+APIs. What exists is third-party re-uploads (`TMF001/protenix-v2-weights` and others), and those stay
+rejected: a box's provenance claim is only worth the source it names, and we cannot show that
+someone else's copy is the file ByteDance built.
+
+**Protenix v2 is blocked on upstream and cannot be unblocked from here.** Either ByteDance makes the
+object public, or the component waits.
+
+### Mini does not resolve as written, and the reason is worth keeping
+
+`pixi lock` on the reviewed manifest fails. Three conflicts, all traceable to the same place:
+
+- conda-forge's `torchvision 0.22.1` CUDA builds for **CUDA 13** require `cudnn >=9.13`, which needs
+  `cuda-version >=13`; the manifest pins 12.9. A `cuda129_py311` build does exist, so this alone is
+  not fatal.
+- That build **constrains `numpy <2.4`**, and upstream pins `numpy==2.4.1`. This one is fatal, and it
+  is a conda-forge packaging constraint rather than an upstream torchvision requirement.
+- The only remaining `torchvision 0.22.1` option is a CPU build, which contradicts `pytorch cuda129*`.
+
+A second attempt — conda `pytorch` plus PyPI `protenix` — failed differently and more clearly:
+conda's pytorch pins `numpy==2.4.6` into the PyPI solve, and `protenix==2.0.0` requires
+`numpy==2.4.1`. **Conda's PyTorch and Protenix's own pins cannot both be satisfied.**
+
+**What solves**: conda supplies Python and the CUDA virtual package, and the entire scientific stack
+comes from PyPI at upstream's exact pins — `torch 2.7.1`, `torchvision 0.22.1`, `torchaudio 2.7.1`,
+`numpy 2.4.1`, `deepspeed 0.17.5`, `triton 3.3.1`, `rdkit 2025.9.3`, `protenix 2.0.0`. 24 conda and
+116 PyPI entries. **No upstream constraint is loosened** — this is the shape that honours them, and
+the conda-first shape is the one that could not.
+
+That makes Mini the first box whose CUDA runtime would come from PyPI's `nvidia-*` wheels rather than
+conda-forge. Fifteen of them appear in the lock. It is a real difference from every other box here
+and needs its own decision before it is adopted, not a quiet lock commit.
+
+### Two facts about Protenix's requirements that a packager needs
+
+- **`torchvision` and `torchaudio` are never imported.** Across all 145 Python files at the reviewed
+  commit there is not one `import torchvision`, and not one mention of either name anywhere. They
+  are in `requirements.txt`, `setup.py` reads that file verbatim into `install_requires`, and so a
+  resolver must satisfy two libraries the code never touches. `cuequivariance` is the same: pinned in
+  requirements, imported nowhere. Dropping them from *our* manifest does not help, because the
+  package itself still declares them.
+- `deepspeed`, `esm` (`fair-esm`), `biotite` (22 files), `gemmi` and `pdbeccdutils` are genuinely
+  imported and must be present.
+
+### Mini's lock is resolved
+
+The manifest now declares what the paragraph above describes, and
+`runtime-boxes/scrolls/protenix-mini-default-v0-5-0/linux-x86_64-cuda12.9/pixi.lock` exists.
+`pixi lock --check` reports it already up to date, so it is stable rather than merely produced.
+
+| Artifact | SHA-256 |
+| --- | --- |
+| `pixi.toml` | `b926d7ab5d4943414081f307f530d9450e2c5c040ffa955becd240c9ebe4f141` |
+| `pixi.lock` | `87eb4e5b819ef85cbb61e0c75afd13efad378849f56151de6bf1c3e39ff9dc01` |
+
+Resolution only, on this machine inside WSL2 with pixi 0.73.0 — the same pair of commands the manual
+authoring workflow runs. Nothing installed, no checkpoint downloaded, no GPU used, no workflow
+dispatched. The reasoning behind the shape is in
+[Protenix resolves through PyPI](../../decisions/protenix-resolves-through-pypi.md).
+
+### Mini's PyPI licences are all reviewed, and two of them should not be there
+
+All **116** PyPI distributions now carry a reviewed licence, read from the distributions the lock
+pins rather than from anyone's summary:
+
+| Licence | Distributions |
+| --- | ---: |
+| BSD-3-Clause | 41 |
+| MIT | 32 |
+| Apache-2.0 | 14 |
+| **LicenseRef-NVIDIA-CUDA-EULA** | **10** |
+| BSD-2-Clause, ISC, MPL-2.0 | 2 each |
+| **LicenseRef-NVIDIA-Proprietary** | **2** |
+| **LicenseRef-NVIDIA-SDK-License-Agreement** | **2** |
+| LGPL-2.1-or-later (`biotraj`) | 1 |
+| LicenseRef-Matplotlib | 1 |
+| everything else | 1 each |
+
+NVIDIA declares the same uninformative `NVIDIA Proprietary Software` for libraries under two
+different agreements, so the identifier is taken from the first line of the agreement each wheel
+actually carries: the CUDA Toolkit EULA for the runtime libraries, and the SDK License Agreement for
+cuDNN and cuSPARSELt. That is the same split conda-forge records, so the same library carries the
+same term whichever channel a box took it from.
+
+**The finding that needs a decision**: `cuequivariance-ops-cu12` and `cuequivariance-ops-torch-cu12`
+are **closed-source NVIDIA kernels**, and **Protenix never imports cuequivariance** — not once in
+145 files. They reach the box only because `requirements.txt` lists them and `setup.py` reads that
+file verbatim. Shipping two proprietary libraries that nothing calls is a redistribution obligation
+taken on for no capability, and it is worth raising upstream rather than absorbing.
+
+The Python halves of the same family, `cuequivariance` and `cuequivariance-torch`, are Apache-2.0.
+`matplotlib` gets `LicenseRef-Matplotlib` rather than the `PSF-2.0` its classifier implies, because
+its agreement is derived from the PSF licence and is not it.
+
+### Mini's assets are downloaded, hashed and pinnable
+
+The published headers carry no digest, so every file was fetched from official ByteDance storage and
+hashed here. These are the values a scroll can pin; nothing was taken on trust from a header or a
+mirror.
+
+| Asset | Bytes | SHA-256 |
+| --- | ---: | --- |
+| `checkpoint/protenix_mini_default_v0.5.0.pt` | 537,049,294 | `3803340c5d9958c038e799ddd2b53b532db21855f261592ad455a5f003791f81` |
+| `common/components.cif` | 490,777,362 | `bb31ae5cf6c8bc669924313077cb4231ee5ffefd3a20118cd14f3ec89f8bb6a5` |
+| `common/components.cif.rdkit_mol.pkl` | 142,498,117 | `d1cfb71f5993a3ebea7c47877022d7f597bbfbaf86e28a4770e957da6c50cd35` |
+| `common/clusters-by-entity-40.txt` | 21,699,572 | `1ab4af905e75b382eda8dec59917dc3608bee0729e36b9e71baf860bbe86850c` |
+| `common/obsolete_release_date.csv` | 134,716 | `a4f3f63ac5d7eebd78b07995cc669b9eccd6f5d8813c9492c9df02868893cf33` |
+
+Every advertised size matched the bytes actually received. `components.cif` is the same wwPDB
+Chemical Component Dictionary that Boltz-2 bundles in a different form, so the CC0 provenance
+established in [the Boltz legal record](../../../runtime-boxes/legal/boltz-2.md) covers it too.
+
+### The git dependency should become a wheel pin
+
+The reviewed manifest takes `protenix` from a pinned git commit. That leaves the **one lock entry
+with no SHA-256**: a git revision addresses a tree, but a signed box verifies bytes, and the licence
+inventory reads a distribution it can download and hash. `protenix==2.0.0` is published on PyPI as
+`protenix-2.0.0-py3-none-any.whl` (517,318 bytes), which removes the exception entirely.
+
 ## Next bounded steps
 
 1. Resolve and audit each Linux environment, without a GPU or model weights. The shared manual

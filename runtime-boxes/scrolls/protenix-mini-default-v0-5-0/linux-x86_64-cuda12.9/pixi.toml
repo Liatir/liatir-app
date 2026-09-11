@@ -1,4 +1,12 @@
 # Separate Mini Default environment; model assets never include the v2 or ESM2 checkpoints.
+#
+# Conda supplies Python and the CUDA virtual package, and nothing else. Every other pin belongs to
+# Protenix and is resolved from PyPI at the version upstream requires. This is the opposite of how
+# every other box here is built, and it is the only shape that resolves: conda-forge's PyTorch pins
+# `numpy==2.4.6` into the PyPI solve while `protenix==2.0.0` requires `numpy==2.4.1`, and
+# conda-forge's `torchvision 0.22.1` constrains `numpy <2.4`. Restating upstream's requirements in
+# conda terms is what made them unsatisfiable; declining to restate them is what honours them.
+# See ../../../../.context/decisions/protenix-resolves-through-pypi.md
 [workspace]
 name = "protenix-mini-default-v0-5-0-linux-x86_64-cuda12.9"
 channels = ["conda-forge"]
@@ -9,11 +17,8 @@ cuda = "12.9"
 
 [dependencies]
 python = "3.11.*"
-pytorch = { version = "2.7.1.*", build = "cuda129*" }
-torchvision = "0.22.1.*"
-torchaudio = "2.7.1.*"
-cuda-version = "12.9.*"
-numpy = "2.4.1.*"
 
+# The published wheel rather than the git commit it was built from: a git revision addresses a tree,
+# and a signed box verifies bytes. `protenix 2.0.0` is the release tagged at the reviewed commit.
 [pypi-dependencies]
-protenix = { git = "https://github.com/bytedance/Protenix.git", rev = "2475421477ab414b571149ad4a875c390ff8a35d" }
+protenix = "==2.0.0"

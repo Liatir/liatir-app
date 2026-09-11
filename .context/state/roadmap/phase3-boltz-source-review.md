@@ -62,8 +62,14 @@ Inspected before the lock was placed in the repository:
   requirement is respected on both the conda and the PyPI side.
 - Four source distributions in total: `fairscale`, `antlr4-python3-runtime`, `ihm`, `modelcif`.
   Every entry, sdist or wheel, carries a pinned SHA-256. There is **no** Git or bare-URL dependency.
-- Boltz's optional `cuda` extra (`cuequivariance-*`) is correctly **not** selected, matching the
-  decision to leave those kernels off until they have their own parity evidence.
+- Boltz's optional `cuda` extra (`cuequivariance-*`) is **not** selected, matching the decision to
+  leave those kernels off until they have their own parity evidence.
+  **Corrected 2026-09-11: not selecting the extra is not enough.** Boltz's CUDA path imports
+  `cuequivariance_torch` unless `--no_kernels` is passed, so the first real prediction died on
+  `ModuleNotFoundError: No module named 'cuequivariance_torch'` inside
+  `boltz/model/layers/triangular_mult.py`. That file keeps a pure PyTorch implementation of the same
+  triangular multiplication for exactly this case, and the product runner passes the flag. An
+  "optional" extra that the default GPU path requires is a trap only a real run finds.
 
 Three findings that the runner and the legal inventory have to answer, recorded now so they are not
 rediscovered later:
@@ -115,6 +121,105 @@ repository's blanket `mit`, with its upstream provenance unstated.
 `boltz==2.2.1` also declares no licence in its wheel metadata at all; the MIT text inside the wheel
 and the repository `LICENSE` settle it, and `fairscale==0.4.13` declares `UNKNOWN` against a
 `BSD License` classifier.
+
+## Both legal questions are answered, and the box is built (2026-09-11)
+
+**The redistribution record is approved.** `mols.tar` is a derivative of the wwPDB **Chemical
+Component Dictionary**, which the PDB archive places under **CC0 1.0**. Traced rather than assumed:
+upstream's `scripts/process/ccd.py` reads a PDB components file through `pdbeccdutils` and writes one
+pickle per component; the archive's own members are exactly `mols/<CCD id>.pkl`; and the dictionary
+is published inside the `/pub/pdb/` archive tree the CC0 policy covers. Details and sources are in
+[the legal record](../../../runtime-boxes/legal/boltz-2.md).
+
+**A claim in that record was wrong and is corrected**: `frozendict` was not the project's first
+copyleft dependency. The complete inventory has **seventeen** GPL-family distributions, sixteen of
+them conda packages that every published box already carries. What was new is that it was the first
+one anyone could *see*, because the PyPI half of a lock had no licences until `scrollcase@1.1.0`.
+
+**The licence inventory is complete** — 144 distributions, 93 conda and 51 PyPI, the PyPI half
+marked `licenseDeclaredBy: project` so a reader can tell derived from declared. This is the first
+Liatir box with PyPI dependencies to produce one at all.
+
+**The box builds and passes its own self-test**, on this machine inside WSL2 with a development key:
+
+```json
+{"boltzVersion": "2.2.1", "cudaVersion": "12.9", "downloadPathReplaced": true,
+ "moleculeDefinitions": 45227, "networkAccess": false, "numpyVersion": "1.26.4",
+ "pandasVersion": "3.0.5", "status": "passed", "torchVersion": "2.8.0"}
+```
+
+Two of the three open findings from the dependency review are settled by that line. **`pandas 3.0.5`
+works with Boltz 2.2.1** — the one loose upstream bound, left for the self-test to answer rather than
+pinned pre-emptively, and the self-test imports the whole CLI the way a real run does. And **the
+telemetry stack is neutralised**: `WANDB_MODE=disabled` is asserted, not hoped for.
+
+The molecule dictionary expands to **45,227 pickles**, every one named by a PDB chemical component
+identifier and nothing else — which is the legal claim above, checked at build time rather than
+asserted once in a document.
+
+The archive is **12,688,668,518 bytes**, 20,301,778,253 installed — about 1.6× scGPT's CUDA box,
+which is the largest published so far. Independent `runtime-box verify --self-test` passed on a
+fresh extraction of the signed release: `Verified boltz-2 2.2.1-beta.1 (linux-x86_64-cuda12.9)`.
+
+One discrepancy worth naming rather than leaving to be discovered: that box was built from scroll
+**1.0.0**, and the repository now holds **1.0.1**. The only difference is the wording of the
+third-party notice, which the scroll pins by hash; the scroll version was bumped rather than the
+edit slipped under the same identity. Since publication requires a rebuild from a clean tree in CI
+against the released Scrollcase anyway, the artefact is transient and the repository is what
+describes the box that will ship.
+
+### It predicts a real protein, and the number is good
+
+The scientific validator runs the product runner against **PDB 1UBQ** — ubiquitin at 1.8 Å, the most
+thoroughly determined small protein there is, and a case where a wrong fold is unmistakable rather
+than arguable. The input is the 76-residue sequence and nothing else: **single-sequence mode**,
+because an offline box has no alignment server, and that is therefore the accuracy this product can
+actually promise.
+
+| Measure | Result |
+| --- | --- |
+| Backbone RMSD to the experimental structure | **1.99 Å** (limit 3 Å) |
+| Largest single CA deviation | 11.5 Å, on the mobile C-terminal tail |
+| `complex_plddt` | 0.925 |
+| `ptm` | 0.905 |
+| Same seed, second run | difference **exactly 0** |
+| Same seed, separate validator run | RMSD identical to the last decimal |
+| Peak RAM / VRAM | 5,685,682,176 / 2,500,853,760 bytes |
+| Time per prediction | ~55 s on an RTX 4060 Ti |
+
+Two refusals passed alongside: an incomplete installation and an empty complex are rejected rather
+than answered. VRAM is not the constraint at this size — 2.5 GB of an 8 GB card for 76 tokens — but
+that says nothing about a large complex, which has not been measured.
+
+**The evidence is bound to the signed box, not to a directory.** The validator verified the release
+signature itself and walked the payload digest before running anything:
+`signedPayloadVerified: true`, archive `609a3cc5…`, payload digest `df018405…`, manifest
+`fd0f9416…`. Retained as
+`runtime-boxes/measurements/boltz-2-linux-x86_64-cuda12.9-development-2026-09-11.json`.
+It is **development evidence**: a development key, and a tree that was dirty at build time. A
+production build makes a different archive and has to be measured there.
+
+Comparison is by Kabsch superposition on CA atoms, computed inside the box with its own NumPy and
+gemmi so the check uses the same numerics as the prediction. The reference is pinned by hash
+(`d4a6812d…`) and committed at `runtime-boxes/fixtures/structures/1ubq.pdb`.
+
+### It needed a third Scrollcase fix
+
+`mols.tar` is an **uncompressed** tar, and `assetArchives` accepted only `zip` and `tar.gz`. Fixed
+upstream in [scrollcase#14](https://github.com/suffro/scrollcase/pull/14), which also drops a
+`gzip: true` that read like a guarantee and was not one — node-tar detects compression itself.
+
+**This is why the box cannot yet be built from a clean checkout.** Liatir pins `scrollcase@1.1.1`,
+which refuses `"format": "tar"` by schema. The pin moves as soon as that PR is released; until then
+the Boltz scroll is committed and correct but unbuildable with the pinned version.
+
+### How the download step is replaced rather than suffered
+
+Boltz's `predict` calls `download_boltz2(cache)` unconditionally, and that function fetches
+`mols.tar` whenever the archive is absent — which it always is in a box, because carrying 1.86 GB
+twice to satisfy an existence check would be absurd. `runtime-boxes/scrolls/boltz-2/boltz_predict.py`
+replaces that one function with a check over the bundled cache and leaves everything else upstream's.
+`--model boltz1` is refused outright, since this box holds no Boltz-1 weights.
 
 ## Next gates
 

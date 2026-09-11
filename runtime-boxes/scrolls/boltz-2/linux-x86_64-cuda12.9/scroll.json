@@ -1,0 +1,105 @@
+{
+  "$schema": "https://scrollcase.dev/schema/v3/scroll.schema.json",
+  "schemaVersion": 3,
+  "scrollId": "boltz-2-linux-x86_64-cuda12.9",
+  "scrollVersion": "1.0.1",
+  "boxId": "boltz-2",
+  "labels": {
+    "model": "jwohlwend-boltz-2",
+    "runtime": "structure-boltz-2-2-1"
+  },
+  "version": "2.2.1-beta.1",
+  "sourceRevision": "cb04aeccdd480fd4db707f0bbafde538397fa2ac+weights-6fdef46d763fee7fbb83ca5501ccceff43b85607",
+  "target": {
+    "platform": "linux",
+    "arch": "x86_64",
+    "accelerator": "cuda",
+    "cudaVersion": "12.9"
+  },
+  "compatibility": {
+    "minLiatirVersion": "0.2.1",
+    "minNvidiaDriverVersion": "525.60.13",
+    "hostEnvironments": [
+      "native",
+      "windows-wsl2"
+    ]
+  },
+  "runtime": {
+    "id": "python",
+    "version": "3.11.16",
+    "entryPoint": "venv/bin/python"
+  },
+  "pixiVersion": "0.73.0",
+  "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/boltz-2-linux-x86_64-cuda12.9.json",
+  "pypiLicenseDeclaration": "runtime-boxes/legal/audits/boltz-2-linux-x86_64-cuda12.9-pypi-declaration.json",
+  "cacheSubdir": "model-cache/boltz-2",
+  "publishBaseUrl": "https://assets.models.liatir.com/ai-runtime-boxes",
+  "assets": [
+    {
+      "url": "https://huggingface.co/boltz-community/boltz-2/resolve/6fdef46d763fee7fbb83ca5501ccceff43b85607/boltz2_conf.ckpt",
+      "relativePath": "model-cache/boltz-2/boltz2_conf.ckpt",
+      "sizeBytes": 2286561469,
+      "sha256": "090e82ac8c92f5e943fa1b39e7410a44027bea7243c0bbb3caa67a77fc1428e1"
+    },
+    {
+      "url": "https://huggingface.co/boltz-community/boltz-2/resolve/6fdef46d763fee7fbb83ca5501ccceff43b85607/boltz2_aff.ckpt",
+      "relativePath": "model-cache/boltz-2/boltz2_aff.ckpt",
+      "sizeBytes": 2062139170,
+      "sha256": "dcc5cd3722b1c9eaa34267e4ae32f55cbbf1963f4c19319381ccfa30fdd2ca9e"
+    },
+    {
+      "url": "https://huggingface.co/boltz-community/boltz-2/resolve/6fdef46d763fee7fbb83ca5501ccceff43b85607/mols.tar",
+      "relativePath": ".sources/mols.tar",
+      "sizeBytes": 1855662080,
+      "sha256": "39e076d96dbec6b4e86982bbda16f3a53a2a60c9bdc17828d88f6f9a0c7d1fd7"
+    }
+  ],
+  "assetArchives": [
+    {
+      "relativePath": ".sources/mols.tar",
+      "format": "tar",
+      "destination": "model-cache/boltz-2",
+      "removeAfterExtract": true
+    }
+  ],
+  "localFiles": [
+    {
+      "sourcePath": "runtime-boxes/legal/boltz-2.md",
+      "relativePath": "THIRD_PARTY_NOTICES/boltz-2.md",
+      "sha256": "a0fa6096190686b5410c9771c1640b7476ef7a96e4a6bab1ce6c34215a9cc786"
+    },
+    {
+      "sourcePath": "runtime-boxes/scrolls/boltz-2/self-test.py",
+      "relativePath": "self-tests/boltz-2.py",
+      "sha256": "a0d7c5d55ecae29fb2f1d4e5509bca6350a87f566e43bd517972dc6405ec884b"
+    },
+    {
+      "sourcePath": "runtime-boxes/scrolls/boltz-2/boltz_predict.py",
+      "relativePath": "runners/boltz_predict.py",
+      "sha256": "38d0adcf31e971f245249e35a977991de885ed4875382c503cd68f9a2753854f"
+    }
+  ],
+  "selfTest": {
+    "imports": [
+      "torch",
+      "numpy",
+      "pandas",
+      "rdkit",
+      "pytorch_lightning",
+      "click",
+      "yaml"
+    ],
+    "files": [
+      "model-cache/boltz-2/boltz2_conf.ckpt",
+      "model-cache/boltz-2/boltz2_aff.ckpt",
+      "model-cache/boltz-2/mols/ATP.pkl",
+      "THIRD_PARTY_NOTICES/boltz-2.md",
+      "self-tests/boltz-2.py",
+      "runners/boltz_predict.py"
+    ],
+    "code": "from pathlib import Path\ncode = Path('self-tests/boltz-2.py').read_text(encoding='utf-8')\nexec(compile(code, 'self-tests/boltz-2.py', 'exec'), {'__name__': '__main__'})"
+  },
+  "environment": {
+    "PYTHONNOUSERSITE": "1"
+  }
+}

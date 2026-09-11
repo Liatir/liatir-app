@@ -1,0 +1,923 @@
+{
+  "schemaVersion": 2,
+  "kind": "scrollcase.box.dependency-license-audit",
+  "targetId": "linux-x86_64-cuda12.9",
+  "dependencyLockSha256": "f1e4a595010fe5c2d98e103c0b6b77ee8a80408ea80e25c661df29b2c4a1e88f",
+  "packages": [
+    {
+      "name": "_openmp_mutex",
+      "version": "4.5",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "antlr4-python3-runtime",
+      "version": "4.9.3",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "biopython",
+      "version": "1.84",
+      "declaredLicense": "LicenseRef-Biopython",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "boltz",
+      "version": "2.2.1",
+      "declaredLicense": "MIT",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "bzip2",
+      "version": "1.0.8",
+      "declaredLicense": "bzip2-1.0.6",
+      "source": "conda"
+    },
+    {
+      "name": "ca-certificates",
+      "version": "2026.7.22",
+      "declaredLicense": "ISC",
+      "source": "conda"
+    },
+    {
+      "name": "certifi",
+      "version": "2026.7.22",
+      "declaredLicense": "MPL-2.0",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "charset-normalizer",
+      "version": "3.5.1",
+      "declaredLicense": "MIT",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "chembl-structure-pipeline",
+      "version": "1.2.2",
+      "declaredLicense": "MIT",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "click",
+      "version": "8.1.7",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "cloudpickle",
+      "version": "3.1.2",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "cpython",
+      "version": "3.11.16",
+      "declaredLicense": "Python-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "cuda-crt-tools",
+      "version": "12.9.86",
+      "declaredLicense": "LicenseRef-NVIDIA-End-User-License-Agreement",
+      "source": "conda"
+    },
+    {
+      "name": "cuda-cudart",
+      "version": "12.9.79",
+      "declaredLicense": "LicenseRef-NVIDIA-End-User-License-Agreement",
+      "source": "conda"
+    },
+    {
+      "name": "cuda-cudart_linux-64",
+      "version": "12.9.79",
+      "declaredLicense": "LicenseRef-NVIDIA-End-User-License-Agreement",
+      "source": "conda"
+    },
+    {
+      "name": "cuda-cuobjdump",
+      "version": "12.9.82",
+      "declaredLicense": "LicenseRef-NVIDIA-End-User-License-Agreement",
+      "source": "conda"
+    },
+    {
+      "name": "cuda-cupti",
+      "version": "12.9.79",
+      "declaredLicense": "LicenseRef-NVIDIA-End-User-License-Agreement",
+      "source": "conda"
+    },
+    {
+      "name": "cuda-nvcc-tools",
+      "version": "12.9.86",
+      "declaredLicense": "LicenseRef-NVIDIA-End-User-License-Agreement",
+      "source": "conda"
+    },
+    {
+      "name": "cuda-nvdisasm",
+      "version": "12.9.88",
+      "declaredLicense": "LicenseRef-NVIDIA-End-User-License-Agreement",
+      "source": "conda"
+    },
+    {
+      "name": "cuda-nvrtc",
+      "version": "12.9.86",
+      "declaredLicense": "LicenseRef-NVIDIA-End-User-License-Agreement",
+      "source": "conda"
+    },
+    {
+      "name": "cuda-nvtx",
+      "version": "12.9.79",
+      "declaredLicense": "LicenseRef-NVIDIA-End-User-License-Agreement",
+      "source": "conda"
+    },
+    {
+      "name": "cuda-nvvm-tools",
+      "version": "12.9.86",
+      "declaredLicense": "LicenseRef-NVIDIA-End-User-License-Agreement",
+      "source": "conda"
+    },
+    {
+      "name": "cuda-version",
+      "version": "12.9",
+      "declaredLicense": "LicenseRef-NVIDIA-End-User-License-Agreement",
+      "source": "conda"
+    },
+    {
+      "name": "cudnn",
+      "version": "9.10.2.21",
+      "declaredLicense": "LicenseRef-cuDNN-Software-License-Agreement",
+      "source": "conda"
+    },
+    {
+      "name": "dm-tree",
+      "version": "0.1.8",
+      "declaredLicense": "Apache-2.0",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "docker-pycreds",
+      "version": "0.4.0",
+      "declaredLicense": "Apache-2.0",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "einops",
+      "version": "0.8.0",
+      "declaredLicense": "MIT",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "einx",
+      "version": "0.3.0",
+      "declaredLicense": "MIT",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "fairscale",
+      "version": "0.4.13",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "filelock",
+      "version": "3.32.5",
+      "declaredLicense": "Unlicense",
+      "source": "conda"
+    },
+    {
+      "name": "frozendict",
+      "version": "2.4.7",
+      "declaredLicense": "LGPL-3.0-or-later",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "fsspec",
+      "version": "2026.7.0",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "gemmi",
+      "version": "0.6.5",
+      "declaredLicense": "MPL-2.0",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "gitdb",
+      "version": "4.0.12",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "gitpython",
+      "version": "3.1.62",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "gmp",
+      "version": "6.3.0",
+      "declaredLicense": "GPL-2.0-or-later OR LGPL-3.0-or-later",
+      "source": "conda"
+    },
+    {
+      "name": "gmpy2",
+      "version": "2.3.1",
+      "declaredLicense": "LGPL-3.0-or-later",
+      "source": "conda"
+    },
+    {
+      "name": "hydra-core",
+      "version": "1.3.2",
+      "declaredLicense": "MIT",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "icu",
+      "version": "78.3",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "idna",
+      "version": "3.19",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "ihm",
+      "version": "2.11",
+      "declaredLicense": "MIT",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "jinja2",
+      "version": "3.1.6",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "joblib",
+      "version": "1.6.0",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "ld_impl_linux-64",
+      "version": "2.46.1",
+      "declaredLicense": "GPL-3.0-only",
+      "source": "conda"
+    },
+    {
+      "name": "libabseil",
+      "version": "20250512.1",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "libblas",
+      "version": "3.11.0",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "libcap",
+      "version": "2.78",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "libcblas",
+      "version": "3.11.0",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "libcublas",
+      "version": "12.9.2.10",
+      "declaredLicense": "LicenseRef-NVIDIA-End-User-License-Agreement",
+      "source": "conda"
+    },
+    {
+      "name": "libcudnn",
+      "version": "9.10.2.21",
+      "declaredLicense": "LicenseRef-cuDNN-Software-License-Agreement",
+      "source": "conda"
+    },
+    {
+      "name": "libcudnn-dev",
+      "version": "9.10.2.21",
+      "declaredLicense": "LicenseRef-cuDNN-Software-License-Agreement",
+      "source": "conda"
+    },
+    {
+      "name": "libcudss",
+      "version": "0.7.1.4",
+      "declaredLicense": "LicenseRef-NVIDIA-End-User-License-Agreement",
+      "source": "conda"
+    },
+    {
+      "name": "libcufft",
+      "version": "11.4.1.4",
+      "declaredLicense": "LicenseRef-NVIDIA-End-User-License-Agreement",
+      "source": "conda"
+    },
+    {
+      "name": "libcufile",
+      "version": "1.14.1.1",
+      "declaredLicense": "LicenseRef-NVIDIA-End-User-License-Agreement",
+      "source": "conda"
+    },
+    {
+      "name": "libcurand",
+      "version": "10.3.10.19",
+      "declaredLicense": "LicenseRef-NVIDIA-End-User-License-Agreement",
+      "source": "conda"
+    },
+    {
+      "name": "libcusolver",
+      "version": "11.7.5.82",
+      "declaredLicense": "LicenseRef-NVIDIA-End-User-License-Agreement",
+      "source": "conda"
+    },
+    {
+      "name": "libcusparse",
+      "version": "12.5.10.65",
+      "declaredLicense": "LicenseRef-NVIDIA-End-User-License-Agreement",
+      "source": "conda"
+    },
+    {
+      "name": "libexpat",
+      "version": "2.8.1",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "libffi",
+      "version": "3.7.0",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "libgcc",
+      "version": "16.2.0",
+      "declaredLicense": "GPL-3.0-only WITH GCC-exception-3.1",
+      "source": "conda"
+    },
+    {
+      "name": "libgcc-ng",
+      "version": "16.2.0",
+      "declaredLicense": "GPL-3.0-only WITH GCC-exception-3.1",
+      "source": "conda"
+    },
+    {
+      "name": "libhwloc",
+      "version": "2.13.0",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "libiconv",
+      "version": "1.18",
+      "declaredLicense": "LGPL-2.1-only",
+      "source": "conda"
+    },
+    {
+      "name": "liblapack",
+      "version": "3.11.0",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "liblzma",
+      "version": "5.8.3",
+      "declaredLicense": "0BSD",
+      "source": "conda"
+    },
+    {
+      "name": "libmagma",
+      "version": "2.9.0",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "libnl",
+      "version": "3.11.0",
+      "declaredLicense": "LGPL-2.1-or-later",
+      "source": "conda"
+    },
+    {
+      "name": "libnsl",
+      "version": "2.0.1",
+      "declaredLicense": "LGPL-2.1-only",
+      "source": "conda"
+    },
+    {
+      "name": "libnvjitlink",
+      "version": "12.9.86",
+      "declaredLicense": "LicenseRef-NVIDIA-End-User-License-Agreement",
+      "source": "conda"
+    },
+    {
+      "name": "libprotobuf",
+      "version": "6.31.1",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "libpython",
+      "version": "3.11.16",
+      "declaredLicense": "Python-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "libsqlite",
+      "version": "3.53.4",
+      "declaredLicense": "blessing",
+      "source": "conda"
+    },
+    {
+      "name": "libstdcxx",
+      "version": "16.2.0",
+      "declaredLicense": "GPL-3.0-only WITH GCC-exception-3.1",
+      "source": "conda"
+    },
+    {
+      "name": "libstdcxx-ng",
+      "version": "16.2.0",
+      "declaredLicense": "GPL-3.0-only WITH GCC-exception-3.1",
+      "source": "conda"
+    },
+    {
+      "name": "libsystemd0",
+      "version": "257.13",
+      "declaredLicense": "LGPL-2.1-or-later",
+      "source": "conda"
+    },
+    {
+      "name": "libtorch",
+      "version": "2.8.0",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "libudev1",
+      "version": "257.13",
+      "declaredLicense": "LGPL-2.1-or-later",
+      "source": "conda"
+    },
+    {
+      "name": "libuuid",
+      "version": "2.42.3",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "libuv",
+      "version": "1.52.1",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "libxcrypt",
+      "version": "4.4.38",
+      "declaredLicense": "LGPL-2.1-or-later",
+      "source": "conda"
+    },
+    {
+      "name": "libxml2",
+      "version": "2.15.4",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "libxml2-16",
+      "version": "2.15.4",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "libzlib",
+      "version": "1.3.2",
+      "declaredLicense": "Zlib",
+      "source": "conda"
+    },
+    {
+      "name": "lightning-utilities",
+      "version": "0.15.3",
+      "declaredLicense": "Apache-2.0",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "llvm-openmp",
+      "version": "23.1.0",
+      "declaredLicense": "Apache-2.0 WITH LLVM-exception",
+      "source": "conda"
+    },
+    {
+      "name": "llvmlite",
+      "version": "0.44.0",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "markupsafe",
+      "version": "3.0.3",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "mashumaro",
+      "version": "3.14",
+      "declaredLicense": "Apache-2.0",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "mkl",
+      "version": "2025.3.1",
+      "declaredLicense": "LicenseRef-IntelSimplifiedSoftwareOct2022",
+      "source": "conda"
+    },
+    {
+      "name": "modelcif",
+      "version": "1.2",
+      "declaredLicense": "MIT",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "mpc",
+      "version": "1.4.0",
+      "declaredLicense": "LGPL-3.0-or-later",
+      "source": "conda"
+    },
+    {
+      "name": "mpfr",
+      "version": "4.2.2",
+      "declaredLicense": "LGPL-3.0-only",
+      "source": "conda"
+    },
+    {
+      "name": "mpmath",
+      "version": "1.4.1",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "msgpack",
+      "version": "1.2.2",
+      "declaredLicense": "Apache-2.0",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "nccl",
+      "version": "2.30.7.1",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "ncurses",
+      "version": "6.6",
+      "declaredLicense": "X11 AND BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "networkx",
+      "version": "3.6.1",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "numba",
+      "version": "0.61.0",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "numpy",
+      "version": "1.26.4",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "omegaconf",
+      "version": "2.3.1",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "onemkl-license",
+      "version": "2025.3.1",
+      "declaredLicense": "LicenseRef-IntelSimplifiedSoftwareOct2022",
+      "source": "conda"
+    },
+    {
+      "name": "openssl",
+      "version": "3.6.4",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "optree",
+      "version": "0.20.0",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "packaging",
+      "version": "26.3",
+      "declaredLicense": "Apache-2.0 OR BSD-2-Clause",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "pandas",
+      "version": "3.0.5",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "pillow",
+      "version": "12.3.0",
+      "declaredLicense": "MIT-CMU",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "platformdirs",
+      "version": "4.11.7",
+      "declaredLicense": "MIT",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "protobuf",
+      "version": "5.29.6",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "psutil",
+      "version": "7.2.2",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "pybind11",
+      "version": "2.13.6",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "pybind11-abi",
+      "version": "4",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "pybind11-global",
+      "version": "2.13.6",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "python",
+      "version": "3.11.16",
+      "declaredLicense": "Python-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "python-dateutil",
+      "version": "2.9.0.post0",
+      "declaredLicense": "Apache-2.0 OR BSD-3-Clause",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "python_abi",
+      "version": "3.11",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "pytorch",
+      "version": "2.8.0",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "pytorch-lightning",
+      "version": "2.5.0",
+      "declaredLicense": "Apache-2.0",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "pyyaml",
+      "version": "6.0.2",
+      "declaredLicense": "MIT",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "rdkit",
+      "version": "2026.3.6",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "rdma-core",
+      "version": "65.0",
+      "declaredLicense": "Linux-OpenIB",
+      "source": "conda"
+    },
+    {
+      "name": "readline",
+      "version": "8.3",
+      "declaredLicense": "GPL-3.0-only",
+      "source": "conda"
+    },
+    {
+      "name": "requests",
+      "version": "2.32.3",
+      "declaredLicense": "Apache-2.0",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "scikit-learn",
+      "version": "1.6.1",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "scipy",
+      "version": "1.13.1",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "sentry-sdk",
+      "version": "2.69.1",
+      "declaredLicense": "MIT",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "setproctitle",
+      "version": "1.3.7",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "setuptools",
+      "version": "84.0.0",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "six",
+      "version": "1.17.0",
+      "declaredLicense": "MIT",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "sleef",
+      "version": "3.9.0",
+      "declaredLicense": "BSL-1.0",
+      "source": "conda"
+    },
+    {
+      "name": "smmap",
+      "version": "5.0.3",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "sympy",
+      "version": "1.14.0",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "tbb",
+      "version": "2023.0.0",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "threadpoolctl",
+      "version": "3.6.0",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "tk",
+      "version": "8.6.13",
+      "declaredLicense": "TCL",
+      "source": "conda"
+    },
+    {
+      "name": "torchmetrics",
+      "version": "1.9.0",
+      "declaredLicense": "Apache-2.0",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "tqdm",
+      "version": "4.70.0",
+      "declaredLicense": "MPL-2.0 AND MIT",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "triton",
+      "version": "3.4.0",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "types-requests",
+      "version": "2.33.0.20260906",
+      "declaredLicense": "Apache-2.0",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "typing-extensions",
+      "version": "4.16.0",
+      "declaredLicense": "PSF-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "typing_extensions",
+      "version": "4.16.0",
+      "declaredLicense": "PSF-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "tzdata",
+      "version": "2026c",
+      "declaredLicense": "LicenseRef-Public-Domain",
+      "source": "conda"
+    },
+    {
+      "name": "urllib3",
+      "version": "2.7.0",
+      "declaredLicense": "MIT",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "wandb",
+      "version": "0.18.7",
+      "declaredLicense": "MIT",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "zstd",
+      "version": "1.5.7",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    }
+  ]
+}

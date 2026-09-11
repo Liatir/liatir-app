@@ -4,13 +4,17 @@ Verification date: 2026-09-11
 
 ## Decision
 
-**Not yet approved**, on one remaining question: the redistribution basis of the bundled molecule
-dictionary. The code and the model weights are cleanly MIT, and every one of the 144 locked
-distributions now carries a reviewed licence.
+**Approved.** The code and the model weights are cleanly MIT, every one of the 144 locked
+distributions carries a reviewed licence, and both questions that held approval open are answered.
 
-The copyleft question is answered: `frozendict==2.4.7` (LGPL-3.0-or-later) may ship, because it
-travels as an unmodified, replaceable package inside the box's own packed environment with its licence text —
-see [Copyleft dependencies in signed boxes](../../.context/decisions/copyleft-dependencies-in-signed-boxes.md).
+- `frozendict==2.4.7` (LGPL-3.0-or-later) may ship, because it travels as an unmodified,
+  replaceable package inside the box's own packed environment with its licence text — and so may the
+  sixteen copyleft conda packages beside it, on the same basis and the same precedent as every box
+  already published. See
+  [Copyleft dependencies in signed boxes](../../.context/decisions/copyleft-dependencies-in-signed-boxes.md).
+- `mols.tar` is a derivative of the wwPDB **Chemical Component Dictionary**, which the PDB archive
+  places in the **public domain under CC0 1.0**. The chain is traced below, from the upstream script
+  that built it to the contents of the archive itself.
 
 This is an engineering compliance record, not legal advice.
 
@@ -72,25 +76,78 @@ Four distributions needed a human reading rather than a machine-readable field:
 - **`python-dateutil==2.9.0.post0`** declares `Dual License`; its classifiers resolve it to
   Apache-2.0 OR BSD-3-Clause.
 
-## Settled: the one copyleft dependency
+## Settled: the copyleft dependencies
 
-`frozendict==2.4.7` is LGPL-3.0-or-later, the only copyleft dependency in the graph, reached
-indirectly rather than by Boltz's own choice. It ships. LGPL permits redistribution inside a larger
-work provided the licence text travels with it and the user can replace the library, and an
-unmodified Python package inside the box's packed environment satisfies both. The policy, and the boundary it
-draws, are in
+The complete inventory lists **seventeen GPL-family distributions**, not one. `frozendict==2.4.7`
+(LGPL-3.0-or-later) is simply the first that was *visible*, because until the PyPI half could be
+inventoried at all the conda half was the only one anyone read.
+
+| Where | Licence | Distributions |
+| --- | --- | ---: |
+| PyPI | LGPL-3.0-or-later | `frozendict` |
+| conda | GPL-3.0-only WITH GCC-exception-3.1 | `libgcc`, `libgcc-ng`, `libstdcxx`, `libstdcxx-ng` |
+| conda | GPL-3.0-only | `readline`, `ld_impl_linux-64` |
+| conda | GPL-2.0-or-later OR LGPL-3.0-or-later | `gmp` |
+| conda | LGPL-3.0-or-later / -only | `gmpy2`, `mpc`, `mpfr` |
+| conda | LGPL-2.1-or-later / -only | `libnl`, `libsystemd0`, `libudev1`, `libxcrypt`, `libiconv`, `libnsl` |
+
+Every one of them ships, on the basis the project has been applying since its first published box:
+an unmodified, separable component inside the box's own packed environment, carrying its own licence
+text, replaceable by anyone who extracts the box. The GCC runtime exception on `libgcc` and
+`libstdcxx` exists precisely so that linking against them imposes nothing on the linked work. The
+policy and the boundary it draws are in
 [Copyleft dependencies in signed boxes](../../.context/decisions/copyleft-dependencies-in-signed-boxes.md).
 
-## Open question, blocking approval
+Three non-open-source licence references are also present, and **none is new to this project**:
+`LicenseRef-NVIDIA-End-User-License-Agreement` (19 conda packages, the CUDA runtime libraries),
+`LicenseRef-cuDNN-Software-License-Agreement` (3), and `LicenseRef-IntelSimplifiedSoftwareOct2022`
+(`mkl`, `onemkl-license`). The scGPT and Geneformer CUDA boxes, both already published, carry
+**exactly the same 19, 3 and 2** — checked against their audits rather than assumed. Boltz-2 adds no
+non-open-source term the project has not already shipped, so its basis is whatever theirs was; if
+that basis needs revisiting, it is a question about every CUDA box at once and not about this one.
 
-**The molecule dictionary `mols.tar` has no separate stated licence.** It is 1.86 GB of small
-molecule definitions distributed under the model repository's blanket `mit`. The underlying chemical
-component data originates upstream of Boltz, and the repository does not say where. Redistributing
-it inside a Liatir box needs that provenance established, not assumed from the repository tag.
+## Settled: where the molecule dictionary comes from
+
+**`mols.tar` is a derivative of the wwPDB Chemical Component Dictionary**, and that dictionary is
+public-domain data. It carries no separate licence statement of its own because it needs none: the
+input is CC0, and the packager redistributes the derived form under the model repository's `mit`.
+
+The chain was traced rather than assumed, in three steps:
+
+1. **The upstream script says so.** `scripts/process/ccd.py` at the reviewed commit takes a
+   `--components` file, reads it with `pdbeccdutils.core.ccd_reader.read_pdb_components_file`,
+   generates 3D conformers with RDKit ETKDG, computes symmetries, and writes one pickle per
+   component. `pdbeccdutils` is PDBe's own reader for exactly one file — the PDB components
+   dictionary.
+2. **The archive's contents match that description exactly.** The first 6 MB of `mols.tar` were
+   listed without downloading the rest: every member is `mols/<id>.pkl`, where `<id>` is a PDB
+   chemical component identifier — three characters (`T9E`, `L7A`, `CNH`) or the newer five
+   (`A1BFJ`). There is no other kind of entry, and no metadata file claiming another origin.
+   The complete listing is re-checked at build time; see the self-test below.
+3. **That dictionary is part of the PDB archive.** It is published at
+   `https://files.wwpdb.org/pub/pdb/data/monomers/components.cif.gz` — verified reachable on
+   2026-09-11, 118,929,769 bytes — inside the `/pub/pdb/` archive tree, and updated with each weekly
+   PDB release. The wwPDB usage policy states that "data files contained in the PDB archive are
+   available under the CC0 1.0 Universal (CC0 1.0) Public Domain Dedication".
+
+CC0 places no condition on redistribution, modification or relicensing of the derived form. Neither
+tool in the chain adds one: `pdbeccdutils` is Apache-2.0 and RDKit is BSD-3-Clause, and both are
+permissive licences over the *software*, not over what it computes.
+
+wwPDB asks that the original authors of structure data be attributed where possible, which is a
+request rather than a condition. The box answers it by naming the dictionary and its source in this
+record, which ships inside the box as `THIRD_PARTY_NOTICES/boltz-2.md`.
+
+One boundary worth stating: this covers the chemical component definitions Boltz bundles. It does
+not extend to any PDB *structure* a user later supplies as a template — that file is the user's
+input, is never redistributed by Liatir, and carries whatever terms its own depositor set.
 
 ## Sources
 
 - [Boltz source licence at the reviewed commit](https://github.com/jwohlwend/boltz/blob/cb04aeccdd480fd4db707f0bbafde538397fa2ac/LICENSE)
 - [Boltz-2 model repository](https://huggingface.co/boltz-community/boltz-2/tree/6fdef46d763fee7fbb83ca5501ccceff43b85607)
+- [The script that builds the molecule dictionary](https://github.com/jwohlwend/boltz/blob/cb04aeccdd480fd4db707f0bbafde538397fa2ac/scripts/process/ccd.py)
+- [wwPDB usage policies](https://www.wwpdb.org/about/usage-policies) — PDB archive data is CC0 1.0
+- [The Chemical Component Dictionary and where it is published](https://www.wwpdb.org/data/ccd)
 - [frozendict licence](https://github.com/Marco-Sulla/python-frozendict/blob/master/LICENSE.txt)
 - [Biopython licence agreement](https://github.com/biopython/biopython/blob/master/LICENSE.rst)

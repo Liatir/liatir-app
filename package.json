@@ -132,6 +132,7 @@
     "runtime-box:test:foundation": "node scripts/validate-runtime-box-foundation.mjs",
     "runtime-box:test:native": "node scripts/validate-runtime-box-native-fixture.mjs",
     "runtime-box:test:security": "node scripts/run-runtime-box-security-e2e.mjs",
+    "runtime-box:validate:boltz": "node scripts/validate-boltz-runtime.mjs",
     "runtime-box:validate:geneformer": "node scripts/validate-geneformer-parity.mjs",
     "runtime-box:validate:mhcflurry": "node scripts/validate-mhcflurry-runtime.mjs",
     "runtime-box:validate:openmm": "node scripts/validate-openmm-runtime.mjs",

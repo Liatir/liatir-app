@@ -81,9 +81,16 @@ refuses every box now in the field**, by name, and the registry will serve v3 do
 rebuilds land. The two have to ship together, or an installed app is left unable to read what it
 already has. The v1→v2 cutover handled the same problem and is the precedent to follow.
 
-Two Scrollcase defects were found and fixed upstream on the way through: PyPI licences
-(`scrollcase@1.1.0`) and a box that downloads an archive and expands it, which **14 of the 22
-scrolls** do (`scrollcase@1.1.1`).
+Three Scrollcase gaps were found and fixed upstream on the way through, each by trying to build
+something real rather than by reading: PyPI licences (`scrollcase@1.1.0`), a box that downloads an
+archive and expands it, which **14 of the 22 scrolls** do (`scrollcase@1.1.1`), and an
+**uncompressed `tar`** asset, which `assetArchives` did not accept at all
+([scrollcase#14](https://github.com/suffro/scrollcase/pull/14), open).
+
+That third one is why **Liatir's pin must move again before Boltz-2 can be built from a clean
+checkout**: `scrollcase@1.1.1` refuses `"format": "tar"` by schema, and Boltz's 1.86 GB molecule
+dictionary is published exactly that way. The box in `.runtime-box-dist` was built against the
+merged fix from a local checkout.
 
 ## Why this exists
 

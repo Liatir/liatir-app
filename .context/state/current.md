@@ -1,5 +1,99 @@
 # Current project status
 
+## Boltz-2 is built, and Protenix splits in two (2026-09-11)
+
+**The Boltz-2 box exists.** It builds, signs and passes its own self-test on this machine's GPU:
+12.69 GB archive `609a3cc5464548d70ef1db18f2a0a97819f8c18a85b9ba7b4925d3ef929a17c0`,
+20.3 GB installed, 29 minutes, release `fd0f9416…`. Every gate that stood in front of it since
+2026-09-06 is now behind it.
+
+**It predicts a real protein correctly.** Given ubiquitin's 76-residue sequence and nothing else —
+no alignment, because an offline box has no alignment server — Boltz-2 reproduced the experimental
+structure of PDB **1UBQ** to a **backbone RMSD of 1.99 Å** against a 3 Å limit, at pLDDT 0.925 and
+pTM 0.905. The largest single deviation, 11.5 Å, falls on the C-terminal tail, which is the part of
+ubiquitin known to be mobile: the error is physics, not a wrong fold. Two runs at the same seed
+differed by **exactly zero**. Both refusals held — an incomplete installation and an empty complex
+are rejected rather than answered, and a second validator run in a fresh process reproduced the RMSD
+to the last decimal. 55 s per prediction on an RTX 4060 Ti, 5.69 GB RAM, 2.50 GB VRAM.
+The validator verified the release signature and the payload digest itself before running anything,
+so this is evidence about the signed box rather than about a directory — retained as
+`runtime-boxes/measurements/boltz-2-linux-x86_64-cuda12.9-development-2026-09-11.json`. It is
+development evidence: development key, dirty tree at build time. A production build makes a
+different archive and must be measured there.
+
+**One defect only a real run could find.** Boltz's CUDA path imports `cuequivariance_torch`
+unconditionally, even though upstream calls those kernels an *optional* extra and the reviewed
+decision was to leave them out. The first prediction died on `ModuleNotFoundError`. Boltz keeps a
+pure-PyTorch implementation of the same triangular multiplication behind `--no_kernels`, which the
+product runner now passes: same mathematics, slower, and no closed-source NVIDIA kernel shipped for
+a speed-up nobody here has measured.
+
+**Both legal questions are answered and the record is approved.** `mols.tar` is a derivative of the
+wwPDB **Chemical Component Dictionary**, which the PDB archive places under **CC0** — traced through
+upstream's own generation script, the archive's contents, and the wwPDB policy, rather than assumed
+from the model repository's tag. The self-test re-checks that claim at build time: all **45,227**
+members are named by a PDB chemical component identifier and nothing else.
+
+**A claim this project had been making was wrong.** `frozendict` was not its first copyleft
+dependency. Every box already published carries between 8 and 26 GPL-family conda packages, and
+`native-tools` — which ships *inside the app* — has 18, including `bcftools` and `bwa` under plain
+GPL-3.0. What was new is that it was the first one anyone could **see**, because pixi records no
+licence for a PyPI package and the PyPI half of a lock could not be inventoried until
+`scrollcase@1.1.0`. The
+[decision record](../decisions/copyleft-dependencies-in-signed-boxes.md) is corrected in place; the
+decision itself stands and turns out to describe what the project was already doing.
+
+**The licence inventory is complete for the first time on a box with PyPI dependencies**: 144
+distributions, 93 conda and 51 PyPI, the PyPI half marked `licenseDeclaredBy: project` so a reader
+can tell what the lock said from what we asserted.
+
+Two open findings from the dependency review are closed by the self-test rather than by argument.
+**`pandas 3.0.5` works with Boltz 2.2.1** — the one loose upstream bound, deliberately left for a
+real import to settle. And the telemetry stack is neutralised: `wandb` and `sentry-sdk` are
+hard requirements of Boltz, and `WANDB_MODE=disabled` is asserted, not hoped for.
+
+**A third Scrollcase gap, and the pin has to move again.** `mols.tar` is an *uncompressed* tar, and
+`assetArchives` accepted only `zip` and `tar.gz`.
+[scrollcase#14](https://github.com/suffro/scrollcase/pull/14) adds `tar` and drops a `gzip: true`
+that read like a guarantee and was not one — node-tar detects compression itself, proved on all four
+combinations before deciding. 566 tests pass on Linux. **Until that release lands, the committed
+Boltz scroll cannot be built from a clean checkout**, because `scrollcase@1.1.1` refuses
+`"format": "tar"` by schema. The box above was built on this machine with `node_modules/scrollcase`
+replaced by a local pack of that branch — an override that `npm ci` undoes, and the reason the
+pin bump is a prerequisite rather than a tidy-up.
+
+### Protenix: one half is unblocked, the other is not ours to unblock
+
+**Protenix v2 is blocked upstream.** `checkpoint/protenix-v2.pt` returned HTTP 403 again, five days
+after the first observation, while every other object in the same bucket answered 200 on the same
+request. ByteDance publishes no Protenix weights on Hugging Face and attaches none to any GitHub
+release. Third-party re-uploads exist and stay rejected — a box's provenance claim is worth only the
+source it names. Either the object becomes public or the component waits.
+
+**Protenix Mini now resolves**, after the reviewed manifest turned out to have no conda-first
+solution at all: conda-forge's `torchvision 0.22.1` constrains `numpy <2.4` while upstream pins
+`numpy==2.4.1`, and conda's PyTorch pins `numpy==2.4.6` into the PyPI solve. What works is conda
+supplying Python alone and the whole scientific stack coming from PyPI at upstream's exact pins —
+24 conda entries, 116 PyPI, **none without a SHA-256** once `protenix` moved from a git commit to its
+published wheel. No upstream constraint was loosened; what gave way was our habit of restating
+someone else's requirements in conda terms. See
+[Protenix resolves through PyPI](../decisions/protenix-resolves-through-pypi.md).
+
+All 116 of its PyPI licences are reviewed, and **two of them should not be there**:
+`cuequivariance-ops-cu12` and `cuequivariance-ops-torch-cu12` are closed-source NVIDIA kernels that
+Protenix never imports — not once in 145 files. They arrive because `requirements.txt` lists them and
+`setup.py` reads that file verbatim. That is a redistribution obligation taken on for no capability,
+and it belongs upstream rather than in our box.
+
+### What Boltz-2 still needs
+
+The box is built and legally clear; it is **not a product**. There is no execution path in the app —
+the structure-prediction screen edits drafts and says "Runtime not published" — so there is no Jobs
+or Results lifecycle, no catalog entry, and no CI workflow. The product runner
+(`frontend/src/lib/tools/ai/python-scripts/boltz-structure.ts`) and the scientific validator
+(`scripts/validate-boltz-runtime.mjs`) are written; the catalog entry waits on a product lifecycle
+spec that would otherwise assert nothing.
+
 ## The macOS boxes are rebuilt as version 3, all but OpenMM (2026-09-11)
 
 **Five published macOS targets plus `native-tools`, rebuilt on a Mac, no failure**: Geneformer,
@@ -52,6 +146,7 @@ stale: `ai-models` differs from its August baseline by 96%, so `npm run test:vis
 `main` before anything is touched, and refreshing all eight would silently accept whatever the UI
 looks like now. And the editor is not pixel-stable — captured twice from one binary it differs by
 ~2% while `/jobs` differs by 0% — so it is deliberately not in the visual smoke.
+
 
 ## Liatir runs on Scrollcase v3 (2026-09-11)
 

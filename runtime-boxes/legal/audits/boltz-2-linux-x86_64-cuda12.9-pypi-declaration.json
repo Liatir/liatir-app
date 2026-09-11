@@ -1,0 +1,257 @@
+[
+  {
+    "name": "antlr4-python3-runtime",
+    "version": "4.9.3",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "biopython",
+    "version": "1.84",
+    "declaredLicense": "LicenseRef-Biopython"
+  },
+  {
+    "name": "boltz",
+    "version": "2.2.1",
+    "declaredLicense": "MIT"
+  },
+  {
+    "name": "certifi",
+    "version": "2026.7.22",
+    "declaredLicense": "MPL-2.0"
+  },
+  {
+    "name": "charset-normalizer",
+    "version": "3.5.1",
+    "declaredLicense": "MIT"
+  },
+  {
+    "name": "chembl-structure-pipeline",
+    "version": "1.2.2",
+    "declaredLicense": "MIT"
+  },
+  {
+    "name": "click",
+    "version": "8.1.7",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "cloudpickle",
+    "version": "3.1.2",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "dm-tree",
+    "version": "0.1.8",
+    "declaredLicense": "Apache-2.0"
+  },
+  {
+    "name": "docker-pycreds",
+    "version": "0.4.0",
+    "declaredLicense": "Apache-2.0"
+  },
+  {
+    "name": "einops",
+    "version": "0.8.0",
+    "declaredLicense": "MIT"
+  },
+  {
+    "name": "einx",
+    "version": "0.3.0",
+    "declaredLicense": "MIT"
+  },
+  {
+    "name": "fairscale",
+    "version": "0.4.13",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "frozendict",
+    "version": "2.4.7",
+    "declaredLicense": "LGPL-3.0-or-later"
+  },
+  {
+    "name": "gemmi",
+    "version": "0.6.5",
+    "declaredLicense": "MPL-2.0"
+  },
+  {
+    "name": "gitdb",
+    "version": "4.0.12",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "gitpython",
+    "version": "3.1.62",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "hydra-core",
+    "version": "1.3.2",
+    "declaredLicense": "MIT"
+  },
+  {
+    "name": "idna",
+    "version": "3.19",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "ihm",
+    "version": "2.11",
+    "declaredLicense": "MIT"
+  },
+  {
+    "name": "joblib",
+    "version": "1.6.0",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "lightning-utilities",
+    "version": "0.15.3",
+    "declaredLicense": "Apache-2.0"
+  },
+  {
+    "name": "llvmlite",
+    "version": "0.44.0",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "mashumaro",
+    "version": "3.14",
+    "declaredLicense": "Apache-2.0"
+  },
+  {
+    "name": "modelcif",
+    "version": "1.2",
+    "declaredLicense": "MIT"
+  },
+  {
+    "name": "msgpack",
+    "version": "1.2.2",
+    "declaredLicense": "Apache-2.0"
+  },
+  {
+    "name": "numba",
+    "version": "0.61.0",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "omegaconf",
+    "version": "2.3.1",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "packaging",
+    "version": "26.3",
+    "declaredLicense": "Apache-2.0 OR BSD-2-Clause"
+  },
+  {
+    "name": "pandas",
+    "version": "3.0.5",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "pillow",
+    "version": "12.3.0",
+    "declaredLicense": "MIT-CMU"
+  },
+  {
+    "name": "platformdirs",
+    "version": "4.11.7",
+    "declaredLicense": "MIT"
+  },
+  {
+    "name": "protobuf",
+    "version": "5.29.6",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "psutil",
+    "version": "7.2.2",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "python-dateutil",
+    "version": "2.9.0.post0",
+    "declaredLicense": "Apache-2.0 OR BSD-3-Clause"
+  },
+  {
+    "name": "pytorch-lightning",
+    "version": "2.5.0",
+    "declaredLicense": "Apache-2.0"
+  },
+  {
+    "name": "pyyaml",
+    "version": "6.0.2",
+    "declaredLicense": "MIT"
+  },
+  {
+    "name": "rdkit",
+    "version": "2026.3.6",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "requests",
+    "version": "2.32.3",
+    "declaredLicense": "Apache-2.0"
+  },
+  {
+    "name": "scikit-learn",
+    "version": "1.6.1",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "scipy",
+    "version": "1.13.1",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "sentry-sdk",
+    "version": "2.69.1",
+    "declaredLicense": "MIT"
+  },
+  {
+    "name": "setproctitle",
+    "version": "1.3.7",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "six",
+    "version": "1.17.0",
+    "declaredLicense": "MIT"
+  },
+  {
+    "name": "smmap",
+    "version": "5.0.3",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "threadpoolctl",
+    "version": "3.6.0",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "torchmetrics",
+    "version": "1.9.0",
+    "declaredLicense": "Apache-2.0"
+  },
+  {
+    "name": "tqdm",
+    "version": "4.70.0",
+    "declaredLicense": "MPL-2.0 AND MIT"
+  },
+  {
+    "name": "types-requests",
+    "version": "2.33.0.20260906",
+    "declaredLicense": "Apache-2.0"
+  },
+  {
+    "name": "urllib3",
+    "version": "2.7.0",
+    "declaredLicense": "MIT"
+  },
+  {
+    "name": "wandb",
+    "version": "0.18.7",
+    "declaredLicense": "MIT"
+  }
+]
