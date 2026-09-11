@@ -33,7 +33,7 @@ export async function loadRuntimeBoxValidatorContext({
     process.env[runtimeDirectoryEnvironment]
       ?? join(workspace.buildDir, authoring.authoringId, 'payload'),
   );
-  const python = join(runtimeDir, ...recipe.pythonEntryPoint.split('/'));
+  const python = join(runtimeDir, ...recipe.runtime.entryPoint.split('/'));
   const dependencyLockSha256 = createHash('sha256')
     .update(await readFile(authoring.lockPath))
     .digest('hex');

@@ -1,11 +1,13 @@
 {
-  "$schema": "https://scrollcase.dev/schema/v2/scroll.schema.json",
-  "schemaVersion": 2,
+  "$schema": "https://scrollcase.dev/schema/v3/scroll.schema.json",
+  "schemaVersion": 3,
   "scrollId": "pvactools-pvacseq-macos-aarch64-cpu",
   "scrollVersion": "1.0.0",
   "boxId": "pvactools-pvacseq",
-  "modelId": "griffithlab-pvactools-pvacseq",
-  "runtimeId": "oncology-pvactools-pvacseq-7-1-2",
+  "labels": {
+    "model": "griffithlab-pvactools-pvacseq",
+    "runtime": "oncology-pvactools-pvacseq-7-1-2"
+  },
   "version": "7.1.2-beta.1",
   "sourceRevision": "v7.1.2+mhcflurry-v2.0.6",
   "target": {
@@ -18,12 +20,15 @@
     "minMacosVersion": "13.0",
     "minRamGb": 8
   },
-  "pythonVersion": "3.11.16",
+  "runtime": {
+    "id": "python",
+    "version": "3.11.16",
+    "entryPoint": "venv/bin/python"
+  },
   "pixiVersion": "0.73.0",
   "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/pvactools-pvacseq-macos-aarch64-cpu.json",
-  "pythonEntryPoint": "venv/bin/python",
-  "modelCacheSubdir": "model-cache/pvactools-mhcflurry-downloads",
-  "assetBaseUrl": "https://assets.models.liatir.com/ai-runtime-boxes",
+  "cacheSubdir": "model-cache/pvactools-mhcflurry-downloads",
+  "publishBaseUrl": "https://assets.models.liatir.com/ai-runtime-boxes",
   "assets": [
     {
       "url": "https://files.pythonhosted.org/packages/4c/5e/ea975bf21baea879b27bb8fd5e61e0a64ac312c087c3c4bd27a6448d72c3/pvactools-7.1.2-py3-none-any.whl",
@@ -169,7 +174,17 @@
     "source/pvactools-wheel/pvactools/tools/pvacseq/example_data/results/combined"
   ],
   "selfTest": {
-    "imports": ["tensorflow", "numpy", "pandas", "sklearn", "pysam", "Bio", "pymp", "wget", "pkg_resources"],
+    "imports": [
+      "tensorflow",
+      "numpy",
+      "pandas",
+      "sklearn",
+      "pysam",
+      "Bio",
+      "pymp",
+      "wget",
+      "pkg_resources"
+    ],
     "files": [
       "source/pvactools-wheel/pvactools/tools/pvacseq/run.py",
       "source/pvactools-wheel/pvactools/tools/pvacseq/example_data/annotated.expression.vcf.gz",
@@ -202,6 +217,6 @@
       "model-cache/pvactools-mhcflurry-downloads/models_class1_presentation/models/weights.csv",
       "THIRD_PARTY_NOTICES/pvactools-pvacseq.md"
     ],
-    "pythonCode": "import importlib.metadata\nimport os\nimport sys\nfrom pathlib import Path\nroot = Path.cwd()\nsys.path[:0] = [str(root / 'source/pvactools-wheel'), str(root / 'source/mhcflurry-wheel'), str(root / 'source/mhcgnomes-wheel'), str(root / 'source/vcfpy-sdist'), str(root / 'source/np-utils-sdist'), str(root / 'source/vaxrank-sdist')]\nos.environ['MHCFLURRY_DOWNLOADS_DIR'] = str(root / 'model-cache/pvactools-mhcflurry-downloads')\nassert importlib.metadata.version('pvactools') == '7.1.2'\nassert importlib.metadata.version('mhcflurry') == '2.0.6'\nimport vcfpy\nassert vcfpy.__version__ == '0.13.8'\nfrom pvactools.tools.pvacseq.run import main\nfrom mhcflurry import Class1PresentationPredictor\np = Class1PresentationPredictor.load(str(root / 'model-cache/pvactools-mhcflurry-downloads/models_class1_presentation/models'))\nr = p.predict_affinity(peptides=['SIINFEKL'], alleles={'sample':['HLA-A*02:01']}, sample_names=['sample'])\nassert len(r) == 1"
+    "code": "import importlib.metadata\nimport os\nimport sys\nfrom pathlib import Path\nroot = Path.cwd()\nsys.path[:0] = [str(root / 'source/pvactools-wheel'), str(root / 'source/mhcflurry-wheel'), str(root / 'source/mhcgnomes-wheel'), str(root / 'source/vcfpy-sdist'), str(root / 'source/np-utils-sdist'), str(root / 'source/vaxrank-sdist')]\nos.environ['MHCFLURRY_DOWNLOADS_DIR'] = str(root / 'model-cache/pvactools-mhcflurry-downloads')\nassert importlib.metadata.version('pvactools') == '7.1.2'\nassert importlib.metadata.version('mhcflurry') == '2.0.6'\nimport vcfpy\nassert vcfpy.__version__ == '0.13.8'\nfrom pvactools.tools.pvacseq.run import main\nfrom mhcflurry import Class1PresentationPredictor\np = Class1PresentationPredictor.load(str(root / 'model-cache/pvactools-mhcflurry-downloads/models_class1_presentation/models'))\nr = p.predict_affinity(peptides=['SIINFEKL'], alleles={'sample':['HLA-A*02:01']}, sample_names=['sample'])\nassert len(r) == 1"
   }
 }

@@ -266,7 +266,7 @@ await access(join(RUNTIME_DIR, 'source/UCE/eval_single_anndata.py'));
 await access(join(RUNTIME_DIR, 'model-cache/uce/model_files/4layer_model.torch'));
 await access(join(RUNTIME_DIR, 'model-cache/uce/model_files/protein_embeddings'));
 
-if (RECIPE.modelId !== MODEL_ID || RECIPE.sourceRevision !== REVISION) {
+if (RECIPE.labels.model !== MODEL_ID || RECIPE.sourceRevision !== REVISION) {
   throw new Error('UCE validation recipe provenance differs from the pinned model contract.');
 }
 
@@ -388,7 +388,7 @@ try {
       runtimeDir: RUNTIME_DIR,
       recipeId: RECIPE.recipeId,
       recipeVersion: RECIPE.recipeVersion,
-      pythonVersion: RECIPE.pythonVersion,
+      pythonVersion: RECIPE.runtime.version,
       pixiVersion: RECIPE.pixiVersion,
       dependencyLockSha256: DEPENDENCY_LOCK_SHA256,
     },

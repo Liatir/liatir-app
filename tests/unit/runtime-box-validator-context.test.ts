@@ -38,7 +38,7 @@ describe('Runtime Box scientific validator context', () => {
     );
   });
 
-  it('resolves a migrated validator from its canonical v2 scroll and unchanged pixi lock', async () => {
+  it('resolves a migrated validator from its canonical v3 scroll and unchanged pixi lock', async () => {
     const { createHash } = await import('node:crypto');
     const root = await mkdtemp(join(tmpdir(), 'liatir-validator-context-v2-'));
     const recipeId = 'fixture-linux-cpu';
@@ -57,11 +57,11 @@ describe('Runtime Box scientific validator context', () => {
     }));
     await writeFile(join(directory, 'pixi.lock'), pixiLock);
     await writeFile(join(directory, 'scroll.json'), JSON.stringify({
-      schemaVersion: 2,
+      schemaVersion: 3,
       scrollId: recipeId,
       scrollVersion: '1.0.0',
       boxId: 'fixture-box',
-      pythonEntryPoint: 'venv/bin/python',
+      runtime: { id: 'python', version: '3.11.9', entryPoint: 'venv/bin/python' },
       target: { platform: 'linux', arch: 'x86_64', accelerator: 'cpu' },
     }));
     process.env.LIATIR_RUNTIME_BOX_RECIPE_ID = recipeId;
@@ -90,11 +90,11 @@ describe('Runtime Box scientific validator context', () => {
     await mkdir(directory, { recursive: true });
     await writeFile(join(directory, 'pixi.lock'), 'version: 6\nfixture: mismatch\n');
     await writeFile(join(directory, 'scroll.json'), JSON.stringify({
-      schemaVersion: 2,
+      schemaVersion: 3,
       scrollId: recipeId,
       scrollVersion: '1.0.0',
       boxId: 'fixture-box',
-      pythonEntryPoint: 'venv/bin/python',
+      runtime: { id: 'python', version: '3.11.9', entryPoint: 'venv/bin/python' },
       target: { platform: 'linux', arch: 'x86_64', accelerator: 'cpu' },
     }));
     process.env.LIATIR_RUNTIME_BOX_RECIPE_ID = recipeId;

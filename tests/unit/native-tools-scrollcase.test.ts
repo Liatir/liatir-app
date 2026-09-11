@@ -156,11 +156,11 @@ describe('Native Tools Scrollcase box', () => {
   it('binds metadata and the executable self-test into every scroll', () => {
     for (const { targetId } of targets) {
       const authored = scroll(targetId);
-      expect(authored.schemaVersion).toBe(2);
+      expect(authored.schemaVersion).toBe(3);
       expect(authored.boxId).toBe('native-tools');
-      expect(authored.runtimeId).toBe('native-tools');
+      expect(authored.labels.runtime).toBe('native-tools');
       expect(authored.sourceRevision).toBe(authoringRevision());
-      expect(authored.selfTest.pythonCode).toContain('native-tools-self-test.py');
+      expect(authored.selfTest.code).toContain('native-tools-self-test.py');
       expect(authored.localFiles.map((file: { relativePath: string }) => file.relativePath))
         .toEqual(['native-tools.json', 'native-tools-self-test.py']);
       for (const file of authored.localFiles as { sourcePath: string; sha256: string }[]) {

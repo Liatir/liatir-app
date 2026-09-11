@@ -265,7 +265,7 @@ describe('Runtime Box CI cost controls', () => {
     for (const model of catalog.components) {
       for (const target of model.targets ?? []) {
         const authoring = authoringInput(target.recipeId);
-        expect(authoring.kind, target.targetId).toBe('scroll-v2');
+        expect(authoring.kind, target.targetId).toBe('scroll-v3');
         expect(
           (authoring.document.prunePaths ?? []).filter((path: string) => path.startsWith('venv/')),
           `${model.boxId} ${target.targetId}`,
@@ -274,37 +274,36 @@ describe('Runtime Box CI cost controls', () => {
     }
   });
 
-  it('uses canonical v2 pixi inputs for the active Geneformer migrations', () => {
+  it('uses canonical v3 pixi inputs for the active Geneformer migrations', () => {
     const migrations = [
       {
         scrollId: 'geneformer-v1-10m-macos-arm64-metal',
         auditPath: 'runtime-boxes/legal/audits/geneformer-v1-10m-macos-arm64-metal.json',
-        pythonEntryPoint: 'venv/bin/python',
+        runtime: { id: 'python', version: '3.11.9', entryPoint: 'venv/bin/python' },
       },
       {
         scrollId: 'geneformer-v1-10m-linux-x86_64-cuda12.9',
         auditPath: 'runtime-boxes/legal/audits/geneformer-v1-10m-linux-x86_64-cuda12.9.json',
-        pythonEntryPoint: 'venv/bin/python',
+        runtime: { id: 'python', version: '3.11.9', entryPoint: 'venv/bin/python' },
       },
       {
         scrollId: 'geneformer-v1-10m-windows-x86_64-cuda12.8',
         auditPath: 'runtime-boxes/legal/audits/geneformer-v1-10m-windows-x86_64-cuda12.8.json',
         // Windows conda prefixes put the interpreter at the prefix root, not under bin/.
-        pythonEntryPoint: 'venv/python.exe',
+        runtime: { id: 'python', version: '3.11.9', entryPoint: 'venv/python.exe' },
       },
     ];
 
-    for (const { scrollId, auditPath, pythonEntryPoint } of migrations) {
+    for (const { scrollId, auditPath, runtime } of migrations) {
       const authoring = authoringInput(scrollId);
-      expect(authoring.kind, scrollId).toBe('scroll-v2');
+      expect(authoring.kind, scrollId).toBe('scroll-v3');
       expect(authoring.document).toMatchObject({
-        schemaVersion: 2,
+        schemaVersion: 3,
         scrollId,
         scrollVersion: '1.0.0',
         pixiVersion: '0.73.0',
-        pythonVersion: '3.11.15',
         condaDependencyLicenseAudit: auditPath,
-        pythonEntryPoint,
+        runtime: { ...runtime, version: '3.11.15' },
       });
       expect(authoring.document).not.toHaveProperty('uvVersion');
       expect(authoring.document).not.toHaveProperty('requirementsInput');

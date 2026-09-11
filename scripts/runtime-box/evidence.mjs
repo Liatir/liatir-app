@@ -362,7 +362,7 @@ async function completeModelRecord(options, catalog, phase) {
   if (releaseDocument && host && metrics && verification) {
     const release = releaseDocument.payload;
     requireEvidence(release.kind === 'liatir.runtime-box.release', 'release receipt input is not a Runtime Box release');
-    requireEvidence(release.modelId === model.modelId && release.boxId === model.boxId, 'release identity differs from catalog');
+    requireEvidence(release.labels?.model === model.modelId && release.boxId === model.boxId, 'release identity differs from catalog');
     requireEvidence(boxTargetId(release.target) === target.targetId, 'release target differs from catalog');
     requireEvidence(verification.status === 'passed' && verification.localSignatureVerified === true, 'local release verification did not pass');
     record.source = signedBuildSourceEvidence(record.source, release.provenance);
@@ -377,7 +377,7 @@ async function completeModelRecord(options, catalog, phase) {
     record.build = {
       recipeSha256: await sha256File(recipePath),
       dependencyLockSha256: lockSha256,
-      pythonVersion: release.provenance.pythonVersion,
+      pythonVersion: release.provenance.runtimeVersion,
       ...builderVersionFields(release.provenance),
       archiveSha256: release.archive.sha256,
       archiveSizeBytes: release.archive.sizeBytes,
@@ -385,7 +385,7 @@ async function completeModelRecord(options, catalog, phase) {
       elapsedMs: metrics.elapsedMs,
       selfTest: {
         status: 'passed',
-        imports: release.selfTest.pythonImports,
+        imports: release.selfTest.probe.imports,
         localSignatureVerified: true,
       },
     };

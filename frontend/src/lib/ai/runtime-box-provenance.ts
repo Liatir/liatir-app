@@ -10,7 +10,7 @@ export function runtimeBoxActivationFromMetadata(
 	if (!activation || typeof activation !== 'object' || Array.isArray(activation)) return undefined;
 	const value = activation as Partial<LiatirRuntimeBoxActivationMetadata>;
 	if (
-		value.schemaVersion !== 2 ||
+		value.schemaVersion !== 3 ||
 		!value.selectedTarget ||
 		!value.release ||
 		!value.signedRelease

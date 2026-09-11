@@ -37,12 +37,13 @@ use std::{
 use scrollcase_consumer::{
     contract::{
         documents::SignedDocument,
-        targets::{assert_python_entry_point, box_target_adapter, box_target_id},
+        runtimes::assert_runtime_entry_point,
+        targets::{box_target_adapter, box_target_id},
     },
     filesystem::payload_size as scrollcase_payload_size,
     path::safe_relative_path as scrollcase_safe_relative_path,
     prepare::{verify_and_extract_box, EnvironmentReportOptions, PrepareOptions},
-    release::{Compatibility as BoxCompatibility, ReleaseManifest as BoxRelease, SelfTest},
+    release::{Compatibility as BoxCompatibility, ReleaseManifest as BoxRelease, SelfTest, SelfTestProbe},
     trust::{parse_trusted_keys, verify_signed_document, TrustAnchors, TrustedKey},
 };
 use tauri::AppHandle;
@@ -74,8 +75,8 @@ const ANTI_REPLAY_STATE_SCHEMA_VERSION: u32 = 1;
 const ANTI_REPLAY_STATE_PATH: &str = "runtime-box-control-floors.json";
 /// `minRamGb` is a shared wire-contract value expressed in decimal gigabytes.
 const BYTES_PER_DECIMAL_GIGABYTE: u64 = 1_000_000_000;
-/// Scrollcase v2 is the only Runtime Box wire format accepted by this build.
-const RUNTIME_BOX_SCHEMA_VERSION: u32 = 2;
+/// Scrollcase v3 is the only Runtime Box wire format accepted by this build.
+const RUNTIME_BOX_SCHEMA_VERSION: u32 = 3;
 // Trust anchors are baked into the binary at compile time rather than read from disk:
 // a key the user could edit would defeat the point of signing.
 const PRODUCTION_TRUST_KEY: &str =
@@ -1549,9 +1550,10 @@ pub(crate) async fn runtime_component_update_status(
             .transpose()
             .map_err(|error| format!("invalid Runtime Box activation metadata: {error}"))?;
     if let Some(activation) = activation.as_ref() {
-        if activation.release.runtime_id != runtime_id
+        if release_label(&activation.release, RUNTIME_LABEL) != Some(runtime_id)
             || activation.release.box_id != request.box_id
-            || activation.release.model_id != request.component_id
+            || release_label(&activation.release, MODEL_LABEL)
+                != Some(request.component_id.as_str())
         {
             return Err("Installed Runtime Box identity does not match this component".to_string());
         }
@@ -1566,6 +1568,27 @@ pub(crate) async fn runtime_component_update_status(
         available_version: update_available.then(|| selected.version.clone()),
         update_available,
         selected_target: target,
+    })
+}
+
+/// The label key carrying the Liatir runtime a box provides.
+pub(crate) const RUNTIME_LABEL: &str = "runtime";
+/// The label key carrying the Liatir component a box packages.
+const MODEL_LABEL: &str = "model";
+
+/// One identity Liatir signs into every box it publishes, read back from the release labels.
+///
+/// Scrollcase v3 removed `modelId` and `runtimeId` from the format because it never read either.
+/// Liatir routes on both, so they travel as labels now — and a release carrying neither was not
+/// built by this project, which is what every caller treats a `None` as.
+pub(crate) fn release_label<'a>(release: &'a ReleaseManifest, key: &str) -> Option<&'a str> {
+    release.labels.as_ref()?.get(key).map(String::as_str)
+}
+
+/// The Liatir runtime a release provides, where the caller cannot continue without one.
+fn required_runtime_label(release: &ReleaseManifest) -> Result<&str, String> {
+    release_label(release, RUNTIME_LABEL).ok_or_else(|| {
+        "Runtime Box release does not name the Liatir runtime it provides".to_string()
     })
 }
 
@@ -1589,7 +1612,7 @@ fn verify_release_identity(
     if release.kind != "liatir.runtime-box.release" {
         return Err("invalid Runtime Box release manifest".to_string());
     }
-    if release.box_id != box_id || release.model_id != model_id {
+    if release.box_id != box_id || release_label(release, MODEL_LABEL) != Some(model_id) {
         return Err(
             "Runtime Box release identity does not match the requested component".to_string(),
         );
@@ -1616,17 +1639,31 @@ fn verify_release_identity(
     } else if release.compatibility.min_nvidia_driver_version.is_some() {
         return Err("Only CUDA Runtime Box releases may require an NVIDIA driver".to_string());
     }
-    validate_control_url(&release.archive.url)?;
+    let archive_url = release
+        .archive
+        .url
+        .as_deref()
+        .ok_or_else(|| "Runtime Box release declares no archive URL".to_string())?;
+    validate_control_url(archive_url)?;
     let adapter = box_target_adapter(&release.target)
         .map_err(|error| format!("invalid Runtime Box target: {}", error.message()))?;
-    assert_python_entry_point(adapter, &release.python_entry_point)
+    // Every Liatir box carries a Python interpreter. A release that declares none — which v3 allows,
+    // for the runtimes that have none — is not one this app can start, so it is refused by name
+    // rather than defaulted to a path nobody signed.
+    let entry_point = release
+        .runtime
+        .entry_point
+        .as_deref()
+        .ok_or_else(|| "Runtime Box release declares no interpreter".to_string())?;
+    assert_runtime_entry_point(&release.runtime.id, adapter, entry_point)
         .map_err(|error| format!("invalid Runtime Box interpreter path: {}", error.message()))?;
-    safe_relative_path(&release.model_cache_subdir)?;
+    safe_relative_path(&release.cache_subdir)?;
     // Import names are interpolated into a Python `-c` script, so restrict them to characters
     // that can only form a module path — no spaces, quotes or semicolons that could smuggle in
     // extra statements.
-    if release.self_test.python_imports.is_empty()
-        || release.self_test.python_imports.iter().any(|name| {
+    let imports = release.self_test.probe.imports.as_deref().unwrap_or_default();
+    if imports.is_empty()
+        || imports.iter().any(|name| {
             name.is_empty()
                 || !name.chars().all(|character| {
                     character.is_ascii_alphanumeric() || character == '_' || character == '.'
@@ -1720,7 +1757,10 @@ fn validate_revocations_manifest(manifest: &RevocationsManifest) -> Result<(), S
 fn run_self_test(python_path: &Path, self_test: &SelfTest) -> Result<(), String> {
     // Import names were restricted to module-path characters in verify_release_identity.
     let script = self_test
-        .python_imports
+        .probe
+        .imports
+        .as_deref()
+        .unwrap_or_default()
         .iter()
         .map(|name| format!("import {name}"))
         .collect::<Vec<_>>()
@@ -1943,7 +1983,7 @@ fn activate_runtime(
     let parent = runtime_dir
         .parent()
         .ok_or_else(|| "Runtime Component directory has no parent".to_string())?;
-    let rollback = rollback_root(parent, &release.runtime_id);
+    let rollback = rollback_root(parent, required_runtime_label(release)?);
     std::fs::create_dir_all(&rollback).map_err(|error| error.to_string())?;
     // The UUID keeps the backup name unique even when the same version is reinstalled.
     let backup = rollback.join(format!("{}-{}", release.version, Uuid::new_v4()));
@@ -2131,9 +2171,10 @@ async fn install_runtime_box(
     ensure_not_revoked(&app, &registry_base_url, &release).await?;
     install_order.product_policy_checked()?;
     // Held for the rest of the function; released on Drop, including on any `?` below.
-    let _install_guard = InstallGuard::acquire(component_kind, &release.runtime_id)?;
+    let runtime_label = required_runtime_label(&release)?.to_string();
+    let _install_guard = InstallGuard::acquire(component_kind, &runtime_label)?;
 
-    let runtime_dir = env_dir(&app, component_kind.runtime_root(), &release.runtime_id)?;
+    let runtime_dir = env_dir(&app, component_kind.runtime_root(), &runtime_label)?;
     let runtime_parent = runtime_dir
         .parent()
         .ok_or_else(|| "Runtime Component directory has no parent".to_string())?;
@@ -2177,20 +2218,27 @@ async fn install_runtime_box(
         ensure_runtime_box_disk_space(
             runtime_parent,
             &runtime_dir,
-            &rollback_root(runtime_parent, &release.runtime_id),
+            &rollback_root(runtime_parent, &runtime_label),
             &release,
             archive_bytes_on_disk,
         )?;
     }
     install_order.disk_checked()?;
     if !archive_ready {
+        // verify_release_identity already refused a release without one; this reads it back rather
+        // than carrying the borrow across the awaits between there and here.
+        let archive_url = release
+            .archive
+            .url
+            .as_deref()
+            .ok_or_else(|| "Runtime Box release declares no archive URL".to_string())?;
         let cancellation = downloads.register(&download_id);
         // stream_download enforces the SHA-256 while writing, so the archive on disk is already
         // known to hash to the value in the signed manifest.
         let download_result = stream_download(
             &app,
             &download_id,
-            &release.archive.url,
+            archive_url,
             &archive_path.to_string_lossy(),
             Some(&release.archive.sha256),
             &cancellation,
@@ -2246,7 +2294,7 @@ async fn install_runtime_box(
                 component_kind,
                 &box_id,
                 &component_id,
-                &release.runtime_id,
+                &runtime_label,
                 &target_id(&activation.selected_target)?,
                 release_document.path(),
                 trust_document.path(),
@@ -2261,7 +2309,7 @@ async fn install_runtime_box(
         return Ok(RuntimeBoxInstallResult {
             component_kind,
             component_id,
-            runtime_id: release.runtime_id.clone(),
+            runtime_id: runtime_label.clone(),
             runtime_dir: installed.runtime_dir,
             python_path: installed.python_path,
             version: release.version.clone(),
@@ -2334,9 +2382,12 @@ async fn install_runtime_box(
                 "Prepared Runtime Box does not match the release approved by Liatir".to_string(),
             );
         }
-        let python_path = prepared
-            .root()
-            .join(safe_relative_path(prepared.python_entry_point())?);
+        let entry_point = prepared
+            .runtime()
+            .entry_point
+            .as_deref()
+            .ok_or_else(|| "Runtime Box declares no interpreter".to_string())?;
+        let python_path = prepared.root().join(safe_relative_path(entry_point)?);
         run_self_test(&python_path, &release.self_test)?;
         // Persist both the selected target and the exact signed release envelope. The installed
         // directory then carries complete provenance without contacting the registry.
@@ -2352,10 +2403,10 @@ async fn install_runtime_box(
         Ok(RuntimeBoxInstallResult {
             component_kind,
             component_id: component_id.clone(),
-            runtime_id: release.runtime_id.clone(),
+            runtime_id: required_runtime_label(&release)?.to_string(),
             runtime_dir: runtime_dir.to_string_lossy().to_string(),
             python_path: runtime_dir
-                .join(safe_relative_path(&release.python_entry_point)?)
+                .join(safe_relative_path(entry_point)?)
                 .to_string_lossy()
                 .to_string(),
             version: release.version.clone(),
@@ -2595,11 +2646,10 @@ mod tests {
 
     fn release_json() -> serde_json::Value {
         serde_json::json!({
-            "schemaVersion": 2,
+            "schemaVersion": 3,
             "kind": "liatir.runtime-box.release",
             "boxId": "fixture",
-            "modelId": "liatir-fixture",
-            "runtimeId": "fixture-runtime",
+            "labels": { "model": "liatir-fixture", "runtime": "fixture-runtime" },
             "version": "1.0.0",
             "target": { "platform": "macos", "arch": "aarch64", "accelerator": "metal" },
             "compatibility": { "minLiatirVersion": "0.0.0" },
@@ -2609,9 +2659,9 @@ mod tests {
                 "sha256": "a".repeat(64),
                 "sizeBytes": 10
             },
-            "pythonEntryPoint": "venv/bin/python",
-            "modelCacheSubdir": "model-cache/fixture",
-            "selfTest": { "pythonImports": ["json"], "timeoutSeconds": 10 },
+            "runtime": { "id": "python", "version": "3.11.9", "entryPoint": "venv/bin/python" },
+            "cacheSubdir": "model-cache/fixture",
+            "selfTest": { "probe": { "imports": ["json"] }, "timeoutSeconds": 10 },
             // Provenance is the box format's own type, so every field it requires must be
             // present; an empty object is no longer a release this build would accept.
             "provenance": {
@@ -2620,7 +2670,7 @@ mod tests {
                 "builderRevision": "0".repeat(40),
                 "sourceTreeDirty": false,
                 "sourceRevision": "fixture-source-v2",
-                "pythonVersion": "3.11.9",
+                "runtimeVersion": "3.11.9",
                 "dependencyLockSha256": "b".repeat(64),
                 "builtAt": "2026-07-26T12:00:00.000Z",
                 "pixiVersion": "0.50.0"
@@ -3212,7 +3262,7 @@ mod tests {
             "accelerator": "cuda",
             "cudaVersion": "12.4"
         });
-        value["pythonEntryPoint"] = serde_json::json!("venv/python.exe");
+        value["runtime"]["entryPoint"] = serde_json::json!("venv/python.exe");
         let target: RuntimeBoxTarget = serde_json::from_value(value["target"].clone()).unwrap();
         let host = host("windows", "x86_64", Some("500.10"));
         let release: ReleaseManifest = serde_json::from_value(value.clone()).unwrap();
@@ -3390,7 +3440,10 @@ mod tests {
             return;
         };
         let self_test = SelfTest {
-            python_imports: vec!["liatir_missing_selftest_module".to_string()],
+            probe: SelfTestProbe {
+                imports: Some(vec!["liatir_missing_selftest_module".to_string()]),
+                commands: None,
+            },
             timeout_seconds: 30,
         };
         let error = run_self_test(Path::new(python), &self_test).unwrap_err();
@@ -3540,7 +3593,8 @@ mod tests {
         if let Some(expected) = release.installed_size_bytes {
             assert_eq!(prepared.installed_size_bytes(), expected);
         }
-        let python = destination.join(safe_relative_path(prepared.python_entry_point()).unwrap());
+        let entry_point = prepared.runtime().entry_point.as_deref().unwrap();
+        let python = destination.join(safe_relative_path(entry_point).unwrap());
         assert!(python.is_file());
         std::fs::remove_dir_all(destination).unwrap();
     }

@@ -1,11 +1,13 @@
 {
-  "$schema": "https://scrollcase.dev/schema/v2/scroll.schema.json",
-  "schemaVersion": 2,
+  "$schema": "https://scrollcase.dev/schema/v3/scroll.schema.json",
+  "schemaVersion": 3,
   "scrollId": "geneformer-v1-10m-linux-x86_64-cuda12.9",
   "scrollVersion": "1.0.0",
   "boxId": "geneformer-v1-10m",
-  "modelId": "ctheodoris-geneformer-v1-10m",
-  "runtimeId": "single-cell-foundation-geneformer-v1-10m",
+  "labels": {
+    "model": "ctheodoris-geneformer-v1-10m",
+    "runtime": "single-cell-foundation-geneformer-v1-10m"
+  },
   "version": "1.0.0-beta.2",
   "sourceRevision": "04c2b2e84da7c0f385c3f9ad8f3ec24bab6650e5",
   "target": {
@@ -19,12 +21,15 @@
     "minRamGb": 16,
     "minNvidiaDriverVersion": "525.60.13"
   },
-  "pythonVersion": "3.11.15",
+  "runtime": {
+    "id": "python",
+    "version": "3.11.15",
+    "entryPoint": "venv/bin/python"
+  },
   "pixiVersion": "0.73.0",
   "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/geneformer-v1-10m-linux-x86_64-cuda12.9.json",
-  "pythonEntryPoint": "venv/bin/python",
-  "modelCacheSubdir": "model-cache/geneformer-v1-10m",
-  "assetBaseUrl": "https://assets.models.liatir.com/ai-runtime-boxes",
+  "cacheSubdir": "model-cache/geneformer-v1-10m",
+  "publishBaseUrl": "https://assets.models.liatir.com/ai-runtime-boxes",
   "assets": [
     {
       "url": "https://huggingface.co/ctheodoris/Geneformer/resolve/04c2b2e84da7c0f385c3f9ad8f3ec24bab6650e5/Geneformer-V1-10M/config.json",
@@ -90,6 +95,6 @@
       "model-cache/geneformer-v1-10m/dictionaries/gene_median_dictionary_gc30M.pkl",
       "model-cache/geneformer-v1-10m/dictionaries/ensembl_mapping_dict_gc30M.pkl"
     ],
-    "pythonCode": "assert torch.version.cuda is not None\nassert torch.version.cuda.startswith('12.9')"
+    "code": "assert torch.version.cuda is not None\nassert torch.version.cuda.startswith('12.9')"
   }
 }

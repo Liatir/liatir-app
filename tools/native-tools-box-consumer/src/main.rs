@@ -8,8 +8,9 @@ use scrollcase_consumer::{
     contract::targets::box_target_id,
     prepare::{
         attach_extracted_box, verify_and_extract_box, verify_extracted_payload, AttachOptions,
-        EnvironmentReportOptions, PrepareOptions,
+        EnvironmentReportOptions, PrepareOptions, PreparedBox,
     },
+    release::ReleaseManifest,
     trust::TrustAnchors,
     verify::inspect_release_document,
 };
@@ -157,7 +158,7 @@ fn run_native_tools(arguments: &[String]) -> Result<PathBuf, String> {
     .map_err(|error| error.to_string())?;
 
     if prepared.box_id() != "native-tools"
-        || prepared.runtime_id() != "native-tools"
+        || prepared_label(&prepared, "runtime") != Some("native-tools")
         || prepared.target_id() != RUNTIME_BOX_TARGET
     {
         return Err("The signed box is not the Linux Native Tools box.".into());
@@ -356,8 +357,8 @@ fn install_runtime(arguments: &[String]) -> Result<RuntimeState, String> {
     let release = &inspected.release;
     let target = box_target_id(&release.target).map_err(|error| error.to_string())?;
     if release.box_id != *expected_box
-        || release.model_id != *expected_component
-        || release.runtime_id != *expected_runtime
+        || release_label(release, "model") != Some(expected_component.as_str())
+        || release_label(release, "runtime") != Some(expected_runtime.as_str())
         || target != *expected_target
         || inspected.signed.payload_sha256 != *expected_release_digest
         || release.archive.sha256 != *archive_digest
@@ -397,7 +398,7 @@ fn install_runtime(arguments: &[String]) -> Result<RuntimeState, String> {
         )
         .map_err(|error| error.to_string())?;
         if prepared.box_id() != expected_box
-            || prepared.runtime_id() != expected_runtime
+            || prepared_label(&prepared, "runtime") != Some(expected_runtime.as_str())
             || prepared.target_id() != expected_target
             || prepared.release_payload_sha256() != expected_release_digest
         {
@@ -405,11 +406,15 @@ fn install_runtime(arguments: &[String]) -> Result<RuntimeState, String> {
                 "The prepared WSL2 Runtime Box does not match the approved release.".into(),
             );
         }
-        let python_entry = prepared.python_entry_point().to_string();
+        let python_entry = prepared
+            .runtime()
+            .entry_point
+            .clone()
+            .ok_or("The prepared WSL2 Runtime Box declares no interpreter.")?;
         let python = staging.join(&python_entry);
         run_self_test(
             &python,
-            &release.self_test.python_imports,
+            release.self_test.probe.imports.as_deref().unwrap_or_default(),
             release.self_test.timeout_seconds,
         )?;
         let activation = read_activation(activation_path)?;
@@ -567,6 +572,20 @@ fn run() -> Result<(), String> {
             Ok(())
         }
     }
+}
+
+/// One identity Liatir signs into a box, read back from a release's labels.
+///
+/// Scrollcase v3 removed `modelId` and `runtimeId` from the format because it never read either.
+/// Liatir routes on both, so they travel as labels, and `None` means a box this project did not
+/// build — which every caller here refuses.
+fn release_label<'a>(release: &'a ReleaseManifest, key: &str) -> Option<&'a str> {
+    release.labels.as_ref()?.get(key).map(String::as_str)
+}
+
+/// The same identity, read from a box already prepared on disk.
+fn prepared_label<'a>(prepared: &'a PreparedBox, key: &str) -> Option<&'a str> {
+    prepared.labels()?.get(key).map(String::as_str)
 }
 
 fn main() {

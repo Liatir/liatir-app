@@ -47,7 +47,7 @@ describe('Phase 3 Runtime Box candidate boundary', () => {
     const lock = readFileSync(resolve(directory, 'pixi.lock'), 'utf8');
     const hash = (bytes: Buffer) => createHash('sha256').update(bytes).digest('hex');
     expect(scroll.scrollId).toBe(`openmm-${target}`);
-    expect(scroll.modelId).toBe(OPENMM_RUNTIME_COMPONENT_ID);
+    expect(scroll.labels.model).toBe(OPENMM_RUNTIME_COMPONENT_ID);
     expect(manifest).toContain('pytorch = { version = "2.10.0.*", build = "cpu_*" }');
     expect(lock).toMatch(/pytorch-2\.10\.0-cpu_/);
     expect(lock).not.toMatch(/pytorch-\d[^\n]*-(?:cuda|gpu)_/);
@@ -59,7 +59,7 @@ describe('Phase 3 Runtime Box candidate boundary', () => {
       expect(scroll.selfTest.files).toContain(path);
       expect(scroll.prunePaths.some((pruned: string) => path === pruned || path.startsWith(`${pruned}/`))).toBe(false);
     }
-    expect(scroll.selfTest.files).toContain(`${scroll.modelCacheSubdir}/openff-gnn-am1bcc-1.0.0.pt`);
+    expect(scroll.selfTest.files).toContain(`${scroll.cacheSubdir}/openff-gnn-am1bcc-1.0.0.pt`);
     const audit = JSON.parse(readFileSync(resolve(root, scroll.condaDependencyLicenseAudit), 'utf8'));
     expect(audit.targetId).toBe(target);
     expect(audit.packages.find((item: { name: string }) => item.name === 'pytorch').version).toBe('2.10.0');

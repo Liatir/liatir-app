@@ -48,7 +48,7 @@ function workspace(scrollId: string, scroll: Record<string, unknown>) {
     },
   }, null, 2)}\n`);
   writeFileSync(join(scrollDir, 'scroll.json'), `${JSON.stringify({
-    schemaVersion: 2,
+    schemaVersion: 3,
     scrollId,
     boxId,
     target,
@@ -191,7 +191,7 @@ describe('Liatir Scrollcase adapter', () => {
     const archive = Buffer.from('synthetic verified archive');
     const archiveSha256 = createHash('sha256').update(archive).digest('hex');
     const release = {
-      schemaVersion: 2,
+      schemaVersion: 3,
       kind: 'liatir.runtime-box.release',
       boxId: 'synthetic-box',
       modelId: 'synthetic-model',
@@ -271,7 +271,7 @@ describe('Liatir Scrollcase adapter', () => {
       publicPath,
     );
     expect(payload).toMatchObject({
-      schemaVersion: 2,
+      schemaVersion: 3,
       kind: 'liatir.runtime-box.revocations',
       revocations: [{
         boxId: 'synthetic-box',
@@ -300,7 +300,7 @@ describe('Liatir Scrollcase adapter', () => {
       revocations: Array<Record<string, unknown>>,
       keyPaths: { privatePath: string; publicPath: string },
     ) => signDocument({
-      schemaVersion: 2,
+      schemaVersion: 3,
       kind: 'liatir.runtime-box.revocations',
       updatedAt: '2026-01-01T00:00:00.000Z',
       revocations,

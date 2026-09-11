@@ -555,7 +555,7 @@ async function serve(flags) {
       if (resolvedPath.endsWith('.json')) {
         const document = JSON.parse(await readFile(resolvedPath, 'utf8'));
         const { payload } = decodeSignedDocument(document);
-        if (document.schemaVersion !== 2 || payload.schemaVersion !== 2) {
+        if (document.schemaVersion !== 3 || payload.schemaVersion !== 3) {
           response.writeHead(409, { 'Content-Type': 'application/json' });
           response.end(JSON.stringify({ error: 'unsupported_runtime_box_format' }));
           return;
@@ -896,7 +896,7 @@ async function createRevocation(flags) {
     fail(`A revocations document holds at most ${MAX_REVOCATIONS_PER_DOCUMENT} entries (got ${revocations.length}).`);
   }
   const manifest = {
-    schemaVersion: 2,
+    schemaVersion: 3,
     kind: 'liatir.runtime-box.revocations',
     updatedAt: new Date().toISOString(),
     revocations,

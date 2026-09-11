@@ -39,9 +39,9 @@ describe('Phase 2 oncology contract', () => {
         `runtime-boxes/scrolls/pvactools-pvacseq/${targetId}/scroll.json`,
       ), 'utf8'));
       expect(scroll.selfTest.imports).not.toContain('vcfpy');
-      expect(scroll.selfTest.pythonCode.indexOf("source/vcfpy-sdist"))
-        .toBeLessThan(scroll.selfTest.pythonCode.indexOf('import vcfpy'));
-      expect(scroll.selfTest.pythonCode).toContain("assert vcfpy.__version__ == '0.13.8'");
+      expect(scroll.selfTest.code.indexOf("source/vcfpy-sdist"))
+        .toBeLessThan(scroll.selfTest.code.indexOf('import vcfpy'));
+      expect(scroll.selfTest.code).toContain("assert vcfpy.__version__ == '0.13.8'");
     }
   });
 

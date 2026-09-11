@@ -129,7 +129,7 @@ try {
   // Run with the box's own interpreter, so the comparison happens under the exact library versions
   // a user gets. The Python harness does the actual numeric comparison and fails on divergence.
   const output = run(
-    join(runtimeDir, ...RECIPE.pythonEntryPoint.split('/')),
+    join(runtimeDir, ...RECIPE.runtime.entryPoint.split('/')),
     [
       join(ROOT, 'scripts/ai-validation/geneformer-parity.py'),
       '--runtime-dir', runtimeDir,

@@ -21,13 +21,13 @@ describe('Runtime Box authoring input resolution', () => {
     return { root, recipesDir, scrollsDir };
   }
 
-  it('resolves one canonical v2 scroll by the stable recipe identity', async () => {
+  it('resolves one canonical v3 scroll by the stable recipe identity', async () => {
     const paths = await workspace();
     const directory = join(paths.scrollsDir, 'example-box', 'linux-x86_64-cpu');
     await mkdir(directory, { recursive: true });
     await writeFile(join(directory, 'pixi.lock'), 'version: 6\n');
     await writeFile(join(directory, 'scroll.json'), JSON.stringify({
-      schemaVersion: 2,
+      schemaVersion: 3,
       scrollId: 'example-linux-cpu',
       scrollVersion: '1.0.0',
       boxId: 'example-box',
@@ -40,7 +40,7 @@ describe('Runtime Box authoring input resolution', () => {
       expectedBoxId: 'example-box',
       expectedTargetId: 'linux-x86_64-cpu',
     })).toMatchObject({
-      kind: 'scroll-v2',
+      kind: 'scroll-v3',
       authoringId: 'example-linux-cpu',
       authoringVersion: '1.0.0',
       targetId: 'linux-x86_64-cpu',
@@ -48,7 +48,7 @@ describe('Runtime Box authoring input resolution', () => {
     });
   });
 
-  it('refuses a target that has no v2 scroll instead of looking for a uv recipe', async () => {
+  it('refuses a target that has no v3 scroll instead of looking for a uv recipe', async () => {
     const paths = await workspace();
     // The schema-v1 fallback is gone. A missing scroll must fail by name rather than silently
     // resolving something else, which is what the removed legacy branch used to do.
@@ -64,10 +64,10 @@ describe('Runtime Box authoring input resolution', () => {
     expect(() => resolveRuntimeBoxAuthoringInput({
       ...paths,
       recipeId: 'legacy-linux-cpu',
-    })).toThrow(/Missing Scrollcase v2 authoring input/);
+    })).toThrow(/Missing Scrollcase v3 authoring input/);
   });
 
-  it('refuses two v2 scrolls claiming the same recipe identity', async () => {
+  it('refuses two v3 scrolls claiming the same recipe identity', async () => {
     const paths = await workspace();
     for (const boxId of ['duplicate-box-a', 'duplicate-box-b']) {
       const directory = join(paths.scrollsDir, boxId, 'linux-x86_64-cpu');
@@ -84,6 +84,6 @@ describe('Runtime Box authoring input resolution', () => {
     expect(() => resolveRuntimeBoxAuthoringInput({
       ...paths,
       recipeId: 'duplicate-linux-cpu',
-    })).toThrow(/Expected one v2 scroll/);
+    })).toThrow(/Expected one v3 scroll/);
   });
 });

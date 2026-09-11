@@ -18,7 +18,7 @@ const COMPONENT_ID = 'openmm-openmm';
 const { recipe, recipePath, authoringId, authoringVersion, runtimeDir, python, targetId, dependencyLockSha256 } =
   await loadRuntimeBoxValidatorContext({ root: ROOT, defaultRecipeId: 'openmm-macos-aarch64-cpu',
     runtimeDirectoryEnvironment: 'LIATIR_OPENMM_RUNTIME_DIR' });
-assert.equal(recipe.modelId, COMPONENT_ID);
+assert.equal(recipe.labels.model, COMPONENT_ID);
 assert.equal(recipe.sourceRevision, SOURCE_REVISION);
 assert.ok(['cpu', 'cuda'].includes(recipe.target.accelerator));
 const sha256 = (value) => createHash('sha256').update(value).digest('hex');
@@ -143,7 +143,7 @@ try {
     const release = await verifySignedDocument(JSON.parse(signedBytes), publicPath);
     assert.equal(release.kind, 'liatir.runtime-box.release');
     assert.equal(release.boxId, recipe.boxId);
-    assert.equal(release.runtimeId, recipe.runtimeId);
+    assert.equal(release.labels.runtime, recipe.labels.runtime);
     assert.equal(release.version, recipe.version);
     assert.deepEqual(release.target, recipe.target);
     assert.equal(release.provenance.dependencyLockSha256, dependencyLockSha256);
@@ -199,7 +199,7 @@ try {
     assert.equal(result.summary.openmmVersion, '8.5.1');
     assert.equal(result.summary.openmmforcefieldsVersion, '0.16.0');
     assert.equal(result.summary.openffForceFieldsVersion, '2026.1.0');
-    assert.equal(result.summary.runtimeId, recipe.runtimeId);
+    assert.equal(result.summary.runtimeId, recipe.labels.runtime);
     assert.equal(result.summary.runtimeBoxRelease, recipe.version);
     assert.equal(result.summary.targetId, targetId);
     assert.equal(result.summary.platform, recipe.target.accelerator === 'cpu' ? 'CPU' : 'CUDA');
@@ -347,7 +347,7 @@ try {
       fixturePreparationSha256: sha256(PREPARE_FIXTURES),
       recipeSha256: sha256(await readFile(recipePath)),
     },
-    provenance: { recipeId: authoringId, recipeVersion: authoringVersion, pythonVersion: recipe.pythonVersion,
+    provenance: { recipeId: authoringId, recipeVersion: authoringVersion, pythonVersion: recipe.runtime.version,
       ...builderVersionFields(recipe), dependencyLockSha256 },
     evidence: {
       fixture: { id: 'openmmforcefields-0.16.0-official-ala3-and-ethanol-v1', sha256: officialSha256,

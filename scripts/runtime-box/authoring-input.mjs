@@ -24,7 +24,7 @@ function matchingScrollPaths(scrollsDir, recipeId) {
 /**
  * Resolves one stable Liatir recipe identity to its authoring document.
  *
- * Every target lives in the canonical Scrollcase v2 tree. The schema-v1 uv path this
+ * Every target lives in the canonical Scrollcase v3 tree. The schema-v1 uv path this
  * function used to fall back to is gone with the last recipe it read.
  */
 export function resolveRuntimeBoxAuthoringInput({
@@ -35,27 +35,27 @@ export function resolveRuntimeBoxAuthoringInput({
 }) {
   const matches = matchingScrollPaths(scrollsDir, recipeId);
   if (matches.length > 1) {
-    throw new Error(`Expected one v2 scroll for ${recipeId}, found ${matches.length}.`);
+    throw new Error(`Expected one v3 scroll for ${recipeId}, found ${matches.length}.`);
   }
   if (matches.length === 0) {
-    throw new Error(`Missing Scrollcase v2 authoring input for ${recipeId}.`);
+    throw new Error(`Missing Scrollcase v3 authoring input for ${recipeId}.`);
   }
   const documentPath = matches[0];
   const document = readDocument(documentPath);
   const targetId = boxTargetId(document.target);
   if (
-    document.schemaVersion !== 2
+    document.schemaVersion !== 3
     || document.scrollId !== recipeId
     || typeof document.scrollVersion !== 'string'
     || !document.scrollVersion
     || (expectedBoxId && document.boxId !== expectedBoxId)
     || (expectedTargetId && targetId !== expectedTargetId)
   ) {
-    throw new Error(`Invalid Scrollcase v2 authoring identity for ${recipeId}.`);
+    throw new Error(`Invalid Scrollcase v3 authoring identity for ${recipeId}.`);
   }
   const directory = resolve(documentPath, '..');
   return {
-    kind: 'scroll-v2',
+    kind: 'scroll-v3',
     document,
     documentPath,
     directory,

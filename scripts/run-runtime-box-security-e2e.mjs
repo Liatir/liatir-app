@@ -82,7 +82,7 @@ function provenance(version) {
     builderRevision: version === '1.0.0' ? '1'.repeat(40) : '2'.repeat(40),
     sourceTreeDirty: false,
     sourceRevision: `security-fixture-${version}`,
-    pythonVersion: '3',
+    runtimeVersion: '3',
     dependencyLockSha256: sha256(`security-fixture-lock-${version}`),
     builtAt: version === '1.0.0' ? '2026-08-10T08:00:00.000Z' : '2026-08-11T08:00:00.000Z',
     pixiVersion: '0.50.0',
@@ -144,15 +144,14 @@ async function createFixtureArchive(root, target, version) {
   const archivePath = join(root, `security-fixture-${version}.zip`);
   const pythonEntryPoint = await createPythonLauncher(root, payloadDir, target, version);
   const shared = {
-    schemaVersion: 2,
+    schemaVersion: 3,
     boxId: BOX_ID,
-    modelId: MODEL_ID,
-    runtimeId: RUNTIME_ID,
+    labels: { model: MODEL_ID, runtime: RUNTIME_ID },
     version,
     target,
-    pythonEntryPoint,
-    modelCacheSubdir: 'model-cache/security-fixture',
-    selfTest: { pythonImports: ['json'], timeoutSeconds: 10 },
+    runtime: { id: 'python', version: '3', entryPoint: pythonEntryPoint },
+    cacheSubdir: 'model-cache/security-fixture',
+    selfTest: { probe: { imports: ['json'] }, timeoutSeconds: 10 },
     provenance: provenance(version),
   };
   await writeFile(join(payloadDir, 'box.json'), `${JSON.stringify(shared, null, 2)}\n`);
@@ -186,7 +185,7 @@ function releasePayload(fixture, baseUrl) {
 
 function channelPayload({ baseUrl, target, version, updatedAt, cohortSalt }) {
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     kind: 'liatir.runtime-box.channel',
     channel: 'beta',
     boxId: BOX_ID,
@@ -203,7 +202,7 @@ function channelPayload({ baseUrl, target, version, updatedAt, cohortSalt }) {
 
 function revocationsPayload({ target, updatedAt, reason }) {
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     kind: 'liatir.runtime-box.revocations',
     updatedAt,
     revocations: [{

@@ -1,11 +1,13 @@
 {
-  "$schema": "https://scrollcase.dev/schema/v2/scroll.schema.json",
-  "schemaVersion": 2,
+  "$schema": "https://scrollcase.dev/schema/v3/scroll.schema.json",
+  "schemaVersion": 3,
   "scrollId": "native-tools-linux-x86-64",
   "scrollVersion": "1.0.0",
   "boxId": "native-tools",
-  "modelId": "liatir-native-tools",
-  "runtimeId": "native-tools",
+  "labels": {
+    "model": "liatir-native-tools",
+    "runtime": "native-tools"
+  },
   "version": "1.0.0",
   "sourceRevision": "bd3b4b0362ed78706c803f2b941a4000cdbd6bdd762fde2f74b969ed3e98fb34",
   "target": {
@@ -16,12 +18,15 @@
   "compatibility": {
     "minHostAppVersion": "0.2.1"
   },
-  "pythonVersion": "3.11.15",
+  "runtime": {
+    "id": "python",
+    "version": "3.11.15",
+    "entryPoint": "venv/bin/python"
+  },
   "pixiVersion": "0.77.0",
   "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/native-tools-linux-x86_64-cpu-conda.json",
-  "pythonEntryPoint": "venv/bin/python",
-  "modelCacheSubdir": "native-tools-cache",
-  "assetBaseUrl": "https://embedded.liatir.invalid/native-tools",
+  "cacheSubdir": "native-tools-cache",
+  "publishBaseUrl": "https://embedded.liatir.invalid/native-tools",
   "assets": [],
   "localFiles": [
     {
@@ -48,7 +53,12 @@
     "venv/lib/cmake"
   ],
   "selfTest": {
-    "imports": ["json", "shutil", "subprocess", "tempfile"],
+    "imports": [
+      "json",
+      "shutil",
+      "subprocess",
+      "tempfile"
+    ],
     "files": [
       "native-tools.json",
       "native-tools-self-test.py",
@@ -62,6 +72,6 @@
       "venv/bin/alevin-fry",
       "venv/bin/piscem"
     ],
-    "pythonCode": "exec(compile(open('native-tools-self-test.py', encoding='utf-8').read(), 'native-tools-self-test.py', 'exec'))"
+    "code": "exec(compile(open('native-tools-self-test.py', encoding='utf-8').read(), 'native-tools-self-test.py', 'exec'))"
   }
 }

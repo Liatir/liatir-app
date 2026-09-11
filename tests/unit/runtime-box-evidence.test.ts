@@ -232,23 +232,22 @@ describe('Runtime Box CI evidence contract', () => {
       )).digest('hex');
       const source = sourceEvidence();
       const release = {
-        schemaVersion: 2,
+        schemaVersion: 3,
         kind: 'liatir.runtime-box.release',
         boxId: recipe.boxId,
-        modelId: recipe.modelId,
-        runtimeId: recipe.runtimeId,
+        labels: { model: recipe.labels.model, runtime: recipe.labels.runtime },
         version: recipe.version,
         target: recipe.target,
         archive: { format: 'zip', url: 'https://assets.example.test/archive.zip', sha256, sizeBytes: 10 },
         installedSizeBytes: 20,
-        selfTest: { pythonImports: ['torch'], timeoutSeconds: 180 },
+        selfTest: { probe: { imports: ['torch'] }, timeoutSeconds: 180 },
         provenance: {
           scrollId: recipe.scrollId,
           scrollVersion: recipe.scrollVersion,
           builderRevision: source.commitSha,
           sourceTreeDirty: source.sourceTreeDirty,
           sourceRevision: recipe.sourceRevision,
-          pythonVersion: recipe.pythonVersion,
+          pythonVersion: recipe.runtime.version,
           pixiVersion: recipe.pixiVersion,
           dependencyLockSha256: lockSha256,
           builtAt: '2026-07-15T18:00:00.000Z',
@@ -257,7 +256,7 @@ describe('Runtime Box CI evidence contract', () => {
       const payload = Buffer.from(JSON.stringify(release));
       const releasePath = join(workDir, 'release.json');
       await writeFile(releasePath, JSON.stringify({
-        schemaVersion: 2,
+        schemaVersion: 3,
         payloadEncoding: 'base64-json-utf8',
         payloadBase64: payload.toString('base64'),
         payloadSha256: createHash('sha256').update(payload).digest('hex'),
@@ -298,7 +297,7 @@ describe('Runtime Box CI evidence contract', () => {
       const output = join(workDir, 'evidence.json');
       await writeModelEvidence({
         status: 'passed',
-        model: recipe.modelId,
+        model: recipe.labels.model,
         recipe: recipe.scrollId,
         target: 'macos-aarch64-metal',
         mode: 'scientific',

@@ -120,13 +120,13 @@ async function readScroll(selector) {
   const path = resolve(scrolls, boxId, targetId, 'scroll.json');
   if (!path.startsWith(`${scrolls}${sep}`)) fail(`Invalid scroll selector: ${selector}`);
   const scroll = JSON.parse(await readFile(path, 'utf8'));
-  if (scroll.schemaVersion !== 2 || scroll.boxId !== boxId || boxTargetId(scroll.target) !== targetId) {
-    fail(`Invalid Scrollcase v2 scroll contract: ${selector}`);
+  if (scroll.schemaVersion !== 3 || scroll.boxId !== boxId || boxTargetId(scroll.target) !== targetId) {
+    fail(`Invalid Scrollcase v3 scroll contract: ${selector}`);
   }
   return { scroll, selector };
 }
 
-/** Resolves the stable Liatir recipe ID to one canonical Scrollcase v2 selector. */
+/** Resolves the stable Liatir recipe ID to one canonical Scrollcase v3 selector. */
 async function resolveScrollReference(name, targetOverride) {
   if (name.includes('/')) return readScroll(name);
   if (typeof targetOverride === 'string') return readScroll(`${name}/${targetOverride}`);
@@ -147,7 +147,7 @@ async function resolveScrollReference(name, targetOverride) {
   if (matches.length > 1) fail(`Scroll ID is ambiguous: ${name}`);
   fail(
     `Unsupported Runtime Box input: ${name}. Schema-v1 recipes are deprecated; `
-      + 'migrate it to a canonical Scrollcase v2 scroll.',
+      + 'migrate it to a canonical Scrollcase v3 scroll.',
   );
 }
 
@@ -177,7 +177,7 @@ export async function verificationReceipt(releaseDocumentPath, flags, {
   const releasePath = resolve(releaseDocumentPath);
   const signed = JSON.parse(await readFile(releasePath, 'utf8'));
   const release = await verifySignedDocument(signed, publicKeyPath(flags));
-  if (release.schemaVersion !== 2 || release.kind !== 'liatir.runtime-box.release') {
+  if (release.schemaVersion !== 3 || release.kind !== 'liatir.runtime-box.release') {
     fail('Document is not a Liatir Runtime Box release.');
   }
   const archivePath = resolve(String(flags.get('archive')

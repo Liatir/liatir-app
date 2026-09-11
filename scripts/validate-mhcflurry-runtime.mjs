@@ -31,7 +31,7 @@ const {
   defaultRecipeId: 'mhcflurry-class1-presentation-macos-aarch64-metal',
   runtimeDirectoryEnvironment: 'LIATIR_MHCFLURRY_RUNTIME_DIR',
 });
-if (RECIPE.modelId !== MODEL_ID || RECIPE.sourceRevision !== SOURCE_REVISION) {
+if (RECIPE.labels.model !== MODEL_ID || RECIPE.sourceRevision !== SOURCE_REVISION) {
   throw new Error('MHCflurry validation provenance differs from the pinned contract.');
 }
 
@@ -201,7 +201,7 @@ try {
     provenance: {
       recipeId: AUTHORING_ID,
       recipeVersion: AUTHORING_VERSION,
-      pythonVersion: RECIPE.pythonVersion,
+      pythonVersion: RECIPE.runtime.version,
       ...builderVersionFields(RECIPE),
       dependencyLockSha256: DEPENDENCY_LOCK_SHA256,
     },

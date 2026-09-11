@@ -78,8 +78,7 @@ describe('Batch 5 single-cell foundation model contract', () => {
       resolve(rootDir, 'runtime-boxes/scrolls/geneformer-v1-10m/macos-aarch64-metal/scroll.json'),
       'utf8',
     )) as {
-      modelId: string;
-      runtimeId: string;
+      labels: { model: string; runtime: string };
       assets: Array<{ relativePath: string; sizeBytes: number; sha256: string; url: string }>;
     };
 
@@ -98,8 +97,8 @@ describe('Batch 5 single-cell foundation model contract', () => {
       publishedTargets: publishedGeneformerTargets(),
     });
     expect(model?.install?.revision).toMatch(/^[a-f0-9]{40}$/);
-    expect(recipe.modelId).toBe(GENEFORMER_V1_10M_MODEL_ID);
-    expect(recipe.runtimeId).toBe(model?.install?.runtimeId);
+    expect(recipe.labels.model).toBe(GENEFORMER_V1_10M_MODEL_ID);
+    expect(recipe.labels.runtime).toBe(model?.install?.runtimeId);
     expect(recipe.assets.map((file) => file.relativePath).sort()).toEqual([
       'model-cache/geneformer-v1-10m/dictionaries/ensembl_mapping_dict_gc30M.pkl',
       'model-cache/geneformer-v1-10m/dictionaries/gene_median_dictionary_gc30M.pkl',
@@ -129,8 +128,7 @@ describe('Batch 5 single-cell foundation model contract', () => {
       resolve(rootDir, 'runtime-boxes/scrolls/scgpt-whole-human/macos-aarch64-metal/scroll.json'),
       'utf8',
     )) as {
-      modelId: string;
-      runtimeId: string;
+      labels: { model: string; runtime: string };
       sourceRevision: string;
       assets: Array<{ relativePath: string; sizeBytes: number; sha256: string }>;
     };
@@ -146,8 +144,8 @@ describe('Batch 5 single-cell foundation model contract', () => {
       registryBaseUrl: 'https://models.liatir.com/v1',
       publishedTargets: publishedScgptTargets(),
     });
-    expect(scroll.modelId).toBe(SCGPT_WHOLE_HUMAN_MODEL_ID);
-    expect(scroll.runtimeId).toBe(model?.install?.runtimeId);
+    expect(scroll.labels.model).toBe(SCGPT_WHOLE_HUMAN_MODEL_ID);
+    expect(scroll.labels.runtime).toBe(model?.install?.runtimeId);
     expect(scroll.sourceRevision).toBe(model?.install?.revision);
     expect(scroll.assets.map((file) => file.relativePath)).toEqual(expect.arrayContaining([
       'model-cache/scgpt-whole-human/args.json',
@@ -174,8 +172,7 @@ describe('Batch 5 single-cell foundation model contract', () => {
       'utf8',
     )) as {
       boxId: string;
-      modelId: string;
-      runtimeId: string;
+      labels: { model: string; runtime: string };
       sourceRevision: string;
       pythonVersion: string;
       pixiVersion: string;
@@ -185,7 +182,7 @@ describe('Batch 5 single-cell foundation model contract', () => {
       uncompressedPaths: string[];
       prunePaths: string[];
       localFiles: Array<{ relativePath: string; sha256: string }>;
-      selfTest: { files: string[]; pythonCode: string };
+      selfTest: { files: string[]; code: string };
     };
 
     expect(model, 'UCE missing model metadata').toBeTruthy();
@@ -215,10 +212,9 @@ describe('Batch 5 single-cell foundation model contract', () => {
     expect(existsSync(resolve(rootDir, 'frontend/src/lib/ai/preloaders/uce-managed-files.ts'))).toBe(false);
     expect(recipe).toMatchObject({
       boxId: 'uce-4layer',
-      modelId: UCE_4LAYER_MODEL_ID,
-      runtimeId: 'single-cell-foundation-uce',
+      labels: { model: UCE_4LAYER_MODEL_ID, runtime: 'single-cell-foundation-uce' },
       sourceRevision: model?.install?.revision,
-      pythonVersion: '3.11.15',
+      runtime: { id: 'python', version: '3.11.15', entryPoint: 'venv/bin/python' },
       pixiVersion: '0.73.0',
     });
     expect(recipe.uvVersion).toBeUndefined();
@@ -258,8 +254,8 @@ describe('Batch 5 single-cell foundation model contract', () => {
       'source/UCE/data_proc/gene_embeddings.py',
       'source/UCE/model_files/new_species_protein_embeddings.csv',
     ]));
-    expect(recipe.selfTest.pythonCode).toContain("checkpoint['pe_embedding.weight']");
-    expect(recipe.selfTest.pythonCode).toContain('assert tuple(tokens.shape) == (145469, 5120)');
+    expect(recipe.selfTest.code).toContain("checkpoint['pe_embedding.weight']");
+    expect(recipe.selfTest.code).toContain('assert tuple(tokens.shape) == (145469, 5120)');
   });
 
   it('registers the installable single-cell embedding AI Models for pipelines', async () => {
@@ -330,7 +326,7 @@ describe('Batch 5 single-cell foundation model contract', () => {
     }
     expect(validatorContext).toContain('LIATIR_RUNTIME_BOX_RECIPE_ID');
     expect(validatorContext).toContain('LIATIR_RUNTIME_BOX_TARGET_ID');
-    expect(validatorContext).toContain("...recipe.pythonEntryPoint.split('/')");
+    expect(validatorContext).toContain("...recipe.runtime.entryPoint.split('/')");
     expect(scgptValidator).not.toContain("run('unzip'");
     expect(scgptValidator).not.toContain('macos-aarch64-metal.zip');
     expect(uceValidator).not.toContain("run('/usr/bin/time'");
@@ -367,7 +363,7 @@ describe('Batch 5 single-cell foundation model contract', () => {
       'utf8',
     );
 
-    expect(validatorSource).toContain("...RECIPE.pythonEntryPoint.split('/')");
+    expect(validatorSource).toContain("...RECIPE.runtime.entryPoint.split('/')");
     expect(validatorSource).toContain("'--accelerator', RECIPE.target.accelerator");
     expect(harnessSource).toContain('Path(sys.executable)');
     expect(harnessSource).toContain('if args.accelerator == "cuda":');

@@ -59,7 +59,7 @@ function authoringInputFor(recipeId, { expectedBoxId, expectedTargetId } = {}) {
   });
 }
 
-/** Finds one canonical v2 scroll by its stable Liatir provenance identity. */
+/** Finds one canonical v3 scroll by its stable Liatir provenance identity. */
 function scrollPathForId(scrollId) {
   return authoringInputFor(scrollId).documentPath;
 }
@@ -124,11 +124,8 @@ function validatePixiRecipeLockAndAudit(recipe, target, recipePath, targetKey) {
   );
   requireCatalog(existsSync(auditPath), `missing conda license audit for ${targetKey}`);
   const audit = JSON.parse(readFileSync(auditPath, 'utf8'));
-  const expectedAuditIdentity = recipe.schemaVersion === 2
-    ? audit.schemaVersion === 2
-      && audit.kind === 'scrollcase.box.dependency-license-audit'
-    : audit.schemaVersion === 1
-      && audit.kind === 'liatir.runtime-box.conda-dependency-license-audit';
+  const expectedAuditIdentity = audit.schemaVersion === 2
+    && audit.kind === 'scrollcase.box.dependency-license-audit';
   requireCatalog(
     expectedAuditIdentity
       && audit.targetId === target.targetId
@@ -345,7 +342,7 @@ export function validateRuntimeBoxCiCatalog(catalog, { requireWorkflows = true }
     const recipe = JSON.parse(readFileSync(recipePath, 'utf8'));
     const runner = catalog.runnerProfiles.find((candidate) => candidate.id === fixture.runnerProfileId);
     requireCatalog(runner, `unknown foundation runner ${fixture.runnerProfileId}`);
-    requireCatalog(recipe.schemaVersion === 2, `foundation scroll is not schema v2 for ${fixture.recipeId}`);
+    requireCatalog(recipe.schemaVersion === 3, `foundation scroll is not schema v3 for ${fixture.recipeId}`);
     requireCatalog(recipe.scrollId === fixture.recipeId, `foundation scrollId mismatch for ${fixture.recipeId}`);
     requireCatalog(boxTargetId(recipe.target) === fixture.targetId, `foundation target mismatch for ${fixture.recipeId}`);
     requireCatalog(
@@ -422,9 +419,9 @@ export function validateRuntimeBoxCiCatalog(catalog, { requireWorkflows = true }
       const recipe = authoring.document;
       requireCatalog(
         authoring.authoringId === target.recipeId
-          && recipe.modelId === model.modelId
+          && recipe.labels?.model === model.modelId
           && recipe.boxId === model.boxId
-          && recipe.runtimeId === model.runtimeId,
+          && recipe.labels?.runtime === model.runtimeId,
         `authoring identity mismatch for ${targetKey}`,
       );
       requireCatalog(boxTargetId(recipe.target) === target.targetId, `recipe target mismatch for ${targetKey}`);
@@ -480,14 +477,14 @@ export function validateRuntimeBoxCiCatalog(catalog, { requireWorkflows = true }
       const workflow = readFileSync(workflowPath, 'utf8');
       requireCatalog(workflow.includes('uses: ./.github/workflows/_runtime-box-validate.yml'), `caller does not use reusable validation: ${model.callerWorkflow}`);
       requireCatalog(workflow.includes(`runtime-boxes/recipes/${model.targets[0].recipeId}/**`)
-        || authoringInputFor(model.targets[0].recipeId).kind === 'scroll-v2',
+        || authoringInputFor(model.targets[0].recipeId).kind === 'scroll-v3',
       `caller lacks recipe path scope: ${model.callerWorkflow}`);
       for (const target of model.targets) {
         const authoring = authoringInputFor(target.recipeId, {
           expectedBoxId: model.boxId,
           expectedTargetId: target.targetId,
         });
-        if (authoring.kind === 'scroll-v2') {
+        if (authoring.kind === 'scroll-v3') {
           const pathScope = `runtime-boxes/scrolls/${model.boxId}/${target.targetId}/**`;
           requireCatalog(workflow.includes(pathScope), `caller lacks authoring path scope ${pathScope}: ${model.callerWorkflow}`);
         }

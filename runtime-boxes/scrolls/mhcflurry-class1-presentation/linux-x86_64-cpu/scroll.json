@@ -1,11 +1,13 @@
 {
-  "$schema": "https://scrollcase.dev/schema/v2/scroll.schema.json",
-  "schemaVersion": 2,
+  "$schema": "https://scrollcase.dev/schema/v3/scroll.schema.json",
+  "schemaVersion": 3,
   "scrollId": "mhcflurry-class1-presentation-linux-x86_64-cpu",
   "scrollVersion": "1.0.0",
   "boxId": "mhcflurry-class1-presentation",
-  "modelId": "openvax-mhcflurry-class1-presentation",
-  "runtimeId": "oncology-mhcflurry-class1-presentation-2-2-1",
+  "labels": {
+    "model": "openvax-mhcflurry-class1-presentation",
+    "runtime": "oncology-mhcflurry-class1-presentation-2-2-1"
+  },
   "version": "2.2.1-beta.2",
   "sourceRevision": "v2.2.1",
   "target": {
@@ -16,14 +18,20 @@
   "compatibility": {
     "minLiatirVersion": "0.2.1",
     "minRamGb": 8,
-    "hostEnvironments": ["native", "windows-wsl2"]
+    "hostEnvironments": [
+      "native",
+      "windows-wsl2"
+    ]
   },
-  "pythonVersion": "3.11.16",
+  "runtime": {
+    "id": "python",
+    "version": "3.11.16",
+    "entryPoint": "venv/bin/python"
+  },
   "pixiVersion": "0.73.0",
   "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/mhcflurry-class1-presentation-linux-x86_64-cpu.json",
-  "pythonEntryPoint": "venv/bin/python",
-  "modelCacheSubdir": "model-cache/mhcflurry-class1-presentation",
-  "assetBaseUrl": "https://assets.models.liatir.com/ai-runtime-boxes",
+  "cacheSubdir": "model-cache/mhcflurry-class1-presentation",
+  "publishBaseUrl": "https://assets.models.liatir.com/ai-runtime-boxes",
   "assets": [
     {
       "url": "https://assets.models.liatir.com/ai-runtime-boxes/source-mirrors/mhcflurry/models_class1_presentation.20200611.models-only.tar.gz",
@@ -105,6 +113,6 @@
       "source/np-utils-sdist/LICENSE.txt",
       "THIRD_PARTY_NOTICES/mhcflurry-class1-presentation.md"
     ],
-    "pythonCode": "import sys\nsys.path[:0] = ['source/mhcflurry-wheel', 'source/mhcgnomes-wheel', 'source/np-utils-sdist']\nfrom mhcflurry import Class1PresentationPredictor\nfrom pathlib import Path\np = Class1PresentationPredictor.load(str(Path('model-cache/mhcflurry-class1-presentation/models')))\nr = p.predict_affinity(peptides=['SIINFEKL'], alleles={'sample':['HLA-A*02:01']}, sample_names=['sample'], include_affinity_percentile=True)\nassert len(r) == 1 and float(r.iloc[0]['affinity']) > 0"
+    "code": "import sys\nsys.path[:0] = ['source/mhcflurry-wheel', 'source/mhcgnomes-wheel', 'source/np-utils-sdist']\nfrom mhcflurry import Class1PresentationPredictor\nfrom pathlib import Path\np = Class1PresentationPredictor.load(str(Path('model-cache/mhcflurry-class1-presentation/models')))\nr = p.predict_affinity(peptides=['SIINFEKL'], alleles={'sample':['HLA-A*02:01']}, sample_names=['sample'], include_affinity_percentile=True)\nassert len(r) == 1 and float(r.iloc[0]['affinity']) > 0"
   }
 }

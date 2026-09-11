@@ -32,7 +32,7 @@ const {
   defaultRecipeId: 'scgpt-whole-human-macos-arm64-metal',
   runtimeDirectoryEnvironment: 'LIATIR_SCGPT_RUNTIME_DIR',
 });
-if (RECIPE.modelId !== MODEL_ID || RECIPE.sourceRevision !== REVISION) {
+if (RECIPE.labels.model !== MODEL_ID || RECIPE.sourceRevision !== REVISION) {
   throw new Error('scGPT validation recipe provenance differs from the pinned model contract.');
 }
 
@@ -218,7 +218,7 @@ try {
     provenance: {
       recipeId: AUTHORING_ID,
       recipeVersion: AUTHORING_VERSION,
-      pythonVersion: RECIPE.pythonVersion,
+      pythonVersion: RECIPE.runtime.version,
       ...builderVersionFields(RECIPE),
       dependencyLockSha256: DEPENDENCY_LOCK_SHA256,
     },

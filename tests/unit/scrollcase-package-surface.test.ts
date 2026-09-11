@@ -63,15 +63,15 @@ function sourceFiles(directory: string): string[] {
 describe("published Scrollcase package surface", () => {
   it("pins the immutable package and all required public entry points", () => {
     expect(packageJson.name).toBe("scrollcase");
-    expect(packageJson.version).toBe("0.8.0");
+    expect(packageJson.version).toBe("1.1.1");
     expect(packageJson.bin).toEqual({ scrollcase: "src/cli.mjs" });
     expect(packageJson.exports).toEqual(expectedExports);
-    expect(rootPackageJson.dependencies.scrollcase).toBe("0.8.0");
-    expect(corePackageJson.dependencies.scrollcase).toBe("0.8.0");
+    expect(rootPackageJson.dependencies.scrollcase).toBe("1.1.1");
+    expect(corePackageJson.dependencies.scrollcase).toBe("1.1.1");
     expect(lockfile.packages["node_modules/scrollcase"]).toMatchObject({
-      version: "0.8.0",
-      resolved: "https://registry.npmjs.org/scrollcase/-/scrollcase-0.8.0.tgz",
-      integrity: "sha512-zC2rplyt3XagumT2uznu17Mq33yfX/9p7WFfc5Ogh389tyZe8Q5b+qfOfSOL+GcLN9rD2hjR32oQ/6172pcxEQ==",
+      version: "1.1.1",
+      resolved: "https://registry.npmjs.org/scrollcase/-/scrollcase-1.1.1.tgz",
+      integrity: "sha512-GAaWT+SM+tWyEhs/KjtXqpHHUh+q7B280pHHIDIsv9tkGVrURD0EUZ46FwlTDXry0TIo8lW59XrWdtmAtUV+jQ==",
     });
   });
 
@@ -93,7 +93,7 @@ describe("published Scrollcase package surface", () => {
     expect(sign.signDocument).toBeTypeOf("function");
     expect(sign.verifySignedDocument).toBeTypeOf("function");
     expect(JSON.parse(readFileSync(schemaUrl("release-manifest"), "utf8")).$id)
-      .toBe("https://scrollcase.dev/schema/v2/release-manifest.schema.json");
+      .toBe("https://scrollcase.dev/schema/v3/release-manifest.schema.json");
     expect(JSON.parse(readFileSync(fixtureUrl("target-id-contract"), "utf8")).valid)
       .toBeInstanceOf(Array);
   });

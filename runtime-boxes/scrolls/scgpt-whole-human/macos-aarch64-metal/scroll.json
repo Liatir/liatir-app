@@ -1,11 +1,13 @@
 {
-  "$schema": "https://scrollcase.dev/schema/v2/scroll.schema.json",
-  "schemaVersion": 2,
+  "$schema": "https://scrollcase.dev/schema/v3/scroll.schema.json",
+  "schemaVersion": 3,
   "scrollId": "scgpt-whole-human-macos-arm64-metal",
   "scrollVersion": "1.0.0",
   "boxId": "scgpt-whole-human",
-  "modelId": "bowang-scgpt-whole-human",
-  "runtimeId": "single-cell-foundation-scgpt-whole-human",
+  "labels": {
+    "model": "bowang-scgpt-whole-human",
+    "runtime": "single-cell-foundation-scgpt-whole-human"
+  },
   "version": "0.2.5-beta.2",
   "sourceRevision": "cebd6fae655b9c585a4807daa3ac31bb764f06b4",
   "target": {
@@ -18,12 +20,15 @@
     "minMacosVersion": "13.0",
     "minRamGb": 16
   },
-  "pythonVersion": "3.11.15",
+  "runtime": {
+    "id": "python",
+    "version": "3.11.15",
+    "entryPoint": "venv/bin/python"
+  },
   "pixiVersion": "0.73.0",
   "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/scgpt-whole-human-macos-arm64-metal.json",
-  "pythonEntryPoint": "venv/bin/python",
-  "modelCacheSubdir": "model-cache/scgpt-whole-human",
-  "assetBaseUrl": "https://assets.models.liatir.com/ai-runtime-boxes",
+  "cacheSubdir": "model-cache/scgpt-whole-human",
+  "publishBaseUrl": "https://assets.models.liatir.com/ai-runtime-boxes",
   "assets": [
     {
       "url": "https://drive.usercontent.google.com/download?id=1hh2zGKyWAx3DyovD30GStZ3QlzmSqdk1&export=download&confirm=t",
@@ -87,7 +92,15 @@
     "source/scGPT/scgpt/utils"
   ],
   "selfTest": {
-    "imports": ["torch", "anndata", "numpy", "scipy", "pandas", "h5py", "tqdm"],
+    "imports": [
+      "torch",
+      "anndata",
+      "numpy",
+      "scipy",
+      "pandas",
+      "h5py",
+      "tqdm"
+    ],
     "files": [
       "model-cache/scgpt-whole-human/args.json",
       "model-cache/scgpt-whole-human/best_model.pt",
@@ -96,6 +109,6 @@
       "source/scGPT/scgpt/model/model.py",
       "source/scGPT/scgpt/tokenizer/gene_tokenizer.py"
     ],
-    "pythonCode": "from pathlib import Path\ncheckpoint = torch.load(Path('model-cache/scgpt-whole-human/best_model.pt'), map_location='cpu', weights_only=False)\nassert checkpoint['encoder.embedding.weight'].shape == (60697, 512)\nassert checkpoint['transformer_encoder.layers.0.self_attn.Wqkv.weight'].shape == (1536, 512)"
+    "code": "from pathlib import Path\ncheckpoint = torch.load(Path('model-cache/scgpt-whole-human/best_model.pt'), map_location='cpu', weights_only=False)\nassert checkpoint['encoder.embedding.weight'].shape == (60697, 512)\nassert checkpoint['transformer_encoder.layers.0.self_attn.Wqkv.weight'].shape == (1536, 512)"
   }
 }

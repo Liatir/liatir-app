@@ -10,6 +10,7 @@
 //! lands in a Linux filesystem with its executable layout intact; no custom
 //! archive format or shell extractor exists beside Scrollcase.
 
+use crate::bridge::runtime_boxes::{release_label, RUNTIME_LABEL};
 use scrollcase_consumer::{
     contract::targets::box_target_id,
     prepare::{
@@ -147,7 +148,7 @@ fn inspected_release(
     let actual_target =
         box_target_id(&inspected.release.target).map_err(|error| error.to_string())?;
     if inspected.release.box_id != BOX_ID
-        || inspected.release.runtime_id != RUNTIME_ID
+        || release_label(&inspected.release, RUNTIME_LABEL) != Some(RUNTIME_ID)
         || actual_target != expected_target
     {
         return Err("The signed resource is not the Native Tools box for this host.".into());

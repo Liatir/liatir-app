@@ -33,11 +33,13 @@ import { spawnSync } from 'node:child_process';
 export function signerSmokePayload() {
   const sha = 'a'.repeat(64);
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     kind: 'liatir.runtime-box.release',
     boxId: 'geneformer-v1-10m',
-    modelId: 'ctheodoris-geneformer-v1-10m',
-    runtimeId: 'single-cell-foundation-geneformer-v1-10m',
+    labels: {
+      model: 'ctheodoris-geneformer-v1-10m',
+      runtime: 'single-cell-foundation-geneformer-v1-10m',
+    },
     version: '0.0.0-signer-smoke',
     target: { platform: 'macos', arch: 'aarch64', accelerator: 'metal' },
     compatibility: { minLiatirVersion: '0.2.1', minMacosVersion: '13.0', minRamGb: 8 },
@@ -47,16 +49,16 @@ export function signerSmokePayload() {
       sha256: sha,
       sizeBytes: 1,
     },
-    pythonEntryPoint: 'venv/bin/python',
-    modelCacheSubdir: 'model-cache/geneformer-v1-10m',
-    selfTest: { pythonImports: ['torch'], timeoutSeconds: 180 },
+    runtime: { id: 'python', version: '3.11.15', entryPoint: 'venv/bin/python' },
+    cacheSubdir: 'model-cache/geneformer-v1-10m',
+    selfTest: { probe: { imports: ['torch'] }, timeoutSeconds: 180 },
     provenance: {
       scrollId: 'geneformer-v1-10m-macos-arm64-metal',
       scrollVersion: '1.0.0',
       builderRevision: 'signer-smoke',
       sourceTreeDirty: false,
       sourceRevision: 'signer-smoke',
-      pythonVersion: '3.11.15',
+      runtimeVersion: '3.11.15',
       pixiVersion: '0.73.0',
       dependencyLockSha256: 'b'.repeat(64),
       builtAt: new Date().toISOString(),

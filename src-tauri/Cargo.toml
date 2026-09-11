@@ -62,7 +62,7 @@ ed25519-dalek = "2.1.1"
 # Runtime Box format verification: signature, archive identity, safe extraction and
 # manifest agreement. Liatir keeps the product lifecycle around it (registry, revocation,
 # anti-replay, disk, activation, rollback, removal). Pinned exactly, like the npm builder.
-scrollcase-consumer = "=0.3.2"
+scrollcase-consumer = "=0.4.0"
 
 anyhow = "1.0.100"
 

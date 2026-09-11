@@ -226,10 +226,10 @@ describe('Runtime Box native target selection', () => {
 
   it('carries validated activation metadata from a Job into Result provenance', () => {
     const activation = {
-      schemaVersion: 2,
+      schemaVersion: 3,
       selectedTarget: { platform: 'macos', arch: 'aarch64', accelerator: 'metal' },
       release: { kind: 'liatir.runtime-box.release' },
-      signedRelease: { schemaVersion: 2 },
+      signedRelease: { schemaVersion: 3 },
     } as unknown as LiatirRuntimeBoxActivationMetadata;
     const fromJob = runtimeBoxActivationFromMetadata({ runtimeBoxActivation: activation });
     expect(fromJob).toBe(activation);

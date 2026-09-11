@@ -112,7 +112,7 @@ describe("Liatir contract inversion over Scrollcase", () => {
   });
 
   it("keeps target and immutable object identity byte-compatible", () => {
-    expect(BOX_SCHEMA_VERSION).toBe(2);
+    expect(BOX_SCHEMA_VERSION).toBe(3);
     expect(runtimeBoxTargetId(fixtures.release.target)).toBe(fixtures.expected.targetId);
     expect(boxReleaseStem(fixtures.release)).toBe(fixtures.expected.releaseStem);
     expect(boxReleaseObjectPrefix(fixtures.release)).toBe(fixtures.expected.releaseObjectPrefix);
@@ -174,7 +174,7 @@ describe("Liatir contract inversion over Scrollcase", () => {
       expectSchema("signed-document", signed);
       expect(isSignedBoxDocument(signed)).toBe(true);
       expect(isLiatirSignedRuntimeBoxDocument(signed)).toBe(true);
-      expect(signed.schemaVersion).toBe(2);
+      expect(signed.schemaVersion).toBe(3);
       expect(signed.payloadEncoding).toBe("base64-json-utf8");
       expect(signed.signatures[0].algorithm).toBe("ed25519");
       expect(Buffer.from(signed.payloadBase64, "base64")).toEqual(expectedBytes);

@@ -1,11 +1,13 @@
 {
-  "$schema": "https://scrollcase.dev/schema/v2/scroll.schema.json",
-  "schemaVersion": 2,
+  "$schema": "https://scrollcase.dev/schema/v3/scroll.schema.json",
+  "schemaVersion": 3,
   "scrollId": "uce-4layer-macos-arm64-metal",
   "scrollVersion": "1.0.0",
   "boxId": "uce-4layer",
-  "modelId": "snap-stanford-uce-4layer",
-  "runtimeId": "single-cell-foundation-uce",
+  "labels": {
+    "model": "snap-stanford-uce-4layer",
+    "runtime": "single-cell-foundation-uce"
+  },
   "version": "1.0.0-beta.2",
   "sourceRevision": "8ead6e07af0c80f75653598138bb704e865b45c8",
   "target": {
@@ -18,12 +20,15 @@
     "minMacosVersion": "13.0",
     "minRamGb": 16
   },
-  "pythonVersion": "3.11.15",
+  "runtime": {
+    "id": "python",
+    "version": "3.11.15",
+    "entryPoint": "venv/bin/python"
+  },
   "pixiVersion": "0.73.0",
   "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/uce-4layer-macos-arm64-metal.json",
-  "pythonEntryPoint": "venv/bin/python",
-  "modelCacheSubdir": "model-cache/uce",
-  "assetBaseUrl": "https://assets.models.liatir.com/ai-runtime-boxes",
+  "cacheSubdir": "model-cache/uce",
+  "publishBaseUrl": "https://assets.models.liatir.com/ai-runtime-boxes",
   "assets": [
     {
       "url": "https://ndownloader.figshare.com/files/42706555",
@@ -62,13 +67,6 @@
       "sha256": "fb1284122eb2773c194ccfa6f952a1bfa18218b519f9e83f85b7ceabf2ba88b9"
     }
   ],
-  "localFiles": [
-    {
-      "sourcePath": "runtime-boxes/legal/uce-4layer.md",
-      "relativePath": "THIRD_PARTY_NOTICES/UCE-4LAYER.md",
-      "sha256": "821f57cc6e42d5a896d7e4391bd6d6a54fa263aaa1fc6735bfe70f92ae1fc390"
-    }
-  ],
   "assetArchives": [
     {
       "relativePath": ".sources/uce-source.zip",
@@ -85,8 +83,12 @@
       "removeAfterExtract": true
     }
   ],
-  "uncompressedPaths": [
-    "model-cache/uce/model_files/protein_embeddings"
+  "localFiles": [
+    {
+      "sourcePath": "runtime-boxes/legal/uce-4layer.md",
+      "relativePath": "THIRD_PARTY_NOTICES/UCE-4LAYER.md",
+      "sha256": "821f57cc6e42d5a896d7e4391bd6d6a54fa263aaa1fc6735bfe70f92ae1fc390"
+    }
   ],
   "prunePaths": [
     "source/UCE/README.md",
@@ -97,8 +99,21 @@
     "source/UCE/data_proc/generate_reduced_chrom_files.py",
     "source/UCE/data_proc/preproc_many_dataset.py"
   ],
+  "uncompressedPaths": [
+    "model-cache/uce/model_files/protein_embeddings"
+  ],
   "selfTest": {
-    "imports": ["torch", "scanpy", "accelerate", "anndata", "numpy", "scipy", "pandas", "h5py", "tqdm"],
+    "imports": [
+      "torch",
+      "scanpy",
+      "accelerate",
+      "anndata",
+      "numpy",
+      "scipy",
+      "pandas",
+      "h5py",
+      "tqdm"
+    ],
     "files": [
       "model-cache/uce/model_files/species_offsets.pkl",
       "model-cache/uce/model_files/species_chrom.csv",
@@ -123,6 +138,6 @@
       "source/UCE/model_files/new_species_protein_embeddings.csv",
       "THIRD_PARTY_NOTICES/UCE-4LAYER.md"
     ],
-    "pythonCode": "from pathlib import Path\nimport gc\nimport os\nimport sys\nroot = Path.cwd()\nsource = root / 'source/UCE'\nsys.path.insert(0, str(source))\nos.chdir(source)\nimport evaluate\nmodel_files = root / 'model-cache/uce/model_files'\ncheckpoint = torch.load(model_files / '4layer_model.torch', map_location='cpu')\nassert tuple(checkpoint['pe_embedding.weight'].shape) == (145469, 5120)\nassert tuple(checkpoint['encoder.0.weight'].shape) == (1280, 5120)\ndel checkpoint\ngc.collect()\ntokens = torch.load(model_files / 'all_tokens.torch', map_location='cpu')\nassert tuple(tokens.shape) == (145469, 5120)\ndel tokens\ngc.collect()"
+    "code": "from pathlib import Path\nimport gc\nimport os\nimport sys\nroot = Path.cwd()\nsource = root / 'source/UCE'\nsys.path.insert(0, str(source))\nos.chdir(source)\nimport evaluate\nmodel_files = root / 'model-cache/uce/model_files'\ncheckpoint = torch.load(model_files / '4layer_model.torch', map_location='cpu')\nassert tuple(checkpoint['pe_embedding.weight'].shape) == (145469, 5120)\nassert tuple(checkpoint['encoder.0.weight'].shape) == (1280, 5120)\ndel checkpoint\ngc.collect()\ntokens = torch.load(model_files / 'all_tokens.torch', map_location='cpu')\nassert tuple(tokens.shape) == (145469, 5120)\ndel tokens\ngc.collect()"
   }
 }

@@ -17,7 +17,7 @@ import { runtimeBoxPolicyFingerprint, runtimeBoxTargetId, validateSigningPayload
 const policy = JSON.parse(await readFile(new URL('../policy.json', import.meta.url), 'utf8'));
 /** A known-good release, used as the baseline that each rejection test then perturbs one field of. */
 const release = {
-  schemaVersion: 2,
+  schemaVersion: 3,
   kind: 'liatir.runtime-box.release',
   boxId: 'geneformer-v1-10m',
   modelId: 'ctheodoris-geneformer-v1-10m',

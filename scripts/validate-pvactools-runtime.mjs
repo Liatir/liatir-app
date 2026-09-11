@@ -28,7 +28,7 @@ const {
   defaultRecipeId: 'pvactools-pvacseq-macos-aarch64-cpu',
   runtimeDirectoryEnvironment: 'LIATIR_PVACTOOLS_RUNTIME_DIR',
 });
-if (RECIPE.modelId !== MODEL_ID || RECIPE.sourceRevision !== SOURCE_REVISION) {
+if (RECIPE.labels.model !== MODEL_ID || RECIPE.sourceRevision !== SOURCE_REVISION) {
   throw new Error('pVACseq validation provenance differs from the pinned Tool Runtime contract.');
 }
 
@@ -265,7 +265,7 @@ try {
     provenance: {
       recipeId: AUTHORING_ID,
       recipeVersion: AUTHORING_VERSION,
-      pythonVersion: RECIPE.pythonVersion,
+      pythonVersion: RECIPE.runtime.version,
       ...builderVersionFields(RECIPE),
       dependencyLockSha256: DEPENDENCY_LOCK_SHA256,
     },

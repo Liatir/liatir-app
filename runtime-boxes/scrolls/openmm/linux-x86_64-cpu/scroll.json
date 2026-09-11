@@ -1,11 +1,13 @@
 {
-  "$schema": "https://scrollcase.dev/schema/v2/scroll.schema.json",
-  "schemaVersion": 2,
+  "$schema": "https://scrollcase.dev/schema/v3/scroll.schema.json",
+  "schemaVersion": 3,
   "scrollId": "openmm-linux-x86_64-cpu",
   "scrollVersion": "1.0.0",
   "boxId": "openmm",
-  "modelId": "openmm-openmm",
-  "runtimeId": "molecular-simulation-openmm-8-5-1",
+  "labels": {
+    "model": "openmm-openmm",
+    "runtime": "molecular-simulation-openmm-8-5-1"
+  },
   "version": "8.5.1-beta.1",
   "sourceRevision": "8.5.1+openmmforcefields-0.16.0+openff-toolkit-0.17.1+openff-sage-2.3.0+nagl-0.5.5",
   "target": {
@@ -16,14 +18,20 @@
   "compatibility": {
     "minLiatirVersion": "0.2.1",
     "minRamGb": 8,
-    "hostEnvironments": ["native", "windows-wsl2"]
+    "hostEnvironments": [
+      "native",
+      "windows-wsl2"
+    ]
   },
-  "pythonVersion": "3.11.16",
+  "runtime": {
+    "id": "python",
+    "version": "3.11.16",
+    "entryPoint": "venv/bin/python"
+  },
   "pixiVersion": "0.73.0",
   "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/openmm-linux-x86_64-cpu.json",
-  "pythonEntryPoint": "venv/bin/python",
-  "modelCacheSubdir": "venv/lib/python3.11/site-packages/openff/nagl_models/models/am1bcc",
-  "assetBaseUrl": "https://assets.models.liatir.com/ai-runtime-boxes",
+  "cacheSubdir": "venv/lib/python3.11/site-packages/openff/nagl_models/models/am1bcc",
+  "publishBaseUrl": "https://assets.models.liatir.com/ai-runtime-boxes",
   "assets": [
     {
       "url": "https://codeload.github.com/openmm/openmmforcefields/tar.gz/refs/tags/0.16.0",
@@ -98,7 +106,7 @@
       "venv/lib/python3.11/site-packages/liatir_openmm_bootstrap.py",
       "venv/lib/python3.11/site-packages/liatir-openmm.pth"
     ],
-    "pythonCode": "import os\nfrom pathlib import Path\nos.environ['LIATIR_EXPECTED_OPENMM_ACCELERATOR'] = 'cpu'\ncode = Path('self-tests/openmm.py').read_text(encoding='utf-8')\nexec(compile(code, 'self-tests/openmm.py', 'exec'), {'__name__': '__main__'})"
+    "code": "import os\nfrom pathlib import Path\nos.environ['LIATIR_EXPECTED_OPENMM_ACCELERATOR'] = 'cpu'\ncode = Path('self-tests/openmm.py').read_text(encoding='utf-8')\nexec(compile(code, 'self-tests/openmm.py', 'exec'), {'__name__': '__main__'})"
   },
   "environment": {
     "PYTHONNOUSERSITE": "1"

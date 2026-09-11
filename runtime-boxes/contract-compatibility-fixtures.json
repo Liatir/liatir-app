@@ -1,10 +1,8 @@
 {
   "release": {
-    "schemaVersion": 2,
+    "schemaVersion": 3,
     "kind": "liatir.runtime-box.release",
     "boxId": "fixture",
-    "modelId": "liatir-fixture",
-    "runtimeId": "fixture-runtime",
     "version": "1.0.0",
     "target": {
       "platform": "macos",
@@ -27,12 +25,12 @@
       "sizeBytes": 1024
     },
     "installedSizeBytes": 2048,
-    "pythonEntryPoint": "venv/bin/python",
-    "modelCacheSubdir": "model-cache/fixture",
     "selfTest": {
-      "pythonImports": [
-        "json"
-      ],
+      "probe": {
+        "imports": [
+          "json"
+        ]
+      },
       "timeoutSeconds": 10
     },
     "provenance": {
@@ -41,14 +39,24 @@
       "builderRevision": "0123456789abcdef0123456789abcdef01234567",
       "sourceTreeDirty": false,
       "sourceRevision": "fixture-source-v2",
-      "pythonVersion": "3.11.9",
       "pixiVersion": "0.50.0",
       "dependencyLockSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "builtAt": "2026-07-26T12:00:00.000Z"
-    }
+      "builtAt": "2026-07-26T12:00:00.000Z",
+      "runtimeVersion": "3.11.9"
+    },
+    "labels": {
+      "model": "liatir-fixture",
+      "runtime": "fixture-runtime"
+    },
+    "runtime": {
+      "id": "python",
+      "version": "3.11.9",
+      "entryPoint": "venv/bin/python"
+    },
+    "cacheSubdir": "model-cache/fixture"
   },
   "channel": {
-    "schemaVersion": 2,
+    "schemaVersion": 3,
     "kind": "liatir.runtime-box.channel",
     "channel": "beta",
     "boxId": "fixture",
@@ -68,7 +76,7 @@
     ]
   },
   "revocations": {
-    "schemaVersion": 2,
+    "schemaVersion": 3,
     "kind": "liatir.runtime-box.revocations",
     "updatedAt": "2026-07-26T12:00:00.000Z",
     "revocations": [

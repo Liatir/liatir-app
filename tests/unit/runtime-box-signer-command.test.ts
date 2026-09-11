@@ -49,7 +49,7 @@ function envelope(
   signedBytes = payload,
 ) {
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     payloadEncoding: 'base64-json-utf8',
     payloadBase64: payload.toString('base64'),
     payloadSha256: createHash('sha256').update(payload).digest('hex'),

@@ -1,11 +1,13 @@
 {
-  "$schema": "https://scrollcase.dev/schema/v2/scroll.schema.json",
-  "schemaVersion": 2,
+  "$schema": "https://scrollcase.dev/schema/v3/scroll.schema.json",
+  "schemaVersion": 3,
   "scrollId": "installer-fixture-windows-x86_64",
   "scrollVersion": "1.0.0",
   "boxId": "runtime-box-installer-fixture",
-  "modelId": "liatir-runtime-box-fixture",
-  "runtimeId": "runtime-box-installer-fixture",
+  "labels": {
+    "model": "liatir-runtime-box-fixture",
+    "runtime": "runtime-box-installer-fixture"
+  },
   "version": "0.1.0",
   "sourceRevision": "internal-fixture-v2",
   "target": {
@@ -16,14 +18,19 @@
   "compatibility": {
     "minLiatirVersion": "0.2.1",
     "minRamGb": 1,
-    "hostEnvironments": ["native"]
+    "hostEnvironments": [
+      "native"
+    ]
   },
-  "pythonVersion": "3.11.15",
+  "runtime": {
+    "id": "python",
+    "version": "3.11.15",
+    "entryPoint": "venv/python.exe"
+  },
   "pixiVersion": "0.73.0",
   "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/installer-fixture-windows-x86_64-conda.json",
-  "pythonEntryPoint": "venv/python.exe",
-  "modelCacheSubdir": "model-cache/fixture",
-  "assetBaseUrl": "http://127.0.0.1:8790/objects",
+  "cacheSubdir": "model-cache/fixture",
+  "publishBaseUrl": "http://127.0.0.1:8790/objects",
   "assets": [],
   "localFiles": [
     {
@@ -33,12 +40,19 @@
     }
   ],
   "selfTest": {
-    "imports": ["json", "sqlite3"],
-    "files": ["execution-input.json"]
+    "imports": [
+      "json",
+      "sqlite3"
+    ],
+    "files": [
+      "execution-input.json"
+    ]
   },
   "execution": {
     "kind": "python-module",
     "module": "json.tool",
-    "defaultArgs": ["execution-input.json"]
+    "defaultArgs": [
+      "execution-input.json"
+    ]
   }
 }

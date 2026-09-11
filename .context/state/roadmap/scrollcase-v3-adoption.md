@@ -1,7 +1,30 @@
 # Adopting Scrollcase v3, and what it unblocks
 
-Opened 2026-09-11. **Status: not started.** This is the prerequisite for Boltz-2 and both Protenix
-variants, and it is a real migration rather than a version bump.
+Opened 2026-09-11. **Status: the code is migrated and green; the boxes are not rebuilt yet.**
+
+Done: `scrollcase@1.1.1` and `scrollcase-consumer 0.4.0` pinned, all 22 scrolls rewritten and
+accepted by `audit`, the Rust bridge, the WSL2 consumer, the shared contract, every script, the
+signer service, the registry worker and the whole test suite moved to the v3 shape.
+`test:verify` passes 6/6 with 586 unit tests, `cargo test` 102, Clippy clean.
+
+Not done: **the nine published boxes are still v2 artefacts** and must be rebuilt, and the
+`native-tools` box bundled in the app must be rebuilt before `test:ui` can run.
+
+## What the migration actually touched
+
+Beyond the field renames the guide lists, three things in Liatir turned out to hold a Scrollcase
+document version of their own, and all three moved to 3 with the rest: the **signer service**
+policy and its response envelope, the **registry worker**'s route validators, and the app's
+`RUNTIME_BOX_SCHEMA_VERSION`, which is the only wire format the binary accepts.
+
+That last one is the field-migration risk worth stating plainly: **an app built from this commit
+refuses every box now in the field**, by name, and the registry will serve v3 documents once the
+rebuilds land. The two have to ship together, or an installed app is left unable to read what it
+already has. The v1→v2 cutover handled the same problem and is the precedent to follow.
+
+Two Scrollcase defects were found and fixed upstream on the way through: PyPI licences
+(`scrollcase@1.1.0`) and a box that downloads an archive and expands it, which **14 of the 22
+scrolls** do (`scrollcase@1.1.1`).
 
 ## Why this exists
 
@@ -20,16 +43,18 @@ Full evidence for the blocker is in [the Boltz source review](./phase3-boltz-sou
 
 ## Order of work
 
-1. **Scrollcase 1.x — declared PyPI licences.** A scroll may point at a reviewed inventory
-   supplying the licence for distributions the lock does not declare, mirroring the existing
-   `bundledLicenseDeclaration`. Liatir's reviewed input already exists:
+1. ✅ **Scrollcase 1.x — declared PyPI licences.** `pypiLicenseDeclaration` shipped in
+   `scrollcase@1.1.0`. Liatir's reviewed input already exists:
    `runtime-boxes/legal/audits/boltz-2-linux-x86_64-cuda12.9-pypi.json`, produced by
    `scripts/runtime-box/pypi-license-inventory.py`.
-2. **Liatir adopts Scrollcase 1.x.** Doing this after step 1 means migrating once, to a version
-   that already carries what Boltz needs.
-3. **Rebuild and republish the nine published boxes** as v3 artefacts. Separately authorized, and
-   the reason this is not a quiet dependency bump.
-4. **Then Boltz-2**: scroll, local build with a development key, `verify --self-test`, product
+2. ✅ **Liatir adopts Scrollcase 1.x.** Done in one pass, to a version that already carries what
+   Boltz needs.
+3. ⏳ **Rebuild the nine published boxes** as v3 artefacts, and the bundled `native-tools` box.
+   A rebuild is enough to prove the scroll: each model's science was already validated and does
+   not need repeating, by the owner's decision of 2026-09-11.
+4. ⏳ **Republish**, together with an app build that can read v3. Separately authorized, and the
+   reason this is not a quiet dependency bump.
+5. ⏳ **Then Boltz-2**: scroll, local build with a development key, `verify --self-test`, product
    runner, scientific validator, real inputs, measurements.
 
 ## What the format change touches in Liatir

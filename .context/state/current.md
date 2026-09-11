@@ -1,5 +1,25 @@
 # Current project status
 
+## Liatir runs on Scrollcase v3 (2026-09-11)
+
+The code migration is complete and green: `scrollcase@1.1.1` and `scrollcase-consumer 0.4.0`,
+**all 22 scrolls** rewritten and accepted by `audit`, and the Rust bridge, the WSL2 consumer, the
+shared contract, every script, the signer service, the registry worker and the whole test suite
+moved to the v3 shape. `test:verify` 6/6 with 586 unit tests, `cargo test` 102 passed, Clippy
+clean.
+
+**The boxes are not rebuilt yet, and that matters more than it sounds.** An app built from this
+commit accepts only v3 and refuses every box in the field *by name*; the registry will serve v3
+documents once the rebuilds land. App and boxes have to ship together, exactly as the v1→v2 cutover
+did. The plan and every field it touched are in
+[Adopting Scrollcase v3](./roadmap/scrollcase-v3-adoption.md).
+
+Getting here needed **two upstream fixes**, both found by migrating rather than by reading: PyPI
+licences, which pixi never records (`scrollcase@1.1.0`), and a box that downloads an archive and
+expands it — refused since 1.0.0 because no Scrollcase example does it, while **14 of Liatir's 22
+scrolls** do (`scrollcase@1.1.1`). A third fix is open upstream: the npm publish workflow has
+never worked, and both releases so far went out by hand.
+
 ## The home page leads with what is actually distinctive (2026-09-11)
 
 The public home page sold native speed, privacy and extensibility. Two of those are true and one —

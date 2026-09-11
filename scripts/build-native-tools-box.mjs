@@ -141,7 +141,7 @@ function assertExpectedRelease(releasePath, targetId) {
   if (release.kind !== `${NAMESPACE}.release`
       || release.boxId !== BOX_ID
       || release.version !== BOX_VERSION
-      || release.runtimeId !== 'native-tools') {
+      || release.labels?.runtime !== 'native-tools') {
     throw new Error(`Unexpected Native Tools Scrollcase release identity in ${releasePath}.`);
   }
   const target = `${release.target.platform}-${release.target.arch}-${release.target.accelerator}`;

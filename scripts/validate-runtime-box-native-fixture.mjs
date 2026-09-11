@@ -105,7 +105,7 @@ async function startFixtureSigner(privatePath, publicPath) {
       assert.equal(sha256(payload), input.payloadSha256);
       response.writeHead(200, { 'content-type': 'application/json' });
       response.end(`${JSON.stringify({
-        schemaVersion: 2,
+        schemaVersion: 3,
         payloadEncoding: 'base64-json-utf8',
         payloadBase64: input.payloadBase64,
         payloadSha256: input.payloadSha256,
