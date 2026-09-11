@@ -8,11 +8,15 @@ shared contract, every script, the signer service, the registry worker and the w
 moved to the v3 shape. `test:verify` 6/6 with 586 unit tests, `cargo test` 102 passed, Clippy
 clean.
 
-**The boxes are not rebuilt yet, and that matters more than it sounds.** An app built from this
-commit accepts only v3 and refuses every box in the field *by name*; the registry will serve v3
-documents once the rebuilds land. App and boxes have to ship together, exactly as the v1→v2 cutover
-did. The plan and every field it touched are in
-[Adopting Scrollcase v3](./roadmap/scrollcase-v3-adoption.md).
+**Every box this machine can build is rebuilt: eight of eight, no failure** — `native-tools`,
+mhcflurry Linux CPU, pvactools Linux CPU, scGPT Linux CPU and CUDA, Geneformer Linux CUDA, and both
+OpenMM Linux targets. Each passed its own self-test before signing, which is what proves the scroll;
+the science was not repeated. The five macOS boxes need a Mac.
+
+**App and boxes have to ship together.** An app built from this commit accepts only v3 and refuses
+every box in the field *by name*; the registry serves v3 once the rebuilds are published. That is
+the v1→v2 cutover again. The plan, every field it touched, and the three defects the rebuilds
+uncovered are in [Adopting Scrollcase v3](./roadmap/scrollcase-v3-adoption.md).
 
 Getting here needed **two upstream fixes**, both found by migrating rather than by reading: PyPI
 licences, which pixi never records (`scrollcase@1.1.0`), and a box that downloads an archive and

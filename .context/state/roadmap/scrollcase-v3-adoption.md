@@ -1,35 +1,54 @@
 # Adopting Scrollcase v3, and what it unblocks
 
-Opened 2026-09-11. **Status: the code is migrated and green; the boxes are not rebuilt yet.**
+Opened 2026-09-11. **Status: the code is migrated and green, and every box outside macOS is
+rebuilt.**
 
 Done: `scrollcase@1.1.1` and `scrollcase-consumer 0.4.0` pinned, all 22 scrolls rewritten and
 accepted by `audit`, the Rust bridge, the WSL2 consumer, the shared contract, every script, the
 signer service, the registry worker and the whole test suite moved to the v3 shape.
 `test:verify` passes 6/6 with 586 unit tests, `cargo test` 102, Clippy clean.
 
-Not done: **the thirteen published boxes are still v2 artefacts** and must be rebuilt, and the
-`native-tools` box bundled in the app must be rebuilt before `test:ui` can run.
+**Every box this machine can build is rebuilt as v3, eight of eight, with no failure** (2026-09-11):
+`native-tools`, mhcflurry Linux CPU, pvactools Linux CPU, scGPT Linux CPU and CUDA, Geneformer
+Linux CUDA, and both OpenMM Linux targets. Each passed its own self-test before it was signed,
+which is the check that says the scroll is right; the science was not repeated, by the owner's
+decision. They are development-key artefacts under `.runtime-box-dist/`, not publications.
+
+Not done: **the five macOS boxes**, which need a Mac.
+
+## What the rebuilds cost, and why
+
+Three defects stood between a migrated scroll and a built box, and every one of them fired *after*
+the multi-gigabyte environment had been solved and packed:
+
+1. **The build directory has to be on a Linux filesystem.** A conda compiler sysroot carries
+   `xt_CONNMARK.h` beside `xt_connmark.h`; on the NTFS behind `/mnt/<drive>` those are one file, and
+   conda-pack refuses with 205 packages reporting deleted contents. `SCROLLCASE_BUILD_DIR` moves
+   only the extracted prefix.
+2. **The Native Tools authoring inputs were the only hash-pinned files the scroll tree does not
+   hold, and `.gitattributes` did not cover them**, so a Windows checkout delivered CRLF and the
+   build stopped at a SHA-256 mismatch.
+3. **A scroll's `pixiVersion` is not advisory.** Every model scroll pins 0.73.0 and `native-tools`
+   pins 0.77.0; building with whichever pixi is on `PATH` is refused by name. The rebuild script
+   reads the version from each scroll and installs that one.
+
+Plus `--weights embed`, a flag version 3 removed rather than renamed.
 
 ## Which machine rebuilds what
 
 A box is built on the platform it is built *for*, and that is independent of how it is reached.
 Windows users get a Linux payload through WSL2, but a macOS box exists because macOS users run one
-natively — there is no WSL2 on a Mac — and three Windows-native boxes remain published by the
-owner's decision to leave shipped artefacts alone.
+natively — there is no WSL2 on a Mac.
 
-| Platform | Published targets | Rebuilt where |
-| --- | ---: | --- |
-| Linux | 5 | this machine, inside WSL2 |
-| macOS | 5 | needs a Mac |
+| Platform | Published targets | Rebuilt where | Done |
+| --- | ---: | --- | --- |
+| Linux | 5 | this machine, inside WSL2 | ✅ all five, plus `native-tools` and both OpenMM targets |
+| macOS | 5 | needs a Mac | ⏳ |
 
 The three native Windows targets were **retired** on 2026-09-11 rather than rebuilt — see
 [no native Windows Runtime Box targets](../../decisions/no-native-windows-runtime-box-targets.md).
-Their Linux counterparts now declare `windows-wsl2` and carry those users.
-
-The three Windows-native targets are `geneformer-v1-10m/windows-x86_64-cuda12.8`,
-`scgpt-whole-human/windows-x86_64-cpu` and `scgpt-whole-human/windows-x86_64-cuda12.8`. Only two of
-the published Linux targets declare `windows-wsl2` at all — mhcflurry and pvactools; the other three
-serve Linux hosts.
+Their Linux counterparts now declare `windows-wsl2` and carry those users, which is why all five
+Linux targets do.
 
 ## What the migration actually touched
 
@@ -70,9 +89,10 @@ Full evidence for the blocker is in [the Boltz source review](./phase3-boltz-sou
    `scripts/runtime-box/pypi-license-inventory.py`.
 2. ✅ **Liatir adopts Scrollcase 1.x.** Done in one pass, to a version that already carries what
    Boltz needs.
-3. ⏳ **Rebuild the thirteen published boxes** as v3 artefacts, and the bundled `native-tools` box.
+3. 🟡 **Rebuild every published box** as a v3 artefact, plus the bundled `native-tools` box.
    A rebuild is enough to prove the scroll: each model's science was already validated and does
-   not need repeating, by the owner's decision of 2026-09-11.
+   not need repeating, by the owner's decision of 2026-09-11. Eight done on Linux and Windows;
+   five macOS boxes remain.
 4. ⏳ **Republish**, together with an app build that can read v3. Separately authorized, and the
    reason this is not a quiet dependency bump.
 5. ⏳ **Then Boltz-2**: scroll, local build with a development key, `verify --self-test`, product
