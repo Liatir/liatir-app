@@ -1582,7 +1582,15 @@ const MODEL_LABEL: &str = "model";
 /// Liatir routes on both, so they travel as labels now — and a release carrying neither was not
 /// built by this project, which is what every caller treats a `None` as.
 pub(crate) fn release_label<'a>(release: &'a ReleaseManifest, key: &str) -> Option<&'a str> {
-    release.labels.as_ref()?.get(key).map(String::as_str)
+    label(release.labels.as_ref(), key)
+}
+
+/// The same lookup for a prepared box, which hands back its labels already extracted.
+pub(crate) fn label<'a>(
+    labels: Option<&'a std::collections::BTreeMap<String, String>>,
+    key: &str,
+) -> Option<&'a str> {
+    labels?.get(key).map(String::as_str)
 }
 
 /// The Liatir runtime a release provides, where the caller cannot continue without one.

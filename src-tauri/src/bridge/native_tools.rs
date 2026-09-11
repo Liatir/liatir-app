@@ -10,7 +10,7 @@
 //! lands in a Linux filesystem with its executable layout intact; no custom
 //! archive format or shell extractor exists beside Scrollcase.
 
-use crate::bridge::runtime_boxes::{release_label, RUNTIME_LABEL};
+use crate::bridge::runtime_boxes::{label, release_label, RUNTIME_LABEL};
 use scrollcase_consumer::{
     contract::targets::box_target_id,
     prepare::{
@@ -512,7 +512,7 @@ fn ensure_prepared(app: &AppHandle) -> Result<PathBuf, String> {
     }
     .map_err(|error| error.to_string())?;
     if prepared.box_id() != BOX_ID
-        || prepared.runtime_id() != RUNTIME_ID
+        || label(prepared.labels(), RUNTIME_LABEL) != Some(RUNTIME_ID)
         || prepared.target_id() != target_id().unwrap_or_default()
     {
         return Err("The prepared box is not the Native Tools box for this host.".into());
