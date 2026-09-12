@@ -68,7 +68,43 @@ the upstream source LICENSE is Apache-2.0 and separately attributes reused Layer
 
 ## Re-checked 2026-09-11: one blocker is upstream's, the other is ours
 
-### v2's official weights are still unreachable, and there is no second source
+### v2 is withheld on purpose, and upstream has said so
+
+**Answered 2026-09-12, by ByteDance rather than by inference.** The 403 is not a misconfiguration
+and not a transient fault: the checkpoint is deliberately closed while an internal authorisation
+runs. Collaborator `@zhangyuxuann` posted the same reply on two issues on 2026-04-09:
+
+> the accessibility of the protenix-v2 checkpoint is currently under review as part of our
+> company-level internal evaluation process. We are unable to provide a specific timeline at this
+> stage.
+
+Five months on there is no update, and four issues remain open —
+[#294](https://github.com/bytedance/Protenix/issues/294),
+[#296](https://github.com/bytedance/Protenix/issues/296),
+[#309](https://github.com/bytedance/Protenix/issues/309),
+[#332](https://github.com/bytedance/Protenix/issues/332).
+
+The restriction is precise rather than broad. Of the **19 URLs `dependency_url.py` publishes, 18
+serve and exactly one does not**: the ESM2 3B weights, every other Protenix checkpoint — base,
+mini, tiny, both v0.5.0 and v1.0.0 — and all five common data files answer 206 to a ranged request.
+Only `checkpoint/protenix-v2.pt` returns `{"Code":"AccessDenied", ... "DetailErrCode":14006}` from
+TosServer. `AccessDenied` rather than `NoSuchKey` says the object exists and its permissions forbid
+reading, which matches what the collaborator described. The URL on `main` today is byte-identical to
+the one at the reviewed commit, so nothing has moved.
+
+**The community mirror is now definitively rejected, on its uploader's own word.** A Hugging Face
+copy circulates in #309, and the owner of that repository commented there:
+
+> just be aware I have no affiliation with the Protenix team
+
+Asked directly how they obtained the weights, they did not answer. Redistributing, inside a box
+Liatir signs, a file the publisher deliberately withheld — re-uploaded by someone who disclaims
+affiliation and will not say where it came from — would be asserting a provenance we cannot show.
+
+**This is not a Liatir blocker to solve.** It is ByteDance's authorisation to finish. The component
+waits, and Boltz-2 already covers structure prediction with validated evidence.
+
+### The original observation, and why there is no second source
 
 `checkpoint/protenix-v2.pt` returned **HTTP 403** again, five days after the first observation, while
 every other object in the same bucket answered 200 on the same request — `protenix_mini_default_v0.5.0.pt`

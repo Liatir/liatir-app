@@ -64,11 +64,15 @@ pin bump is a prerequisite rather than a tidy-up.
 
 ### Protenix: one half is unblocked, the other is not ours to unblock
 
-**Protenix v2 is blocked upstream.** `checkpoint/protenix-v2.pt` returned HTTP 403 again, five days
-after the first observation, while every other object in the same bucket answered 200 on the same
-request. ByteDance publishes no Protenix weights on Hugging Face and attaches none to any GitHub
-release. Third-party re-uploads exist and stay rejected — a box's provenance claim is worth only the
-source it names. Either the object becomes public or the component waits.
+**Protenix v2 is withheld on purpose, and ByteDance has said so.** Of the 19 URLs upstream publishes,
+**18 serve and exactly one does not** — `checkpoint/protenix-v2.pt`, which answers
+`AccessDenied` (the object exists; its permissions forbid reading). A ByteDance collaborator replied
+on 2026-04-09 that "the accessibility of the protenix-v2 checkpoint is currently under review as
+part of our company-level internal evaluation process", with no timeline. Five months on, four
+issues are still open. The community Hugging Face mirror is rejected on its uploader's own word —
+they state no affiliation with the Protenix team and did not answer when asked where the weights
+came from. **This is not ours to solve**: it is an internal authorisation to finish, and Boltz-2
+already covers structure prediction with validated evidence.
 
 **Protenix Mini now resolves**, after the reviewed manifest turned out to have no conda-first
 solution at all: conda-forge's `torchvision 0.22.1` constrains `numpy <2.4` while upstream pins
@@ -84,6 +88,26 @@ All 116 of its PyPI licences are reviewed, and **two of them should not be there
 Protenix never imports — not once in 145 files. They arrive because `requirements.txt` lists them and
 `setup.py` reads that file verbatim. That is a redistribution obligation taken on for no capability,
 and it belongs upstream rather than in our box.
+
+### Every local box on this machine is signed by a throwaway key
+
+Worth knowing before anyone tries to reuse these artefacts, and directly relevant to the macOS
+session waiting on "the OpenMM signing key". **The nine boxes rebuilt here carry
+`scrollcase-3ebd4c3de1b804b0`** — a key the rebuild script minted for itself on 2026-09-11, held in
+the WSL home directory. `native-tools` carries a *different* throwaway, `scrollcase-36c922f5b5e80ba1`,
+from its own build script.
+
+Neither is in either trust root the repository ships:
+`runtime-boxes/trust/production-public.json` names `liatir-runtime-box-production-2026` and
+`liatir-runtime-box-kms-2026`; `development-public.json` names
+`liatir-runtime-box-development-2026`. So these boxes are **local artefacts only** — no other
+machine and no release build would accept them, and nothing here is a step toward publication,
+which signs with the KMS key inside GitHub Actions.
+
+The consequence for macOS: there is no canonical per-box development key to recover. Each build
+script generates one unless it is handed a key, which is why identities differ between machines.
+Deciding whether this project wants one shared development identity, or accepts per-machine keys
+because only CI signatures ever travel, is the owner's call and has not been made.
 
 ### What Boltz-2 still needs
 
@@ -147,7 +171,6 @@ stale: `ai-models` differs from its August baseline by 96%, so `npm run test:vis
 `main` before anything is touched, and refreshing all eight would silently accept whatever the UI
 looks like now. And the editor is not pixel-stable — captured twice from one binary it differs by
 ~2% while `/jobs` differs by 0% — so it is deliberately not in the visual smoke.
-
 
 ## Liatir runs on Scrollcase v3 (2026-09-11)
 
