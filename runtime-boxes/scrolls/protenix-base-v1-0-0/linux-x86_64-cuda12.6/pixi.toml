@@ -11,12 +11,15 @@
 # conda terms is what made them unsatisfiable; declining to restate them is what honours them.
 # See ../../../../.context/decisions/protenix-resolves-through-pypi.md
 [workspace]
-name = "protenix-base-v1-0-0-linux-x86_64-cuda12.9"
+name = "protenix-base-v1-0-0-linux-x86_64-cuda12.6"
 channels = ["conda-forge"]
 platforms = ["linux-64"]
 
+# PyTorch comes from PyPI and brings its own CUDA runtime — 12.6, as its wheels are
+# built — so this declares the GPU generation the box needs rather than a conda channel
+# selector. The target is named for what the box actually carries.
 [system-requirements]
-cuda = "12.9"
+cuda = "12.6"
 
 [dependencies]
 python = "3.11.*"

@@ -3,7 +3,7 @@ platforms:
 - name: p1
   subdir: linux-64
   virtual-packages:
-  - __cuda=12.9
+  - __cuda=12.6
   - __unix=0=0
   - __linux=4.18
   - __glibc=2.28

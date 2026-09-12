@@ -1,8 +1,8 @@
 {
   "schemaVersion": 2,
   "kind": "scrollcase.box.dependency-license-audit",
-  "targetId": "linux-x86_64-cuda12.9",
-  "dependencyLockSha256": "5286b511325287a879d52c65bc1df5f8f4f3b24996b0cd7da28085c6c42c07d3",
+  "targetId": "linux-x86_64-cuda12.6",
+  "dependencyLockSha256": "780e5a8c74b614be792aaea9dc231e27289add9436097e8869d2e455007b7d4f",
   "packages": [
     {
       "name": "_openmp_mutex",

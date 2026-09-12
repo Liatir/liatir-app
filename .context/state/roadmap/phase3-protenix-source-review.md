@@ -225,6 +225,25 @@ Every advertised size matched the bytes actually received. `components.cif` is t
 Chemical Component Dictionary that Boltz-2 bundles in a different form, so the CC0 provenance
 established in [the Boltz legal record](../../../runtime-boxes/legal/boltz-2.md) covers it too.
 
+### The target is CUDA 12.6, because that is what the box contains
+
+The first successful build reported its own environment and caught a label that was wrong:
+
+```json
+{"torchVersion": "2.7.1+cu126", "cudaVersion": "12.6", "numpyVersion": "2.4.1", "status": "passed"}
+```
+
+The scroll said `cuda12.9`. Taking PyTorch from PyPI means the CUDA runtime arrives in the
+`nvidia-*` wheels rather than from conda-forge, and those wheels are built against **12.6**. Every
+other CUDA box in this project is labelled 12.9 and genuinely contains 12.9; this one would have
+been the exception that quietly said otherwise.
+
+The target is therefore **`linux-x86_64-cuda12.6`**, and the pixi manifest's system requirement
+matches. Nothing about installation changes: the app gates a CUDA box on
+`minNvidiaDriverVersion`, not on this field, and `525.60.13` covers 12.6 as it covers 12.9. What
+changes is that the identity a signature vouches for is true. The box had never been published, so
+the rename cost a rebuild and nothing else.
+
 ### Three defaults a self-contained box has to turn off
 
 Every one of these was found by running the thing, not by reading it, and all three are the same

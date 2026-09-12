@@ -37,7 +37,7 @@ const {
   recipe, authoringId, authoringVersion, runtimeDir, python, targetId, dependencyLockSha256,
 } = await loadRuntimeBoxValidatorContext({
   root: ROOT,
-  defaultRecipeId: 'protenix-base-v1-0-0-linux-x86_64-cuda12.9',
+  defaultRecipeId: 'protenix-base-v1-0-0-linux-x86_64-cuda12.6',
   runtimeDirectoryEnvironment: 'LIATIR_PROTENIX_RUNTIME_DIR',
 });
 assert.equal(recipe.labels.model, COMPONENT_ID);
@@ -350,7 +350,7 @@ try {
       measurementScriptSha256: sha256(await readFile(measurementPath)),
       comparisonScriptSha256: sha256(COMPARE_SCRIPT),
       recipeSha256: sha256(await readFile(
-        join(ROOT, 'runtime-boxes/scrolls/protenix-base-v1-0-0/linux-x86_64-cuda12.9/scroll.json'),
+        join(ROOT, 'runtime-boxes/scrolls/protenix-base-v1-0-0/linux-x86_64-cuda12.6/scroll.json'),
       )),
     },
     provenance: {
