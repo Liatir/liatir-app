@@ -104,10 +104,22 @@ Neither is in either trust root the repository ships:
 machine and no release build would accept them, and nothing here is a step toward publication,
 which signs with the KMS key inside GitHub Actions.
 
-The consequence for macOS: there is no canonical per-box development key to recover. Each build
-script generates one unless it is handed a key, which is why identities differ between machines.
-Deciding whether this project wants one shared development identity, or accepts per-machine keys
-because only CI signatures ever travel, is the owner's call and has not been made.
+**On the Mac it turned out otherwise, and the artefacts say so.** That machine already had named
+per-box development keys, so six of its seven boxes are signed by a stable identity rather than a
+throwaway: `liatir-geneformer-v1-10m-development`, `liatir-scgpt-whole-human-development`,
+`liatir-uce-4layer-development`, `liatir-mhcflurry-class1-presentation-development`,
+`liatir-pvactools-pvacseq-development` and `liatir-openmm-development`. Only `native-tools` carries
+a throwaway there too — `scrollcase-78cf89903ffd89db` — because its own build script mints one, the
+same behaviour seen on Linux.
+
+So a build script generates a key only when it is not handed one, and the difference between the two
+machines is which keys happened to be present, not a rule about macOS. The keys are not laid out
+uniformly even on the Mac: five live in a directory named after their box, while OpenMM's sits at
+the root of the local key directory, which is why it first read as missing.
+
+None of this changes the conclusion above — every one of these is a local identity, in no trust
+root, and only CI signatures travel. Whether the project wants one shared development identity, or
+accepts per-machine keys, is the owner's call and has not been made.
 
 ### What Boltz-2 still needs
 
@@ -126,13 +138,10 @@ Geneformer, scGPT, UCE and mhcflurry on `macos-aarch64-metal`, pvactools and Ope
 set — the science was not repeated. With the eight from Linux, **every published box now exists as a
 v3 development artefact** under `.runtime-box-dist/`, and nothing is left to rebuild.
 
-**The local signing keys are not all in one place.** Five boxes have a per-box key in a directory
-named after the box; OpenMM signs with the key at the *root* of the machine's local key directory,
-under the id `liatir-openmm-development`. Looking only in the per-box layout makes OpenMM read as a
-box with no key at all, which turns a routine build into a blocked one. Neither is a trust root:
-`runtime-boxes/trust/` holds `liatir-runtime-box-development-2026` and
-`liatir-runtime-box-production-2026`, which are the publication and CI identities rather than what
-signs a local development artefact.
+**OpenMM was recorded as blocked for an hour on a key that was there all along**, because it is the
+one box whose key sits at the root of the local key directory instead of in a directory named after
+the box. Which identity signed what, on both machines, is under *Every local box on this machine is
+signed by a throwaway key* above.
 
 **Two things cost real time and are worth knowing before the next run.** A dirty working tree stops
 a build outright — Scrollcase refuses, correctly, and four boxes failed in one second each before
