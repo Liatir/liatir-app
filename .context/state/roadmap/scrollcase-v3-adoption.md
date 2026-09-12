@@ -3,7 +3,7 @@
 Opened 2026-09-11. **Status: the code is migrated and green, and every published box is rebuilt as
 v3 on every platform.** Nothing is left to rebuild.
 
-Done: `scrollcase@1.1.1` and `scrollcase-consumer 0.4.0` pinned, all 22 scrolls rewritten and
+Done: `scrollcase@1.2.0` and `scrollcase-consumer 0.4.0` pinned, all 22 scrolls rewritten and
 accepted by `audit`, the Rust bridge, the WSL2 consumer, the shared contract, every script, the
 signer service, the registry worker and the whole test suite moved to the v3 shape.
 `test:verify` passes 6/6 with 586 unit tests, `cargo test` 102, Clippy clean.
@@ -85,13 +85,12 @@ already has. The v1→v2 cutover handled the same problem and is the precedent t
 Three Scrollcase gaps were found and fixed upstream on the way through, each by trying to build
 something real rather than by reading: PyPI licences (`scrollcase@1.1.0`), a box that downloads an
 archive and expands it, which **14 of the 22 scrolls** do (`scrollcase@1.1.1`), and an
-**uncompressed `tar`** asset, which `assetArchives` did not accept at all
-([scrollcase#14](https://github.com/suffro/scrollcase/pull/14), open).
+**uncompressed `tar`** asset, which `assetArchives` did not accept at all (`scrollcase@1.2.0`, via
+[PR #14](https://github.com/suffro/scrollcase/pull/14)).
 
-That third one is why **Liatir's pin must move again before Boltz-2 can be built from a clean
-checkout**: `scrollcase@1.1.1` refuses `"format": "tar"` by schema, and Boltz's 1.86 GB molecule
-dictionary is published exactly that way. The box in `.runtime-box-dist` was built against the
-merged fix from a local checkout.
+**Liatir is pinned to `scrollcase@1.2.0`** as of 2026-09-12, and every authored scroll validates
+against the published package — including Boltz's `"format": "tar"`, which is how its 1.86 GB
+molecule dictionary is distributed.
 
 ## Why this exists
 

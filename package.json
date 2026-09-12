@@ -133,6 +133,7 @@
     "runtime-box:test:native": "node scripts/validate-runtime-box-native-fixture.mjs",
     "runtime-box:test:security": "node scripts/run-runtime-box-security-e2e.mjs",
     "runtime-box:validate:boltz": "node scripts/validate-boltz-runtime.mjs",
+    "runtime-box:validate:protenix": "node scripts/validate-protenix-runtime.mjs",
     "runtime-box:validate:geneformer": "node scripts/validate-geneformer-parity.mjs",
     "runtime-box:validate:mhcflurry": "node scripts/validate-mhcflurry-runtime.mjs",
     "runtime-box:validate:openmm": "node scripts/validate-openmm-runtime.mjs",
@@ -154,7 +155,7 @@
     "buffer": "^6.0.3",
     "markdown-it-mathjax3": "^4.3.2",
     "marked": "^18.0.5",
-    "scrollcase": "1.1.1",
+    "scrollcase": "1.2.0",
     "typescript": "^5.9.2"
   }
 }

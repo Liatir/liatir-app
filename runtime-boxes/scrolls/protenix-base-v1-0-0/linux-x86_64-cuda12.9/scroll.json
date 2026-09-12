@@ -1,0 +1,106 @@
+{
+  "$schema": "https://scrollcase.dev/schema/v3/scroll.schema.json",
+  "schemaVersion": 3,
+  "scrollId": "protenix-base-v1-0-0-linux-x86_64-cuda12.9",
+  "scrollVersion": "1.0.0",
+  "boxId": "protenix-base-v1-0-0",
+  "labels": {
+    "model": "bytedance-protenix-base-v1-0-0",
+    "runtime": "structure-protenix-base-v1-0-0"
+  },
+  "version": "1.0.0-beta.1",
+  "sourceRevision": "2475421477ab414b571149ad4a875c390ff8a35d+weights-protenix_base_default_v1.0.0",
+  "target": {
+    "platform": "linux",
+    "arch": "x86_64",
+    "accelerator": "cuda",
+    "cudaVersion": "12.9"
+  },
+  "compatibility": {
+    "minLiatirVersion": "0.2.1",
+    "minNvidiaDriverVersion": "525.60.13",
+    "hostEnvironments": [
+      "native",
+      "windows-wsl2"
+    ]
+  },
+  "runtime": {
+    "id": "python",
+    "version": "3.11.16",
+    "entryPoint": "venv/bin/python"
+  },
+  "pixiVersion": "0.73.0",
+  "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/protenix-base-v1-0-0-linux-x86_64-cuda12.9.json",
+  "pypiLicenseDeclaration": "runtime-boxes/legal/audits/protenix-base-v1-0-0-linux-x86_64-cuda12.9-pypi-declaration.json",
+  "cacheSubdir": "model-cache/protenix-base-v1-0-0",
+  "publishBaseUrl": "https://assets.models.liatir.com/ai-runtime-boxes",
+  "assets": [
+    {
+      "url": "https://protenix.tos-cn-beijing.volces.com/checkpoint/protenix_base_default_v1.0.0.pt",
+      "relativePath": "model-cache/protenix-base-v1-0-0/checkpoint/protenix_base_default_v1.0.0.pt",
+      "sizeBytes": 1475950125,
+      "sha256": "2b7d5a8b30494514fc47fd2271a16260528cdba170ba09cc112fdecd8f85ec04"
+    },
+    {
+      "url": "https://protenix.tos-cn-beijing.volces.com/common/components.cif",
+      "relativePath": "model-cache/protenix-base-v1-0-0/common/components.cif",
+      "sizeBytes": 490777362,
+      "sha256": "bb31ae5cf6c8bc669924313077cb4231ee5ffefd3a20118cd14f3ec89f8bb6a5"
+    },
+    {
+      "url": "https://protenix.tos-cn-beijing.volces.com/common/components.cif.rdkit_mol.pkl",
+      "relativePath": "model-cache/protenix-base-v1-0-0/common/components.cif.rdkit_mol.pkl",
+      "sizeBytes": 142498117,
+      "sha256": "d1cfb71f5993a3ebea7c47877022d7f597bbfbaf86e28a4770e957da6c50cd35"
+    },
+    {
+      "url": "https://protenix.tos-cn-beijing.volces.com/common/clusters-by-entity-40.txt",
+      "relativePath": "model-cache/protenix-base-v1-0-0/common/clusters-by-entity-40.txt",
+      "sizeBytes": 21699572,
+      "sha256": "1ab4af905e75b382eda8dec59917dc3608bee0729e36b9e71baf860bbe86850c"
+    },
+    {
+      "url": "https://protenix.tos-cn-beijing.volces.com/common/obsolete_release_date.csv",
+      "relativePath": "model-cache/protenix-base-v1-0-0/common/obsolete_release_date.csv",
+      "sizeBytes": 134716,
+      "sha256": "a4f3f63ac5d7eebd78b07995cc669b9eccd6f5d8813c9492c9df02868893cf33"
+    }
+  ],
+  "localFiles": [
+    {
+      "sourcePath": "runtime-boxes/legal/protenix-base-v1-0-0.md",
+      "relativePath": "THIRD_PARTY_NOTICES/protenix-base-v1-0-0.md",
+      "sha256": "29756d94c25b0643b1e2293c5b6528fe6438ec063450bff139c04589a2197db3"
+    },
+    {
+      "sourcePath": "runtime-boxes/scrolls/protenix-base-v1-0-0/self-test.py",
+      "relativePath": "self-tests/protenix-base-v1-0-0.py",
+      "sha256": "b3e5c5b2112505239accdc25987f03213b019d888992aef0844eeff33ace24cb"
+    }
+  ],
+  "selfTest": {
+    "imports": [
+      "torch",
+      "numpy",
+      "pandas",
+      "rdkit",
+      "biotite",
+      "gemmi",
+      "ml_collections",
+      "click"
+    ],
+    "files": [
+      "model-cache/protenix-base-v1-0-0/checkpoint/protenix_base_default_v1.0.0.pt",
+      "model-cache/protenix-base-v1-0-0/common/components.cif",
+      "model-cache/protenix-base-v1-0-0/common/components.cif.rdkit_mol.pkl",
+      "model-cache/protenix-base-v1-0-0/common/clusters-by-entity-40.txt",
+      "model-cache/protenix-base-v1-0-0/common/obsolete_release_date.csv",
+      "THIRD_PARTY_NOTICES/protenix-base-v1-0-0.md",
+      "self-tests/protenix-base-v1-0-0.py"
+    ],
+    "code": "from pathlib import Path\ncode = Path('self-tests/protenix-base-v1-0-0.py').read_text(encoding='utf-8')\nexec(compile(code, 'self-tests/protenix-base-v1-0-0.py', 'exec'), {'__name__': '__main__'})"
+  },
+  "environment": {
+    "PYTHONNOUSERSITE": "1"
+  }
+}

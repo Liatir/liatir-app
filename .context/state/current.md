@@ -52,15 +52,13 @@ Two open findings from the dependency review are closed by the self-test rather 
 real import to settle. And the telemetry stack is neutralised: `wandb` and `sentry-sdk` are
 hard requirements of Boltz, and `WANDB_MODE=disabled` is asserted, not hoped for.
 
-**A third Scrollcase gap, and the pin has to move again.** `mols.tar` is an *uncompressed* tar, and
+**A third Scrollcase gap, found and closed the same day.** `mols.tar` is an *uncompressed* tar, and
 `assetArchives` accepted only `zip` and `tar.gz`.
-[scrollcase#14](https://github.com/suffro/scrollcase/pull/14) adds `tar` and drops a `gzip: true`
+[scrollcase#14](https://github.com/suffro/scrollcase/pull/14) added `tar` and dropped a `gzip: true`
 that read like a guarantee and was not one — node-tar detects compression itself, proved on all four
-combinations before deciding. 566 tests pass on Linux. **Until that release lands, the committed
-Boltz scroll cannot be built from a clean checkout**, because `scrollcase@1.1.1` refuses
-`"format": "tar"` by schema. The box above was built on this machine with `node_modules/scrollcase`
-replaced by a local pack of that branch — an override that `npm ci` undoes, and the reason the
-pin bump is a prerequisite rather than a tidy-up.
+combinations before deciding. Released as **`scrollcase@1.2.0`**, and Liatir is pinned to it: the
+local override the Boltz box was built against is gone, and **all nineteen authored scrolls validate
+against the published package**, Boltz's `"format": "tar"` included.
 
 ### Protenix: one half is unblocked, the other is not ours to unblock
 

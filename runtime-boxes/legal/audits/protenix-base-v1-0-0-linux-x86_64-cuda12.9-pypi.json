@@ -1,0 +1,1133 @@
+{
+  "schemaVersion": 1,
+  "kind": "liatir.runtime-box.pypi-dependency-license-inventory",
+  "targetId": "linux-x86_64-cuda12.9",
+  "dependencyLockSha256": "5286b511325287a879d52c65bc1df5f8f4f3b24996b0cd7da28085c6c42c07d3",
+  "reviewedAt": "2026-09-12",
+  "packages": [
+    {
+      "name": "absl-py",
+      "version": "2.5.0",
+      "source": "pypi",
+      "sha256": "0f17b89f2a4eaaedc4f28c622998aa690564b3012a396a4ffad0821007fe03ba",
+      "distribution": "absl_py-2.5.0-py3-none-any.whl",
+      "declaredLicense": "Apache-2.0",
+      "determinedFrom": "license-expression"
+    },
+    {
+      "name": "annotated-types",
+      "version": "0.8.0",
+      "source": "pypi",
+      "sha256": "f072f4d804ea359e4eaf198b1af7a8b0943881a87f31bb764f8bf219bb9419e0",
+      "distribution": "annotated_types-0.8.0-py3-none-any.whl",
+      "declaredLicense": "MIT",
+      "determinedFrom": "license-expression"
+    },
+    {
+      "name": "asttokens",
+      "version": "3.0.2",
+      "source": "pypi",
+      "sha256": "9da13157f5b28becde0bd374fc677dcd3c290614264eff096f167c469cd9f933",
+      "distribution": "asttokens-3.0.2-py3-none-any.whl",
+      "declaredLicense": "Apache-2.0",
+      "determinedFrom": "license-field",
+      "declaredText": "Apache 2.0"
+    },
+    {
+      "name": "biopython",
+      "version": "1.85",
+      "source": "pypi",
+      "sha256": "b0cec8833bf3036049129944ee5382dd576dac9670c3814ff2314b52aa94f199",
+      "distribution": "biopython-1.85-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "declaredLicense": "LicenseRef-Biopython",
+      "determinedFrom": "classifier",
+      "declaredText": "Freely Distributable"
+    },
+    {
+      "name": "biotite",
+      "version": "1.4.0",
+      "source": "pypi",
+      "sha256": "0813b424796dcc11bd2093a5e976c034c7190f3b2bedc503fb556119375977b1",
+      "distribution": "biotite-1.4.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "declaredLicense": "BSD-3-Clause",
+      "determinedFrom": "license-expression"
+    },
+    {
+      "name": "biotraj",
+      "version": "1.2.2",
+      "source": "pypi",
+      "sha256": "0accd626b3cb6b29fb4491d593c41daa694edddde8e8dc113228b1969a30c9f6",
+      "distribution": "biotraj-1.2.2-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "declaredLicense": "LGPL-2.1-or-later",
+      "determinedFrom": "classifier",
+      "declaredText": "GNU Lesser General Public License v2 or later (LGPLv2+)"
+    },
+    {
+      "name": "certifi",
+      "version": "2026.7.22",
+      "source": "pypi",
+      "sha256": "62f22742b58a1a33014a2b6b706588a8d7e2a88ae7bd1a6ebe8c992928483775",
+      "distribution": "certifi-2026.7.22-py3-none-any.whl",
+      "declaredLicense": "MPL-2.0",
+      "determinedFrom": "license-field"
+    },
+    {
+      "name": "charset-normalizer",
+      "version": "3.5.1",
+      "source": "pypi",
+      "sha256": "c7b742bf31c88566b4bb6335a7f393bb322e580b6bb98df7bd0c25e6e3519ce8",
+      "distribution": "charset_normalizer-3.5.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+      "declaredLicense": "MIT",
+      "determinedFrom": "license-field"
+    },
+    {
+      "name": "click",
+      "version": "8.5.0",
+      "source": "pypi",
+      "sha256": "255bc9599cf7748b4b1a446ccc735421bd08a2ae529a8b88597d3de5664ee360",
+      "distribution": "click-8.5.0-py3-none-any.whl",
+      "declaredLicense": "BSD-3-Clause",
+      "determinedFrom": "license-expression"
+    },
+    {
+      "name": "cloudpickle",
+      "version": "3.1.2",
+      "source": "pypi",
+      "sha256": "9acb47f6afd73f60dc1df93bb801b472f05ff42fa6c84167d25cb206be1fbf4a",
+      "distribution": "cloudpickle-3.1.2-py3-none-any.whl",
+      "declaredLicense": "BSD-3-Clause",
+      "determinedFrom": "license-field"
+    },
+    {
+      "name": "colorama",
+      "version": "0.4.6",
+      "source": "pypi",
+      "sha256": "4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6",
+      "distribution": "colorama-0.4.6-py2.py3-none-any.whl",
+      "declaredLicense": "BSD-3-Clause",
+      "determinedFrom": "classifier",
+      "declaredText": "BSD License"
+    },
+    {
+      "name": "comm",
+      "version": "0.2.3",
+      "source": "pypi",
+      "sha256": "c615d91d75f7f04f095b30d1c1711babd43bdc6419c1be9886a85f2f4e489417",
+      "distribution": "comm-0.2.3-py3-none-any.whl",
+      "declaredLicense": "BSD-3-Clause",
+      "determinedFrom": "classifier",
+      "declaredText": "BSD License"
+    },
+    {
+      "name": "contourpy",
+      "version": "1.3.3",
+      "source": "pypi",
+      "sha256": "51e79c1f7470158e838808d4a996fa9bac72c498e93d8ebe5119bc1e6becb0db",
+      "distribution": "contourpy-1.3.3-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+      "declaredLicense": "BSD-3-Clause",
+      "determinedFrom": "classifier",
+      "declaredText": "BSD License"
+    },
+    {
+      "name": "cuequivariance",
+      "version": "0.11.1",
+      "source": "pypi",
+      "sha256": "b570d4dc6f798a06c7333283a4b36e580272985abcb65843339984a84544395c",
+      "distribution": "cuequivariance-0.11.1-py3-none-any.whl",
+      "declaredLicense": "Apache-2.0",
+      "determinedFrom": "bundled-license-file",
+      "licenseFile": "cuequivariance-0.11.1.dist-info/licenses/LICENSE"
+    },
+    {
+      "name": "cuequivariance-ops-cu12",
+      "version": "0.8.0",
+      "source": "pypi",
+      "sha256": "9aa136b846ec090c35d87ed6dfc63dbc73046dda896a2779830e2b4ae6cdc8db",
+      "distribution": "cuequivariance_ops_cu12-0.8.0-py3-none-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl",
+      "declaredLicense": "LicenseRef-NVIDIA-Proprietary",
+      "determinedFrom": "bundled-license-file",
+      "licenseFile": "cuequivariance_ops_cu12-0.8.0.dist-info/licenses/LICENSE"
+    },
+    {
+      "name": "cuequivariance-ops-torch-cu12",
+      "version": "0.8.0",
+      "source": "pypi",
+      "sha256": "8e2c663c3167f8aa6bfaf667328441b0e13fffa9627063714b19e5770e8c1f37",
+      "distribution": "cuequivariance_ops_torch_cu12-0.8.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+      "declaredLicense": "LicenseRef-NVIDIA-Proprietary",
+      "determinedFrom": "bundled-license-file",
+      "licenseFile": "cuequivariance_ops_torch_cu12-0.8.0.dist-info/licenses/LICENSE"
+    },
+    {
+      "name": "cuequivariance-torch",
+      "version": "0.8.0",
+      "source": "pypi",
+      "sha256": "51579b66976377057f36b0dd61e96813ad932ef93563725549a676359b1a866e",
+      "distribution": "cuequivariance_torch-0.8.0-py3-none-any.whl",
+      "declaredLicense": "Apache-2.0",
+      "determinedFrom": "bundled-license-file",
+      "licenseFile": "cuequivariance_torch-0.8.0.dist-info/licenses/LICENSE"
+    },
+    {
+      "name": "cycler",
+      "version": "0.12.1",
+      "source": "pypi",
+      "sha256": "85cef7cff222d8644161529808465972e51340599459b8ac3ccbac5a854e0d30",
+      "distribution": "cycler-0.12.1-py3-none-any.whl",
+      "declaredLicense": "BSD-3-Clause",
+      "determinedFrom": "classifier",
+      "declaredText": "BSD License"
+    },
+    {
+      "name": "decorator",
+      "version": "5.3.1",
+      "source": "pypi",
+      "sha256": "f47fe6fdbd2edd623ecfe36875d37aba411624e2670dd395dddae1358689bb3c",
+      "distribution": "decorator-5.3.1-py3-none-any.whl",
+      "declaredLicense": "BSD-2-Clause",
+      "determinedFrom": "license-field"
+    },
+    {
+      "name": "deepspeed",
+      "version": "0.17.5",
+      "source": "pypi",
+      "sha256": "277c9e267b9e917c98ed84aa94e695c6a0e506c859ae583d0cc6a3d2e2fd9feb",
+      "distribution": "deepspeed-0.17.5.tar.gz",
+      "declaredLicense": "Apache-2.0",
+      "determinedFrom": "license-field",
+      "declaredText": "Apache Software License 2.0"
+    },
+    {
+      "name": "einops",
+      "version": "0.8.2",
+      "source": "pypi",
+      "sha256": "54058201ac7087911181bfec4af6091bb59380360f069276601256a76af08193",
+      "distribution": "einops-0.8.2-py3-none-any.whl",
+      "declaredLicense": "MIT",
+      "determinedFrom": "license-field"
+    },
+    {
+      "name": "executing",
+      "version": "2.2.1",
+      "source": "pypi",
+      "sha256": "760643d3452b4d777d295bb167ccc74c64a81df23fb5e08eff250c425a4b2017",
+      "distribution": "executing-2.2.1-py2.py3-none-any.whl",
+      "declaredLicense": "MIT",
+      "determinedFrom": "license-field"
+    },
+    {
+      "name": "fair-esm",
+      "version": "2.0.0",
+      "source": "pypi",
+      "sha256": "7dcb58828a401155d1457d071a03800bd1a50331ddf24ac79ad1dd0f2ea682a2",
+      "distribution": "fair_esm-2.0.0-py3-none-any.whl",
+      "declaredLicense": "MIT",
+      "determinedFrom": "license-field"
+    },
+    {
+      "name": "filelock",
+      "version": "3.32.6",
+      "source": "pypi",
+      "sha256": "3f16ecd0117feae0dfc147e8c62eb5daeccd8bd800378c3ddf416de9b4feb6b1",
+      "distribution": "filelock-3.32.6-py3-none-any.whl",
+      "declaredLicense": "MIT",
+      "determinedFrom": "license-expression"
+    },
+    {
+      "name": "fonttools",
+      "version": "4.65.0",
+      "source": "pypi",
+      "sha256": "a3991732c87b3f054a2a8cf86dd0d602833fa8cb37c911503173771646e1013d",
+      "distribution": "fonttools-4.65.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+      "declaredLicense": "MIT",
+      "determinedFrom": "license-field"
+    },
+    {
+      "name": "fsspec",
+      "version": "2026.7.0",
+      "source": "pypi",
+      "sha256": "b57ddbafedfaef7018c1ecab32aa200a9d7ca26b77965f64e48b70061249d279",
+      "distribution": "fsspec-2026.7.0-py3-none-any.whl",
+      "declaredLicense": "BSD-3-Clause",
+      "determinedFrom": "license-expression"
+    },
+    {
+      "name": "gemmi",
+      "version": "0.6.7",
+      "source": "pypi",
+      "sha256": "fa50132842bc0c5352d02b2b25d60ce2dfc8f823ad7ca8e3a2e4f253f2919628",
+      "distribution": "gemmi-0.6.7-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "declaredLicense": "MPL-2.0",
+      "determinedFrom": "license-field"
+    },
+    {
+      "name": "gitdb",
+      "version": "4.0.12",
+      "source": "pypi",
+      "sha256": "67073e15955400952c6565cc3e707c554a4eea2e428946f7a4c162fab9bd9bcf",
+      "distribution": "gitdb-4.0.12-py3-none-any.whl",
+      "declaredLicense": "BSD-3-Clause",
+      "determinedFrom": "license-field",
+      "declaredText": "BSD License"
+    },
+    {
+      "name": "gitpython",
+      "version": "3.1.62",
+      "source": "pypi",
+      "sha256": "7002251225e10e29d2e1f49e6532613fe5d5d9f0b6f1f02997a52b38fe56899e",
+      "distribution": "gitpython-3.1.62-py3-none-any.whl",
+      "declaredLicense": "BSD-3-Clause",
+      "determinedFrom": "license-field"
+    },
+    {
+      "name": "hjson",
+      "version": "3.1.0",
+      "source": "pypi",
+      "sha256": "65713cdcf13214fb554eb8b4ef803419733f4f5e551047c9b711098ab7186b89",
+      "distribution": "hjson-3.1.0-py3-none-any.whl",
+      "declaredLicense": "MIT",
+      "determinedFrom": "license-field",
+      "declaredText": "MIT License"
+    },
+    {
+      "name": "icecream",
+      "version": "2.1.7",
+      "source": "pypi",
+      "sha256": "b52cdd40cb5080279c4534fcd77aa510b1e7397a687e9d4daf2f8d2028bd738c",
+      "distribution": "icecream-2.1.7-py3-none-any.whl",
+      "declaredLicense": "MIT",
+      "determinedFrom": "license-field"
+    },
+    {
+      "name": "idna",
+      "version": "3.19",
+      "source": "pypi",
+      "sha256": "815e7be7a7806d54abb586dc943addc79e8b2ee16915059658cbeff4b1b43bf4",
+      "distribution": "idna-3.19-py3-none-any.whl",
+      "declaredLicense": "BSD-3-Clause",
+      "determinedFrom": "license-expression"
+    },
+    {
+      "name": "ihm",
+      "version": "2.11",
+      "source": "pypi",
+      "sha256": "cb1bc75af04c5a7271f788f8018f30ee747a4d73fc45ab23f05d094ca44c0f0c",
+      "distribution": "ihm-2.11.tar.gz",
+      "declaredLicense": "MIT",
+      "determinedFrom": "license-field"
+    },
+    {
+      "name": "ipdb",
+      "version": "0.13.13",
+      "source": "pypi",
+      "sha256": "45529994741c4ab6d2388bfa5d7b725c2cf7fe9deffabdb8a6113aa5ed449ed4",
+      "distribution": "ipdb-0.13.13-py3-none-any.whl",
+      "declaredLicense": "BSD-3-Clause",
+      "determinedFrom": "license-field",
+      "declaredText": "BSD"
+    },
+    {
+      "name": "ipython",
+      "version": "9.17.1",
+      "source": "pypi",
+      "sha256": "6d1645743cfd1a07eb695d85aa2b5fa66721f8cbae9431d4049f7084bbf06509",
+      "distribution": "ipython-9.17.1-py3-none-any.whl",
+      "declaredLicense": "BSD-3-Clause",
+      "determinedFrom": "license-expression"
+    },
+    {
+      "name": "ipython-pygments-lexers",
+      "version": "1.1.1",
+      "source": "pypi",
+      "sha256": "a9462224a505ade19a605f71f8fa63c2048833ce50abc86768a0d81d876dc81c",
+      "distribution": "ipython_pygments_lexers-1.1.1-py3-none-any.whl",
+      "declaredLicense": "BSD-3-Clause",
+      "determinedFrom": "classifier",
+      "declaredText": "BSD License"
+    },
+    {
+      "name": "ipywidgets",
+      "version": "8.1.7",
+      "source": "pypi",
+      "sha256": "764f2602d25471c213919b8a1997df04bef869251db4ca8efba1b76b1bd9f7bb",
+      "distribution": "ipywidgets-8.1.7-py3-none-any.whl",
+      "declaredLicense": "BSD-3-Clause",
+      "determinedFrom": "license-field",
+      "declaredText": "BSD 3-Clause License"
+    },
+    {
+      "name": "jedi",
+      "version": "0.20.0",
+      "source": "pypi",
+      "sha256": "7bdd9c2634f56713299976f4cbd59cb3fa92165cc5e05ea811fb253480728b67",
+      "distribution": "jedi-0.20.0-py2.py3-none-any.whl",
+      "declaredLicense": "MIT",
+      "determinedFrom": "license-field"
+    },
+    {
+      "name": "jinja2",
+      "version": "3.1.6",
+      "source": "pypi",
+      "sha256": "85ece4451f492d0c13c5dd7c13a64681a86afae63a5f347908daf103ce6d2f67",
+      "distribution": "jinja2-3.1.6-py3-none-any.whl",
+      "declaredLicense": "BSD-3-Clause",
+      "determinedFrom": "classifier",
+      "declaredText": "BSD License"
+    },
+    {
+      "name": "joblib",
+      "version": "1.6.0",
+      "source": "pypi",
+      "sha256": "3dbbf9f6e4b592a2357b854608e980fe6390d131d7a82f011a377ef2ebef7aba",
+      "distribution": "joblib-1.6.0-py3-none-any.whl",
+      "declaredLicense": "BSD-3-Clause",
+      "determinedFrom": "license-expression"
+    },
+    {
+      "name": "jupyterlab-widgets",
+      "version": "3.0.17",
+      "source": "pypi",
+      "sha256": "40ac1e9955acf116c4d995d9bfa082d86ad9ec6d91c4f134827cf5e0a5eb75e0",
+      "distribution": "jupyterlab_widgets-3.0.17-py3-none-any.whl",
+      "declaredLicense": "BSD-3-Clause",
+      "determinedFrom": "classifier",
+      "declaredText": "BSD License"
+    },
+    {
+      "name": "kiwisolver",
+      "version": "1.5.1",
+      "source": "pypi",
+      "sha256": "95a02752aa032eef4aed01cda6d9b687c669bd0396bf4519eef8bba22a286720",
+      "distribution": "kiwisolver-1.5.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+      "declaredLicense": "BSD-3-Clause",
+      "determinedFrom": "classifier",
+      "declaredText": "BSD License"
+    },
+    {
+      "name": "markupsafe",
+      "version": "3.0.3",
+      "source": "pypi",
+      "sha256": "0bf2a864d67e76e5c9a34dc26ec616a66b9888e25e7b9460e1c76d3293bd9dbf",
+      "distribution": "markupsafe-3.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+      "declaredLicense": "BSD-3-Clause",
+      "determinedFrom": "license-expression"
+    },
+    {
+      "name": "matplotlib",
+      "version": "3.10.5",
+      "source": "pypi",
+      "sha256": "080c3676a56b8ee1c762bcf8fca3fe709daa1ee23e6ef06ad9f3fc17332f2d2a",
+      "distribution": "matplotlib-3.10.5-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+      "declaredLicense": "LicenseRef-Matplotlib",
+      "determinedFrom": "bundled-license-file",
+      "licenseFile": "matplotlib-3.10.5.dist-info/LICENSE",
+      "declaredText": "Python Software Foundation License"
+    },
+    {
+      "name": "matplotlib-inline",
+      "version": "0.2.2",
+      "source": "pypi",
+      "sha256": "3c821cf1c209f59fb2d2d64abbf5b23b67bcb2210d663f9918dd851c6da1fcf6",
+      "distribution": "matplotlib_inline-0.2.2-py3-none-any.whl",
+      "declaredLicense": "BSD-3-Clause",
+      "determinedFrom": "license-expression"
+    },
+    {
+      "name": "ml-collections",
+      "version": "1.1.0",
+      "source": "pypi",
+      "sha256": "23b6fa4772aac1ae745a96044b925a5746145a70734f087eaca6626e92c05cbc",
+      "distribution": "ml_collections-1.1.0-py3-none-any.whl",
+      "declaredLicense": "Apache-2.0",
+      "determinedFrom": "classifier",
+      "declaredText": "Apache Software License"
+    },
+    {
+      "name": "modelcif",
+      "version": "1.4",
+      "source": "pypi",
+      "sha256": "fca5c1da5eb25fff3c9cd61b618fa247569f8e90cbb64774740601155d4add6e",
+      "distribution": "modelcif-1.4.tar.gz",
+      "declaredLicense": "MIT",
+      "determinedFrom": "classifier",
+      "declaredText": "MIT License"
+    },
+    {
+      "name": "mpmath",
+      "version": "1.3.0",
+      "source": "pypi",
+      "sha256": "a0b2b9fe80bbcd81a6647ff13108738cfb482d481d826cc0e02f5b35e5c88d2c",
+      "distribution": "mpmath-1.3.0-py3-none-any.whl",
+      "declaredLicense": "BSD-3-Clause",
+      "determinedFrom": "license-field",
+      "declaredText": "BSD"
+    },
+    {
+      "name": "msgpack",
+      "version": "1.2.2",
+      "source": "pypi",
+      "sha256": "f11e09f10210a91c169e39c7a5a1f9090eaa73ad75555fafad5023c3053c47ba",
+      "distribution": "msgpack-1.2.2-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+      "declaredLicense": "Apache-2.0",
+      "determinedFrom": "license-expression"
+    },
+    {
+      "name": "networkx",
+      "version": "3.6.1",
+      "source": "pypi",
+      "sha256": "d47fbf302e7d9cbbb9e2555a0d267983d2aa476bac30e90dfbe5669bd57f3762",
+      "distribution": "networkx-3.6.1-py3-none-any.whl",
+      "declaredLicense": "BSD-3-Clause",
+      "determinedFrom": "license-expression"
+    },
+    {
+      "name": "ninja",
+      "version": "1.13.2",
+      "source": "pypi",
+      "sha256": "65a24341b5ac09fcadcc37082660be40a94174e51a937fabf6e2cae26225fa2c",
+      "distribution": "ninja-1.13.2-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+      "declaredLicense": "Apache-2.0",
+      "determinedFrom": "license-expression"
+    },
+    {
+      "name": "numpy",
+      "version": "2.4.1",
+      "source": "pypi",
+      "sha256": "538bf4ec353709c765ff75ae616c34d3c3dca1a68312727e8f2676ea644f8509",
+      "distribution": "numpy-2.4.1-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+      "declaredLicense": "BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0",
+      "determinedFrom": "license-expression"
+    },
+    {
+      "name": "nvidia-cublas-cu12",
+      "version": "12.6.4.1",
+      "source": "pypi",
+      "sha256": "08ed2686e9875d01b58e3cb379c6896df8e76c75e0d4a7f7dace3d7b6d9ef8eb",
+      "distribution": "nvidia_cublas_cu12-12.6.4.1-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+      "declaredLicense": "LicenseRef-NVIDIA-CUDA-EULA",
+      "determinedFrom": "bundled-license-agreement",
+      "licenseFile": "nvidia_cublas_cu12-12.6.4.1.dist-info/License.txt",
+      "declaredText": "NVIDIA Proprietary Software",
+      "agreementHeading": "End User License Agreement"
+    },
+    {
+      "name": "nvidia-cuda-cupti-cu12",
+      "version": "12.6.80",
+      "source": "pypi",
+      "sha256": "6768bad6cab4f19e8292125e5f1ac8aa7d1718704012a0e3272a6f61c4bce132",
+      "distribution": "nvidia_cuda_cupti_cu12-12.6.80-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+      "declaredLicense": "LicenseRef-NVIDIA-CUDA-EULA",
+      "determinedFrom": "bundled-license-agreement",
+      "licenseFile": "nvidia_cuda_cupti_cu12-12.6.80.dist-info/License.txt",
+      "declaredText": "NVIDIA Proprietary Software",
+      "agreementHeading": "End User License Agreement"
+    },
+    {
+      "name": "nvidia-cuda-nvrtc-cu12",
+      "version": "12.6.77",
+      "source": "pypi",
+      "sha256": "35b0cc6ee3a9636d5409133e79273ce1f3fd087abb0532d2d2e8fff1fe9efc53",
+      "distribution": "nvidia_cuda_nvrtc_cu12-12.6.77-py3-none-manylinux2014_x86_64.whl",
+      "declaredLicense": "LicenseRef-NVIDIA-CUDA-EULA",
+      "determinedFrom": "bundled-license-agreement",
+      "licenseFile": "nvidia_cuda_nvrtc_cu12-12.6.77.dist-info/License.txt",
+      "declaredText": "NVIDIA Proprietary Software",
+      "agreementHeading": "End User License Agreement"
+    },
+    {
+      "name": "nvidia-cuda-runtime-cu12",
+      "version": "12.6.77",
+      "source": "pypi",
+      "sha256": "ba3b56a4f896141e25e19ab287cd71e52a6a0f4b29d0d31609f60e3b4d5219b7",
+      "distribution": "nvidia_cuda_runtime_cu12-12.6.77-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+      "declaredLicense": "LicenseRef-NVIDIA-CUDA-EULA",
+      "determinedFrom": "bundled-license-agreement",
+      "licenseFile": "nvidia_cuda_runtime_cu12-12.6.77.dist-info/License.txt",
+      "declaredText": "NVIDIA Proprietary Software",
+      "agreementHeading": "End User License Agreement"
+    },
+    {
+      "name": "nvidia-cudnn-cu12",
+      "version": "9.5.1.17",
+      "source": "pypi",
+      "sha256": "30ac3869f6db17d170e0e556dd6cc5eee02647abc31ca856634d5a40f82c15b2",
+      "distribution": "nvidia_cudnn_cu12-9.5.1.17-py3-none-manylinux_2_28_x86_64.whl",
+      "declaredLicense": "LicenseRef-NVIDIA-SDK-License-Agreement",
+      "determinedFrom": "bundled-license-agreement",
+      "licenseFile": "nvidia_cudnn_cu12-9.5.1.17.dist-info/License.txt",
+      "declaredText": "NVIDIA Proprietary Software",
+      "agreementHeading": "LICENSE AGREEMENT FOR NVIDIA SOFTWARE DEVELOPMENT KITS"
+    },
+    {
+      "name": "nvidia-cufft-cu12",
+      "version": "11.3.0.4",
+      "source": "pypi",
+      "sha256": "ccba62eb9cef5559abd5e0d54ceed2d9934030f51163df018532142a8ec533e5",
+      "distribution": "nvidia_cufft_cu12-11.3.0.4-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+      "declaredLicense": "LicenseRef-NVIDIA-CUDA-EULA",
+      "determinedFrom": "bundled-license-agreement",
+      "licenseFile": "nvidia_cufft_cu12-11.3.0.4.dist-info/License.txt",
+      "declaredText": "NVIDIA Proprietary Software",
+      "agreementHeading": "End User License Agreement"
+    },
+    {
+      "name": "nvidia-cufile-cu12",
+      "version": "1.11.1.6",
+      "source": "pypi",
+      "sha256": "cc23469d1c7e52ce6c1d55253273d32c565dd22068647f3aa59b3c6b005bf159",
+      "distribution": "nvidia_cufile_cu12-1.11.1.6-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+      "declaredLicense": "LicenseRef-NVIDIA-CUDA-EULA",
+      "determinedFrom": "bundled-license-agreement",
+      "licenseFile": "nvidia_cufile_cu12-1.11.1.6.dist-info/License.txt",
+      "declaredText": "NVIDIA Proprietary Software",
+      "agreementHeading": "End User License Agreement"
+    },
+    {
+      "name": "nvidia-curand-cu12",
+      "version": "10.3.7.77",
+      "source": "pypi",
+      "sha256": "a42cd1344297f70b9e39a1e4f467a4e1c10f1da54ff7a85c12197f6c652c8bdf",
+      "distribution": "nvidia_curand_cu12-10.3.7.77-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+      "declaredLicense": "LicenseRef-NVIDIA-CUDA-EULA",
+      "determinedFrom": "bundled-license-agreement",
+      "licenseFile": "nvidia_curand_cu12-10.3.7.77.dist-info/License.txt",
+      "declaredText": "NVIDIA Proprietary Software",
+      "agreementHeading": "End User License Agreement"
+    },
+    {
+      "name": "nvidia-cusolver-cu12",
+      "version": "11.7.1.2",
+      "source": "pypi",
+      "sha256": "e9e49843a7707e42022babb9bcfa33c29857a93b88020c4e4434656a655b698c",
+      "distribution": "nvidia_cusolver_cu12-11.7.1.2-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+      "declaredLicense": "LicenseRef-NVIDIA-CUDA-EULA",
+      "determinedFrom": "bundled-license-agreement",
+      "licenseFile": "nvidia_cusolver_cu12-11.7.1.2.dist-info/License.txt",
+      "declaredText": "NVIDIA Proprietary Software",
+      "agreementHeading": "End User License Agreement"
+    },
+    {
+      "name": "nvidia-cusparse-cu12",
+      "version": "12.5.4.2",
+      "source": "pypi",
+      "sha256": "7556d9eca156e18184b94947ade0fba5bb47d69cec46bf8660fd2c71a4b48b73",
+      "distribution": "nvidia_cusparse_cu12-12.5.4.2-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+      "declaredLicense": "LicenseRef-NVIDIA-CUDA-EULA",
+      "determinedFrom": "bundled-license-agreement",
+      "licenseFile": "nvidia_cusparse_cu12-12.5.4.2.dist-info/License.txt",
+      "declaredText": "NVIDIA Proprietary Software",
+      "agreementHeading": "End User License Agreement"
+    },
+    {
+      "name": "nvidia-cusparselt-cu12",
+      "version": "0.6.3",
+      "source": "pypi",
+      "sha256": "e5c8a26c36445dd2e6812f1177978a24e2d37cacce7e090f297a688d1ec44f46",
+      "distribution": "nvidia_cusparselt_cu12-0.6.3-py3-none-manylinux2014_x86_64.whl",
+      "declaredLicense": "LicenseRef-NVIDIA-SDK-License-Agreement",
+      "determinedFrom": "bundled-license-agreement",
+      "licenseFile": "cusparselt/LICENSE.txt",
+      "declaredText": "NVIDIA Proprietary Software",
+      "agreementHeading": "LICENSE AGREEMENT FOR NVIDIA SOFTWARE DEVELOPMENT KITS"
+    },
+    {
+      "name": "nvidia-ml-py",
+      "version": "13.610.43",
+      "source": "pypi",
+      "sha256": "f13c72698edef492f985cc225f14faafe68ae065a2e407f45bdf6f4b9b43fde8",
+      "distribution": "nvidia_ml_py-13.610.43-py3-none-any.whl",
+      "declaredLicense": "BSD-3-Clause",
+      "determinedFrom": "license-field",
+      "declaredText": "BSD"
+    },
+    {
+      "name": "nvidia-nccl-cu12",
+      "version": "2.26.2",
+      "source": "pypi",
+      "sha256": "694cf3879a206553cc9d7dbda76b13efaf610fdb70a50cba303de1b0d1530ac6",
+      "distribution": "nvidia_nccl_cu12-2.26.2-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+      "declaredLicense": "BSD-3-Clause",
+      "determinedFrom": "license-field"
+    },
+    {
+      "name": "nvidia-nvjitlink-cu12",
+      "version": "12.6.85",
+      "source": "pypi",
+      "sha256": "eedc36df9e88b682efe4309aa16b5b4e78c2407eac59e8c10a6a47535164369a",
+      "distribution": "nvidia_nvjitlink_cu12-12.6.85-py3-none-manylinux2010_x86_64.manylinux_2_12_x86_64.whl",
+      "declaredLicense": "LicenseRef-NVIDIA-CUDA-EULA",
+      "determinedFrom": "bundled-license-agreement",
+      "licenseFile": "nvidia_nvjitlink_cu12-12.6.85.dist-info/License.txt",
+      "declaredText": "NVIDIA Proprietary Software",
+      "agreementHeading": "End User License Agreement"
+    },
+    {
+      "name": "nvidia-nvtx-cu12",
+      "version": "12.6.77",
+      "source": "pypi",
+      "sha256": "b90bed3df379fa79afbd21be8e04a0314336b8ae16768b58f2d34cb1d04cd7d2",
+      "distribution": "nvidia_nvtx_cu12-12.6.77-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+      "declaredLicense": "Apache-2.0",
+      "determinedFrom": "license-field",
+      "declaredText": "Apache 2.0"
+    },
+    {
+      "name": "opt-einsum",
+      "version": "3.4.0",
+      "source": "pypi",
+      "sha256": "69bb92469f86a1565195ece4ac0323943e83477171b91d24c35afe028a90d7cd",
+      "distribution": "opt_einsum-3.4.0-py3-none-any.whl",
+      "declaredLicense": "MIT",
+      "determinedFrom": "license-expression"
+    },
+    {
+      "name": "optree",
+      "version": "0.17.0",
+      "source": "pypi",
+      "sha256": "a146a6917f3e28cfdc268ff1770aa696c346482dd3da681c3ff92153d94450ea",
+      "distribution": "optree-0.17.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+      "declaredLicense": "Apache-2.0",
+      "determinedFrom": "license-expression"
+    },
+    {
+      "name": "packaging",
+      "version": "26.3",
+      "source": "pypi",
+      "sha256": "d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c",
+      "distribution": "packaging-26.3-py3-none-any.whl",
+      "declaredLicense": "Apache-2.0 OR BSD-2-Clause",
+      "determinedFrom": "license-expression"
+    },
+    {
+      "name": "pandas",
+      "version": "2.3.1",
+      "source": "pypi",
+      "sha256": "3462c3735fe19f2638f2c3a40bd94ec2dc5ba13abbb032dd2fa1f540a075509d",
+      "distribution": "pandas-2.3.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "declaredLicense": "BSD-3-Clause",
+      "determinedFrom": "classifier",
+      "declaredText": "BSD License"
+    },
+    {
+      "name": "parso",
+      "version": "0.8.7",
+      "source": "pypi",
+      "sha256": "a8926eb2a1b915486941fdbd31e86a4baf88fe8c210f25f2f35ecec5b574ca1c",
+      "distribution": "parso-0.8.7-py2.py3-none-any.whl",
+      "declaredLicense": "MIT",
+      "determinedFrom": "license-field"
+    },
+    {
+      "name": "pdbeccdutils",
+      "version": "1.0.0",
+      "source": "pypi",
+      "sha256": "dcc6bcb363f9cb0f9be15c465abf2a56809926d8275ccdc50d4f8438ab776c7b",
+      "distribution": "pdbeccdutils-1.0.0-py3-none-any.whl",
+      "declaredLicense": "Apache-2.0",
+      "determinedFrom": "license-field",
+      "declaredText": "Apache License 2.0."
+    },
+    {
+      "name": "pexpect",
+      "version": "4.9.0",
+      "source": "pypi",
+      "sha256": "7236d1e080e4936be2dc3e326cec0af72acf9212a7e1d060210e70a47e253523",
+      "distribution": "pexpect-4.9.0-py2.py3-none-any.whl",
+      "declaredLicense": "ISC",
+      "determinedFrom": "license-field",
+      "declaredText": "ISC license"
+    },
+    {
+      "name": "pillow",
+      "version": "12.3.0",
+      "source": "pypi",
+      "sha256": "23d27a3e0307ec2244cc51e7287b919aa68d097504ebe19df4e76a98a3eea5bd",
+      "distribution": "pillow-12.3.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+      "declaredLicense": "MIT-CMU",
+      "determinedFrom": "license-expression"
+    },
+    {
+      "name": "platformdirs",
+      "version": "4.11.8",
+      "source": "pypi",
+      "sha256": "52f2f181bbfde907966932cc8312d967d02976422d66d537ea16092b8e291081",
+      "distribution": "platformdirs-4.11.8-py3-none-any.whl",
+      "declaredLicense": "MIT",
+      "determinedFrom": "license-expression"
+    },
+    {
+      "name": "prompt-toolkit",
+      "version": "3.0.53",
+      "source": "pypi",
+      "sha256": "01c0891d7f9237d5e339f7d3e42cdae80b7534abb1c7c0e3352efba6231492f2",
+      "distribution": "prompt_toolkit-3.0.53-py3-none-any.whl",
+      "declaredLicense": "BSD-3-Clause",
+      "determinedFrom": "classifier",
+      "declaredText": "BSD License"
+    },
+    {
+      "name": "protenix",
+      "version": "2.0.0",
+      "source": "pypi",
+      "sha256": "be4584dda688e0518ce12909d8d51d0a0868e7daa2bbb95cbac17440c0ac309f",
+      "distribution": "protenix-2.0.0-py3-none-any.whl",
+      "declaredLicense": "Apache-2.0",
+      "determinedFrom": "license-field",
+      "declaredText": "Apache 2.0 License"
+    },
+    {
+      "name": "protobuf",
+      "version": "6.31.1",
+      "source": "pypi",
+      "sha256": "4ee898bf66f7a8b0bd21bce523814e6fbd8c6add948045ce958b73af7e8878c6",
+      "distribution": "protobuf-6.31.1-cp39-abi3-manylinux2014_x86_64.whl",
+      "declaredLicense": "BSD-3-Clause",
+      "determinedFrom": "license-field",
+      "declaredText": "3-Clause BSD License"
+    },
+    {
+      "name": "psutil",
+      "version": "7.2.2",
+      "source": "pypi",
+      "sha256": "076a2d2f923fd4821644f5ba89f059523da90dc9014e85f8e45a5774ca5bc6f9",
+      "distribution": "psutil-7.2.2-cp36-abi3-manylinux2010_x86_64.manylinux_2_12_x86_64.manylinux_2_28_x86_64.whl",
+      "declaredLicense": "BSD-3-Clause",
+      "determinedFrom": "license-field"
+    },
+    {
+      "name": "ptyprocess",
+      "version": "0.7.0",
+      "source": "pypi",
+      "sha256": "4b41f3967fce3af57cc7e94b888626c18bf37a083e3651ca8feeb66d492fef35",
+      "distribution": "ptyprocess-0.7.0-py2.py3-none-any.whl",
+      "declaredLicense": "ISC",
+      "determinedFrom": "classifier",
+      "declaredText": "ISC License (ISCL)"
+    },
+    {
+      "name": "pure-eval",
+      "version": "0.2.4",
+      "source": "pypi",
+      "sha256": "96cae060a313cfaad51bb761278bfb0e62dc0248d9315a81173752dc546cd37a",
+      "distribution": "pure_eval-0.2.4-py3-none-any.whl",
+      "declaredLicense": "MIT",
+      "determinedFrom": "license-field"
+    },
+    {
+      "name": "py-cpuinfo",
+      "version": "9.0.0",
+      "source": "pypi",
+      "sha256": "859625bc251f64e21f077d099d4162689c762b5d6a4c3c97553d56241c9674d5",
+      "distribution": "py_cpuinfo-9.0.0-py3-none-any.whl",
+      "declaredLicense": "MIT",
+      "determinedFrom": "license-field"
+    },
+    {
+      "name": "py3dmol",
+      "version": "2.5.2",
+      "source": "pypi",
+      "sha256": "b921940ff046cf7ca008a249cbd5debec561dcf337f1e5f3df7ac5d4a1954e8e",
+      "distribution": "py3dmol-2.5.2-py2.py3-none-any.whl",
+      "declaredLicense": "MIT",
+      "determinedFrom": "license-field"
+    },
+    {
+      "name": "pydantic",
+      "version": "2.13.5",
+      "source": "pypi",
+      "sha256": "346a034f080da3755d8e9cb5e00e8b07de1d39e4f6e2c87d8ab7cafa0b269a73",
+      "distribution": "pydantic-2.13.5-py3-none-any.whl",
+      "declaredLicense": "MIT",
+      "determinedFrom": "license-expression"
+    },
+    {
+      "name": "pydantic-core",
+      "version": "2.46.5",
+      "source": "pypi",
+      "sha256": "49776eab08766a08dfff7012f8b422dcd7e25e43b316eedf0477c24fcfa84b7c",
+      "distribution": "pydantic_core-2.46.5-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "declaredLicense": "MIT",
+      "determinedFrom": "license-expression"
+    },
+    {
+      "name": "pygments",
+      "version": "2.21.0",
+      "source": "pypi",
+      "sha256": "2363c69b61c4a97c838da3b130dcd6468f4848992b21a82f2a63ec34377137d9",
+      "distribution": "pygments-2.21.0-py3-none-any.whl",
+      "declaredLicense": "BSD-2-Clause",
+      "determinedFrom": "license-expression"
+    },
+    {
+      "name": "pyparsing",
+      "version": "3.3.2",
+      "source": "pypi",
+      "sha256": "850ba148bd908d7e2411587e247a1e4f0327839c40e2e5e6d05a007ecc69911d",
+      "distribution": "pyparsing-3.3.2-py3-none-any.whl",
+      "declaredLicense": "MIT",
+      "determinedFrom": "license-expression"
+    },
+    {
+      "name": "python-dateutil",
+      "version": "2.9.0.post0",
+      "source": "pypi",
+      "sha256": "a8b2bc7bffae282281c8140a97d3aa9c14da0b136dfe83f850eea9a5f7470427",
+      "distribution": "python_dateutil-2.9.0.post0-py2.py3-none-any.whl",
+      "declaredLicense": "Apache-2.0 OR BSD-3-Clause",
+      "determinedFrom": "license-field",
+      "declaredText": "Dual License"
+    },
+    {
+      "name": "pytz",
+      "version": "2026.3.post1",
+      "source": "pypi",
+      "sha256": "dd95840dd199baea12d9cc096a1d452caa6596a1c1e4b5f3dbd1541855d5e815",
+      "distribution": "pytz-2026.3.post1-py2.py3-none-any.whl",
+      "declaredLicense": "MIT",
+      "determinedFrom": "license-field"
+    },
+    {
+      "name": "pyyaml",
+      "version": "6.0.2",
+      "source": "pypi",
+      "sha256": "3ad2a3decf9aaba3d29c8f537ac4b243e36bef957511b4766cb0057d32b0be85",
+      "distribution": "PyYAML-6.0.2-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "declaredLicense": "MIT",
+      "determinedFrom": "license-field"
+    },
+    {
+      "name": "rdkit",
+      "version": "2025.9.3",
+      "source": "pypi",
+      "sha256": "b06bc7e039fba8aecebe637420224c4919808cefe6b6df8af9d9c69d75431c42",
+      "distribution": "rdkit-2025.9.3-cp311-cp311-manylinux_2_28_x86_64.whl",
+      "declaredLicense": "BSD-3-Clause",
+      "determinedFrom": "license-field"
+    },
+    {
+      "name": "requests",
+      "version": "2.34.2",
+      "source": "pypi",
+      "sha256": "2a0d60c172f83ac6ab31e4554906c0f3b3588d37b5cb939b1c061f4907e278e0",
+      "distribution": "requests-2.34.2-py3-none-any.whl",
+      "declaredLicense": "Apache-2.0",
+      "determinedFrom": "license-field"
+    },
+    {
+      "name": "scikit-learn",
+      "version": "1.7.1",
+      "source": "pypi",
+      "sha256": "40daccd1b5623f39e8943ab39735cadf0bdce80e67cdca2adcb5426e987320a8",
+      "distribution": "scikit_learn-1.7.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+      "declaredLicense": "BSD-3-Clause",
+      "determinedFrom": "license-expression"
+    },
+    {
+      "name": "scikit-learn-extra",
+      "version": "0.3.0",
+      "source": "pypi",
+      "sha256": "91878f079da2d81b989c0bc3019befc7a3228fee29384065d06badc4ca60f4ec",
+      "distribution": "scikit_learn_extra-0.3.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "declaredLicense": "BSD-3-Clause",
+      "determinedFrom": "license-field",
+      "declaredText": "new BSD"
+    },
+    {
+      "name": "scipy",
+      "version": "1.17.1",
+      "source": "pypi",
+      "sha256": "43af8d1f3bea642559019edfe64e9b11192a8978efbd1539d7bc2aaa23d92de4",
+      "distribution": "scipy-1.17.1-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+      "declaredLicense": "BSD-3-Clause",
+      "determinedFrom": "classifier",
+      "declaredText": "BSD License"
+    },
+    {
+      "name": "sentry-sdk",
+      "version": "2.69.1",
+      "source": "pypi",
+      "sha256": "2d2556d9a14db548982b914cbed2a2dc07b6e55d941a620752f89a2afccfd78d",
+      "distribution": "sentry_sdk-2.69.1-py3-none-any.whl",
+      "declaredLicense": "MIT",
+      "determinedFrom": "license-expression"
+    },
+    {
+      "name": "setuptools",
+      "version": "84.0.0",
+      "source": "pypi",
+      "sha256": "51a52592b3b99e102b609654876bd65f19f999935166d1352678931132b0c670",
+      "distribution": "setuptools-84.0.0-py3-none-any.whl",
+      "declaredLicense": "MIT",
+      "determinedFrom": "license-expression"
+    },
+    {
+      "name": "six",
+      "version": "1.17.0",
+      "source": "pypi",
+      "sha256": "4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274",
+      "distribution": "six-1.17.0-py2.py3-none-any.whl",
+      "declaredLicense": "MIT",
+      "determinedFrom": "license-field"
+    },
+    {
+      "name": "smmap",
+      "version": "5.0.3",
+      "source": "pypi",
+      "sha256": "c106e05d5a61449cf6ba9a1e650227ecfb141590d2a98412103ff35d89fc7b2f",
+      "distribution": "smmap-5.0.3-py3-none-any.whl",
+      "declaredLicense": "BSD-3-Clause",
+      "determinedFrom": "license-field"
+    },
+    {
+      "name": "stack-data",
+      "version": "0.6.3",
+      "source": "pypi",
+      "sha256": "d5558e0c25a4cb0853cddad3d77da9891a08cb85dd9f9f91b9f8cd66e511e695",
+      "distribution": "stack_data-0.6.3-py3-none-any.whl",
+      "declaredLicense": "MIT",
+      "determinedFrom": "license-field"
+    },
+    {
+      "name": "sympy",
+      "version": "1.14.0",
+      "source": "pypi",
+      "sha256": "e091cc3e99d2141a0ba2847328f5479b05d94a6635cb96148ccb3f34671bd8f5",
+      "distribution": "sympy-1.14.0-py3-none-any.whl",
+      "declaredLicense": "BSD-3-Clause",
+      "determinedFrom": "license-field",
+      "declaredText": "BSD"
+    },
+    {
+      "name": "threadpoolctl",
+      "version": "3.6.0",
+      "source": "pypi",
+      "sha256": "43a0b8fd5a2928500110039e43a5eed8480b918967083ea48dc3ab9f13c4a7fb",
+      "distribution": "threadpoolctl-3.6.0-py3-none-any.whl",
+      "declaredLicense": "BSD-3-Clause",
+      "determinedFrom": "license-field"
+    },
+    {
+      "name": "torch",
+      "version": "2.7.1",
+      "source": "pypi",
+      "sha256": "06eea61f859436622e78dd0cdd51dbc8f8c6d76917a9cf0555a333f9eac31ec1",
+      "distribution": "torch-2.7.1-cp311-cp311-manylinux_2_28_x86_64.whl",
+      "declaredLicense": "BSD-3-Clause",
+      "determinedFrom": "license-field"
+    },
+    {
+      "name": "torchaudio",
+      "version": "2.7.1",
+      "source": "pypi",
+      "sha256": "f8bd69354a397753b9dea9699d9e1251f8496fbbdf3028c7086a57a615bf33c3",
+      "distribution": "torchaudio-2.7.1-cp311-cp311-manylinux_2_28_x86_64.whl",
+      "declaredLicense": "BSD-3-Clause",
+      "determinedFrom": "classifier",
+      "declaredText": "BSD License"
+    },
+    {
+      "name": "torchvision",
+      "version": "0.22.1",
+      "source": "pypi",
+      "sha256": "b7866a3b326413e67724ac46f1ee594996735e10521ba9e6cdbe0fa3cd98c2f2",
+      "distribution": "torchvision-0.22.1-cp311-cp311-manylinux_2_28_x86_64.whl",
+      "declaredLicense": "BSD-3-Clause",
+      "determinedFrom": "license-field",
+      "declaredText": "BSD"
+    },
+    {
+      "name": "tqdm",
+      "version": "4.67.1",
+      "source": "pypi",
+      "sha256": "26445eca388f82e72884e0d580d5464cd801a3ea01e63e5601bdff9ba6a48de2",
+      "distribution": "tqdm-4.67.1-py3-none-any.whl",
+      "declaredLicense": "MPL-2.0 AND MIT",
+      "determinedFrom": "license-field"
+    },
+    {
+      "name": "traitlets",
+      "version": "5.16.1",
+      "source": "pypi",
+      "sha256": "f775618166caa0396c8e337099240f2bd3e5e917d203b2e6fbe21a58d3cb1f6b",
+      "distribution": "traitlets-5.16.1-py3-none-any.whl",
+      "declaredLicense": "BSD-3-Clause",
+      "determinedFrom": "classifier",
+      "declaredText": "BSD License"
+    },
+    {
+      "name": "triton",
+      "version": "3.3.1",
+      "source": "pypi",
+      "sha256": "b31e3aa26f8cb3cc5bf4e187bf737cbacf17311e1112b781d4a059353dfd731b",
+      "distribution": "triton-3.3.1-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+      "declaredLicense": "MIT",
+      "determinedFrom": "classifier",
+      "declaredText": "MIT License"
+    },
+    {
+      "name": "typing-extensions",
+      "version": "4.16.0",
+      "source": "pypi",
+      "sha256": "481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8",
+      "distribution": "typing_extensions-4.16.0-py3-none-any.whl",
+      "declaredLicense": "PSF-2.0",
+      "determinedFrom": "license-expression"
+    },
+    {
+      "name": "typing-inspection",
+      "version": "0.4.4",
+      "source": "pypi",
+      "sha256": "65b8397ba37ccbce054456aaccddfc91e6e3083c92824df348d96ca832f3f147",
+      "distribution": "typing_inspection-0.4.4-py3-none-any.whl",
+      "declaredLicense": "MIT",
+      "determinedFrom": "license-expression"
+    },
+    {
+      "name": "tzdata",
+      "version": "2026.4",
+      "source": "pypi",
+      "sha256": "c2169a8b0a7a5e9674da5a135ccdfb2b3e671b333ed9fed17b41f73c34476e81",
+      "distribution": "tzdata-2026.4-py2.py3-none-any.whl",
+      "declaredLicense": "Apache-2.0",
+      "determinedFrom": "license-field"
+    },
+    {
+      "name": "urllib3",
+      "version": "2.7.0",
+      "source": "pypi",
+      "sha256": "9fb4c81ebbb1ce9531cce37674bbc6f1360472bc18ca9a553ede278ef7276897",
+      "distribution": "urllib3-2.7.0-py3-none-any.whl",
+      "declaredLicense": "MIT",
+      "determinedFrom": "license-expression"
+    },
+    {
+      "name": "wandb",
+      "version": "0.21.1",
+      "source": "pypi",
+      "sha256": "5ded9313672630c0630f5b13c598ce9aa0e932e811ebc18823fcc4d73acfb6bb",
+      "distribution": "wandb-0.21.1-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "declaredLicense": "MIT",
+      "determinedFrom": "classifier",
+      "declaredText": "MIT License"
+    },
+    {
+      "name": "wcwidth",
+      "version": "0.8.3",
+      "source": "pypi",
+      "sha256": "d5b73dba6158a595ec9370350e7f2637bcac8d6c5e4fde34f30fcffb6103a5e4",
+      "distribution": "wcwidth-0.8.3-py3-none-any.whl",
+      "declaredLicense": "MIT",
+      "determinedFrom": "license-expression"
+    },
+    {
+      "name": "widgetsnbextension",
+      "version": "4.0.16",
+      "source": "pypi",
+      "sha256": "a31a8774885b96fe825462f5d6496166f0c7cae111195b6465c801d230eb5a4e",
+      "distribution": "widgetsnbextension-4.0.16-py3-none-any.whl",
+      "declaredLicense": "BSD-3-Clause",
+      "determinedFrom": "license-field",
+      "declaredText": "BSD 3-Clause License"
+    }
+  ]
+}

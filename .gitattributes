@@ -28,3 +28,15 @@ runtime-boxes/legal/** text eol=lf
 # `scrolls/`. A CRLF checkout fails the build at "Local box file SHA-256 mismatch", after the
 # multi-gigabyte environment has already been solved and packed.
 runtime-boxes/native-tools/** text eol=lf
+
+# A scroll is the document a box's identity is derived from, and a measurement record is retained
+# evidence. Both are compared and hashed across machines, so they must read identically on all of
+# them rather than however the checkout platform spells a line break.
+runtime-boxes/scrolls/**/*.json text eol=lf
+runtime-boxes/measurements/** text eol=lf
+
+# Each of these embeds the exact Python a product runner executes, and a scientific validator
+# records the SHA-256 of that extracted text as evidence. Left to `text=auto` the same runner hashes
+# one way on a Windows checkout and another on Linux CI, so one evidence record could never be
+# reconciled with another.
+frontend/src/lib/tools/**/python-scripts/*.ts text eol=lf

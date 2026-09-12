@@ -1,0 +1,582 @@
+[
+  {
+    "name": "absl-py",
+    "version": "2.5.0",
+    "declaredLicense": "Apache-2.0"
+  },
+  {
+    "name": "annotated-types",
+    "version": "0.8.0",
+    "declaredLicense": "MIT"
+  },
+  {
+    "name": "asttokens",
+    "version": "3.0.2",
+    "declaredLicense": "Apache-2.0"
+  },
+  {
+    "name": "biopython",
+    "version": "1.85",
+    "declaredLicense": "LicenseRef-Biopython"
+  },
+  {
+    "name": "biotite",
+    "version": "1.4.0",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "biotraj",
+    "version": "1.2.2",
+    "declaredLicense": "LGPL-2.1-or-later"
+  },
+  {
+    "name": "certifi",
+    "version": "2026.7.22",
+    "declaredLicense": "MPL-2.0"
+  },
+  {
+    "name": "charset-normalizer",
+    "version": "3.5.1",
+    "declaredLicense": "MIT"
+  },
+  {
+    "name": "click",
+    "version": "8.5.0",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "cloudpickle",
+    "version": "3.1.2",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "colorama",
+    "version": "0.4.6",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "comm",
+    "version": "0.2.3",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "contourpy",
+    "version": "1.3.3",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "cuequivariance",
+    "version": "0.11.1",
+    "declaredLicense": "Apache-2.0"
+  },
+  {
+    "name": "cuequivariance-ops-cu12",
+    "version": "0.8.0",
+    "declaredLicense": "LicenseRef-NVIDIA-Proprietary"
+  },
+  {
+    "name": "cuequivariance-ops-torch-cu12",
+    "version": "0.8.0",
+    "declaredLicense": "LicenseRef-NVIDIA-Proprietary"
+  },
+  {
+    "name": "cuequivariance-torch",
+    "version": "0.8.0",
+    "declaredLicense": "Apache-2.0"
+  },
+  {
+    "name": "cycler",
+    "version": "0.12.1",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "decorator",
+    "version": "5.3.1",
+    "declaredLicense": "BSD-2-Clause"
+  },
+  {
+    "name": "deepspeed",
+    "version": "0.17.5",
+    "declaredLicense": "Apache-2.0"
+  },
+  {
+    "name": "einops",
+    "version": "0.8.2",
+    "declaredLicense": "MIT"
+  },
+  {
+    "name": "executing",
+    "version": "2.2.1",
+    "declaredLicense": "MIT"
+  },
+  {
+    "name": "fair-esm",
+    "version": "2.0.0",
+    "declaredLicense": "MIT"
+  },
+  {
+    "name": "filelock",
+    "version": "3.32.6",
+    "declaredLicense": "MIT"
+  },
+  {
+    "name": "fonttools",
+    "version": "4.65.0",
+    "declaredLicense": "MIT"
+  },
+  {
+    "name": "fsspec",
+    "version": "2026.7.0",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "gemmi",
+    "version": "0.6.7",
+    "declaredLicense": "MPL-2.0"
+  },
+  {
+    "name": "gitdb",
+    "version": "4.0.12",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "gitpython",
+    "version": "3.1.62",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "hjson",
+    "version": "3.1.0",
+    "declaredLicense": "MIT"
+  },
+  {
+    "name": "icecream",
+    "version": "2.1.7",
+    "declaredLicense": "MIT"
+  },
+  {
+    "name": "idna",
+    "version": "3.19",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "ihm",
+    "version": "2.11",
+    "declaredLicense": "MIT"
+  },
+  {
+    "name": "ipdb",
+    "version": "0.13.13",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "ipython",
+    "version": "9.17.1",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "ipython-pygments-lexers",
+    "version": "1.1.1",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "ipywidgets",
+    "version": "8.1.7",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "jedi",
+    "version": "0.20.0",
+    "declaredLicense": "MIT"
+  },
+  {
+    "name": "jinja2",
+    "version": "3.1.6",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "joblib",
+    "version": "1.6.0",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "jupyterlab-widgets",
+    "version": "3.0.17",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "kiwisolver",
+    "version": "1.5.1",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "markupsafe",
+    "version": "3.0.3",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "matplotlib",
+    "version": "3.10.5",
+    "declaredLicense": "LicenseRef-Matplotlib"
+  },
+  {
+    "name": "matplotlib-inline",
+    "version": "0.2.2",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "ml-collections",
+    "version": "1.1.0",
+    "declaredLicense": "Apache-2.0"
+  },
+  {
+    "name": "modelcif",
+    "version": "1.4",
+    "declaredLicense": "MIT"
+  },
+  {
+    "name": "mpmath",
+    "version": "1.3.0",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "msgpack",
+    "version": "1.2.2",
+    "declaredLicense": "Apache-2.0"
+  },
+  {
+    "name": "networkx",
+    "version": "3.6.1",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "ninja",
+    "version": "1.13.2",
+    "declaredLicense": "Apache-2.0"
+  },
+  {
+    "name": "numpy",
+    "version": "2.4.1",
+    "declaredLicense": "BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0"
+  },
+  {
+    "name": "nvidia-cublas-cu12",
+    "version": "12.6.4.1",
+    "declaredLicense": "LicenseRef-NVIDIA-CUDA-EULA"
+  },
+  {
+    "name": "nvidia-cuda-cupti-cu12",
+    "version": "12.6.80",
+    "declaredLicense": "LicenseRef-NVIDIA-CUDA-EULA"
+  },
+  {
+    "name": "nvidia-cuda-nvrtc-cu12",
+    "version": "12.6.77",
+    "declaredLicense": "LicenseRef-NVIDIA-CUDA-EULA"
+  },
+  {
+    "name": "nvidia-cuda-runtime-cu12",
+    "version": "12.6.77",
+    "declaredLicense": "LicenseRef-NVIDIA-CUDA-EULA"
+  },
+  {
+    "name": "nvidia-cudnn-cu12",
+    "version": "9.5.1.17",
+    "declaredLicense": "LicenseRef-NVIDIA-SDK-License-Agreement"
+  },
+  {
+    "name": "nvidia-cufft-cu12",
+    "version": "11.3.0.4",
+    "declaredLicense": "LicenseRef-NVIDIA-CUDA-EULA"
+  },
+  {
+    "name": "nvidia-cufile-cu12",
+    "version": "1.11.1.6",
+    "declaredLicense": "LicenseRef-NVIDIA-CUDA-EULA"
+  },
+  {
+    "name": "nvidia-curand-cu12",
+    "version": "10.3.7.77",
+    "declaredLicense": "LicenseRef-NVIDIA-CUDA-EULA"
+  },
+  {
+    "name": "nvidia-cusolver-cu12",
+    "version": "11.7.1.2",
+    "declaredLicense": "LicenseRef-NVIDIA-CUDA-EULA"
+  },
+  {
+    "name": "nvidia-cusparse-cu12",
+    "version": "12.5.4.2",
+    "declaredLicense": "LicenseRef-NVIDIA-CUDA-EULA"
+  },
+  {
+    "name": "nvidia-cusparselt-cu12",
+    "version": "0.6.3",
+    "declaredLicense": "LicenseRef-NVIDIA-SDK-License-Agreement"
+  },
+  {
+    "name": "nvidia-ml-py",
+    "version": "13.610.43",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "nvidia-nccl-cu12",
+    "version": "2.26.2",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "nvidia-nvjitlink-cu12",
+    "version": "12.6.85",
+    "declaredLicense": "LicenseRef-NVIDIA-CUDA-EULA"
+  },
+  {
+    "name": "nvidia-nvtx-cu12",
+    "version": "12.6.77",
+    "declaredLicense": "Apache-2.0"
+  },
+  {
+    "name": "opt-einsum",
+    "version": "3.4.0",
+    "declaredLicense": "MIT"
+  },
+  {
+    "name": "optree",
+    "version": "0.17.0",
+    "declaredLicense": "Apache-2.0"
+  },
+  {
+    "name": "packaging",
+    "version": "26.3",
+    "declaredLicense": "Apache-2.0 OR BSD-2-Clause"
+  },
+  {
+    "name": "pandas",
+    "version": "2.3.1",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "parso",
+    "version": "0.8.7",
+    "declaredLicense": "MIT"
+  },
+  {
+    "name": "pdbeccdutils",
+    "version": "1.0.0",
+    "declaredLicense": "Apache-2.0"
+  },
+  {
+    "name": "pexpect",
+    "version": "4.9.0",
+    "declaredLicense": "ISC"
+  },
+  {
+    "name": "pillow",
+    "version": "12.3.0",
+    "declaredLicense": "MIT-CMU"
+  },
+  {
+    "name": "platformdirs",
+    "version": "4.11.8",
+    "declaredLicense": "MIT"
+  },
+  {
+    "name": "prompt-toolkit",
+    "version": "3.0.53",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "protenix",
+    "version": "2.0.0",
+    "declaredLicense": "Apache-2.0"
+  },
+  {
+    "name": "protobuf",
+    "version": "6.31.1",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "psutil",
+    "version": "7.2.2",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "ptyprocess",
+    "version": "0.7.0",
+    "declaredLicense": "ISC"
+  },
+  {
+    "name": "pure-eval",
+    "version": "0.2.4",
+    "declaredLicense": "MIT"
+  },
+  {
+    "name": "py-cpuinfo",
+    "version": "9.0.0",
+    "declaredLicense": "MIT"
+  },
+  {
+    "name": "py3dmol",
+    "version": "2.5.2",
+    "declaredLicense": "MIT"
+  },
+  {
+    "name": "pydantic",
+    "version": "2.13.5",
+    "declaredLicense": "MIT"
+  },
+  {
+    "name": "pydantic-core",
+    "version": "2.46.5",
+    "declaredLicense": "MIT"
+  },
+  {
+    "name": "pygments",
+    "version": "2.21.0",
+    "declaredLicense": "BSD-2-Clause"
+  },
+  {
+    "name": "pyparsing",
+    "version": "3.3.2",
+    "declaredLicense": "MIT"
+  },
+  {
+    "name": "python-dateutil",
+    "version": "2.9.0.post0",
+    "declaredLicense": "Apache-2.0 OR BSD-3-Clause"
+  },
+  {
+    "name": "pytz",
+    "version": "2026.3.post1",
+    "declaredLicense": "MIT"
+  },
+  {
+    "name": "pyyaml",
+    "version": "6.0.2",
+    "declaredLicense": "MIT"
+  },
+  {
+    "name": "rdkit",
+    "version": "2025.9.3",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "requests",
+    "version": "2.34.2",
+    "declaredLicense": "Apache-2.0"
+  },
+  {
+    "name": "scikit-learn",
+    "version": "1.7.1",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "scikit-learn-extra",
+    "version": "0.3.0",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "scipy",
+    "version": "1.17.1",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "sentry-sdk",
+    "version": "2.69.1",
+    "declaredLicense": "MIT"
+  },
+  {
+    "name": "setuptools",
+    "version": "84.0.0",
+    "declaredLicense": "MIT"
+  },
+  {
+    "name": "six",
+    "version": "1.17.0",
+    "declaredLicense": "MIT"
+  },
+  {
+    "name": "smmap",
+    "version": "5.0.3",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "stack-data",
+    "version": "0.6.3",
+    "declaredLicense": "MIT"
+  },
+  {
+    "name": "sympy",
+    "version": "1.14.0",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "threadpoolctl",
+    "version": "3.6.0",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "torch",
+    "version": "2.7.1",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "torchaudio",
+    "version": "2.7.1",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "torchvision",
+    "version": "0.22.1",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "tqdm",
+    "version": "4.67.1",
+    "declaredLicense": "MPL-2.0 AND MIT"
+  },
+  {
+    "name": "traitlets",
+    "version": "5.16.1",
+    "declaredLicense": "BSD-3-Clause"
+  },
+  {
+    "name": "triton",
+    "version": "3.3.1",
+    "declaredLicense": "MIT"
+  },
+  {
+    "name": "typing-extensions",
+    "version": "4.16.0",
+    "declaredLicense": "PSF-2.0"
+  },
+  {
+    "name": "typing-inspection",
+    "version": "0.4.4",
+    "declaredLicense": "MIT"
+  },
+  {
+    "name": "tzdata",
+    "version": "2026.4",
+    "declaredLicense": "Apache-2.0"
+  },
+  {
+    "name": "urllib3",
+    "version": "2.7.0",
+    "declaredLicense": "MIT"
+  },
+  {
+    "name": "wandb",
+    "version": "0.21.1",
+    "declaredLicense": "MIT"
+  },
+  {
+    "name": "wcwidth",
+    "version": "0.8.3",
+    "declaredLicense": "MIT"
+  },
+  {
+    "name": "widgetsnbextension",
+    "version": "4.0.16",
+    "declaredLicense": "BSD-3-Clause"
+  }
+]

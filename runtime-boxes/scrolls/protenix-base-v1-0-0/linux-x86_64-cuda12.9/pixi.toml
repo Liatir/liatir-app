@@ -1,0 +1,27 @@
+# Protenix base v1.0.0: the largest publicly available Protenix checkpoint. The v2 weights are
+# withheld by ByteDance pending an internal review, so this is the model Liatir ships — a separate
+# component, never v2 wearing v1's weights.
+# See ../../../../.context/decisions/protenix-ships-v1-while-v2-waits.md
+#
+# Conda supplies Python and the CUDA virtual package, and nothing else. Every other pin belongs to
+# Protenix and is resolved from PyPI at the version upstream requires. This is the opposite of how
+# every other box here is built, and it is the only shape that resolves: conda-forge's PyTorch pins
+# `numpy==2.4.6` into the PyPI solve while `protenix==2.0.0` requires `numpy==2.4.1`, and
+# conda-forge's `torchvision 0.22.1` constrains `numpy <2.4`. Restating upstream's requirements in
+# conda terms is what made them unsatisfiable; declining to restate them is what honours them.
+# See ../../../../.context/decisions/protenix-resolves-through-pypi.md
+[workspace]
+name = "protenix-base-v1-0-0-linux-x86_64-cuda12.9"
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+
+[system-requirements]
+cuda = "12.9"
+
+[dependencies]
+python = "3.11.*"
+
+# The published wheel rather than the git commit it was built from: a git revision addresses a tree,
+# and a signed box verifies bytes.
+[pypi-dependencies]
+protenix = "==2.0.0"

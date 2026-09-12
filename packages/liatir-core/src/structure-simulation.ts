@@ -5,21 +5,26 @@ import { runtimeBoxTargetId, type LiatirRuntimeBoxTarget } from "./runtime-box.j
 export const BOLTZ_2_MODEL_ID = "jwohlwend-boltz-2" as const;
 export const PROTENIX_V2_MODEL_ID = "bytedance-protenix-v2" as const;
 export const PROTENIX_MINI_DEFAULT_MODEL_ID = "bytedance-protenix-mini-default-v0-5-0" as const;
+export const PROTENIX_BASE_V1_MODEL_ID = "bytedance-protenix-base-v1-0-0" as const;
 export const OPENMM_RUNTIME_COMPONENT_ID = "openmm-openmm" as const;
 
 export const BOLTZ_2_BOX_ID = "boltz-2" as const;
 export const PROTENIX_V2_BOX_ID = "protenix-v2" as const;
 export const PROTENIX_MINI_DEFAULT_BOX_ID = "protenix-mini-default-v0-5-0" as const;
+export const PROTENIX_BASE_V1_BOX_ID = "protenix-base-v1-0-0" as const;
 export const OPENMM_BOX_ID = "openmm" as const;
 
 export const BOLTZ_2_RUNTIME_ID = "structure-boltz-2-2-1" as const;
 export const PROTENIX_V2_RUNTIME_ID = "structure-protenix-v2-2-0-0" as const;
 export const PROTENIX_MINI_DEFAULT_RUNTIME_ID = "structure-protenix-mini-default-v0-5-0" as const;
+export const PROTENIX_BASE_V1_RUNTIME_ID = "structure-protenix-base-v1-0-0" as const;
 export const OPENMM_RUNTIME_ID = "molecular-simulation-openmm-8-5-1" as const;
 
 export const BOLTZ_2_VERSION = "2.2.1" as const;
 export const PROTENIX_V2_VERSION = "2.0.0" as const;
 export const PROTENIX_MINI_DEFAULT_VERSION = "0.5.0" as const;
+/** The Protenix package both checkpoints run on; the checkpoint is named by the model id. */
+export const PROTENIX_BASE_V1_VERSION = "1.0.0" as const;
 export const OPENMM_VERSION = "8.5.1" as const;
 
 export const BIOMOLECULAR_STRUCTURE_PREDICTION_TOOL_ID = "biomolecular-structure-prediction" as const;
@@ -30,11 +35,13 @@ export const MOLECULAR_DYNAMICS_TOOL_ID = "molecular-dynamics" as const;
 export type LiatirStructureModelId =
   | typeof BOLTZ_2_MODEL_ID
   | typeof PROTENIX_V2_MODEL_ID
+  | typeof PROTENIX_BASE_V1_MODEL_ID
   | typeof PROTENIX_MINI_DEFAULT_MODEL_ID;
 
 export const LIATIR_STRUCTURE_MODEL_IDS: readonly LiatirStructureModelId[] = [
   BOLTZ_2_MODEL_ID,
   PROTENIX_V2_MODEL_ID,
+  PROTENIX_BASE_V1_MODEL_ID,
   PROTENIX_MINI_DEFAULT_MODEL_ID,
 ];
 
@@ -374,8 +381,13 @@ export function adaptProtenixInput(
   const validation = validateStructurePredictionRequest(request);
   if (!validation.valid) return adapterFailure(validation, []);
   const errors: string[] = [];
-  if (request.modelId !== PROTENIX_V2_MODEL_ID && request.modelId !== PROTENIX_MINI_DEFAULT_MODEL_ID) {
-    errors.push("Protenix adapter requires Protenix v2 or Protenix Mini Default v0.5.0.");
+  const protenixModels: readonly LiatirStructureModelId[] = [
+    PROTENIX_V2_MODEL_ID,
+    PROTENIX_BASE_V1_MODEL_ID,
+    PROTENIX_MINI_DEFAULT_MODEL_ID,
+  ];
+  if (!protenixModels.includes(request.modelId)) {
+    errors.push("Protenix adapter requires a Protenix model.");
   }
   const mini = request.modelId === PROTENIX_MINI_DEFAULT_MODEL_ID;
   const templatesByEntity = new Map<string, LiatirComplexSpec["templates"]>();

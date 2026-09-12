@@ -206,12 +206,12 @@ gemmi so the check uses the same numerics as the prediction. The reference is pi
 ### It needed a third Scrollcase fix
 
 `mols.tar` is an **uncompressed** tar, and `assetArchives` accepted only `zip` and `tar.gz`. Fixed
-upstream in [scrollcase#14](https://github.com/suffro/scrollcase/pull/14), which also drops a
-`gzip: true` that read like a guarantee and was not one — node-tar detects compression itself.
+upstream in [PR #14](https://github.com/suffro/scrollcase/pull/14), which also drops a `gzip: true`
+that read like a guarantee and was not one — node-tar detects compression itself.
 
-**This is why the box cannot yet be built from a clean checkout.** Liatir pins `scrollcase@1.1.1`,
-which refuses `"format": "tar"` by schema. The pin moves as soon as that PR is released; until then
-the Boltz scroll is committed and correct but unbuildable with the pinned version.
+Released as **`scrollcase@1.2.0`**, and Liatir is pinned to it as of 2026-09-12. The box on disk was
+built against a local pack of that branch; the scroll now validates against the published package,
+so a clean checkout builds it.
 
 ### How the download step is replaced rather than suffered
 
