@@ -118,19 +118,21 @@ or Results lifecycle, no catalog entry, and no CI workflow. The product runner
 (`scripts/validate-boltz-runtime.mjs`) are written; the catalog entry waits on a product lifecycle
 spec that would otherwise assert nothing.
 
-## The macOS boxes are rebuilt as version 3, all but OpenMM (2026-09-11)
+## The macOS boxes are rebuilt as version 3, all seven (2026-09-11)
 
-**Five published macOS targets plus `native-tools`, rebuilt on a Mac, no failure**: Geneformer,
-scGPT, UCE and mhcflurry on `macos-aarch64-metal`, pvactools on `macos-aarch64-cpu`. Each passed
-its own self-test before signing, on the same terms as the Linux set — the science was not
-repeated. With the eight from Linux, every published box now exists as a v3 development artefact
-under `.runtime-box-dist/`.
+**Five published macOS targets plus `native-tools` and OpenMM, rebuilt on a Mac, no failure**:
+Geneformer, scGPT, UCE and mhcflurry on `macos-aarch64-metal`, pvactools and OpenMM on
+`macos-aarch64-cpu`. Each passed its own self-test before signing, on the same terms as the Linux
+set — the science was not repeated. With the eight from Linux, **every published box now exists as a
+v3 development artefact** under `.runtime-box-dist/`, and nothing is left to rebuild.
 
-**OpenMM macOS is the one exception, and it is not a build problem.** There is no signing key for
-it in the machine's local key directory, which holds keys for five boxes and not that one. The v2
-artefact still on disk is from 2026-09-08 and carries `liatir-openmm-development`, so the key
-exists — the Linux machine built both OpenMM Linux targets — just not on this Mac. Minting a fresh
-key here would sign the box under a different identity from its Linux siblings, so it waits.
+**The local signing keys are not all in one place.** Five boxes have a per-box key in a directory
+named after the box; OpenMM signs with the key at the *root* of the machine's local key directory,
+under the id `liatir-openmm-development`. Looking only in the per-box layout makes OpenMM read as a
+box with no key at all, which turns a routine build into a blocked one. Neither is a trust root:
+`runtime-boxes/trust/` holds `liatir-runtime-box-development-2026` and
+`liatir-runtime-box-production-2026`, which are the publication and CI identities rather than what
+signs a local development artefact.
 
 **Two things cost real time and are worth knowing before the next run.** A dirty working tree stops
 a build outright — Scrollcase refuses, correctly, and four boxes failed in one second each before

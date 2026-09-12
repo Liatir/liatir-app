@@ -1,8 +1,7 @@
 # Adopting Scrollcase v3, and what it unblocks
 
-Opened 2026-09-11. **Status: the code is migrated and green, and every published box is rebuilt on
-every platform.** One artefact is left — the macOS OpenMM target — and it is blocked on a signing
-key, not on a build.
+Opened 2026-09-11. **Status: the code is migrated and green, and every published box is rebuilt as
+v3 on every platform.** Nothing is left to rebuild.
 
 Done: `scrollcase@1.1.1` and `scrollcase-consumer 0.4.0` pinned, all 22 scrolls rewritten and
 accepted by `audit`, the Rust bridge, the WSL2 consumer, the shared contract, every script, the
@@ -15,16 +14,18 @@ Linux CUDA, and both OpenMM Linux targets. Each passed its own self-test before 
 which is the check that says the scroll is right; the science was not repeated, by the owner's
 decision. They are development-key artefacts under `.runtime-box-dist/`, not publications.
 
-**The five macOS boxes are rebuilt too, on a Mac** (2026-09-11): Geneformer, scGPT, UCE and
-mhcflurry on `macos-aarch64-metal`, pvactools on `macos-aarch64-cpu`, plus the bundled
-`native-tools`. Each passed its own self-test before it was signed, on the same terms as the Linux
-set — the science was not repeated.
+**The macOS boxes are rebuilt too, seven of seven, with no failure** (2026-09-11): Geneformer,
+scGPT, UCE and mhcflurry on `macos-aarch64-metal`, pvactools and OpenMM on `macos-aarch64-cpu`, plus
+the bundled `native-tools`. Each passed its own self-test before it was signed, on the same terms as
+the Linux set — the science was not repeated.
 
-Not done: **the macOS OpenMM target**, which is the one box with no signing key under
-the machine's local key directory. The v2 artefact still on disk is from 2026-09-08 and was signed
-`liatir-openmm-development`, so the key exists somewhere — the Linux machine built both OpenMM Linux
-targets — but not on this Mac. Minting a fresh one here would sign it under a different identity
-from its Linux siblings, so it waits for the owner rather than being worked around.
+**The local signing keys are not all in one place, and assuming they are costs an hour.** Five boxes
+have a per-box key in a directory named after the box. OpenMM does not: it signs with the key at the
+*root* of the machine's local key directory, whose id is `liatir-openmm-development`. Looking only
+in the per-box layout makes it read as a missing key, and turns a routine build into a blocked one.
+Neither is a trust root — `runtime-boxes/trust/` holds those, `liatir-runtime-box-development-2026`
+and `liatir-runtime-box-production-2026`, and they are the publication and CI identities rather than
+what signs a local development artefact.
 
 ## What the rebuilds cost, and why
 
@@ -62,7 +63,7 @@ natively — there is no WSL2 on a Mac.
 | Platform | Published targets | Rebuilt where | Done |
 | --- | ---: | --- | --- |
 | Linux | 5 | this machine, inside WSL2 | ✅ all five, plus `native-tools` and both OpenMM targets |
-| macOS | 5 | a Mac, natively | ✅ all five, plus `native-tools`; OpenMM waits for its key |
+| macOS | 5 | a Mac, natively | ✅ all five, plus `native-tools` and OpenMM |
 
 The three native Windows targets were **retired** on 2026-09-11 rather than rebuilt — see
 [no native Windows Runtime Box targets](../../decisions/no-native-windows-runtime-box-targets.md).
@@ -115,10 +116,10 @@ Full evidence for the blocker is in [the Boltz source review](./phase3-boltz-sou
    `scripts/runtime-box/pypi-license-inventory.py`.
 2. ✅ **Liatir adopts Scrollcase 1.x.** Done in one pass, to a version that already carries what
    Boltz needs.
-3. 🟡 **Rebuild every published box** as a v3 artefact, plus the bundled `native-tools` box.
+3. ✅ **Rebuild every published box** as a v3 artefact, plus the bundled `native-tools` box.
    A rebuild is enough to prove the scroll: each model's science was already validated and does
-   not need repeating, by the owner's decision of 2026-09-11. Eight done on Linux and Windows,
-   six on macOS. Only the macOS OpenMM target is left, blocked on its signing key.
+   not need repeating, by the owner's decision of 2026-09-11. Eight on Linux and Windows, seven on
+   macOS, no failure anywhere.
 4. ⏳ **Republish**, together with an app build that can read v3. Separately authorized, and the
    reason this is not a quiet dependency bump.
 5. ✅ **Then Boltz-2**: scroll, local build with a development key, `verify --self-test`, product
