@@ -225,6 +225,35 @@ Every advertised size matched the bytes actually received. `components.cif` is t
 Chemical Component Dictionary that Boltz-2 bundles in a different form, so the CC0 provenance
 established in [the Boltz legal record](../../../runtime-boxes/legal/boltz-2.md) covers it too.
 
+### Three defaults a self-contained box has to turn off
+
+Every one of these was found by running the thing, not by reading it, and all three are the same
+shape: a model optimised for a workstation its authors control, defaulting to something an
+installed, offline, signed box cannot have.
+
+1. **`--use_msa` defaults to True**, and True means Protenix contacts its own alignment server. An
+   offline box cannot. Predictions are made without an alignment, which is less accurate, and the
+   result says so rather than letting a caller assume otherwise.
+2. **`--trimul_kernel` and `--triatt_kernel` default to `cuequivariance`** — the same closed-source
+   NVIDIA kernels Boltz reaches for. Both are set to `torch`, the pure-PyTorch implementation of the
+   same operations.
+3. **`LAYERNORM_TYPE` defaults to `fast_layernorm`**, a CUDA extension Protenix **compiles on first
+   use**. The first build failed its self-test on exactly that:
+
+   ```text
+   ModuleNotFoundError: No module named 'fast_layer_norm_cuda_v2'
+   RuntimeError: Ninja is required to load C++ extensions
+   ```
+
+   A packed box carries no compiler, and asking a user's machine to build a CUDA kernel mid-
+   prediction would be slow where it worked and baffling where it did not. `LAYERNORM_TYPE=torch` is
+   the native implementation, it is read at *import* time so it has to be set before Protenix is
+   touched, and it is the value **upstream's own tests set**.
+
+The box declares the third in its scroll `environment`, so it holds however the box is started, and
+the self-test and the product runner each set all of what they need explicitly rather than trusting
+an inherited variable.
+
 ### The git dependency should become a wheel pin
 
 The reviewed manifest takes `protenix` from a pinned git commit. That leaves the **one lock entry

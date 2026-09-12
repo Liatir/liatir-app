@@ -55,6 +55,11 @@ socket.socket.connect_ex = blocked_connect_ex
 # Set before Protenix is imported: its configuration module reads this at import time and every
 # data path in the package is derived from it.
 os.environ["PROTENIX_ROOT_DIR"] = str(CACHE)
+# Protenix's default LayerNorm is a CUDA extension it compiles on first use, which needs ninja and a
+# compiler that a packed box does not carry and a user's machine should never be asked for. Upstream
+# reads this at import time and its own tests set exactly this value; "torch" is the native
+# implementation of the same operation.
+os.environ["LAYERNORM_TYPE"] = "torch"
 os.environ["WANDB_MODE"] = "disabled"
 os.environ["WANDB_DISABLED"] = "true"
 

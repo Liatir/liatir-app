@@ -30,6 +30,11 @@ MODEL_NAME = "protenix_base_default_v1.0.0"
 # Protenix downloads the whole cache from ByteDance — which is precisely what an installed,
 # offline box exists to avoid.
 os.environ["PROTENIX_ROOT_DIR"] = str(cache_dir)
+# Protenix's default LayerNorm is a CUDA extension compiled on first use, which needs ninja and a
+# compiler toolchain. A packed box carries neither, and asking a user's machine to build a kernel
+# mid-prediction would be slow where it worked and baffling where it did not. Upstream reads this at
+# import time and its own tests set exactly this value.
+os.environ["LAYERNORM_TYPE"] = "torch"
 os.environ["WANDB_MODE"] = "disabled"
 os.environ["WANDB_DISABLED"] = "true"
 os.environ["WANDB_SILENT"] = "true"

@@ -75,7 +75,7 @@
     {
       "sourcePath": "runtime-boxes/scrolls/protenix-base-v1-0-0/self-test.py",
       "relativePath": "self-tests/protenix-base-v1-0-0.py",
-      "sha256": "b3e5c5b2112505239accdc25987f03213b019d888992aef0844eeff33ace24cb"
+      "sha256": "06df4a2af1353862648c4236a0ab8dd7f84173c283ff0b423f4a251dd086b411"
     }
   ],
   "selfTest": {
@@ -101,6 +101,7 @@
     "code": "from pathlib import Path\ncode = Path('self-tests/protenix-base-v1-0-0.py').read_text(encoding='utf-8')\nexec(compile(code, 'self-tests/protenix-base-v1-0-0.py', 'exec'), {'__name__': '__main__'})"
   },
   "environment": {
-    "PYTHONNOUSERSITE": "1"
+    "PYTHONNOUSERSITE": "1",
+    "LAYERNORM_TYPE": "torch"
   }
 }
