@@ -31,7 +31,22 @@ const REFERENCE_SHA256 = 'd4a6812d8951cf6594e6a0763f089e35f5a80b62acb3c117b2c556
 // driver or seed difference, tight enough that a wrong fold fails, since a mispredicted 76-residue
 // protein lands well above 5 A. Holding both models to one limit is what makes the pair a check.
 const MAXIMUM_BACKBONE_RMSD_ANGSTROM = 3;
-const MINIMUM_PLDDT = 0.7;
+
+// Protenix reports pLDDT on 0-100 and the product runner divides it down, so this is a fraction as
+// it is for Boltz-2. The bound is not decoration: measured on this box, a run that found the fold
+// scored 0.93 and a run that missed it scored 0.71, so 0.7 would have waved the wrong fold through.
+const MINIMUM_PLDDT = 0.85;
+
+// Two runs at one seed must produce the same structure, not merely two structures that happen to
+// sit equally far from the reference. With upstream's determinism switch on this is exactly zero;
+// the allowance is for the last digit of the coordinates as written to the file.
+const MAXIMUM_DETERMINISM_RMSD_ANGSTROM = 0.01;
+
+// What the product itself sends when the caller asks for nothing in particular. Measuring anything
+// else measures a configuration no user will run. Several seeds rather than one is the whole reason
+// this box is usable without an alignment: a single seed found ubiquitin's fold in five of eleven
+// tries, and the seeds that missed it missed it at every sample and at double the recycling.
+const PRODUCT_DEFAULTS = { seedCount: 5, sampleCount: 5, recyclingSteps: 10, diffusionSteps: 200 };
 
 const {
   recipe, authoringId, authoringVersion, runtimeDir, python, targetId, dependencyLockSha256,
@@ -241,6 +256,15 @@ try {
     assert.equal(result.summary.runtimeBoxRelease, recipe.version);
     assert.equal(result.summary.targetId, targetId);
     assert.equal(result.summary.networkAccess, false);
+    // Being handed fewer structures than were asked for would silently weaken every prediction,
+    // because the one that is returned is the best-ranked of what was drawn.
+    assert.equal(result.summary.sampleCount, payload.sampleCount);
+    assert.equal(result.summary.seedCount, payload.seedCount);
+    assert.equal(result.summary.structureCount, payload.seedCount * payload.sampleCount);
+    assert.ok(
+      Number.isInteger(result.summary.selectedSeed),
+      `${id} did not say which seed it returned`,
+    );
     assert.ok(execution.measurement?.peakRamBytes > 0, `${id} measured no peak memory`);
     if (recipe.target.accelerator === 'cuda') {
       assert.deepEqual(execution.measurement.vramMeasurementErrors, []);
@@ -286,11 +310,15 @@ try {
   );
   assert.equal(preflight.kind, 'liatir.protenix-preflight');
   assert.equal(preflight.tokenEstimate, UBIQUITIN.length);
-  assert.equal(preflight.singleSequenceChains, 1);
+  assert.equal(preflight.chainCount, 1);
+  // Protenix has no per-chain alignment switch the way Boltz does: this box always runs without
+  // one, so the preflight must say so rather than leave it to be discovered in the summary.
+  assert.equal(preflight.usedMsa, false);
 
   const predicted = await productCase('ubiquitin-single-sequence', {
-    protenixInput: ubiquitinInput, seed: 17, sampleCount: 1, recyclingSteps: 10, diffusionSteps: 200,
+    protenixInput: ubiquitinInput, seed: 17, ...PRODUCT_DEFAULTS,
   });
+  assert.equal(predicted.summary.deterministic, true);
   assert.ok(
     predicted.summary.plddt >= MINIMUM_PLDDT,
     `Ubiquitin predicted at pLDDT ${predicted.summary.plddt}`,
@@ -309,20 +337,29 @@ try {
     `Ubiquitin backbone RMSD ${comparison.backboneRmsdAngstrom} A exceeds ${MAXIMUM_BACKBONE_RMSD_ANGSTROM} A`,
   );
 
-  // The same seed must give the same structure, or nothing downstream can be reproduced.
+  // The same seed must give the same structure, or nothing downstream can be reproduced. Measured
+  // between the two predictions rather than between their distances to the reference: two different
+  // structures can sit the same distance from a third one, so only the direct comparison is proof.
   const repeated = await productCase('ubiquitin-repeat-seed-17', {
-    protenixInput: ubiquitinInput, seed: 17, sampleCount: 1, recyclingSteps: 10, diffusionSteps: 200,
+    protenixInput: ubiquitinInput, seed: 17, ...PRODUCT_DEFAULTS,
   });
   const repeatComparison = parseResult(await execute(comparePath, {
     referencePath: REFERENCE_PDB, predictedPath: repeated.paths.structure,
   }, { accelerator: 'cpu' }), 'repeat comparison');
+  const determinism = parseResult(await execute(comparePath, {
+    referencePath: predicted.paths.structure, predictedPath: repeated.paths.structure,
+  }, { accelerator: 'cpu' }), 'determinism comparison');
+  assert.ok(
+    determinism.backboneRmsdAngstrom <= MAXIMUM_DETERMINISM_RMSD_ANGSTROM,
+    `One seed gave two structures ${determinism.backboneRmsdAngstrom} A apart`,
+  );
   const determinismDelta = Math.abs(
     repeatComparison.backboneRmsdAngstrom - comparison.backboneRmsdAngstrom,
   );
 
   await refusal('refuses-an-incomplete-installation', {
     protenixInput: ubiquitinInput, modelCacheDir: join(workDir, 'not-a-cache'),
-  }, /installation is incomplete/);
+  }, /This Runtime Box is incomplete: .* are missing from/);
   await refusal('refuses-an-empty-complex', {
     protenixInput: [{ name: 'empty', sequences: [] }],
   }, /no complex to predict/);
@@ -392,6 +429,11 @@ try {
         rankingScore: predicted.summary.rankingScore,
         ptm: predicted.summary.ptm,
         determinismRmsdDeltaAngstrom: determinismDelta,
+        // The direct comparison of the two predictions at one seed, which is the one that proves
+        // reproducibility. The delta above only says they are equally far from the reference.
+        repeatRmsdAngstrom: determinism.backboneRmsdAngstrom,
+        repeatMaximumDeviationAngstrom: determinism.maximumDeviationAngstrom,
+        repeatLimitAngstrom: MAXIMUM_DETERMINISM_RMSD_ANGSTROM,
       },
       finiteValues: comparison.allFinite,
       peakRamBytes: Math.max(...samples.map((sample) => sample.peakRamBytes)),

@@ -1,0 +1,216 @@
+{
+  "schemaVersion": 1,
+  "kind": "liatir.protenix-scientific-validation",
+  "createdAt": "2026-09-13T14:49:15.780Z",
+  "status": "passed",
+  "modelId": "bytedance-protenix-base-v1-0-0",
+  "sourceRevision": "2475421477ab414b571149ad4a875c390ff8a35d+weights-protenix_base_default_v1.0.0",
+  "targetId": "linux-x86_64-cuda12.6",
+  "productRunnerSha256": "bf59d85cbaf920192ec9014537db4b590f144c6cb9db4adf1d7d83eb2a09bf39",
+  "runtimeEvidence": {
+    "kind": "signed-payload",
+    "signedPayloadVerified": true,
+    "releaseManifestSha256": "28dc69ca340215f52a68af6479f328bb5fe01e3e2b8845c546dc257475eb437d",
+    "archiveSha256": "ec9300a5e80c5df8941033a49696bb4c0b38cc65ef064e0b3a271dd16483a7e1",
+    "payloadDigestSha256": "fbb4cc6ba8c916bee5872ab009f52723018d6bfa4363b639695c8dbb45f5a98e",
+    "provenance": {
+      "scrollId": "protenix-base-v1-0-0-linux-x86_64-cuda12.6",
+      "scrollVersion": "1.0.0",
+      "builderRevision": "4cb3b7f5b23f2dae7e9022e2f681bf7e82657bb7",
+      "sourceTreeDirty": true,
+      "sourceRevision": "2475421477ab414b571149ad4a875c390ff8a35d+weights-protenix_base_default_v1.0.0",
+      "runtimeVersion": "3.11.16",
+      "pixiVersion": "0.73.0",
+      "dependencyLockSha256": "780e5a8c74b614be792aaea9dc231e27289add9436097e8869d2e455007b7d4f",
+      "builtAt": "2026-09-12T20:07:58+02:00"
+    }
+  },
+  "measurementHost": {
+    "platform": "linux",
+    "arch": "x64",
+    "osRelease": "6.18.33.2-microsoft-standard-WSL2",
+    "cpuModel": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+    "logicalCpuCount": 6,
+    "totalMemoryBytes": 25201577984
+  },
+  "validatorSource": {
+    "scriptSha256": "387f6ded68dbfdea0b2a88d11899b646f5d01299f81467a75ec103b447297efe",
+    "measurementScriptSha256": "a6ed6cb5f5b7740b519707158a03d1ad64180c642d65f2c2c285968e9e80cad8",
+    "comparisonScriptSha256": "89b53671b572aa747da53cd10ce4100b1babab698774f1b4f560f4471394bf68",
+    "recipeSha256": "72d013a5b918d3fc2818e8b34aa3aefb0d3ad4bc94e4879ca95e820d3971dba6"
+  },
+  "provenance": {
+    "recipeId": "protenix-base-v1-0-0-linux-x86_64-cuda12.6",
+    "recipeVersion": "1.0.0",
+    "pythonVersion": "3.11.16",
+    "pixiVersion": "0.73.0",
+    "dependencyLockSha256": "780e5a8c74b614be792aaea9dc231e27289add9436097e8869d2e455007b7d4f"
+  },
+  "evidence": {
+    "fixture": {
+      "id": "pdb-1ubq-experimental-1.8A",
+      "sha256": "d4a6812d8951cf6594e6a0763f089e35f5a80b62acb3c117b2c5565228a7b161",
+      "residues": 76,
+      "msaMode": "no-alignment"
+    },
+    "framework": {
+      "name": "torch",
+      "version": null,
+      "backend": "cuda"
+    },
+    "accelerator": {
+      "kind": "cuda",
+      "gpuModel": "NVIDIA GeForce RTX 4060 Ti",
+      "gpuMemoryBytes": 8585740288,
+      "computeCapability": "8.9",
+      "driverVersion": "610.62",
+      "vramMeasurementMethod": "device-wide-delta",
+      "runnerReportedGpuModel": "NVIDIA GeForce RTX 4060 Ti"
+    },
+    "parity": {
+      "reference": "pdb-1ubq-experimental-structure",
+      "passed": true,
+      "backboneRmsdAngstrom": 2.1511863857248428,
+      "maximumDeviationAngstrom": 12.712812022975308,
+      "limitAngstrom": 3,
+      "plddt": 0.9325565338134766,
+      "rankingScore": 0.1840890645980835,
+      "ptm": 0.9204453229904175,
+      "determinismRmsdDeltaAngstrom": 0,
+      "repeatRmsdAngstrom": 1.7274779206958171e-15,
+      "repeatMaximumDeviationAngstrom": 3.956897784362198e-15,
+      "repeatLimitAngstrom": 0.01
+    },
+    "finiteValues": true,
+    "peakRamBytes": 4738117632,
+    "peakVramBytes": 3405774848,
+    "outputContract": "passed",
+    "provenanceContract": "passed"
+  },
+  "hardwareSamples": [
+    {
+      "fixtureId": "ubiquitin-single-sequence",
+      "workloadId": "structure",
+      "maxTokenCount": 76,
+      "maxChainCount": 1,
+      "peakRamBytes": 4738117632,
+      "peakVramBytes": 3398434816,
+      "elapsedMs": 248805,
+      "outputBytes": 1559791
+    },
+    {
+      "fixtureId": "ubiquitin-repeat-seed-17",
+      "workloadId": "structure",
+      "maxTokenCount": 76,
+      "maxChainCount": 1,
+      "peakRamBytes": 4733132800,
+      "peakVramBytes": 3405774848,
+      "elapsedMs": 257518,
+      "outputBytes": 1559738
+    }
+  ],
+  "cases": [
+    {
+      "id": "ubiquitin-single-sequence",
+      "refused": false,
+      "summary": {
+        "accelerator": "cuda",
+        "chainCount": 1,
+        "computeCapability": "8.9",
+        "deterministic": true,
+        "diffusionSteps": 200,
+        "elapsedMs": 244951,
+        "gpuMemoryBytes": 8585084928,
+        "gpuModel": "NVIDIA GeForce RTX 4060 Ti",
+        "iptm": 0,
+        "kernels": "torch",
+        "modelName": "protenix_base_default_v1.0.0",
+        "networkAccess": false,
+        "plddt": 0.9325565338134766,
+        "protenixVersion": "2.0.0",
+        "ptm": 0.9204453229904175,
+        "rankingScore": 0.1840890645980835,
+        "recyclingSteps": 10,
+        "runtimeBoxRelease": "1.0.0-beta.1",
+        "runtimeId": "structure-protenix-base-v1-0-0",
+        "sampleCount": 5,
+        "seed": 17,
+        "seedCount": 5,
+        "selectedSeed": 17,
+        "structureCount": 25,
+        "targetId": "linux-x86_64-cuda12.6",
+        "tokenEstimate": 76,
+        "usedMsa": false
+      },
+      "measurement": {
+        "elapsedMs": 248805,
+        "peakRamBytes": 4738117632,
+        "peakVramBytes": 3398434816,
+        "vramMeasurementMethod": "device-wide-delta",
+        "vramDeviceBaselineBytes": 502267904,
+        "gpuName": "NVIDIA GeForce RTX 4060 Ti",
+        "gpuDriverVersion": "610.62",
+        "gpuMemoryBytes": 8585740288,
+        "gpuComputeCapability": "8.9",
+        "vramSamplingIntervalMs": 50,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 1559791
+    },
+    {
+      "id": "ubiquitin-repeat-seed-17",
+      "refused": false,
+      "summary": {
+        "accelerator": "cuda",
+        "chainCount": 1,
+        "computeCapability": "8.9",
+        "deterministic": true,
+        "diffusionSteps": 200,
+        "elapsedMs": 254160,
+        "gpuMemoryBytes": 8585084928,
+        "gpuModel": "NVIDIA GeForce RTX 4060 Ti",
+        "iptm": 0,
+        "kernels": "torch",
+        "modelName": "protenix_base_default_v1.0.0",
+        "networkAccess": false,
+        "plddt": 0.9325565338134766,
+        "protenixVersion": "2.0.0",
+        "ptm": 0.9204453229904175,
+        "rankingScore": 0.1840890645980835,
+        "recyclingSteps": 10,
+        "runtimeBoxRelease": "1.0.0-beta.1",
+        "runtimeId": "structure-protenix-base-v1-0-0",
+        "sampleCount": 5,
+        "seed": 17,
+        "seedCount": 5,
+        "selectedSeed": 17,
+        "structureCount": 25,
+        "targetId": "linux-x86_64-cuda12.6",
+        "tokenEstimate": 76,
+        "usedMsa": false
+      },
+      "measurement": {
+        "elapsedMs": 257518,
+        "peakRamBytes": 4733132800,
+        "peakVramBytes": 3405774848,
+        "vramMeasurementMethod": "device-wide-delta",
+        "vramDeviceBaselineBytes": 502267904,
+        "gpuName": "NVIDIA GeForce RTX 4060 Ti",
+        "gpuDriverVersion": "610.62",
+        "gpuMemoryBytes": 8585740288,
+        "gpuComputeCapability": "8.9",
+        "vramSamplingIntervalMs": 50,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 1559738
+    },
+    {
+      "id": "refuses-an-incomplete-installation",
+      "refused": true
+    },
+    {
+      "id": "refuses-an-empty-complex",
+      "refused": true
+    }
+  ]
+}

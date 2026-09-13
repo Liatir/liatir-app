@@ -1,5 +1,51 @@
 # Current project status
 
+## Both structure models are validated, and one of them needed rescuing (2026-09-13)
+
+**Protenix base v1.0.0 passes its scientific validation.** Against the same experimental ubiquitin
+structure Boltz-2 was measured on, it reproduces PDB **1UBQ** to a **backbone RMSD of 2.151 Å**
+against a 3 Å limit, at pLDDT 0.933 and pTM 0.920. Two runs at one seed now agree to
+**1.7 × 10⁻¹⁵ Å** — machine zero, measured between the two predictions directly rather than between
+their distances to the reference. Both refusals hold. 249 s per prediction on an RTX 4060 Ti,
+4.74 GB RAM, 3.41 GB VRAM. The validator verified the release signature and payload digest before
+running anything, so this is evidence about the signed box. Retained as
+`runtime-boxes/measurements/protenix-base-v1-0-0-linux-x86_64-cuda12.6-development-2026-09-13.json`.
+Development evidence: development key, dirty tree at build time.
+
+**A single Protenix seed was close to a coin flip, and only running it found that.** Across eleven
+seeds, **six produced the wrong fold** at 12.5–13.3 Å while five landed at 1.8–2.2 Å. The product
+runner now draws **five independent seeds** and returns the structure Protenix ranks highest; each of
+four seeds that failed alone is rescued by it. Two cheaper remedies were measured and rejected — more
+samples at one seed, and double the recycling. The full evidence is in
+[Protenix competes seeds](../decisions/protenix-competes-seeds-because-one-is-a-coin-flip.md).
+
+**Three defects in the Protenix path, all found by executing rather than reading.**
+
+| Defect | Consequence | Fix |
+| --- | --- | --- |
+| Upstream ships `deterministic: False` and its CLI does not expose the flag | one seed gave 1.39 Å twice and 12.32 Å once | the switch is set on the config before Protenix builds its runner, and the box refuses to predict if the key is gone |
+| Protenix reports pLDDT on 0–100, Boltz-2 on 0–1 | `validateStructureModelRows` rejects a confidence outside 0–1, so this would have failed the shared contract the moment a product surface read it; and the validator's own `>= 0.7` gate was vacuous | the runner divides it down; the gate is now 0.85, which sits in the empty band between the two measured populations |
+| The validator measured one diffusion sample while the product draws five | the weakest configuration no user would run | the validator now measures the product's own defaults |
+
+**Boltz-2 is robust across seeds, which had not been established.** It was promoted on a single seed.
+Measured now on the same eight seeds as Protenix, it is correct on **8 of 8**, between 0.62 Å and
+1.64 Å — and seed 17, the one the retained measurement used, was the **worst** of the eight at
+1.99 Å. The recorded number is conservative, not lucky.
+
+**The two models compared, measured identically on the same protein.** Protenix is the slower and,
+on this target, the slightly less accurate. It earns its place by being independent, not better.
+
+| | Time | RMSD | Seeds correct |
+| --- | ---: | ---: | ---: |
+| Boltz-2 | 55 s | 0.62 – 1.64 Å | 8 / 8 |
+| Protenix base v1.0.0, five seeds | 249 s | 1.77 – 2.15 Å | 4 / 4 rescued |
+
+**This is one protein.** Whether Protenix's alignment-free weakness is general or particular to
+ubiquitin is not established; a second reference structure is the way to find out.
+
+**No rebuild was needed for any of this.** The product runner ships with the app, not inside the box,
+so the signed `protenix-base-v1-0-0` archive `ec9300a5…` built on 2026-09-12 is the one measured.
+
 ## Boltz-2 is built, and Protenix splits in two (2026-09-11)
 
 **The Boltz-2 box exists.** It builds, signs and passes its own self-test on this machine's GPU:
