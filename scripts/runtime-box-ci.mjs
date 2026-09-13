@@ -12,6 +12,7 @@ import {
   configureWorkspace,
   getWorkspace,
   lockedCondaDistributions,
+  validateDeclaredPypiLicenses,
   workspaceOverridesFromArgv,
 } from 'scrollcase/build';
 import { boxTargetId } from 'scrollcase/contract/browser';
@@ -105,6 +106,26 @@ function sha256Bytes(value) {
  * audit is lock-derived and conservatively lists the full locked set, so pruning transitive conda
  * dependencies to shrink the box is allowed and over-discloses licenses rather than under-disclosing.
  */
+/**
+ * The PyPI licences a scroll declares because pixi records none for them.
+ *
+ * Without these the lock cannot be read at all for a model with PyPI dependencies: Scrollcase refuses
+ * any distribution whose licence is nowhere to be found, which is correct, and the build and `audit`
+ * already pass the declaration. This check did not, and nothing noticed until the first such model
+ * reached the catalog. Scrollcase validates the shape; only the file is read here, because this
+ * catalog check is synchronous.
+ */
+function declaredPypiLicenses(recipe, targetKey) {
+  if (!recipe.pypiLicenseDeclaration) return new Map();
+  const path = resolve(workspaceRoot(), recipe.pypiLicenseDeclaration);
+  requireCatalog(
+    path.startsWith(`${resolve(workspaceRoot(), 'runtime-boxes/legal/audits')}${sep}`),
+    `declared PyPI licences are outside runtime-boxes/legal/audits for ${targetKey}`,
+  );
+  requireCatalog(existsSync(path), `missing declared PyPI licences for ${targetKey}`);
+  return validateDeclaredPypiLicenses(JSON.parse(readFileSync(path, 'utf8')));
+}
+
 function validatePixiRecipeLockAndAudit(recipe, target, recipePath, targetKey) {
   const lockPath = resolve(recipePath, '..', 'pixi.lock');
   requireCatalog(existsSync(lockPath), `missing pixi.lock for ${targetKey}`);
@@ -138,7 +159,7 @@ function validatePixiRecipeLockAndAudit(recipe, target, recipePath, targetKey) {
   const reviewedPackages = audit.packages
     .map(({ name, version }) => ({ name, version }))
     .sort(byIdentity);
-  const lockedPackages = lockedCondaDistributions(lockBytes)
+  const lockedPackages = lockedCondaDistributions(lockBytes, declaredPypiLicenses(recipe, targetKey))
     .map(({ name, version }) => ({ name, version }))
     .sort(byIdentity);
   requireCatalog(

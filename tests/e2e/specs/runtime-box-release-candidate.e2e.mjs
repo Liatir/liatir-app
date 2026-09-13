@@ -15,7 +15,7 @@ export const tests = [{
         ? '/tools/oncology/neoantigen-prioritization'
         : candidateId === 'openmm-openmm'
           ? '/tools/molecular-simulation/relaxation'
-        : ['jwohlwend-boltz-2', 'bytedance-protenix-v2', 'bytedance-protenix-mini-default-v0-5-0'].includes(candidateId)
+        : ['jwohlwend-boltz-2', 'bytedance-protenix-base-v1-0-0', 'bytedance-protenix-v2', 'bytedance-protenix-mini-default-v0-5-0'].includes(candidateId)
           ? '/tools/structure/prediction'
         : null;
     if (!route) throw new Error(`Unsupported Runtime Box release candidate: ${candidateId}`);

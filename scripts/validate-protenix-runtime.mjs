@@ -277,11 +277,17 @@ try {
       assert.ok(size > 0, `${id} produced an empty ${path}`);
       outputBytes += size;
     }
+    // The shape the app's hardware estimate reads, derived the way the product derives a request:
+    // tokens from the input, diffusion steps, and every structure drawn across all seeds, since the
+    // seeds are what the run pays for. Atoms are not a dimension this model's preflight measures, so
+    // they hold at 1, as tokens do for OpenMM.
     samples.push({
       fixtureId: id,
-      workloadId: 'structure',
+      workloadId: 'protenix:structure',
       maxTokenCount: result.summary.tokenEstimate,
-      maxChainCount: result.summary.chainCount,
+      maxAtomCount: 1,
+      maxStepCount: result.summary.diffusionSteps,
+      maxOutputItemCount: result.summary.structureCount,
       peakRamBytes: execution.measurement.peakRamBytes,
       peakVramBytes: execution.measurement.peakVramBytes,
       elapsedMs: execution.measurement.elapsedMs,

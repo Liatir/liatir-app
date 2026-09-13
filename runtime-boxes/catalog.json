@@ -824,6 +824,102 @@
           "nativeCiEnabled": true
         }
       ]
+    },
+    {
+      "componentKind": "ai-model",
+      "componentId": "jwohlwend-boltz-2",
+      "modelId": "jwohlwend-boltz-2",
+      "boxId": "boltz-2",
+      "runtimeId": "structure-boltz-2-2-1",
+      "legalRecord": "runtime-boxes/legal/boltz-2.md",
+      "legalStatus": "approved",
+      "validatorScript": "runtime-box:validate:boltz",
+      "validatorPath": "scripts/validate-boltz-runtime.mjs",
+      "productScriptPath": "frontend/src/lib/tools/ai/python-scripts/boltz-structure.ts",
+      "productLifecycleSpec": "tests/e2e/specs/runtime-box-boltz-2-native.e2e.mjs",
+      "callerWorkflow": ".github/workflows/runtime-box-boltz-2.yml",
+      "targets": [
+        {
+          "targetId": "linux-x86_64-cuda12.9",
+          "target": {
+            "platform": "linux",
+            "arch": "x86_64",
+            "accelerator": "cuda",
+            "cudaVersion": "12.9"
+          },
+          "hostEnvironments": [
+            "native",
+            "windows-wsl2"
+          ],
+          "recipeId": "boltz-2-linux-x86_64-cuda12.9",
+          "runnerProfileId": "linux-x64-cuda-selfhosted",
+          "status": "scientifically-validated",
+          "validationModes": [
+            "build",
+            "scientific",
+            "native-lifecycle"
+          ],
+          "timeoutMinutes": 180,
+          "requiredBuildDiskBytes": 51539607552,
+          "dependencyLockSha256": "f1e4a595010fe5c2d98e103c0b6b77ee8a80408ea80e25c661df29b2c4a1e88f",
+          "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/boltz-2-linux-x86_64-cuda12.9.json",
+          "diskPlan": {
+            "estimatedInstalledSizeBytes": 23622320128,
+            "estimatedArchiveSizeBytes": 13958643712,
+            "safetyMarginBytes": 4294967296
+          },
+          "gpuRequired": true,
+          "nativeCiEnabled": true
+        }
+      ]
+    },
+    {
+      "componentKind": "ai-model",
+      "componentId": "bytedance-protenix-base-v1-0-0",
+      "modelId": "bytedance-protenix-base-v1-0-0",
+      "boxId": "protenix-base-v1-0-0",
+      "runtimeId": "structure-protenix-base-v1-0-0",
+      "legalRecord": "runtime-boxes/legal/protenix-base-v1-0-0.md",
+      "legalStatus": "approved",
+      "validatorScript": "runtime-box:validate:protenix",
+      "validatorPath": "scripts/validate-protenix-runtime.mjs",
+      "productScriptPath": "frontend/src/lib/tools/ai/python-scripts/protenix-structure.ts",
+      "productLifecycleSpec": "tests/e2e/specs/runtime-box-protenix-base-v1-0-0-native.e2e.mjs",
+      "callerWorkflow": ".github/workflows/runtime-box-protenix-base-v1-0-0.yml",
+      "targets": [
+        {
+          "targetId": "linux-x86_64-cuda12.6",
+          "target": {
+            "platform": "linux",
+            "arch": "x86_64",
+            "accelerator": "cuda",
+            "cudaVersion": "12.6"
+          },
+          "hostEnvironments": [
+            "native",
+            "windows-wsl2"
+          ],
+          "recipeId": "protenix-base-v1-0-0-linux-x86_64-cuda12.6",
+          "runnerProfileId": "linux-x64-cuda-selfhosted",
+          "status": "scientifically-validated",
+          "validationModes": [
+            "build",
+            "scientific",
+            "native-lifecycle"
+          ],
+          "timeoutMinutes": 180,
+          "requiredBuildDiskBytes": 34359738368,
+          "dependencyLockSha256": "780e5a8c74b614be792aaea9dc231e27289add9436097e8869d2e455007b7d4f",
+          "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/protenix-base-v1-0-0-linux-x86_64-cuda12.6.json",
+          "diskPlan": {
+            "estimatedInstalledSizeBytes": 16106127360,
+            "estimatedArchiveSizeBytes": 9663676416,
+            "safetyMarginBytes": 4294967296
+          },
+          "gpuRequired": true,
+          "nativeCiEnabled": true
+        }
+      ]
     }
   ]
 }

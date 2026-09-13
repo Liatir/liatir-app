@@ -91,6 +91,22 @@
         "linux-x86_64-cpu",
         "linux-x86_64-cuda12.9"
       ]
+    },
+    {
+      "boxId": "boltz-2",
+      "modelId": "jwohlwend-boltz-2",
+      "runtimeId": "structure-boltz-2-2-1",
+      "targets": [
+        "linux-x86_64-cuda12.9"
+      ]
+    },
+    {
+      "boxId": "protenix-base-v1-0-0",
+      "modelId": "bytedance-protenix-base-v1-0-0",
+      "runtimeId": "structure-protenix-base-v1-0-0",
+      "targets": [
+        "linux-x86_64-cuda12.6"
+      ]
     }
   ]
 }

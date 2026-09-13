@@ -324,27 +324,27 @@ describe('Runtime Box CI cost controls', () => {
       }))),
     ];
 
-    for (const input of pinnedInputs) {
-      const descriptor = JSON.parse(readFileSync(resolve(input.descriptorPath), 'utf8'));
-      // Foundation scrolls byte-pin pixi.lock; compatibility recipes retain their substrate-specific
-      // lock until P5.4. Every lock must survive a Windows checkout byte-for-byte.
-      const lockPath = input.lockPath;
-      const attribute = execFileSync('git', ['check-attr', 'eol', '--', lockPath], {
-        encoding: 'utf8',
-      }).trim();
-      expect(attribute).toBe(`${lockPath}: eol: lf`);
+    // Foundation scrolls byte-pin pixi.lock; compatibility recipes retain their substrate-specific
+    // lock until P5.4. Every lock must survive a Windows checkout byte-for-byte.
+    const lockPaths = pinnedInputs.map((input) => input.lockPath);
+    const localPaths = [...new Set(pinnedInputs.flatMap((input) => (
+      JSON.parse(readFileSync(resolve(input.descriptorPath), 'utf8')).localFiles ?? []
+    ).map((localFile: { sourcePath: string }) => localFile.sourcePath)))];
 
-      for (const localFile of descriptor.localFiles ?? []) {
-        const attributes = execFileSync(
-          'git',
-          ['check-attr', 'eol', 'text', '--', localFile.sourcePath],
-          { encoding: 'utf8' },
-        ).trim().split('\n');
-        const preservesBytes = attributes.includes(`${localFile.sourcePath}: eol: lf`)
-          || attributes.includes(`${localFile.sourcePath}: text: unset`);
-        if (!preservesBytes) {
-          throw new Error(`Byte-pinned local recipe input lacks an exact Git checkout policy: ${localFile.sourcePath}`);
-        }
+    // One Git process for every path. Spawning one per file grew linearly with the catalog, and on
+    // Windows that alone outran the test timeout once two more components were added.
+    const attributes = new Set(execFileSync(
+      'git',
+      ['check-attr', 'eol', 'text', '--', ...new Set([...lockPaths, ...localPaths])],
+      { encoding: 'utf8' },
+    ).trim().split('\n'));
+
+    for (const lockPath of lockPaths) {
+      expect(attributes.has(`${lockPath}: eol: lf`), `${lockPath} lacks eol=lf`).toBe(true);
+    }
+    for (const localPath of localPaths) {
+      if (!attributes.has(`${localPath}: eol: lf`) && !attributes.has(`${localPath}: text: unset`)) {
+        throw new Error(`Byte-pinned local recipe input lacks an exact Git checkout policy: ${localPath}`);
       }
     }
   });

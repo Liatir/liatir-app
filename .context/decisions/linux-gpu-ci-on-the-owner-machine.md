@@ -58,6 +58,18 @@ and has no CI record tying it to committed bytes.
 **Enabling `macos-aarch64-cpu` in the same change.** It is ready, but it runs somewhere else and on
 someone else's meter. It is a publication decision, taken separately.
 
+## Addendum 2026-09-13: the two structure models join it
+
+`jwohlwend-boltz-2/linux-x86_64-cuda12.9` and `bytedance-protenix-base-v1-0-0/linux-x86_64-cuda12.6`
+are added to the catalog with `nativeCiEnabled: true`, on the same runner labels and under the same
+standing authorization. The authorization was given for this machine, and its stated reason was
+precisely these payloads: they are Linux CUDA, both built and scientifically validated here, and
+this is still the only host that can run them. Nothing else about the rule changes — runs stay
+manual, ephemeral and started by hand in the two overlapping halves above.
+
+Their catalog status is `scientifically-validated`, not `native-lifecycle-validated`: that step is
+the product lifecycle in the real app, and it has to pass before the status may move.
+
 ## Related
 
 - [Runtime Box publication runs on hosted CI](./runtime-box-publication-runs-on-hosted-ci.md)

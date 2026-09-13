@@ -2,7 +2,7 @@
   "$schema": "https://scrollcase.dev/schema/v3/scroll.schema.json",
   "schemaVersion": 3,
   "scrollId": "protenix-base-v1-0-0-linux-x86_64-cuda12.6",
-  "scrollVersion": "1.0.0",
+  "scrollVersion": "1.0.1",
   "boxId": "protenix-base-v1-0-0",
   "labels": {
     "model": "bytedance-protenix-base-v1-0-0",
@@ -70,7 +70,7 @@
     {
       "sourcePath": "runtime-boxes/legal/protenix-base-v1-0-0.md",
       "relativePath": "THIRD_PARTY_NOTICES/protenix-base-v1-0-0.md",
-      "sha256": "29756d94c25b0643b1e2293c5b6528fe6438ec063450bff139c04589a2197db3"
+      "sha256": "f77f5f27a758a04c7cd573e38556243d7e63db52de33085486fc0f60672e282e"
     },
     {
       "sourcePath": "runtime-boxes/scrolls/protenix-base-v1-0-0/self-test.py",

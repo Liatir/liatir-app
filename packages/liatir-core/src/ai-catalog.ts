@@ -6,6 +6,10 @@ import {
 	BOLTZ_2_MODEL_ID,
 	BOLTZ_2_RUNTIME_ID,
 	BOLTZ_2_VERSION,
+	PROTENIX_BASE_V1_BOX_ID,
+	PROTENIX_BASE_V1_MODEL_ID,
+	PROTENIX_BASE_V1_RUNTIME_ID,
+	PROTENIX_BASE_V1_VERSION,
 	PROTENIX_MINI_DEFAULT_BOX_ID,
 	PROTENIX_MINI_DEFAULT_MODEL_ID,
 	PROTENIX_MINI_DEFAULT_RUNTIME_ID,
@@ -156,7 +160,7 @@ export const BOLTZ_2_RELEASE_CANDIDATE_METADATA: LiatirAIModelMetadata = {
 	hardware: {
 		cpu: false,
 		gpu: true,
-		notes: 'Linux CUDA is required for publication. VRAM values remain unpublished until retained target measurements can apply the required safety margins.',
+		notes: 'Linux CUDA only. VRAM values remain unpublished until retained target measurements can apply the required safety margins.',
 	},
 	install: {
 		method: 'runtime-box',
@@ -167,10 +171,9 @@ export const BOLTZ_2_RELEASE_CANDIDATE_METADATA: LiatirAIModelMetadata = {
 			boxId: BOLTZ_2_BOX_ID,
 			channel: 'beta',
 			registryBaseUrl: 'https://models.liatir.com/v1',
-			publishedTargets: [
-				LINUX_CUDA_12_9_TARGET,
-				{ target: { platform: 'macos', arch: 'aarch64', accelerator: 'metal' }, hostEnvironments: ['native'] },
-			],
+			// macOS is out of scope for Boltz-2 by the owner's decision of 2026-09-07, so no Metal
+			// target is offered: an install button for a box that will never be built cannot resolve.
+			publishedTargets: [LINUX_CUDA_12_9_TARGET],
 		},
 		runtimePackages: [
 			{ package: 'boltz', version: BOLTZ_2_VERSION, importName: 'boltz' },
@@ -178,9 +181,9 @@ export const BOLTZ_2_RELEASE_CANDIDATE_METADATA: LiatirAIModelMetadata = {
 			{ package: 'rdkit', importName: 'rdkit' },
 		],
 		hostRequirements: {
-			os: ['linux', 'windows', 'macos'],
-			arch: ['x86_64', 'aarch64'],
-			reason: 'Linux CUDA is mandatory; Windows CUDA and Apple Metal are bounded feasibility targets and cannot be exposed without their own evidence.',
+			os: ['linux', 'windows'],
+			arch: ['x86_64'],
+			reason: 'Linux x86_64 with an NVIDIA GPU, natively or from Windows through WSL2.',
 		},
 	},
 	documentation: { officialUrl: 'https://github.com/jwohlwend/boltz/tree/v2.2.1' },
@@ -232,6 +235,69 @@ export const PROTENIX_V2_RELEASE_CANDIDATE_METADATA: LiatirAIModelMetadata = {
 		},
 	},
 	documentation: { officialUrl: 'https://github.com/bytedance/Protenix/tree/v2.0.0' },
+	tags: ['runtime-box', 'structure', 'protein', 'ligand', 'local'],
+};
+
+/**
+ * PyPI's PyTorch carries its own CUDA runtime in the `nvidia-*` wheels, built against 12.6, so this
+ * box is named for the CUDA it actually contains. The app gates CUDA boxes on the driver, and 12.x
+ * shares one minimum driver, so a host that runs the 12.9 boxes runs this one.
+ */
+const LINUX_CUDA_12_6_TARGET: LiatirRuntimeBoxTargetCandidate = {
+	target: { platform: 'linux', arch: 'x86_64', accelerator: 'cuda', cudaVersion: '12.6' },
+	hostEnvironments: ['native', 'windows-wsl2'],
+	minNvidiaDriverVersion: '525.60.13',
+};
+
+/** Non-distributable candidate metadata for Protenix base v1.0.0, the largest public checkpoint. */
+export const PROTENIX_BASE_V1_RELEASE_CANDIDATE_METADATA: LiatirAIModelMetadata = {
+	id: PROTENIX_BASE_V1_MODEL_ID,
+	name: 'Protenix base v1.0.0',
+	description: 'Local biomolecular structure prediction, independent of Boltz-2, with bundled checkpoint and chemistry data.',
+	category: 'Biomolecular Structure',
+	version: PROTENIX_BASE_V1_VERSION,
+	runtime: { kind: 'python-venv', name: 'Protenix base v1.0.0 Runtime', version: 'Python 3.11' },
+	source: 'runtime-box',
+	localOnly: true,
+	capabilities: ['protein-structure-prediction'],
+	modalities: ['protein', 'dna', 'rna', 'ligand'],
+	license: {
+		name: 'Apache License 2.0',
+		spdxId: 'Apache-2.0',
+		url: 'https://github.com/bytedance/Protenix/blob/v2.0.0/LICENSE',
+		verifiedAt: '2026-09-12',
+		components: [
+			{ scope: 'source-code', name: 'Apache License 2.0', spdxId: 'Apache-2.0', sourceUrl: 'https://github.com/bytedance/Protenix/tree/v2.0.0' },
+			{ scope: 'model-assets', name: 'Apache License 2.0', spdxId: 'Apache-2.0', sourceUrl: 'https://github.com/bytedance/Protenix/blob/v2.0.0/docs/supported_models.md' },
+		],
+	},
+	hardware: {
+		cpu: false,
+		gpu: true,
+		notes: 'Linux CUDA only. VRAM values remain unpublished until retained target measurements can apply the required safety margins.',
+	},
+	install: {
+		method: 'runtime-box',
+		runtimeId: PROTENIX_BASE_V1_RUNTIME_ID,
+		modelCacheSubdir: 'model-cache/protenix-base-v1-0-0',
+		revision: 'v2.0.0:protenix_base_default_v1.0.0',
+		runtimeBox: {
+			boxId: PROTENIX_BASE_V1_BOX_ID,
+			channel: 'beta',
+			registryBaseUrl: 'https://models.liatir.com/v1',
+			publishedTargets: [LINUX_CUDA_12_6_TARGET],
+		},
+		runtimePackages: [
+			{ package: 'protenix', version: PROTENIX_V2_VERSION, importName: 'protenix' },
+			{ package: 'torch', importName: 'torch' },
+		],
+		hostRequirements: {
+			os: ['linux', 'windows'],
+			arch: ['x86_64'],
+			reason: 'Linux x86_64 with an NVIDIA GPU, natively or from Windows through WSL2.',
+		},
+	},
+	documentation: { officialUrl: 'https://github.com/bytedance/Protenix/blob/v2.0.0/docs/supported_models.md' },
 	tags: ['runtime-box', 'structure', 'protein', 'ligand', 'local'],
 };
 

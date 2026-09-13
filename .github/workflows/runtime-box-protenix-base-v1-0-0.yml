@@ -1,0 +1,72 @@
+name: Runtime Box Protenix base v1.0.0
+
+on:
+  pull_request:
+    paths:
+      - "runtime-boxes/catalog.json"
+      - "runtime-boxes/scrolls/protenix-base-v1-0-0/linux-x86_64-cuda12.6/**"
+      - "runtime-boxes/scrolls/protenix-base-v1-0-0/*.py"
+      - "runtime-boxes/legal/audits/protenix-base-v1-0-0-linux-x86_64-cuda12.6.json"
+      - "runtime-boxes/legal/audits/protenix-base-v1-0-0-linux-x86_64-cuda12.6-pypi.json"
+      - "runtime-boxes/legal/audits/protenix-base-v1-0-0-linux-x86_64-cuda12.6-pypi-declaration.json"
+      - "runtime-boxes/legal/protenix-base-v1-0-0.md"
+      - "runtime-boxes/fixtures/structures/1ubq.pdb"
+      - "scripts/validate-protenix-runtime.mjs"
+      - "scripts/runtime-box/evidence.mjs"
+      - "scripts/runtime-box-ci.mjs"
+      - "scripts/runtime-box/validator-context.mjs"
+      - "scripts/install-runtime-box-linux-product-deps.sh"
+      - "frontend/src/lib/tools/ai/python-scripts/protenix-structure.ts"
+      - "tests/e2e/specs/runtime-box-protenix-base-v1-0-0-native.e2e.mjs"
+      - ".github/workflows/_runtime-box-validate.yml"
+      - ".github/workflows/runtime-box-protenix-base-v1-0-0.yml"
+  push:
+    branches: [main]
+    paths:
+      - "runtime-boxes/catalog.json"
+      - "runtime-boxes/scrolls/protenix-base-v1-0-0/linux-x86_64-cuda12.6/**"
+      - "runtime-boxes/scrolls/protenix-base-v1-0-0/*.py"
+      - "runtime-boxes/legal/audits/protenix-base-v1-0-0-linux-x86_64-cuda12.6.json"
+      - "runtime-boxes/legal/audits/protenix-base-v1-0-0-linux-x86_64-cuda12.6-pypi.json"
+      - "runtime-boxes/legal/audits/protenix-base-v1-0-0-linux-x86_64-cuda12.6-pypi-declaration.json"
+      - "runtime-boxes/legal/protenix-base-v1-0-0.md"
+      - "runtime-boxes/fixtures/structures/1ubq.pdb"
+      - "scripts/validate-protenix-runtime.mjs"
+      - "scripts/runtime-box/evidence.mjs"
+      - "scripts/runtime-box-ci.mjs"
+      - "scripts/runtime-box/validator-context.mjs"
+      - "scripts/install-runtime-box-linux-product-deps.sh"
+      - "frontend/src/lib/tools/ai/python-scripts/protenix-structure.ts"
+      - "tests/e2e/specs/runtime-box-protenix-base-v1-0-0-native.e2e.mjs"
+      - ".github/workflows/_runtime-box-validate.yml"
+      - ".github/workflows/runtime-box-protenix-base-v1-0-0.yml"
+  workflow_dispatch:
+    inputs:
+      target_id:
+        description: Checked Runtime Box target
+        required: true
+        type: choice
+        options:
+          - linux-x86_64-cuda12.6
+      mode:
+        description: Native validation depth
+        required: true
+        default: build
+        type: choice
+        options: [build, scientific, native-lifecycle]
+
+concurrency:
+  group: runtime-box-protenix-base-v1-0-0-${{ inputs.target_id || 'linux-x86_64-cuda12.6' }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    uses: ./.github/workflows/_runtime-box-validate.yml
+    with:
+      model_id: bytedance-protenix-base-v1-0-0
+      target_id: ${{ inputs.target_id || 'linux-x86_64-cuda12.6' }}
+      mode: ${{ inputs.mode || 'build' }}
+      native_requested: ${{ github.event_name == 'workflow_dispatch' }}

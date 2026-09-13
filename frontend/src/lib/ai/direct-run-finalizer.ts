@@ -32,6 +32,11 @@ import {
 	finalizeMhcFlurryEpitopeResult,
 	mhcFlurryEpitopeDefinition
 } from '$lib/tools/ai/mhcflurry-epitope';
+import {
+	finalizeStructurePredictionResult,
+	proteinLigandAffinityDefinition,
+	structurePredictionDefinition
+} from '$lib/tools/ai/structure-prediction';
 import type { ToolOutput } from '$lib/types/tool-output';
 import { finalizeExecutionResult } from '$lib/execution/finalization';
 
@@ -107,13 +112,17 @@ async function finalizeToolResult(
 	toolId: string,
 	params: Record<string, string>,
 	result: AIPythonRunResult,
-	onLog: (line: string) => void
+	onLog: (line: string) => void,
+	outputDir: string
 ): Promise<FinalizedAIToolResult> {
 	if (toolId === singleCellEmbeddingDefinition.id) {
 		return await finalizeSingleCellEmbeddingResult(model, params, result, onLog);
 	}
 	if (toolId === mhcFlurryEpitopeDefinition.id) {
 		return await finalizeMhcFlurryEpitopeResult(model, params, result, onLog);
+	}
+	if (toolId === structurePredictionDefinition.id || toolId === proteinLigandAffinityDefinition.id) {
+		return await finalizeStructurePredictionResult(model, params, result, onLog, outputDir);
 	}
 	throw new Error(`Unsupported AI Tool finalizer: ${toolId}`);
 }
@@ -170,7 +179,8 @@ export async function finalizeCompletedAIDirectRuns(jobs: JobEntry[]): Promise<v
 				context.toolId,
 				context.params,
 				result,
-				onLog
+				onLog,
+				context.outputDir
 			);
 
 			await finalizeExecutionResult(context.execution.runId, 'done', {

@@ -247,11 +247,16 @@ try {
       assert.ok(size > 0, `${id} produced an empty ${path}`);
       outputBytes += size;
     }
+    // The shape the app's hardware estimate reads, derived the way the product derives a request:
+    // tokens from the input, sampling steps, and structures returned. Atoms are not a dimension this
+    // model's preflight measures, so they hold at 1, as tokens do for OpenMM.
     samples.push({
       fixtureId: id,
-      workloadId: result.summary.affinityPredValue == null ? 'structure' : 'affinity',
+      workloadId: result.summary.affinityPredValue == null ? 'boltz-2:structure' : 'boltz-2:affinity',
       maxTokenCount: result.summary.tokenEstimate,
-      maxChainCount: result.summary.chainCount,
+      maxAtomCount: 1,
+      maxStepCount: result.summary.samplingSteps,
+      maxOutputItemCount: result.summary.modelCount,
       peakRamBytes: execution.measurement.peakRamBytes,
       peakVramBytes: execution.measurement.peakVramBytes,
       elapsedMs: execution.measurement.elapsedMs,

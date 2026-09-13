@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "liatir.protenix-scientific-validation",
-  "createdAt": "2026-09-13T14:49:15.780Z",
+  "createdAt": "2026-09-13T18:25:07.649Z",
   "status": "passed",
   "modelId": "bytedance-protenix-base-v1-0-0",
   "sourceRevision": "2475421477ab414b571149ad4a875c390ff8a35d+weights-protenix_base_default_v1.0.0",
@@ -31,10 +31,10 @@
     "osRelease": "6.18.33.2-microsoft-standard-WSL2",
     "cpuModel": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
     "logicalCpuCount": 6,
-    "totalMemoryBytes": 25201577984
+    "totalMemoryBytes": 25201586176
   },
   "validatorSource": {
-    "scriptSha256": "387f6ded68dbfdea0b2a88d11899b646f5d01299f81467a75ec103b447297efe",
+    "scriptSha256": "5d6943b22233b28f08b4ea74ee646baedbd1c1a7fa701d5d3d6c92462162b8a6",
     "measurementScriptSha256": "a6ed6cb5f5b7740b519707158a03d1ad64180c642d65f2c2c285968e9e80cad8",
     "comparisonScriptSha256": "89b53671b572aa747da53cd10ce4100b1babab698774f1b4f560f4471394bf68",
     "recipeSha256": "72d013a5b918d3fc2818e8b34aa3aefb0d3ad4bc94e4879ca95e820d3971dba6"
@@ -82,30 +82,34 @@
       "repeatLimitAngstrom": 0.01
     },
     "finiteValues": true,
-    "peakRamBytes": 4738117632,
-    "peakVramBytes": 3405774848,
+    "peakRamBytes": 4774428672,
+    "peakVramBytes": 3414163456,
     "outputContract": "passed",
     "provenanceContract": "passed"
   },
   "hardwareSamples": [
     {
       "fixtureId": "ubiquitin-single-sequence",
-      "workloadId": "structure",
+      "workloadId": "protenix:structure",
       "maxTokenCount": 76,
-      "maxChainCount": 1,
-      "peakRamBytes": 4738117632,
-      "peakVramBytes": 3398434816,
-      "elapsedMs": 248805,
+      "maxAtomCount": 1,
+      "maxStepCount": 200,
+      "maxOutputItemCount": 25,
+      "peakRamBytes": 4774428672,
+      "peakVramBytes": 3414163456,
+      "elapsedMs": 274672,
       "outputBytes": 1559791
     },
     {
       "fixtureId": "ubiquitin-repeat-seed-17",
-      "workloadId": "structure",
+      "workloadId": "protenix:structure",
       "maxTokenCount": 76,
-      "maxChainCount": 1,
-      "peakRamBytes": 4733132800,
-      "peakVramBytes": 3405774848,
-      "elapsedMs": 257518,
+      "maxAtomCount": 1,
+      "maxStepCount": 200,
+      "maxOutputItemCount": 25,
+      "peakRamBytes": 4725166080,
+      "peakVramBytes": 3395289088,
+      "elapsedMs": 276803,
       "outputBytes": 1559738
     }
   ],
@@ -119,7 +123,7 @@
         "computeCapability": "8.9",
         "deterministic": true,
         "diffusionSteps": 200,
-        "elapsedMs": 244951,
+        "elapsedMs": 269468,
         "gpuMemoryBytes": 8585084928,
         "gpuModel": "NVIDIA GeForce RTX 4060 Ti",
         "iptm": 0,
@@ -143,11 +147,11 @@
         "usedMsa": false
       },
       "measurement": {
-        "elapsedMs": 248805,
-        "peakRamBytes": 4738117632,
-        "peakVramBytes": 3398434816,
+        "elapsedMs": 274672,
+        "peakRamBytes": 4774428672,
+        "peakVramBytes": 3414163456,
         "vramMeasurementMethod": "device-wide-delta",
-        "vramDeviceBaselineBytes": 502267904,
+        "vramDeviceBaselineBytes": 887095296,
         "gpuName": "NVIDIA GeForce RTX 4060 Ti",
         "gpuDriverVersion": "610.62",
         "gpuMemoryBytes": 8585740288,
@@ -166,7 +170,7 @@
         "computeCapability": "8.9",
         "deterministic": true,
         "diffusionSteps": 200,
-        "elapsedMs": 254160,
+        "elapsedMs": 272584,
         "gpuMemoryBytes": 8585084928,
         "gpuModel": "NVIDIA GeForce RTX 4060 Ti",
         "iptm": 0,
@@ -190,11 +194,11 @@
         "usedMsa": false
       },
       "measurement": {
-        "elapsedMs": 257518,
-        "peakRamBytes": 4733132800,
-        "peakVramBytes": 3405774848,
+        "elapsedMs": 276803,
+        "peakRamBytes": 4725166080,
+        "peakVramBytes": 3395289088,
         "vramMeasurementMethod": "device-wide-delta",
-        "vramDeviceBaselineBytes": 502267904,
+        "vramDeviceBaselineBytes": 891289600,
         "gpuName": "NVIDIA GeForce RTX 4060 Ti",
         "gpuDriverVersion": "610.62",
         "gpuMemoryBytes": 8585740288,

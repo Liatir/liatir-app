@@ -10,6 +10,8 @@ import {
   OPENMM_RUNTIME_COMPONENT_ID,
   PROTENIX_MINI_DEFAULT_MODEL_ID,
   PROTENIX_MINI_DEFAULT_RELEASE_CANDIDATE_METADATA,
+  PROTENIX_BASE_V1_MODEL_ID,
+  PROTENIX_BASE_V1_RELEASE_CANDIDATE_METADATA,
   PROTENIX_V2_MODEL_ID,
   PROTENIX_V2_RELEASE_CANDIDATE_METADATA,
   RUNTIME_BOX_AI_MODEL_REGISTRY,
@@ -68,6 +70,7 @@ describe('Phase 3 Runtime Box candidate boundary', () => {
   it('keeps every unvalidated Phase 3 component out of normal product catalogs', () => {
     const productModels = RUNTIME_BOX_AI_MODEL_REGISTRY.map((model) => model.id);
     expect(productModels).not.toContain(BOLTZ_2_MODEL_ID);
+    expect(productModels).not.toContain(PROTENIX_BASE_V1_MODEL_ID);
     expect(productModels).not.toContain(PROTENIX_V2_MODEL_ID);
     expect(productModels).not.toContain(PROTENIX_MINI_DEFAULT_MODEL_ID);
     expect(LIATIR_TOOL_RUNTIME_CATALOG.map((runtime) => runtime.id)).not.toContain(OPENMM_RUNTIME_COMPONENT_ID);
@@ -76,6 +79,9 @@ describe('Phase 3 Runtime Box candidate boundary', () => {
   it('resolves each exact component only in the non-distributable release-candidate build', () => {
     expect(resolveRuntimeBoxReleaseCandidate(BOLTZ_2_MODEL_ID)).toEqual({
       kind: 'ai-model', metadata: BOLTZ_2_RELEASE_CANDIDATE_METADATA,
+    });
+    expect(resolveRuntimeBoxReleaseCandidate(PROTENIX_BASE_V1_MODEL_ID)).toEqual({
+      kind: 'ai-model', metadata: PROTENIX_BASE_V1_RELEASE_CANDIDATE_METADATA,
     });
     expect(resolveRuntimeBoxReleaseCandidate(PROTENIX_V2_MODEL_ID)).toEqual({
       kind: 'ai-model', metadata: PROTENIX_V2_RELEASE_CANDIDATE_METADATA,
@@ -101,6 +107,7 @@ describe('Phase 3 Runtime Box candidate boundary', () => {
   it('requires measured evidence before publishing VRAM claims', () => {
     for (const candidate of [
       BOLTZ_2_RELEASE_CANDIDATE_METADATA,
+      PROTENIX_BASE_V1_RELEASE_CANDIDATE_METADATA,
       PROTENIX_V2_RELEASE_CANDIDATE_METADATA,
       PROTENIX_MINI_DEFAULT_RELEASE_CANDIDATE_METADATA,
     ]) {

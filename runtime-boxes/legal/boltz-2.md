@@ -24,6 +24,8 @@ This is an engineering compliance record, not legal advice.
 - Source tag `v2.2.1`, exact commit `cb04aeccdd480fd4db707f0bbafde538397fa2ac`, MIT
 - Model repository: `https://huggingface.co/boltz-community/boltz-2`
 - Exact model revision `6fdef46d763fee7fbb83ca5501ccceff43b85607`, declared `mit`
+- Reviewed source revision, exactly as the scroll pins it:
+  `cb04aeccdd480fd4db707f0bbafde538397fa2ac+weights-6fdef46d763fee7fbb83ca5501ccceff43b85607`
   (confirmed against the model API on 2026-09-11; the revision is still the repository head)
 
 | Asset | Bytes | SHA-256 |

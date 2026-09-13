@@ -73,6 +73,8 @@ const NATIVE_ANALYSIS_TOOLS = new Set([
 const AI_ANALYSIS_TOOLS = new Set([
   'ai-single-cell-embedding',
   'ai-mhc-class-i-epitope-prediction',
+  'biomolecular-structure-prediction',
+  'protein-ligand-affinity',
 ]);
 const TOOL_RUNTIME_ANALYSIS_TOOLS = new Set([
   'neoantigen-prioritization',

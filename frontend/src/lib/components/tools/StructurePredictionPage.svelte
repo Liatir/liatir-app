@@ -1,10 +1,12 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
+  import Icon from '@iconify/svelte';
   import {
     BOLTZ_2_MODEL_ID,
     PROTEIN_LIGAND_AFFINITY_TOOL_ID,
     createLiatirStructureToolDraft,
     isLiatirStructureModelId,
+    type LiatirHardwareHostMemory,
     type LiatirStructureToolDraft,
     type LiatirStructureToolId,
   } from '@liatir/core';
@@ -12,23 +14,34 @@
   import PageContent from '$lib/components/layout/PageContent.svelte';
   import Button from '$lib/components/ui/Button.svelte';
   import Card from '$lib/components/ui/Card.svelte';
+  import RunRecord from '$lib/components/ui/RunRecord.svelte';
+  import ToolResultView from '$lib/components/ui/ToolResultView.svelte';
   import StructurePredictionDraft from './StructurePredictionDraft.svelte';
   import { aiModelsStore } from '$lib/stores/aiModels.svelte';
+  import { analysisRuns } from '$lib/stores/analysisRuns.svelte';
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
+  import { jobsStore } from '$lib/stores/jobs.svelte';
   import { structureDrafts } from '$lib/stores/structureDrafts.svelte';
   import { workspaceStore } from '$lib/stores/workspace.svelte';
+  import type { ToolOutput } from '$lib/types/tool-output';
 
   let { toolId }: { toolId: LiatirStructureToolId } = $props();
   let selected = $state<LiatirStructureToolDraft | null>(null);
   let loaded = $state(false);
   let error = $state('');
   let saveStatus = $state('');
+  let host = $state<LiatirHardwareHostMemory>({ totalMemoryBytes: null });
+  let loadedOutput = $state<ToolOutput | null>(null);
+  let loadingOutput = $state(false);
   let saveRevision = 0;
   const affinity = $derived(toolId === PROTEIN_LIGAND_AFFINITY_TOOL_ID);
   const models = $derived(aiModelsStore.models.filter((model) =>
     isLiatirStructureModelId(model.id) && (!affinity || model.id === BOLTZ_2_MODEL_ID)));
   const drafts = $derived(structureDrafts.drafts.filter((draft) =>
     draft.workspaceId === workspaceStore.activeId && draft.toolId === toolId));
+  // The saved draft, not the copy the editor was mounted with, is what records a run once it starts.
+  const resultRunId = $derived(drafts.find((draft) => draft.id === selected?.id)?.executionRunId ?? null);
+  const resultRun = $derived(resultRunId ? analysisRuns.runs.find((run) => run.id === resultRunId) ?? null : null);
 
   $effect(() => {
     let current = true;
@@ -38,7 +51,11 @@
     error = '';
     if (!workspaceId) return;
     (async () => {
-      await Promise.all([aiModelsStore.init(), dataFiles.init(), structureDrafts.load(workspaceId)]);
+      await Promise.all([aiModelsStore.init(), dataFiles.init(), analysisRuns.init(), structureDrafts.load(workspaceId)]);
+      void jobsStore.refresh();
+      void aiModelsStore.ensureHardwareInfo().then((info) => {
+        if (current) host = { totalMemoryBytes: info?.totalMemoryBytes ?? null };
+      });
       if (!current || workspaceStore.activeId !== workspaceId) return;
       loaded = true;
       const saved = drafts.at(-1);
@@ -46,6 +63,17 @@
       else if (models.length) newDraft();
     })().catch((cause) => { if (current) error = String(cause); });
     return () => { current = false; };
+  });
+
+  $effect(() => {
+    const id = resultRunId;
+    const status = resultRun?.status;
+    loadedOutput = null;
+    if (!id || status !== 'done') return;
+    loadingOutput = true;
+    analysisRuns.loadOutput(id).then((output) => {
+      if (resultRunId === id) loadedOutput = output;
+    }).finally(() => { loadingOutput = false; });
   });
 
   function selectDraft(draft: LiatirStructureToolDraft) {
@@ -100,8 +128,22 @@
           {/if}
           {#if selected}
             {#key selected.id}
-              <Card class="p-5"><StructurePredictionDraft initial={selected} {models} files={dataFiles.files} onchange={saveDraft} /></Card>
+              <Card class="p-5"><StructurePredictionDraft initial={selected} {models} files={dataFiles.files} {host} onchange={saveDraft} /></Card>
             {/key}
+          {/if}
+          {#if resultRunId && !resultRun}
+            <Card class="p-4 text-sm" testId="structure-running">
+              This prediction is running. It continues if you leave this page, and you can follow it in
+              <button class="underline" onclick={() => goto('/jobs')}>Jobs</button>.
+            </Card>
+          {:else if resultRun?.status === 'error' || resultRun?.status === 'cancelled'}
+            <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{resultRun.error}</div>
+            <RunRecord runId={resultRunId} />
+          {:else if loadingOutput}
+            <div class="flex justify-center py-12"><Icon icon="svg-spinners:ring-resize" width="22" /></div>
+          {:else if loadedOutput}
+            <ToolResultView output={loadedOutput} outputFiles={resultRun?.outputFiles ?? []} />
+            <RunRecord runId={resultRunId} />
           {/if}
         </div>
       {/if}

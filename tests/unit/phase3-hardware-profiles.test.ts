@@ -2,13 +2,20 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import {
+  BOLTZ_2_MODEL_ID,
+  BOLTZ_2_PRODUCT_SAMPLING_STEPS,
+  BOLTZ_2_VERSION,
   LIATIR_PHASE3_HARDWARE_VALIDATION_PROFILES,
   OPENMM_RUNTIME_COMPONENT_ID,
   OPENMM_VERSION,
+  PROTENIX_BASE_V1_MODEL_ID,
+  PROTENIX_BASE_V1_VERSION,
+  PROTENIX_PRODUCT_DIFFUSION_STEPS,
   estimateHardwareResources,
   phase3HardwareValidationProfile,
   publishedVramRequirements,
   runtimeBoxTargetId,
+  structurePredictionWorkloadMetrics,
 } from '@liatir/core';
 
 const ROOT = resolve(import.meta.dirname, '../..');
@@ -101,6 +108,92 @@ describe('Phase 3 retained hardware envelopes', () => {
       runtimeBoxRelease: '8.5.1-beta.1',
       target: { ...target, cudaVersion: '12.8' },
     })).toBe(null);
+  });
+
+  // The validators write each sample themselves, and the app derives a request's dimensions in core.
+  // Replaying every retained structure case through the app's function is what keeps the two from
+  // drifting: a mismatch here means a measured run would be judged as some other size.
+  it('derives structure workload metrics exactly as every retained structure sample records them', () => {
+    const structureProfiles = LIATIR_PHASE3_HARDWARE_VALIDATION_PROFILES
+      .filter((profile) => [BOLTZ_2_MODEL_ID, PROTENIX_BASE_V1_MODEL_ID].includes(profile.componentId as never));
+    expect(structureProfiles.length).toBeGreaterThan(0);
+    for (const profile of structureProfiles) {
+      const measurement = retainedMeasurement(profile.evidenceRecord);
+      const boltz = profile.componentId === BOLTZ_2_MODEL_ID;
+      for (const sample of profile.samples) {
+        const summary = measurement.cases.find((entry: { id: string }) => entry.id === sample.fixtureId).summary;
+        const metrics = structurePredictionWorkloadMetrics(profile.componentId as typeof BOLTZ_2_MODEL_ID, {
+          tokenEstimate: summary.tokenEstimate,
+          structureCount: boltz ? summary.modelCount : summary.structureCount,
+          steps: boltz ? BOLTZ_2_PRODUCT_SAMPLING_STEPS : PROTENIX_PRODUCT_DIFFUSION_STEPS,
+          affinity: boltz && summary.affinityPredValue != null,
+        });
+        expect({
+          workloadId: metrics.workloadId,
+          maxTokenCount: metrics.tokenCount,
+          maxAtomCount: metrics.atomCount,
+          maxStepCount: metrics.stepCount,
+          maxOutputItemCount: metrics.outputItemCount,
+        }).toEqual({
+          workloadId: sample.workloadId,
+          maxTokenCount: sample.maxTokenCount,
+          maxAtomCount: sample.maxAtomCount,
+          maxStepCount: sample.maxStepCount,
+          maxOutputItemCount: sample.maxOutputItemCount,
+        });
+      }
+    }
+  });
+
+  it('measures Boltz-2 ubiquitin and asks before anything longer', () => {
+    const profile = phase3HardwareValidationProfile({
+      componentId: BOLTZ_2_MODEL_ID,
+      componentVersion: BOLTZ_2_VERSION,
+      runtimeBoxRelease: '2.2.1-beta.1',
+      target: { platform: 'linux', arch: 'x86_64', accelerator: 'cuda', cudaVersion: '12.9' },
+    })!;
+    expect(profile.profileId).toBe('boltz-2-2.2.1-beta.1-linux-x86_64-cuda12.9-development-2026-09-13');
+    const ubiquitin = structurePredictionWorkloadMetrics(BOLTZ_2_MODEL_ID, {
+      tokenEstimate: 76, structureCount: 1, steps: BOLTZ_2_PRODUCT_SAMPLING_STEPS, affinity: false,
+    });
+    expect(estimateHardwareResources(ubiquitin, profile)).toMatchObject({
+      accepted: true, evidence: 'measured', sampleFixtureId: 'ubiquitin-single-sequence',
+    });
+    // One residue past what was measured is honestly beyond the evidence, not estimated from it.
+    expect(estimateHardwareResources({ ...ubiquitin, tokenCount: 77 }, profile)).toMatchObject({
+      accepted: true, evidence: 'beyond-evidence', confirmationRequired: true,
+    });
+    // Affinity is a different workload, and nothing about it has been measured on this target.
+    expect(estimateHardwareResources({ ...ubiquitin, workloadId: 'boltz-2:affinity' }, profile))
+      .toMatchObject({ accepted: false, reason: 'no-evidence' });
+  });
+
+  it('measures Protenix at its competing-seed default and asks before drawing more', () => {
+    const profile = phase3HardwareValidationProfile({
+      componentId: PROTENIX_BASE_V1_MODEL_ID,
+      componentVersion: PROTENIX_BASE_V1_VERSION,
+      runtimeBoxRelease: '1.0.0-beta.1',
+      target: { platform: 'linux', arch: 'x86_64', accelerator: 'cuda', cudaVersion: '12.6' },
+    })!;
+    expect(profile.profileId).toBe('protenix-base-1.0.0-beta.1-linux-x86_64-cuda12.6-development-2026-09-13');
+    // Five seeds of five samples: the product's default is exactly what was measured.
+    const ubiquitin = structurePredictionWorkloadMetrics(PROTENIX_BASE_V1_MODEL_ID, {
+      tokenEstimate: 76, structureCount: 25, steps: PROTENIX_PRODUCT_DIFFUSION_STEPS, affinity: false,
+    });
+    expect(estimateHardwareResources(ubiquitin, profile)).toMatchObject({
+      accepted: true, evidence: 'measured', sampleFixtureId: 'ubiquitin-single-sequence',
+    });
+    // Fewer structures cost no more than the measured run, so they are inside the evidence too.
+    expect(estimateHardwareResources({ ...ubiquitin, outputItemCount: 5 }, profile))
+      .toMatchObject({ accepted: true, evidence: 'measured' });
+    expect(estimateHardwareResources({ ...ubiquitin, outputItemCount: 26 }, profile))
+      .toMatchObject({ accepted: true, evidence: 'beyond-evidence', confirmationRequired: true });
+    // A published VRAM minimum now exists, from the measured peak with the required margins.
+    expect(publishedVramRequirements(profile)).toEqual({
+      measuredPeakVramBytes: 3414163456,
+      minimumVramBytes: 4267704320,
+      recommendedVramBytes: 5121245184,
+    });
   });
 
   it('measures what it can, confirms what it cannot, and refuses only what cannot finish', () => {

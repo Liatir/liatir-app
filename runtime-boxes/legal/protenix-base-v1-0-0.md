@@ -14,6 +14,8 @@ This is an engineering compliance record, not legal advice.
 
 - Code repository: `https://github.com/bytedance/Protenix`
 - Reviewed source revision `2475421477ab414b571149ad4a875c390ff8a35d`, Apache-2.0
+- Reviewed source revision, exactly as the scroll pins it:
+  `2475421477ab414b571149ad4a875c390ff8a35d+weights-protenix_base_default_v1.0.0`
 - Package: `protenix==2.0.0`, taken from its published PyPI wheel rather than from a git checkout,
   so every byte the box installs is pinned by SHA-256
 - Model: `protenix_base_default_v1.0.0`, 368.48 M parameters, the largest publicly available

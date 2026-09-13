@@ -53,6 +53,8 @@ describe('Runtime Box CI catalog', () => {
       'griffithlab-pvactools-pvacseq/linux-x86_64-cpu',
       'openmm-openmm/linux-x86_64-cpu',
       'openmm-openmm/linux-x86_64-cuda12.9',
+      'jwohlwend-boltz-2/linux-x86_64-cuda12.9',
+      'bytedance-protenix-base-v1-0-0/linux-x86_64-cuda12.6',
     ]);
     // A WSL2 claim is only real if the signed scroll carries it too.
     for (const entry of wsl2) {
