@@ -34,6 +34,7 @@ import {
   type AIHardwareInfo,
 } from '$lib/ai/runtime';
 import { appStorage } from './app-storage';
+import { LIATIR_RUNTIME_BOX_SCHEMA_VERSION } from '@liatir/core';
 import type {
   LiatirAIModelMetadata,
   LiatirAIModelRecord,
@@ -116,12 +117,16 @@ function defaultStateFor(_modelId: string): StoredAIModelState {
   };
 }
 
-/** Keeps schema-v1 installs removable but prevents them from being dispatched or updated. */
+/**
+ * Keeps installs from an older Runtime Box format removable but prevents them from being
+ * dispatched or updated. Compared against the shared contract version, which is what the native
+ * install writes, so a format bump cannot leave every fresh install marked broken.
+ */
 function rejectUnsupportedRuntimeBoxState(state: StoredAIModelState): StoredAIModelState {
   const activation = state.runtimeBoxActivation as
     | { schemaVersion?: number }
     | undefined;
-  if (!activation || activation.schemaVersion === 2) return state;
+  if (!activation || activation.schemaVersion === LIATIR_RUNTIME_BOX_SCHEMA_VERSION) return state;
   return {
     ...state,
     status: 'error',

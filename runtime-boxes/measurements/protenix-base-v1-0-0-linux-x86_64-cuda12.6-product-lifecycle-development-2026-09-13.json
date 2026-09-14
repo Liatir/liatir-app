@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "kind": "liatir.runtime-box.product-lifecycle-evidence",
+  "status": "passed",
+  "boxId": "protenix-base-v1-0-0",
+  "modelId": "bytedance-protenix-base-v1-0-0",
+  "runtimeId": "structure-protenix-base-v1-0-0",
+  "targetId": "linux-x86_64-cuda12.6",
+  "hostEnvironment": "windows-wsl2",
+  "version": "1.0.0-beta.1",
+  "jobId": "job_2",
+  "analysisRunId": "84c6b30d-108b-460f-b4d8-5c76ed537bad",
+  "accelerator": "CUDA",
+  "resultArtifactCount": 8,
+  "release": {
+    "archiveSha256": "04ff59f1015b88246037a72a30d3866abd7d6699ddcfc32dc51848079064bf75",
+    "archiveSizeBytes": 8843054564,
+    "installedSizeBytes": 14848043123,
+    "signingKeyIds": [
+      "scrollcase-3ebd4c3de1b804b0"
+    ]
+  },
+  "measured": {
+    "hardwareProfileId": "protenix-base-1.0.0-beta.1-linux-x86_64-cuda12.6-development-2026-09-13",
+    "plddt": 0.93,
+    "seed": "17, the best-ranked of 5 seeds from 17"
+  },
+  "assertions": {
+    "install": "passed",
+    "cancellation": "passed",
+    "measuredEstimate": "passed",
+    "realPrediction": "passed",
+    "confidence": "passed",
+    "jobs": "passed",
+    "results": "passed",
+    "provenance": "passed",
+    "offline": "passed",
+    "navigationResume": "passed",
+    "removal": "passed",
+    "resultArtifactsSurvivedRemoval": "passed"
+  }
+}

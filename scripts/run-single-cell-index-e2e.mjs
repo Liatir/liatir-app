@@ -8,9 +8,8 @@ import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { createDeterministicZip } from 'scrollcase/build';
-import { boxTargetAdapter } from 'scrollcase/contract';
 import { generateSigningKey, signDocument } from 'scrollcase/sign';
+import { createDataArchive } from './data-archive.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..');
 const RUNNER = join(ROOT, 'tests', 'e2e', 'run-tauri-e2e.mjs');
@@ -54,9 +53,7 @@ async function makeFixture(root) {
     files,
   }, null, 2)}\n`);
   const archivePath = join(root, 'index.zip');
-  await createDeterministicZip(payload, archivePath, boxTargetAdapter({
-    platform: 'linux', arch: 'x86_64', accelerator: 'cpu',
-  }));
+  await createDataArchive(payload, archivePath);
   const archive = await readFile(archivePath);
   return { archive, archiveSha256: sha256(archive), sizeBytes: (await stat(archivePath)).size };
 }

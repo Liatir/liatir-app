@@ -1,5 +1,56 @@
 # Current project status
 
+## Both structure models pass their product lifecycle, and the way there found three defects (2026-09-14)
+
+**Protenix base v1.0.0 works in the real app, end to end.** Through WSL2 on this machine, the
+release-candidate binary installed the signed 8.84 GB box from the loopback registry, reached a
+killed Job on cancellation, showed a run estimate from retained measurements with no
+acknowledgement, predicted ubiquitin at **pLDDT 0.93** — seed 17 ranked best of five — and finalized
+the Job into a Result with eight artifacts and full provenance. The Result survived navigation and
+the model's removal: 2 passed, 0 failed, 12 of 12 assertions. Retained as
+`runtime-boxes/measurements/protenix-base-v1-0-0-linux-x86_64-cuda12.6-product-lifecycle-development-2026-09-13.json`;
+the catalog target is now `native-lifecycle-validated`. Development evidence: development key, dirty
+tree, and archive `04ff59f1…` — a loopback build of the same scroll, version and lock as the measured
+archive, not the same bytes.
+
+**Boltz-2 2.2.1 passes the same lifecycle**, once the chain-name defect below was fixed. On the
+signed 12.69 GB box it predicted ubiquitin at **pLDDT 0.92** with seed 17 and finalized a Result with
+four artifacts; install, cancellation, the measured estimate, Jobs, provenance, offline, navigation
+and removal with the artifacts surviving all held: 2 passed, 0 failed, 12 of 12 assertions, in 33
+minutes. Retained as
+`runtime-boxes/measurements/boltz-2-linux-x86_64-cuda12.9-product-lifecycle-development-2026-09-14.json`;
+the catalog target is now `native-lifecycle-validated`. Development evidence again, archive
+`a6966486…`. The Protein–Ligand Affinity page has not had a product lifecycle of its own.
+
+**Three defects, each invisible until the real app ran.**
+
+| Defect | Consequence | Fix |
+| --- | --- | --- |
+| Scrollcase 1.2.0 reads `--publish-base-url`; the older `--asset-base-url` is silently ignored | the loopback build signed documents pointing at production, and the install failed as *release manifest was not found* | the flag is renamed in the CI script, the adapter and the handoff |
+| The AI Models store accepted only activation `schemaVersion === 2`, while the box format moved to 3 on 2026-09-11 (`2ea19a7`) | every AI Model installed since then was marked broken on the next start, and its page asked for an install it already had | compared against the shared `LIATIR_RUNTIME_BOX_SCHEMA_VERSION`; the product lifecycle failed before the fix and passed after |
+| Boltz-2 keeps five characters of a chain name, and the product editor names a protein `protein` | Boltz cut it to `prote` and died on the alignment lookup keyed by the full name; the validator never met it because its chain is `A` | the Boltz adapter names chains A, B, …, Z, AA and routes sequences, constraints, templates and the affinity binder through that map; a unit test reproduces the editor's id |
+
+**`test:ui` could not finish between 2026-09-11 and today, and passes again.** The move to the
+version 3 box format (`2ea19a7`, Scrollcase 0.8.0 → 1.1.1) made `createDeterministicZip` require a
+runtime, and five scripts kept the old three-argument call: the single-cell index, SnpEff and Runtime
+Box security e2e runners, the index publisher `scripts/single-cell-indexes.mjs`, and the CI foundation
+validator. None of them runs in the unit or verify gates, so the UI profile simply stopped at its
+second suite. Data archives now go through `scripts/data-archive.mjs`, the security fixture names its
+own `python` runtime, and a unit test builds a data archive. The UI suites then passed 6 of 6 on
+Windows, the index and SnpEff specs genuinely running; the macOS and Linux Desktop Beta suites skip by
+platform, and the foundation validator is only syntax-checked, because it needs a 4 GiB fixture and
+cargo.
+
+**The profile's own prepare step cannot run while VS Code is open on this repository.** Its
+`npm ci --prefix frontend` fails with EPERM on lightningcss's native module, which the editor holds
+loaded, and leaves `frontend/node_modules` half-deleted. The binary was prepared with the same steps
+minus `npm ci`; `npm install --prefix frontend` restored the tree, and `git checkout` restored the
+lockfile it had touched.
+
+**Before either model can be published**, the deployed signer must be redeployed: its policy now
+names both boxes, so its fingerprint no longer matches the committed one. That redeploy, the CI
+builds on production keys from a clean tree, and the R2 upload each need the owner's confirmation.
+
 ## Both structure models are validated, and one of them needed rescuing (2026-09-13)
 
 **Protenix base v1.0.0 passes its scientific validation.** Against the same experimental ubiquitin

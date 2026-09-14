@@ -907,7 +907,7 @@ async function main() {
       expectedTargetId: resolved.target.targetId,
     });
     const args = ['run', 'runtime-box', '--', 'build', resolved.target.recipeId];
-    for (const name of ['channel', 'signer', 'signer-audience', 'public-key', 'asset-base-url']) {
+    for (const name of ['channel', 'signer', 'signer-audience', 'public-key', 'publish-base-url']) {
       if (options.has(name)) args.push(`--${name}`, options.get(name));
     }
     const invocation = npmInvocation(args);

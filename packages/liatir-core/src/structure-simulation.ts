@@ -191,9 +191,31 @@ function entityChainIds(entityId: string, copies = 1): string[] {
   return Array.from({ length: copies }, (_, index) => `${entityId}_${index + 1}`);
 }
 
-function boltzEntityId(entityId: string, copies = 1): string | string[] {
-  const ids = entityChainIds(entityId, copies);
-  return ids.length === 1 ? ids[0] : ids;
+/**
+ * Boltz stores chain names in a five-character numpy field, so a longer entity id is silently cut
+ * and the alignment lookup keyed by the full id then fails. Chains are named A, B, …, Z, AA, … in
+ * entity order instead, and every reference into the Boltz document goes through this map.
+ */
+function boltzChainNames(spec: LiatirComplexSpec): Map<string, string[]> {
+  const names = new Map<string, string[]>();
+  let index = 0;
+  for (const entity of spec.entities) {
+    names.set(entity.id, Array.from({ length: entity.copies ?? 1 }, () => columnLetters(index++)));
+  }
+  return names;
+}
+
+/** Spreadsheet column naming: 0 → A, 25 → Z, 26 → AA. */
+function columnLetters(index: number): string {
+  let name = "";
+  for (let n = index + 1; n > 0; n = Math.floor((n - 1) / 26)) {
+    name = String.fromCharCode(65 + ((n - 1) % 26)) + name;
+  }
+  return name;
+}
+
+function boltzIdField(names: string[]): string | string[] {
+  return names.length === 1 ? names[0] : names;
 }
 
 function adapterFailure<T>(validation: LiatirValidationResult, errors: string[]): LiatirAdapterResult<T> {
@@ -210,6 +232,7 @@ function constraintEntity(
 
 function boltzConstraintToken(
   spec: LiatirComplexSpec,
+  chains: Map<string, string[]>,
   ref: { entityId: string; residue?: number; atom?: string },
   label: string,
   errors: string[],
@@ -220,22 +243,24 @@ function boltzConstraintToken(
     errors.push(`${label} cannot address entity ${entity.id} because it has multiple copies.`);
     return null;
   }
+  const [chain] = chains.get(entity.id)!;
   if (entity.type === "ligand") {
     if (!ref.atom) {
       errors.push(`${label} must name an atom for ligand ${entity.id}.`);
       return null;
     }
-    return [entity.id, ref.atom];
+    return [chain, ref.atom];
   }
   if (!ref.residue) {
     errors.push(`${label} must name a residue for polymer ${entity.id}.`);
     return null;
   }
-  return [entity.id, ref.atom ?? ref.residue];
+  return [chain, ref.atom ?? ref.residue];
 }
 
 function boltzBondAtom(
   spec: LiatirComplexSpec,
+  chains: Map<string, string[]>,
   ref: { entityId: string; residue?: number; atom?: string },
   label: string,
   errors: string[],
@@ -251,7 +276,7 @@ function boltzBondAtom(
     errors.push(`${label} must name both a residue and atom; ligand residue defaults to 1.`);
     return null;
   }
-  return [entity.id, residue, ref.atom];
+  return [chains.get(entity.id)![0], residue, ref.atom];
 }
 
 /** Translate the neutral complex contract into Boltz-2's documented YAML object. */
@@ -264,8 +289,9 @@ export function adaptBoltz2Input(
   const errors: string[] = [];
   if (request.modelId !== BOLTZ_2_MODEL_ID) errors.push("Boltz adapter requires the Boltz-2 model.");
   const singleSequenceIds = new Set(request.msa.singleSequenceEntityIds);
+  const chains = boltzChainNames(request.spec);
   const sequences: LiatirBoltzSequence[] = request.spec.entities.map((entity) => {
-    const id = boltzEntityId(entity.id, entity.copies);
+    const id = boltzIdField(chains.get(entity.id)!);
     if (entity.type === "protein") {
       return { protein: { id, sequence: normalizedSequence(entity.sequence), msa: entity.msa?.path ?? (singleSequenceIds.has(entity.id) ? "empty" : "") } };
     }
@@ -282,8 +308,8 @@ export function adaptBoltz2Input(
   const constraints: Array<Record<string, unknown>> = [];
   for (const [index, constraint] of (request.spec.constraints ?? []).entries()) {
     if (constraint.type === "bond") {
-      const atom1 = boltzBondAtom(request.spec, constraint.left, `Bond ${index + 1} left side`, errors);
-      const atom2 = boltzBondAtom(request.spec, constraint.right, `Bond ${index + 1} right side`, errors);
+      const atom1 = boltzBondAtom(request.spec, chains, constraint.left, `Bond ${index + 1} left side`, errors);
+      const atom2 = boltzBondAtom(request.spec, chains, constraint.right, `Bond ${index + 1} right side`, errors);
       if (atom1 && atom2) constraints.push({ bond: { atom1, atom2 } });
       continue;
     }
@@ -296,8 +322,8 @@ export function adaptBoltz2Input(
       errors.push(`Constraint ${index + 1} has a minimum distance that Boltz-2 contact constraints cannot represent.`);
       continue;
     }
-    const token1 = boltzConstraintToken(request.spec, constraint.left, `Constraint ${index + 1} left side`, errors);
-    const token2 = boltzConstraintToken(request.spec, constraint.right, `Constraint ${index + 1} right side`, errors);
+    const token1 = boltzConstraintToken(request.spec, chains, constraint.left, `Constraint ${index + 1} left side`, errors);
+    const token2 = boltzConstraintToken(request.spec, chains, constraint.right, `Constraint ${index + 1} right side`, errors);
     if (token1 && token2) constraints.push({ contact: { token1, token2, max_distance: maxDistance, force: false } });
   }
 
@@ -312,10 +338,9 @@ export function adaptBoltz2Input(
       errors.push(`Template ${template.id} must reference a protein entity for Boltz-2.`);
       continue;
     }
-    const targetIds = boltzEntityId(entity.id, entity.copies);
     const record: Record<string, unknown> = {
       [template.format === "mmcif" ? "cif" : "pdb"]: template.path,
-      chain_id: targetIds,
+      chain_id: boltzIdField(chains.get(entity.id)!),
     };
     if (template.chainId) record.template_id = template.chainId;
     templates.push(record);
@@ -329,7 +354,7 @@ export function adaptBoltz2Input(
     } else if ((binder.copies ?? 1) !== 1) {
       errors.push("Boltz-2 affinity accepts only one copy of the ligand binder.");
     } else {
-      properties = [{ affinity: { binder: binder.id } }];
+      properties = [{ affinity: { binder: chains.get(binder.id)![0] } }];
     }
   }
 

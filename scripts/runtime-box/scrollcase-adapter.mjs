@@ -34,7 +34,6 @@ const DISTRIBUTION_COMMANDS = new Set([
 ]);
 const VALUE_FLAGS = new Set([
   'archive',
-  'asset-base-url',
   'build-dir',
   'channel',
   'conda-pack',

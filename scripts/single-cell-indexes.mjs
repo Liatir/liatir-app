@@ -12,8 +12,7 @@ import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { fileURLToPath } from 'node:url';
-import { createDeterministicZip } from 'scrollcase/build';
-import { boxTargetAdapter } from 'scrollcase/contract';
+import { createDataArchive } from './data-archive.mjs';
 import {
   multipartPartRanges,
   registryAdminRequest,
@@ -234,9 +233,7 @@ async function build(id, flags) {
   });
   await mkdir(outputRoot, { recursive: true });
   const temporaryArchive = join(outputRoot, 'index.zip');
-  await createDeterministicZip(bundleRoot, temporaryArchive, boxTargetAdapter({
-    platform: 'linux', arch: 'x86_64', accelerator: 'cpu',
-  }));
+  await createDataArchive(bundleRoot, temporaryArchive);
   const archiveSha256 = await digestFile(temporaryArchive);
   const archivePath = join(outputRoot, `${archiveSha256}.zip`);
   await rename(temporaryArchive, archivePath);

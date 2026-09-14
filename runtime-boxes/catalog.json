@@ -853,7 +853,7 @@
           ],
           "recipeId": "boltz-2-linux-x86_64-cuda12.9",
           "runnerProfileId": "linux-x64-cuda-selfhosted",
-          "status": "scientifically-validated",
+          "status": "native-lifecycle-validated",
           "validationModes": [
             "build",
             "scientific",
@@ -901,7 +901,7 @@
           ],
           "recipeId": "protenix-base-v1-0-0-linux-x86_64-cuda12.6",
           "runnerProfileId": "linux-x64-cuda-selfhosted",
-          "status": "scientifically-validated",
+          "status": "native-lifecycle-validated",
           "validationModes": [
             "build",
             "scientific",

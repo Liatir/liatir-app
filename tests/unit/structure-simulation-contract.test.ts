@@ -155,12 +155,12 @@ describe('Phase 3 scientific contracts', () => {
     expect(adapted.input).toMatchObject({
       version: 1,
       sequences: [
-        { protein: { id: 'target', sequence: 'MSTNPKPQR', msa: '/data/target.a3m' } },
-        { ligand: { id: 'ligand', smiles: 'CC(=O)O' } },
+        { protein: { id: 'A', sequence: 'MSTNPKPQR', msa: '/data/target.a3m' } },
+        { ligand: { id: 'B', smiles: 'CC(=O)O' } },
       ],
-      constraints: [{ bond: { atom1: ['target', 2, 'CA'], atom2: ['ligand', 1, 'C1'] } }],
-      templates: [{ cif: '/data/template.cif', chain_id: 'target', template_id: 'X' }],
-      properties: [{ affinity: { binder: 'ligand' } }],
+      constraints: [{ bond: { atom1: ['A', 2, 'CA'], atom2: ['B', 1, 'C1'] } }],
+      templates: [{ cif: '/data/template.cif', chain_id: 'A', template_id: 'X' }],
+      properties: [{ affinity: { binder: 'B' } }],
     });
   });
 
@@ -169,7 +169,27 @@ describe('Phase 3 scientific contracts', () => {
     delete (request.spec.entities[0] as { msa?: unknown }).msa;
     request.msa = { singleSequenceEntityIds: ['target'], lowerAccuracyAccepted: true };
     expect(adaptBoltz2Input(request).input?.sequences[0]).toEqual({
-      protein: { id: 'target', sequence: 'MSTNPKPQR', msa: 'empty' },
+      protein: { id: 'A', sequence: 'MSTNPKPQR', msa: 'empty' },
+    });
+  });
+
+  // Boltz keeps five characters of a chain name; the product editor's own id, "protein", became
+  // "prote" and the real app run died on the alignment lookup the full name keyed.
+  it('names Boltz chains within its five-character limit whatever the entity ids are', () => {
+    const request = structureRequest();
+    request.spec.entities[0].id = 'protein';
+    request.spec.entities[0].copies = 2;
+    delete (request.spec.entities[0] as { msa?: unknown }).msa;
+    request.spec.entities[1].id = 'acetate-ligand';
+    request.msa = { singleSequenceEntityIds: ['protein'], lowerAccuracyAccepted: true };
+    const adapted = adaptBoltz2Input(request, 'acetate-ligand');
+    expect(adapted.valid).toBe(true);
+    expect(adapted.input).toMatchObject({
+      sequences: [
+        { protein: { id: ['A', 'B'], sequence: 'MSTNPKPQR', msa: 'empty' } },
+        { ligand: { id: 'C', smiles: 'CC(=O)O' } },
+      ],
+      properties: [{ affinity: { binder: 'C' } }],
     });
   });
 

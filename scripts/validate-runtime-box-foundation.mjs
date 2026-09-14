@@ -49,8 +49,9 @@ async function validateLargeArchiveFoundation(root) {
 
   const firstArchive = join(root, 'first.zip');
   const secondArchive = join(root, 'second.zip');
-  await createDeterministicZip(payload, firstArchive, MACOS_ADAPTER);
-  await createDeterministicZip(payload, secondArchive, MACOS_ADAPTER);
+  // The fixture runs nothing; a runtime is named only because it decides which entries are executable.
+  await createDeterministicZip(payload, firstArchive, MACOS_ADAPTER, { runtimeId: 'native' });
+  await createDeterministicZip(payload, secondArchive, MACOS_ADAPTER, { runtimeId: 'native' });
   assert.equal(await sha256File(firstArchive), await sha256File(secondArchive));
 
   const entries = await listZipEntries(firstArchive);

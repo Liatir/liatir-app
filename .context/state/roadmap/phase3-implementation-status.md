@@ -456,7 +456,8 @@ the box targets. Evidence: `npm run test:verify` on this Windows host now passes
   the binary is compiled, once without it when the spec runs — and a binary built without it renders
   no runtime controls at all.
 - That lifecycle used a **development** build whose release document points at the loopback registry
-  (`--asset-base-url http://127.0.0.1:8790/objects`) — the same scroll, version and lock as the
+  (`--asset-base-url http://127.0.0.1:8790/objects` then; since Scrollcase 1.2.0 the flag is
+  `--publish-base-url`, and the old one is silently ignored) — the same scroll, version and lock as the
   scientific measurement, but a different archive:
   `e5e1f3ba48bb0e2affe006b0b2cbbc793ee4b7af2475589e6f047d827b8c97d1`, 580872708 bytes, installed
   1945943501 bytes, signed `liatir-openmm-development`. Its own build self-test passed. So macOS CPU
@@ -550,17 +551,40 @@ by this audit; production actions require the owner's separate confirmation.
   are inside measured evidence there. Still open: the remaining `linux-x86_64-cpu` target, CI builds
   on production keys from a clean tree, a signer redeploy, and publication.
 - [ ] Boltz-2: official source and structure/affinity checkpoints, legal review, reproducible Linux
-  CUDA box, real product runner and validator. The dependency lock is done (2026-09-08); the scroll,
-  self-test, legal record, catalog entry, runner and measurements are not. macOS is out of scope by
-  the owner's 2026-09-07 decision, so no Metal feasibility review is owed.
-- [ ] Protenix: separate v2 and Mini Default boxes, local MSA/templates, real runners, validators and
-  hardware measurements; Mini must never install ESM2-3B.
+  CUDA box, real product runner and validator. Done locally for Linux x86_64 CUDA 12.9 through WSL2:
+  lock, scroll, legal record pinned to the exact source revision, build, self-test, scientific
+  validation (1UBQ at 1.99 Å, correct on 8 of 8 seeds), retained measurement and hardware profile,
+  catalog entry, and on 2026-09-14 a passing real product lifecycle — install, killed-Job
+  cancellation, measured estimate, a real ubiquitin prediction at pLDDT 0.92, Job, Result,
+  provenance, offline, navigation back, and removal with the artifacts surviving. Retained record:
+  `runtime-boxes/measurements/boltz-2-linux-x86_64-cuda12.9-product-lifecycle-development-2026-09-14.json`.
+  Still open: affinity has **no** measurement and no product lifecycle, so every affinity run asks
+  for confirmation; CI builds on production keys from a clean tree, a signer redeploy, and
+  publication. macOS is out of scope by the owner's 2026-09-07 decision, so no Metal feasibility
+  review is owed.
+- [ ] Protenix: ships as **base v1.0.0** (`protenix_base_default_v1.0.0`) on Linux x86_64 CUDA 12.6
+  while v2 and Mini wait — [Protenix ships v1 while v2 waits](../../decisions/protenix-ships-v1-while-v2-waits.md);
+  Mini must still never install ESM2-3B when it comes. Done locally through WSL2: build, self-test,
+  scientific validation (1UBQ at 2.151 Å, deterministic, five competing seeds), retained measurement
+  and hardware profile, and on 2026-09-13 a passing real product lifecycle — install, killed-Job
+  cancellation, measured estimate, a real ubiquitin prediction at pLDDT 0.93, Job, Result,
+  provenance, offline, navigation back, and removal with the artifacts surviving. Retained record:
+  `runtime-boxes/measurements/protenix-base-v1-0-0-linux-x86_64-cuda12.6-product-lifecycle-development-2026-09-13.json`.
+  Local alignments and templates are refused rather than supported. Still open: CI builds on
+  production keys from a clean tree, a signer redeploy, and publication.
 - [ ] Structure/affinity pages: simple complex builder, advanced contract input, file validation,
   explicit single-sequence choice, 128-atom refusal and 56-atom warning, distinct affinity values,
-  structures/confidence/PAE/PDE/table/3D output.
+  structures/confidence/PAE/PDE/table/3D output. Proven in the real app for **structure prediction
+  only**, with both Boltz-2 and Protenix base v1.0.0 through WSL2 (2026-09-13/14): the builder input,
+  the explicit single-sequence choice, a measured run estimate, the run itself, and a Result with the
+  structure, confidence and provenance. The affinity page, the atom limits and the advanced input
+  have not been exercised in the app.
 - [ ] Per-run Jobs/Results/provenance/cancellation/navigation/restart/offline isolation and complete
   runtime install/update/rollback/remove/revocation lifecycle on **each declared host environment**,
-  not each payload: native Linux and Windows-through-WSL2 are two proofs of one signed box.
+  not each payload: native Linux and Windows-through-WSL2 are two proofs of one signed box. For
+  Boltz-2 and Protenix, Windows-through-WSL2 now proves install, cancellation, Jobs, Results,
+  provenance, navigation, offline execution and removal; native Linux, update, rollback, restart and
+  revocation are still unproven for both.
 - [x] Hardware gate reworked to the corrected rule of 2026-09-07, and proven in the real app.
   `estimateHardwareResources` now returns three outcomes: `measured` (real figures from the smallest
   dominating sample), `beyond-evidence` (`confirmationRequired`, carrying no invented estimate — only

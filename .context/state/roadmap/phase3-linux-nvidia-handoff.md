@@ -77,8 +77,10 @@ OpenMM is the complete worked example to imitate: `runtime-boxes/scrolls/openmm/
    `pixi.lock` is `f1e4a595010fe5c2d98e103c0b6b77ee8a80408ea80e25c661df29b2c4a1e88f`; findings are
    in the [Boltz source review](./phase3-boltz-source-review.md).
    Running a **product lifecycle** for a GPU box on this machine additionally needs: the box built
-   with `--asset-base-url http://127.0.0.1:8790/objects` so the app can download it from the
-   loopback registry; `LIATIR_RUNTIME_BOX_TRUSTED_KEY_FILE` pointing at
+   with `--publish-base-url http://127.0.0.1:8790/objects` so the app can download it from the
+   loopback registry (Scrollcase 1.2.0 silently ignores the older `--asset-base-url`, leaving both
+   signed documents pointing at production, where the install fails as *release manifest was not
+   found*); `LIATIR_RUNTIME_BOX_TRUSTED_KEY_FILE` pointing at
    `.runtime-box-local/signing-public.json`, which only a debug build honours; and, whenever
    `tools/native-tools-box-consumer` changes, a rebuild inside WSL2 after
    `rustup target add x86_64-unknown-linux-musl`. Done for OpenMM on 2026-09-10 — the five gates it

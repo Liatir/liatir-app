@@ -155,7 +155,9 @@ async function createFixtureArchive(root, target, version) {
     provenance: provenance(version),
   };
   await writeFile(join(payloadDir, 'box.json'), `${JSON.stringify(shared, null, 2)}\n`);
-  await createDeterministicZip(payloadDir, archivePath, boxTargetAdapter(target));
+  await createDeterministicZip(payloadDir, archivePath, boxTargetAdapter(target), {
+    runtimeId: shared.runtime.id,
+  });
   const bytes = await readFile(archivePath);
   return {
     archivePath,
