@@ -19,6 +19,45 @@ no gate: it is now the `signer-policy` suite of `test:verify`.
 `runtime-box-release.yml` now offers both models and the `linux-x86_64-cuda12.6` target. Both
 self-hosted runner preflights passed.
 
+**The signer is redeployed** from `a69a675`: run `35141208671`, validation and the KMS smoke test
+passed, and the next release's stale-policy check passed against it.
+
+**The first Boltz-2 production release stopped at the Registry, which is still pre-version-3.** Run
+`35141527424` on ephemeral runner `liatir-linux-cuda-selfhosted-1789587344-364` built and signed the
+box with the KMS key, passed `verify --self-test`, and passed the scientific validator on the
+production build with the development build's values: 1UBQ at 1.990 Å, pLDDT 0.925, acetazolamide
+0.994 and −1.397, sulfanilamide 0.965 and +0.328, repeat delta 0; peak RAM 8.77 GB, VRAM 3.61 GB.
+The validator's full result was kept before the runner root was deleted, at
+`~/liatir-build/release-evidence/boltz-2-release-35141527424-scientific.json` inside WSL2 (sha256
+`1c238503…`). It then uploaded the 12.69 GB archive and verified its public hash —
+`boxes/boltz-2/2.2.1-beta.1/linux-x86_64-cuda12.9/0ebe01907e60b8d9135ce05f5ae495863508d8d6dfbb2a3c3e712930c2ff7cc6.zip`
+is on R2, immutable, and referenced by nothing — but the Registry refused the signed release
+document with `invalid_signed_document`. The deployed Worker predates `2ea19a7`: Scrollcase's
+`isSignedBoxDocument` there requires envelope schema 2, and the signer now answers 3. The Worker in
+the tree is correct; it was simply never deployed, which step 4 of the
+[Scrollcase v3 adoption](./roadmap/scrollcase-v3-adoption.md) still lists as open. Deploying it is
+safe for installed apps: every `GET` route streams the stored object without reading its schema, so
+published version 2 channels keep serving unchanged. `npm run runtime-box:worker:deploy` needs a
+Cloudflare login, and wrangler is logged out on this machine and refuses to log in
+non-interactively, so it waits on the owner. A rerun rebuilds from scratch and uploads a new archive,
+leaving the one above orphaned.
+
+**The Registry Worker is deployed** from `a69a675` (2026-09-17, version `199f74f9`), after the owner
+logged wrangler in; its previous deployment was 2026-08-27. `/health`, the published version 2
+channels, the reference-index catalog and `/v1/revocations` all still answer 200 with their stored
+bytes.
+
+**The live revocation list would have stopped every install from an app built on `main`.**
+`ensure_not_revoked` fetches `/v1/revocations` before any install and refuses a document whose schema
+is not `RUNTIME_BOX_SCHEMA_VERSION`, and the list the Registry serves is version 2. The release
+workflow's product lifecycle cannot see this, because it installs from a loopback registry. No
+desktop app has been distributed, so no installed version 2 app depends on the old list. The list is
+therefore re-signed as version 3 with its same two entries — Geneformer `1.0.0-beta.1` and scGPT
+`0.2.5-beta.1`, both revoked on 2026-08-10 — whose `revokedAt` becomes the re-signing date.
+`runtime-box-revoke.yml` could not do it as it stood: it carries the served set forward by verifying
+it, and a version 3 verifier refuses a version 2 document by name. It gains a `carry_forward` input,
+checked by default; unchecked, it passes `--no-carry-forward` and the plan must list every entry.
+
 ## Boltz-2 affinity is measured, and proving it found two defects (2026-09-16)
 
 **Boltz-2 ranks a known inhibitor pair correctly on the signed box.** The validator now also predicts

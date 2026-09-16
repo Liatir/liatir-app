@@ -23,6 +23,14 @@ on:
         description: Type REVOKE to confirm these versions should stop being installable
         required: true
         type: string
+      carry_forward:
+        description: >-
+          Keep checked. Unchecked signs only the listed entries and replaces the live set — for when
+          the served document is in a box format this code can no longer read, and then the list
+          must name every revocation to keep.
+        required: true
+        type: boolean
+        default: true
 
 concurrency:
   # Shared with the release workflow on purpose. Both mutate the same registry control objects, and
@@ -110,7 +118,9 @@ jobs:
 
       # One signature over every entry — the requested ones plus whatever the registry already
       # serves. The registry stores this document whole and cannot merge into it, so anything left
-      # out here would be silently un-revoked.
+      # out here would be silently un-revoked. Carrying forward means verifying the served document,
+      # and a verifier refuses an older box format by name: the move to format 3 left a version 2
+      # set that no current code can read, so that one replacement lists every entry itself.
       - name: Sign the complete revocation set
         env:
           LIATIR_RUNTIME_BOX_SIGNER_ID_TOKEN: ${{ steps.revoke-auth.outputs.id_token }}
@@ -124,6 +134,7 @@ jobs:
           --signer "${{ vars.LIATIR_RUNTIME_BOX_SIGNER_URL }}"
           --signer-audience "${{ vars.LIATIR_RUNTIME_BOX_SIGNER_URL }}"
           --public-key runtime-boxes/trust/production-public.json
+          ${{ !inputs.carry_forward && '--no-carry-forward' || '' }}
 
       - name: Promote the revocations through the Registry
         run: >-
