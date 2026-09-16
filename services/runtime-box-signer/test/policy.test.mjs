@@ -20,8 +20,10 @@ const release = {
   schemaVersion: 3,
   kind: 'liatir.runtime-box.release',
   boxId: 'geneformer-v1-10m',
-  modelId: 'ctheodoris-geneformer-v1-10m',
-  runtimeId: 'single-cell-foundation-geneformer-v1-10m',
+  labels: {
+    model: 'ctheodoris-geneformer-v1-10m',
+    runtime: 'single-cell-foundation-geneformer-v1-10m',
+  },
   version: '1.0.0-beta.2',
   target: { platform: 'macos', arch: 'aarch64', accelerator: 'metal' },
   archive: {
@@ -30,13 +32,13 @@ const release = {
     sha256: 'a'.repeat(64),
     sizeBytes: 10,
   },
-  pythonEntryPoint: 'venv/bin/python',
-  modelCacheSubdir: 'model-cache/geneformer-v1-10m',
-  selfTest: { pythonImports: ['torch'], timeoutSeconds: 180 },
+  runtime: { id: 'python', version: '3.11.9', entryPoint: 'venv/bin/python' },
+  cacheSubdir: 'model-cache/geneformer-v1-10m',
+  selfTest: { probe: { imports: ['torch'] }, timeoutSeconds: 180 },
   provenance: {
     scrollId: 'geneformer-v1-10m-macos-arm64-metal', scrollVersion: '1.0.0',
     builderRevision: 'revision', sourceTreeDirty: false, sourceRevision: 'source',
-    pythonVersion: '3.11.9', pixiVersion: '0.73.0', dependencyLockSha256: 'b'.repeat(64),
+    runtimeVersion: '3.11.9', pixiVersion: '0.73.0', dependencyLockSha256: 'b'.repeat(64),
     builtAt: '2026-07-12T00:00:00.000Z',
   },
 };
@@ -115,15 +117,14 @@ test('accepts the approved UCE Runtime Box identity', () => {
   const uceRelease = {
     ...release,
     boxId: 'uce-4layer',
-    modelId: 'snap-stanford-uce-4layer',
-    runtimeId: 'single-cell-foundation-uce',
+    labels: { model: 'snap-stanford-uce-4layer', runtime: 'single-cell-foundation-uce' },
     version: '1.0.0-beta.1',
     archive: {
       ...release.archive,
       url: `https://assets.models.liatir.com/ai-runtime-boxes/boxes/uce-4layer/1.0.0-beta.1/macos-aarch64-metal/${'a'.repeat(64)}.zip`,
     },
     installedSizeBytes: 10_142_871_337,
-    modelCacheSubdir: 'model-cache/uce',
+    cacheSubdir: 'model-cache/uce',
   };
 
   assert.doesNotThrow(() => validateSigningPayload(policy, uceRelease));
@@ -134,8 +135,7 @@ test('accepts the approved scGPT Linux CPU identity', () => {
   assert.doesNotThrow(() => validateSigningPayload(policy, {
     ...release,
     boxId: 'scgpt-whole-human',
-    modelId: 'bowang-scgpt-whole-human',
-    runtimeId: 'single-cell-foundation-scgpt-whole-human',
+    labels: { model: 'bowang-scgpt-whole-human', runtime: 'single-cell-foundation-scgpt-whole-human' },
     version: '0.2.5-beta.1',
     target: { platform: 'linux', arch: 'x86_64', accelerator: 'cpu' },
     compatibility: {
@@ -147,7 +147,7 @@ test('accepts the approved scGPT Linux CPU identity', () => {
       ...release.archive,
       url: `https://assets.models.liatir.com/ai-runtime-boxes/boxes/scgpt-whole-human/0.2.5-beta.1/${targetId}/${'a'.repeat(64)}.zip`,
     },
-    modelCacheSubdir: 'model-cache/scgpt-whole-human',
+    cacheSubdir: 'model-cache/scgpt-whole-human',
     provenance: {
       ...release.provenance,
       scrollId: 'scgpt-whole-human-linux-x86_64-cpu',
@@ -208,7 +208,7 @@ test('accepts the approved native Windows CUDA payload', () => {
       ...release.archive,
       url: `https://assets.models.liatir.com/ai-runtime-boxes/boxes/geneformer-v1-10m/1.0.0-beta.2/${targetId}/${'a'.repeat(64)}.zip`,
     },
-    pythonEntryPoint: 'venv/python.exe',
+    runtime: { ...release.runtime, entryPoint: 'venv/python.exe' },
     provenance: {
       ...release.provenance,
       scrollId: 'geneformer-v1-10m-windows-x86_64-cuda12.8',
@@ -230,6 +230,43 @@ test('rejects schema-v1 payloads explicitly', () => {
   assert.throws(
     () => validateSigningPayload(policy, { ...release, schemaVersion: 1 }),
     /unsupported Runtime Box schema/,
+  );
+});
+
+// The move to box format 3 once required version 3 of every kind, and so refused the reference-index
+// catalog, which the app and the Registry still read as version 2. These tests did not run in any
+// gate, so nothing noticed until a signer deployment was about to ship it.
+test('holds each document kind to its own schema version', () => {
+  assert.throws(() => validateSigningPayload(policy, { ...release, schemaVersion: 2 }), /unsupported Runtime Box schema/);
+  assert.throws(() => validateSigningPayload(policy, { ...indexCatalog, schemaVersion: 3 }), /unsupported Runtime Box schema/);
+  assert.throws(() => validateSigningPayload(policy, { ...release, kind: 'constructor' }), /not signable/);
+});
+
+test('accepts the structure models only at their approved CUDA targets', () => {
+  const structureRelease = (boxId, model, runtime, version, cudaVersion) => {
+    const targetId = `linux-x86_64-cuda${cudaVersion}`;
+    return {
+      ...release,
+      boxId,
+      labels: { model, runtime },
+      version,
+      target: { platform: 'linux', arch: 'x86_64', accelerator: 'cuda', cudaVersion },
+      compatibility: { minLiatirVersion: '0.2.1', hostEnvironments: ['native', 'windows-wsl2'] },
+      archive: {
+        ...release.archive,
+        url: `https://assets.models.liatir.com/ai-runtime-boxes/boxes/${boxId}/${version}/${targetId}/${'a'.repeat(64)}.zip`,
+      },
+    };
+  };
+  const boltz = structureRelease('boltz-2', 'jwohlwend-boltz-2', 'structure-boltz-2-2-1', '2.2.1-beta.1', '12.9');
+  const protenix = structureRelease(
+    'protenix-base-v1-0-0', 'bytedance-protenix-base-v1-0-0', 'structure-protenix-base-v1-0-0', '1.0.0-beta.1', '12.6',
+  );
+  assert.doesNotThrow(() => validateSigningPayload(policy, boltz));
+  assert.doesNotThrow(() => validateSigningPayload(policy, protenix));
+  assert.throws(
+    () => validateSigningPayload(policy, structureRelease('boltz-2', 'jwohlwend-boltz-2', 'structure-boltz-2-2-1', '2.2.1-beta.1', '12.6')),
+    /target is not approved/,
   );
 });
 

@@ -1,5 +1,24 @@
 # Current project status
 
+## Publishing Boltz-2 and Protenix, and the signer defect that stood in front of it (2026-09-16)
+
+The owner authorized the whole publication sequence for both structure models: the signer redeploy,
+the production release builds on this machine's ephemeral CUDA runner, and the R2 upload.
+
+**The signer's own tests had been failing since the box format moved to version 3** (`2ea19a7`), and
+behind them was a real defect. `validateSigningPayload` began requiring schema version 3 of every
+document kind, but the reference-index catalog is Liatir's own format, which the app
+(`single_cell_indexes.rs`) and the Registry still read as version 2: redeploying that signer would have
+refused every single-cell index catalog. Each kind now carries its own version — 3 for release,
+channel and revocations, 2 for the index catalog — and a test pins it; with the fix removed, exactly
+the two index-catalog tests fail. The rest of the suite still described the version 2 release shape
+and is rewritten to version 3, with a test that the policy signs Boltz-2 and Protenix only at their
+approved CUDA targets. Nothing noticed for five days because the signer's `node --test` suite ran in
+no gate: it is now the `signer-policy` suite of `test:verify`.
+
+`runtime-box-release.yml` now offers both models and the `linux-x86_64-cuda12.6` target. Both
+self-hosted runner preflights passed.
+
 ## Boltz-2 affinity is measured, and proving it found two defects (2026-09-16)
 
 **Boltz-2 ranks a known inhibitor pair correctly on the signed box.** The validator now also predicts

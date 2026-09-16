@@ -14,11 +14,13 @@ on:
           - openvax-mhcflurry-class1-presentation
           - griffithlab-pvactools-pvacseq
           - openmm-openmm
+          - jwohlwend-boltz-2
+          - bytedance-protenix-base-v1-0-0
       target_id:
         description: Checked native target
         required: true
         type: choice
-        options: [macos-aarch64-metal, macos-aarch64-cpu, linux-x86_64-cpu, linux-x86_64-cuda12.9, windows-x86_64-cpu, windows-x86_64-cuda12.8, windows-x86_64-cuda12.9]
+        options: [macos-aarch64-metal, macos-aarch64-cpu, linux-x86_64-cpu, linux-x86_64-cuda12.6, linux-x86_64-cuda12.9, windows-x86_64-cpu, windows-x86_64-cuda12.8, windows-x86_64-cuda12.9]
       channel:
         description: Allowed release channel
         required: true

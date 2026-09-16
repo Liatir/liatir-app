@@ -16,7 +16,7 @@ const npmArgs = (args) => [...npm.args, ...args];
 
 export const testProfiles = {
   fast: ['unit'],
-  verify: ['unit', 'sdk-types', 'core-build', 'frontend-check', 'frontend-build', 'src-ts-compile'],
+  verify: ['unit', 'signer-policy', 'sdk-types', 'core-build', 'frontend-check', 'frontend-build', 'src-ts-compile'],
   build: ['sdk-types', 'core-build', 'frontend-check', 'frontend-build', 'src-ts-compile'],
   // Every UI profile begins with `tauri-prepare`: the end-to-end suites drive a real compiled binary, and it
   // has to exist before anything can be driven.
@@ -35,6 +35,7 @@ export const testProfiles = {
   'heavy-ai': ['tauri-prepare', 'heavy-ai-e2e'],
   all: [
     'unit',
+    'signer-policy',
     'sdk-types',
     'core-build',
     'frontend-check',
@@ -63,6 +64,17 @@ export const testSuites = [
     args: npmArgs(['run', 'test:unit']),
     timeoutMs: 120_000,
     description: 'Fast deterministic tests for shared contracts, registries, parsers, and helpers.',
+  },
+  {
+    // The signer is its own Node service with its own `node --test` suite, which vitest never reaches.
+    // Outside every gate, it went stale for five days and hid a policy that refused the index catalog.
+    id: 'signer-policy',
+    label: 'Runtime Box signer policy tests',
+    layer: 'unit',
+    command: npm.command,
+    args: npmArgs(['run', 'runtime-box:signer:check']),
+    timeoutMs: 60_000,
+    description: 'Tests the policy that decides what the production signing key will sign.',
   },
   {
     id: 'sdk-types',

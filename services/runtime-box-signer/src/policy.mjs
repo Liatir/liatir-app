@@ -198,13 +198,21 @@ function validateReferenceIndexCatalog(policy, payload) {
   }
 }
 
+// Each kind carries its own schema version. The Runtime Box documents follow Scrollcase's box format;
+// the reference-index catalog is Liatir's own format, which the app and the Registry still read as
+// version 2, so moving the boxes to version 3 must not move it.
+const SIGNABLE_DOCUMENTS = new Map([
+  ['liatir.runtime-box.release', { schemaVersion: 3, validate: validateRelease }],
+  ['liatir.runtime-box.channel', { schemaVersion: 3, validate: validateChannel }],
+  ['liatir.runtime-box.revocations', { schemaVersion: 3, validate: validateRevocations }],
+  ['liatir.single-cell-index.catalog', { schemaVersion: 2, validate: validateReferenceIndexCatalog }],
+]);
+
 /** Validate the exact payload before KMS is allowed to sign it. */
 export function validateSigningPayload(policy, payload) {
   requireValue(payload && typeof payload === 'object' && !Array.isArray(payload), 'payload must be an object');
-  requireValue(payload.schemaVersion === 3, 'unsupported Runtime Box schema');
-  if (payload.kind === 'liatir.runtime-box.release') validateRelease(policy, payload);
-  else if (payload.kind === 'liatir.runtime-box.channel') validateChannel(policy, payload);
-  else if (payload.kind === 'liatir.runtime-box.revocations') validateRevocations(policy, payload);
-  else if (payload.kind === 'liatir.single-cell-index.catalog') validateReferenceIndexCatalog(policy, payload);
-  else throw new Error('document kind is not signable');
+  const document = SIGNABLE_DOCUMENTS.get(payload.kind);
+  requireValue(document, 'document kind is not signable');
+  requireValue(payload.schemaVersion === document.schemaVersion, 'unsupported Runtime Box schema');
+  document.validate(policy, payload);
 }
