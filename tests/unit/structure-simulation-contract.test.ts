@@ -15,6 +15,7 @@ import {
   validateMolecularDynamicsRunOptions,
   validateOpenMMCheckpointResume,
   validateProteinLigandAffinityComplex,
+  validateProteinLigandAffinityLigandAtoms,
   validateProteinLigandAffinityRequest,
   validateProteinLigandAffinityValues,
   validateRelaxationEnergyReduction,
@@ -264,6 +265,11 @@ describe('Phase 3 scientific contracts', () => {
     const rejected = validateProteinLigandAffinityRequest(request);
     expect(rejected.valid).toBe(false);
     expect(rejected.errors.join(' ')).toMatch(/above 128 atoms/);
+
+    // A preflight that could not count the ligand stops the run rather than skipping the rule.
+    const uncounted = validateProteinLigandAffinityLigandAtoms(Number.NaN);
+    expect(uncounted.valid).toBe(false);
+    expect(uncounted.errors.join(' ')).toMatch(/chemistry preflight/);
   });
 
   it('shares one complex-shape rule between the editor and the affinity request', () => {

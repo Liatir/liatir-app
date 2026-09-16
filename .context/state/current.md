@@ -1,5 +1,62 @@
 # Current project status
 
+## Boltz-2 affinity is measured, and proving it found two defects (2026-09-16)
+
+**Boltz-2 ranks a known inhibitor pair correctly on the signed box.** The validator now also predicts
+affinity for human carbonic anhydrase II (UniProt `P00918`, ChEMBL `CHEMBL205`, 260 residues, single
+sequence) with two sulfonamides whose inhibition ChEMBL records many times over. The gates were fixed
+before the first run.
+
+| Ligand | Measured Ki, ChEMBL median (log10 µM) | Binding probability | Predicted log10(IC50, µM) |
+| --- | --- | --- | --- |
+| acetazolamide (`CHEMBL20`, 13 atoms) | 12 nM over 516 records (−1.92) | 0.994 | −1.40, about 40 nM |
+| sulfanilamide (`CHEMBL21`, 11 atoms) | 240 nM over 75 records (−0.62) | 0.965 | +0.33, about 2.1 µM |
+
+Acetazolamide is called a binder (gate ≥ 0.5) and predicted the stronger of the two — a measured gap
+of 1.30 log units, a predicted one of 1.72. A repeat at seed 17 gives identical values (gate ≤ 0.01),
+and a 130-atom ligand is refused. What this does **not** show: both molecules really bind, so telling
+a binder from a decoy is untested; two compounds are no accuracy benchmark; and Ki is not IC50, so the
+absolute values, 0.5 and 0.9 log units weaker than measured, are no calibration. The structure case
+is unchanged (1UBQ at 1.99 Å, pLDDT 0.92). Each affinity run took about 2 minutes, up to 9.58 GB RAM and
+3.61 GB device-wide VRAM on the RTX 4060 Ti. Retained as
+`runtime-boxes/measurements/boltz-2-linux-x86_64-cuda12.9-development-2026-09-16.json`; the Boltz-2
+hardware profile now carries its five samples, so an affinity input up to 286 tokens runs on measured
+evidence and a larger one asks first. Development evidence, on archive `a6966486…` — the loopback
+build the product lifecycle installs.
+
+**Two defects, both in how the product reached Boltz.**
+
+| Defect | Consequence | Fix |
+| --- | --- | --- |
+| The 56/128-atom affinity rule lived in core, but nothing in the product counted a ligand's atoms | an oversized ligand would start a Job, and Boltz turns its own refusal into *Failed to process … Skipping*, so the user would get an opaque failed run | the runner counts atoms with Boltz's own parsing functions at Check run; core's `validateProteinLigandAffinityLigandAtoms` refuses above 128 and warns above 56 before any Job exists; the Result records `Ligand atoms`; the validator refuses a 130-atom ligand |
+| Boltz 2.2.1 weighs the ligand with `AllChem.Descriptors.MolWt`, which exists only if `rdkit.Chem.Descriptors` was loaded before `AllChem` was first imported, because `AllChem` star-imports `rdkit.Chem` as it loads | Boltz's own CLI loads them in that order, but the new atom count imported `AllChem` first, so every affinity input was skipped and the run ended with *no prediction directory* | the runner imports `Descriptors` first. Reproduced and checked on CPU: the weight is identical (216.203) to the CLI's order, and the box needed no rebuild. Upstream `main` still carries the fragile call; a fork fixed it on 2026-09-15 (`siyoungkimlab/boltz` PR 18) |
+
+**The first passing measurement was discarded, because it hashed a CRLF working copy.** The validator
+hashes the product runner as its bytes sit in the working tree, and a Windows-side edit had left
+`boltz-structure.ts` — pinned to LF by `.gitattributes` — with CRLF line endings, so the record named
+a runner no commit could ever contain. What ran was unaffected: a template literal normalizes line
+endings, and Python reads either. The file was restored to LF and the validator run again, with
+identical scientific values. The product lifecycle below had already run on a binary carrying the
+discarded run's samples under the same profile id; its judgement rests on the token bounds, which
+did not change, so it was not repeated. Before measuring, count the carriage returns in an
+LF-pinned runner: there must be none.
+
+**The Protein–Ligand Affinity page passes in the real app.** The Boltz-2 product lifecycle now runs
+the affinity page after ubiquitin, on the same box and in the same session: the advanced input took
+carbonic anhydrase II with a 130-atom ligand, and Check run refused it with no Job created; with
+acetazolamide it showed a run estimate from retained measurements, predicted binding probability
+**0.994** and log10(IC50) **−1.397** — the validator's values to the last printed digit — and
+finalized a Result with five artifacts, `Ligand atoms` 13 in its provenance, rendered in Results.
+Both Results survived removing the model: 2 passed, 0 failed, 14 of 14 assertions, in 34 minutes.
+Retained as
+`runtime-boxes/measurements/boltz-2-linux-x86_64-cuda12.9-product-lifecycle-development-2026-09-16.json`,
+which supersedes the 2026-09-14 record. The 56-atom warning is covered by unit tests only.
+
+Gates on the final tree: `test:verify` 6 of 6 (601 tests); the `ui` suites 6 passed and 2 skipped by
+platform, again prepared without `npm ci`; and, on the Boltz-2 candidate binary with
+`LIATIR_STRUCTURE_EDITOR_E2E=1`, the candidate-only structure editor spec with the release-candidate
+spec, 2 passed.
+
 ## Both structure models pass their product lifecycle, and the way there found three defects (2026-09-14)
 
 **Protenix base v1.0.0 works in the real app, end to end.** Through WSL2 on this machine, the

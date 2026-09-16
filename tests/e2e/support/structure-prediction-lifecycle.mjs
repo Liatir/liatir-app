@@ -8,7 +8,8 @@
  *
  * Ubiquitin is the input because both models were scientifically validated on it, so a passing run
  * here sits inside retained measurements and needs no acknowledgement — the same rule the scientific
- * validator and the hardware estimate share.
+ * validator and the hardware estimate share. A model that also predicts affinity runs the affinity
+ * page too, on the validator's own reference pair, before the box is removed.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -26,6 +27,12 @@ import { navigateInApp, readDataJson, reloadLiatirApp, setAppInputValue } from '
 
 const UBIQUITIN = 'MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG';
 const TOOL_ID = 'biomolecular-structure-prediction';
+const AFFINITY_TOOL_ID = 'protein-ligand-affinity';
+// The scientific validator's reference pair and its oversized ligand, so both sides of the size rule
+// and the retained measurement are exercised on exactly the inputs they were established with.
+const ACETAZOLAMIDE = 'CC(=O)Nc1nnc(S(N)(=O)=O)s1';
+const ACETAZOLAMIDE_ATOMS = 13;
+const OVERSIZED_LIGAND = `O${'CCO'.repeat(43)}`;
 const RUN_TIMEOUT_MS = 30 * 60 * 1000;
 const INDEX_PATH = 'workspaces/__test__/analysis-runs/index.json';
 
@@ -41,11 +48,147 @@ async function jobs(browser) {
   return browser.execute(async () => window.Liatir.invoke('lia_jobs_list', { workspaceId: '__test__' }));
 }
 
+async function isChecked(browser, selector) {
+  return browser.execute((target) => document.querySelector(target)?.checked === true, selector);
+}
+
+/** No alignment exists offline, so the product asks for this explicitly rather than assuming it. */
+async function acceptSingleSequence(browser) {
+  for (const selector of ['[data-testid="complex-single-sequence"]', '[data-testid="complex-accuracy-acceptance"]']) {
+    if (!await isChecked(browser, selector)) await (await browser.$(selector)).click();
+  }
+  await (await browser.$('[data-testid="structure-input-valid"]')).waitForDisplayed({ timeout: 10_000 });
+}
+
+/** Checks the run and requires Run to open on retained measurements, with no acknowledgement asked. */
+async function checkMeasuredRun(browser, expect, label) {
+  await (await browser.$('[data-testid="structure-preflight"]')).click();
+  const runButton = await browser.$('[data-testid="structure-run"]');
+  await browser.waitUntil(() => runButton.isEnabled(), {
+    timeout: 180_000, timeoutMsg: `${label} Run did not become enabled for the measured input`,
+  });
+  expect(await browser.execute(() => document.body.innerText.includes('Run estimate from retained measurements')))
+    .toBe(true);
+  expect(await browser.execute(
+    () => document.querySelectorAll('[data-testid="structure-accept-beyond-evidence"]').length,
+  )).toBe(0);
+  return runButton;
+}
+
+/** Waits for this tool's Job to settle, and fails with the Job's own output if it did not succeed. */
+async function finishedJob(browser, expect, toolId, label) {
+  let productJob = null;
+  await browser.waitUntil(async () => {
+    productJob = (await jobs(browser)).find((job) => job.metadata?.toolId === toolId) ?? null;
+    return productJob && productJob.status.type !== 'running';
+  }, { timeout: RUN_TIMEOUT_MS, interval: 2_000, timeoutMsg: `${label} Job did not finish` });
+  if (productJob.status.type !== 'done') {
+    const output = await browser.execute(
+      async (jobId) => window.Liatir.invoke('lia_jobs_get_output', { jobId, since: 0 }), productJob.id,
+    );
+    throw new Error(`${label} Job failed: ${JSON.stringify(output).slice(-6000)}`);
+  }
+  expect(productJob.kind).toBe('ai-python');
+  return productJob;
+}
+
+/** Waits for this tool's Job to be finalized into Results, and reads back what was persisted. */
+async function finalizedResult(browser, expect, toolId, label) {
+  let result = null;
+  await browser.waitUntil(async () => {
+    try {
+      const index = JSON.parse(await browser.execute(
+        async (rel) => window.Liatir.invoke('lia_app_read_text', { rel }), INDEX_PATH,
+      ));
+      result = index.find((run) => run.tool === toolId) ?? null;
+      return result?.status === 'done' || result?.status === 'error';
+    } catch { return false; }
+  }, { timeout: 120_000, interval: 1_000, timeoutMsg: `${label} Job was not finalized into Results` });
+  if (result.status !== 'done') throw new Error(`${label} Result failed: ${result.error}`);
+  expect(result.outputFiles.every((file) => file.producer?.id === toolId)).toBe(true);
+  const persisted = await readDataJson(browser, `workspaces/__test__/runs/${result.id}/result.json`);
+  const provenance = Object.fromEntries(persisted.sections.find(
+    (section) => section.type === 'table' && section.label === 'Provenance',
+  ).rows);
+  const stats = Object.fromEntries(persisted.sections.filter((section) => section.type === 'stats')
+    .flatMap((section) => section.items).map((item) => [item.label, Number(item.value)]));
+  return { result, provenance, stats };
+}
+
+/**
+ * Affinity through the shipped affinity page, on carbonic anhydrase II and acetazolamide, a 12 nM
+ * inhibitor. The size rule goes first: a 130-atom ligand must be refused at Check run, before any
+ * Job exists, because inside Boltz the same refusal becomes a skipped input and a failed run.
+ */
+async function predictAffinity(browser, expect, { rootDir, component, hardwareProfile }) {
+  const label = `${component.modelLabel} affinity`;
+  const fasta = fs.readFileSync(path.join(rootDir, 'runtime-boxes/fixtures/proteins/P00918.fasta'), 'utf8');
+  const carbonicAnhydrase2 = fasta.split('\n').filter((line) => line && !line.startsWith('>')).join('');
+  const complex = (smiles) => JSON.stringify({
+    schemaVersion: 1,
+    kind: 'liatir-complex-spec',
+    entities: [
+      { id: 'protein', type: 'protein', sequence: carbonicAnhydrase2 },
+      { id: 'ligand', type: 'ligand', smiles },
+    ],
+  }, null, 2);
+
+  await navigateInApp(browser, '/tools/structure/affinity');
+  const draftLabel = await browser.$('[data-testid="structure-draft-label"]');
+  await draftLabel.waitForDisplayed({ timeout: 20_000 });
+  await draftLabel.setValue('Carbonic anhydrase II with acetazolamide');
+  await (await browser.$('[data-testid="complex-editor-mode"]')).click();
+  await (await browser.$('[data-testid="complex-advanced-json"]')).waitForDisplayed({ timeout: 10_000 });
+
+  await setAppInputValue(browser, '[data-testid="complex-advanced-json"]', complex(OVERSIZED_LIGAND));
+  await acceptSingleSequence(browser);
+  const jobCount = (await jobs(browser)).length;
+  await (await browser.$('[data-testid="structure-preflight"]')).click();
+  await browser.waitUntil(
+    async () => browser.execute(() => document.body.innerText.includes('does not accept ligands above 128 atoms')),
+    { timeout: 180_000, timeoutMsg: 'A 130-atom ligand was not refused at Check run' },
+  );
+  expect(await (await browser.$('[data-testid="structure-run"]')).isEnabled()).toBe(false);
+  expect((await jobs(browser)).length).toBe(jobCount);
+
+  await setAppInputValue(browser, '[data-testid="complex-advanced-json"]', complex(ACETAZOLAMIDE));
+  await acceptSingleSequence(browser);
+  await (await checkMeasuredRun(browser, expect, label)).click();
+  await navigateInApp(browser, '/jobs');
+
+  const job = await finishedJob(browser, expect, AFFINITY_TOOL_ID, label);
+  const { result, provenance, stats } = await finalizedResult(browser, expect, AFFINITY_TOOL_ID, label);
+  const affinityFile = result.outputFiles.find((file) => file.fieldKey === 'affinityJson');
+  if (!affinityFile) throw new Error(`${label} produced no affinity file`);
+  expect(fs.statSync(affinityFile.path).size).toBeGreaterThan(0);
+  expect(provenance).toMatchObject({
+    'AI Model': component.modelLabel,
+    'Ligand atoms': ACETAZOLAMIDE_ATOMS,
+    Alignment: 'None — predicted from sequence alone',
+    'Network access': 'Disabled',
+    'Hardware evidence': hardwareProfile,
+    'Within measured evidence': 'Yes',
+  });
+  const bindingProbability = stats['Binding probability'];
+  const log10MicromolarIc50 = stats['Log10(IC50), micromolar'];
+  expect(Number.isFinite(log10MicromolarIc50)).toBe(true);
+  // The validator's own bound: a documented 12 nM inhibitor has to be called a binder.
+  expect(bindingProbability >= component.affinity.minimumBindingProbability).toBe(true);
+
+  await navigateInApp(browser, `/results?run=${result.id}`);
+  await browser.waitUntil(
+    async () => browser.execute(() => document.body.innerText.includes('Binding probability')),
+    { timeout: 30_000, timeoutMsg: `${label} Result did not render in Results` },
+  );
+  return { job, result, bindingProbability, log10MicromolarIc50 };
+}
+
 /**
  * @param {{
  *   boxId: string, modelId: string, runtimeId: string, modelLabel: string,
  *   defaultTargetId: string, defaultVersion: string,
  *   hardwareProfiles: Record<string, string>, minimumPlddt: number, seedRow: string,
+ *   affinity?: { minimumBindingProbability: number },
  * }} component
  */
 export function structurePredictionLifecycleTest(component) {
@@ -60,7 +203,9 @@ export function structurePredictionLifecycleTest(component) {
   const hardwareProfile = component.hardwareProfiles[targetId];
 
   return {
-    name: `predicts ubiquitin with ${component.modelLabel} through the product page and keeps its Result after removal`,
+    name: component.affinity
+      ? `predicts ubiquitin and an affinity with ${component.modelLabel} through the product pages and keeps both Results after removal`
+      : `predicts ubiquitin with ${component.modelLabel} through the product page and keeps its Result after removal`,
     heavy: true,
     async run({ browser, expect, rootDir }) {
       if (!hardwareProfile) throw new Error(`No retained hardware profile for ${component.modelId}/${targetId}`);
@@ -109,57 +254,15 @@ export function structurePredictionLifecycleTest(component) {
       await label.setValue('Ubiquitin');
       await setAppInputValue(browser, '[data-testid="structure-model"]', component.modelId);
       await (await browser.$('[data-testid="complex-sequence"]')).setValue(UBIQUITIN);
-      // No alignment exists offline, so the product asks for this explicitly rather than assuming it.
-      await (await browser.$('[data-testid="complex-single-sequence"]')).click();
-      await (await browser.$('[data-testid="complex-accuracy-acceptance"]')).click();
-      await (await browser.$('[data-testid="structure-input-valid"]')).waitForDisplayed({ timeout: 10_000 });
-
-      await (await browser.$('[data-testid="structure-preflight"]')).click();
-      const runButton = await browser.$('[data-testid="structure-run"]');
-      await browser.waitUntil(() => runButton.isEnabled(), {
-        timeout: 180_000, timeoutMsg: `${component.modelLabel} Run did not become enabled for the measured input`,
-      });
-      expect(await browser.execute(() => document.body.innerText.includes('Run estimate from retained measurements')))
-        .toBe(true);
-      expect(await browser.execute(
-        () => document.querySelectorAll('[data-testid="structure-accept-beyond-evidence"]').length,
-      )).toBe(0);
-      await runButton.click();
+      await acceptSingleSequence(browser);
+      await (await checkMeasuredRun(browser, expect, component.modelLabel)).click();
       await navigateInApp(browser, '/jobs');
 
-      let productJob = null;
-      await browser.waitUntil(async () => {
-        productJob = (await jobs(browser)).find((job) => job.metadata?.toolId === TOOL_ID) ?? null;
-        return productJob && productJob.status.type !== 'running';
-      }, { timeout: RUN_TIMEOUT_MS, interval: 2_000, timeoutMsg: `${component.modelLabel} Job did not finish` });
-      if (productJob.status.type !== 'done') {
-        const output = await browser.execute(
-          async (jobId) => window.Liatir.invoke('lia_jobs_get_output', { jobId, since: 0 }), productJob.id,
-        );
-        throw new Error(`${component.modelLabel} Job failed: ${JSON.stringify(output).slice(-6000)}`);
-      }
-      expect(productJob.kind).toBe('ai-python');
-
-      let result = null;
-      await browser.waitUntil(async () => {
-        try {
-          const index = JSON.parse(await browser.execute(
-            async (rel) => window.Liatir.invoke('lia_app_read_text', { rel }), INDEX_PATH,
-          ));
-          result = index.find((run) => run.tool === TOOL_ID) ?? null;
-          return result?.status === 'done' || result?.status === 'error';
-        } catch { return false; }
-      }, { timeout: 120_000, interval: 1_000, timeoutMsg: `${component.modelLabel} Job was not finalized into Results` });
-      if (result.status !== 'done') throw new Error(`${component.modelLabel} Result failed: ${result.error}`);
-      expect(result.outputFiles.every((file) => file.producer?.id === TOOL_ID)).toBe(true);
+      const productJob = await finishedJob(browser, expect, TOOL_ID, component.modelLabel);
+      const { result, provenance, stats } = await finalizedResult(browser, expect, TOOL_ID, component.modelLabel);
       const structure = result.outputFiles.find((file) => file.fieldKey === 'predictedStructure');
       if (!structure) throw new Error(`${component.modelLabel} produced no predicted structure`);
       expect(fs.statSync(structure.path).size).toBeGreaterThan(0);
-
-      const persisted = await readDataJson(browser, `workspaces/__test__/runs/${result.id}/result.json`);
-      const provenance = Object.fromEntries(persisted.sections.find(
-        (section) => section.type === 'table' && section.label === 'Provenance',
-      ).rows);
       expect(provenance).toMatchObject({
         'AI Model': component.modelLabel,
         Seed: component.seedRow,
@@ -170,8 +273,7 @@ export function structurePredictionLifecycleTest(component) {
         'Runtime Box': `${version} · ${targetId}`,
         'Runtime Box archive SHA-256': installed.activation.release.archive.sha256,
       });
-      const plddt = Number(persisted.sections.find((section) => section.type === 'stats')
-        .items.find((item) => item.label === 'Confidence (pLDDT)').value);
+      const plddt = stats['Confidence (pLDDT)'];
       // The bound the scientific validator holds this model to: a lifecycle that passed on a
       // misfolded structure would prove the plumbing and nothing about what it delivers.
       expect(plddt).toBeGreaterThan(component.minimumPlddt);
@@ -189,12 +291,17 @@ export function structurePredictionLifecycleTest(component) {
         { timeout: 30_000, timeoutMsg: `${component.modelLabel} Result did not render in Results` },
       );
 
-      const artifactsBeforeRemoval = runtimeBoxResultArtifactSnapshot(result.outputFiles);
+      const affinity = component.affinity
+        ? await predictAffinity(browser, expect, { rootDir, component, hardwareProfile })
+        : null;
+
+      const producedFiles = [...result.outputFiles, ...(affinity?.result.outputFiles ?? [])];
+      const artifactsBeforeRemoval = runtimeBoxResultArtifactSnapshot(producedFiles);
       const removed = await browser.execute(async (input) => window.Liatir.invoke('lia_runtime_box_remove', input), {
         componentKind: 'ai-model', runtimeId: component.runtimeId, boxId: component.boxId,
       });
       expect(removed).toBe(true);
-      expect(runtimeBoxResultArtifactSnapshot(result.outputFiles)).toEqual(artifactsBeforeRemoval);
+      expect(runtimeBoxResultArtifactSnapshot(producedFiles)).toEqual(artifactsBeforeRemoval);
 
       if (evidencePath) {
         const absolute = path.resolve(rootDir, evidencePath);
@@ -213,10 +320,21 @@ export function structurePredictionLifecycleTest(component) {
             signingKeyIds: installed.activation.signedRelease.signatures.map((entry) => entry.keyId),
           },
           measured: { hardwareProfileId: hardwareProfile, plddt, seed: provenance.Seed },
+          ...(affinity ? {
+            affinity: {
+              jobId: affinity.job.id,
+              analysisRunId: affinity.result.id,
+              resultArtifactCount: affinity.result.outputFiles.length,
+              ligandAtomCount: ACETAZOLAMIDE_ATOMS,
+              bindingProbability: affinity.bindingProbability,
+              log10MicromolarIc50: affinity.log10MicromolarIc50,
+            },
+          } : {}),
           assertions: {
             install: 'passed', cancellation: 'passed', measuredEstimate: 'passed', realPrediction: 'passed',
             confidence: 'passed', jobs: 'passed', results: 'passed', provenance: 'passed', offline: 'passed',
             navigationResume: 'passed', removal: 'passed', resultArtifactsSurvivedRemoval: 'passed',
+            ...(affinity ? { affinitySizeRefusal: 'passed', affinityPrediction: 'passed' } : {}),
           },
         }, null, 2)}\n`);
       }

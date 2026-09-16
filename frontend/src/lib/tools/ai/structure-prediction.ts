@@ -26,6 +26,7 @@ import {
   runtimeBoxTargetId,
   structurePredictionWorkloadMetrics,
   validateProteinLigandAffinityComplex,
+  validateProteinLigandAffinityLigandAtoms,
   validateProteinLigandAffinityValues,
   type JsonValue,
   type LiatirAIModelRecord,
@@ -268,6 +269,8 @@ export interface StructurePreflight {
   metrics: LiatirHardwareWorkloadMetrics;
   profile: LiatirHardwareValidationProfile | null;
   estimate: LiatirHardwareResourcePreflight;
+  /** Cautions the run may still go ahead with, such as a ligand outside Boltz-2's training range. */
+  warnings: string[];
 }
 
 interface StructurePreflightPayload {
@@ -276,6 +279,7 @@ interface StructurePreflightPayload {
   workloadId?: string;
   diffusionSamples?: number;
   structureCount?: number;
+  ligandAtomCount?: number | null;
 }
 
 /** Sizes a request inside the box, before any checkpoint is loaded, and judges it against evidence. */
@@ -295,6 +299,12 @@ export async function preflightStructurePrediction(
   if (payload.kind !== (boltz ? 'liatir.boltz-2-preflight' : 'liatir.protenix-preflight')) {
     throw new Error(`${model.name} preflight returned an unsupported result contract.`);
   }
+  // Boltz applies the same rule itself, but inside a loop that turns its refusal into a skipped input
+  // and a failed Job. Judged here, an oversized ligand stops before any Job starts.
+  const ligandAtoms = adapted.affinity
+    ? validateProteinLigandAffinityLigandAtoms(payload.ligandAtomCount ?? Number.NaN)
+    : null;
+  if (ligandAtoms && !ligandAtoms.valid) throw new Error(ligandAtoms.errors.join(' '));
   const metrics = structurePredictionWorkloadMetrics(adapted.modelId, {
     tokenEstimate: payload.tokenEstimate,
     structureCount: (boltz ? payload.diffusionSamples : payload.structureCount) ?? 0,
@@ -318,7 +328,7 @@ export async function preflightStructurePrediction(
         maxValidatedStepCount: 0,
         maxValidatedOutputItemCount: 0,
       };
-  return { metrics, profile, estimate };
+  return { metrics, profile, estimate, warnings: ligandAtoms?.warnings ?? [] };
 }
 
 /**
@@ -465,9 +475,13 @@ export async function finalizeStructurePredictionResult(
     bindingProbability: Number(summary.affinityProbabilityBinary),
     log10MicromolarIc50: Number(summary.affinityPredValue),
   } : null;
+  const ligandAtomCount = adapted.affinity ? Number(summary.ligandAtomCount) : null;
   if (affinity) {
     const checked = validateProteinLigandAffinityValues(affinity);
     if (!checked.valid) throw new Error(checked.errors.join(' '));
+    if (!validateProteinLigandAffinityLigandAtoms(ligandAtomCount ?? Number.NaN).valid) {
+      throw new Error('The result does not carry a ligand atom count inside Boltz-2 limits.');
+    }
   }
 
   const structurePath = safeOutputPath(parsed.paths.structure, outputDir, 'Predicted structure');
@@ -513,6 +527,8 @@ export async function finalizeStructurePredictionResult(
     ['AI Model', model.version && !model.name.includes(model.version) ? `${model.name} ${model.version}` : model.name],
     ['Seed', seedRow],
     ['Structures drawn', structureCount],
+    // The count Boltz-2's size rule judged, so a warning or a refusal can be traced after the fact.
+    ...(ligandAtomCount !== null ? [['Ligand atoms', ligandAtomCount]] : []),
     ['Alignment', adapted.msa.mode === 'single-sequence' ? 'None — predicted from sequence alone' : adapted.msa.mode],
     ['Network access', 'Disabled'],
     ['Hardware evidence', estimate.hardwareProfileId],

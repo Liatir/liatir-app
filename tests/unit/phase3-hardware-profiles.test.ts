@@ -145,14 +145,14 @@ describe('Phase 3 retained hardware envelopes', () => {
     }
   });
 
-  it('measures Boltz-2 ubiquitin and asks before anything longer', () => {
+  it('measures Boltz-2 structure on ubiquitin and affinity on carbonic anhydrase II, and asks beyond them', () => {
     const profile = phase3HardwareValidationProfile({
       componentId: BOLTZ_2_MODEL_ID,
       componentVersion: BOLTZ_2_VERSION,
       runtimeBoxRelease: '2.2.1-beta.1',
       target: { platform: 'linux', arch: 'x86_64', accelerator: 'cuda', cudaVersion: '12.9' },
     })!;
-    expect(profile.profileId).toBe('boltz-2-2.2.1-beta.1-linux-x86_64-cuda12.9-development-2026-09-13');
+    expect(profile.profileId).toBe('boltz-2-2.2.1-beta.1-linux-x86_64-cuda12.9-development-2026-09-16');
     const ubiquitin = structurePredictionWorkloadMetrics(BOLTZ_2_MODEL_ID, {
       tokenEstimate: 76, structureCount: 1, steps: BOLTZ_2_PRODUCT_SAMPLING_STEPS, affinity: false,
     });
@@ -163,9 +163,21 @@ describe('Phase 3 retained hardware envelopes', () => {
     expect(estimateHardwareResources({ ...ubiquitin, tokenCount: 77 }, profile)).toMatchObject({
       accepted: true, evidence: 'beyond-evidence', confirmationRequired: true,
     });
-    // Affinity is a different workload, and nothing about it has been measured on this target.
-    expect(estimateHardwareResources({ ...ubiquitin, workloadId: 'boltz-2:affinity' }, profile))
-      .toMatchObject({ accepted: false, reason: 'no-evidence' });
+
+    // 260 residues plus acetazolamide's 26-character SMILES, exactly the retained affinity case.
+    const acetazolamide = structurePredictionWorkloadMetrics(BOLTZ_2_MODEL_ID, {
+      tokenEstimate: 286, structureCount: 1, steps: BOLTZ_2_PRODUCT_SAMPLING_STEPS, affinity: true,
+    });
+    expect(estimateHardwareResources(acetazolamide, profile)).toMatchObject({
+      accepted: true, evidence: 'measured', sampleFixtureId: 'carbonic-anhydrase-2-acetazolamide',
+    });
+    expect(estimateHardwareResources({ ...acetazolamide, tokenCount: 287 }, profile)).toMatchObject({
+      accepted: true, evidence: 'beyond-evidence', confirmationRequired: true,
+    });
+    // Each workload keeps its own evidence: the affinity runs do not stretch structure past ubiquitin.
+    expect(estimateHardwareResources({ ...ubiquitin, tokenCount: 286 }, profile)).toMatchObject({
+      accepted: true, evidence: 'beyond-evidence', confirmationRequired: true,
+    });
   });
 
   it('measures Protenix at its competing-seed default and asks before drawing more', () => {

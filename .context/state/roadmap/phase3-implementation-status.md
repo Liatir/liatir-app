@@ -554,14 +554,19 @@ by this audit; production actions require the owner's separate confirmation.
   CUDA box, real product runner and validator. Done locally for Linux x86_64 CUDA 12.9 through WSL2:
   lock, scroll, legal record pinned to the exact source revision, build, self-test, scientific
   validation (1UBQ at 1.99 Å, correct on 8 of 8 seeds), retained measurement and hardware profile,
-  catalog entry, and on 2026-09-14 a passing real product lifecycle — install, killed-Job
-  cancellation, measured estimate, a real ubiquitin prediction at pLDDT 0.92, Job, Result,
-  provenance, offline, navigation back, and removal with the artifacts surviving. Retained record:
-  `runtime-boxes/measurements/boltz-2-linux-x86_64-cuda12.9-product-lifecycle-development-2026-09-14.json`.
-  Still open: affinity has **no** measurement and no product lifecycle, so every affinity run asks
-  for confirmation; CI builds on production keys from a clean tree, a signer redeploy, and
-  publication. macOS is out of scope by the owner's 2026-09-07 decision, so no Metal feasibility
-  review is owed.
+  catalog entry, and a passing real product lifecycle. On 2026-09-16 affinity was measured as well,
+  on carbonic anhydrase II with acetazolamide (12 nM) and sulfanilamide (240 nM) from ChEMBL:
+  acetazolamide called a binder at 0.994 and ranked the stronger, deterministic on repeat, a
+  130-atom ligand refused. Retained record:
+  `runtime-boxes/measurements/boltz-2-linux-x86_64-cuda12.9-development-2026-09-16.json`. The same
+  day the product lifecycle passed with the affinity page in it — install, killed-Job cancellation,
+  measured estimates, a real ubiquitin prediction at pLDDT 0.92, the oversized ligand refused at
+  Check run with no Job, a real acetazolamide prediction matching the validator, both Jobs and
+  Results, provenance, offline, navigation back, and removal with both Results' artifacts
+  surviving. Retained record, superseding the 2026-09-14 one:
+  `runtime-boxes/measurements/boltz-2-linux-x86_64-cuda12.9-product-lifecycle-development-2026-09-16.json`.
+  Still open: CI builds on production keys from a clean tree, a signer redeploy, and publication.
+  macOS is out of scope by the owner's 2026-09-07 decision, so no Metal feasibility review is owed.
 - [ ] Protenix: ships as **base v1.0.0** (`protenix_base_default_v1.0.0`) on Linux x86_64 CUDA 12.6
   while v2 and Mini wait — [Protenix ships v1 while v2 waits](../../decisions/protenix-ships-v1-while-v2-waits.md);
   Mini must still never install ESM2-3B when it comes. Done locally through WSL2: build, self-test,
@@ -574,11 +579,13 @@ by this audit; production actions require the owner's separate confirmation.
   production keys from a clean tree, a signer redeploy, and publication.
 - [ ] Structure/affinity pages: simple complex builder, advanced contract input, file validation,
   explicit single-sequence choice, 128-atom refusal and 56-atom warning, distinct affinity values,
-  structures/confidence/PAE/PDE/table/3D output. Proven in the real app for **structure prediction
-  only**, with both Boltz-2 and Protenix base v1.0.0 through WSL2 (2026-09-13/14): the builder input,
-  the explicit single-sequence choice, a measured run estimate, the run itself, and a Result with the
-  structure, confidence and provenance. The affinity page, the atom limits and the advanced input
-  have not been exercised in the app.
+  structures/confidence/PAE/PDE/table/3D output. Proven in the real app through WSL2 for structure
+  prediction with both Boltz-2 and Protenix base v1.0.0 (2026-09-13/14): the builder input, the
+  explicit single-sequence choice, a measured run estimate, the run itself, and a Result with the
+  structure, confidence and provenance. The affinity page followed with Boltz-2 on 2026-09-16: the
+  advanced input, the 128-atom refusal at Check run before any Job, a measured estimate, both
+  affinity values, the `Ligand atoms` provenance row, and the Result in Results. Still unexercised
+  in the app: the 56-atom warning (unit-tested only), local file validation, and PAE/PDE output.
 - [ ] Per-run Jobs/Results/provenance/cancellation/navigation/restart/offline isolation and complete
   runtime install/update/rollback/remove/revocation lifecycle on **each declared host environment**,
   not each payload: native Linux and Windows-through-WSL2 are two proofs of one signed box. For

@@ -224,7 +224,7 @@
   {#each adapter.warnings as warning}<p class="text-sm text-amber-700">{warning}</p>{/each}
   {#if affinity}
     <p class="text-sm text-text-muted">Binding probability estimates how likely the molecules are to bind. Log10(IC50) is a separate strength estimate, using micromolar units; lower values predict stronger binding. Neither result proves an experimental effect.</p>
-    <p class="text-sm text-text-muted">The installed model checks the molecule's atoms: more than 56 raises a warning; more than 128 stops prediction.</p>
+    <p class="text-sm text-text-muted">Check run counts the molecule's atoms the way the installed model does: more than 56 raises a warning; more than 128 stops prediction.</p>
   {/if}
   {#if model?.status !== 'installed'}
     <div class="rounded border border-border p-3 text-sm"><strong>Install required</strong><p>Install this AI Model in Dependencies to check local files and run a prediction.</p></div>
@@ -254,6 +254,7 @@
             <div><span class="text-text-subtle">This computer has</span><p class="font-medium">{host.totalMemoryBytes === null ? 'Unknown' : fmtBytes(host.totalMemoryBytes)}</p></div>
           {/if}
         </div>
+        {#each preflight.warnings as warning}<p data-testid="structure-preflight-warning" class="mt-2 text-xs text-amber-700">{warning}</p>{/each}
       </div>
     {/if}
     {#if beyondEvidence}

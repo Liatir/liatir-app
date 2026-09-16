@@ -7,6 +7,11 @@
  * protein there is, and a case where a wrong fold is unmistakable rather than arguable. Every
  * prediction here runs in single-sequence mode, because an offline box has no alignment server;
  * that is the accuracy this product can actually promise, so it is the accuracy that gets measured.
+ *
+ * Affinity is judged on carbonic anhydrase II and two sulfonamides whose inhibition constants ChEMBL
+ * records hundreds of times over. Boltz documents its binding probability for telling binders from
+ * decoys and its log10(IC50) only for comparing actives, so exactly those two claims are tested: a
+ * 12 nM inhibitor must be called a binder, and must be predicted stronger than a 240 nM one.
  */
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
@@ -25,6 +30,22 @@ const SOURCE_REVISION = 'cb04aeccdd480fd4db707f0bbafde538397fa2ac+weights-6fdef4
 const UBIQUITIN = 'MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG';
 const REFERENCE_PDB = join(ROOT, 'runtime-boxes/fixtures/structures/1ubq.pdb');
 const REFERENCE_SHA256 = 'd4a6812d8951cf6594e6a0763f089e35f5a80b62acb3c117b2c5565228a7b161';
+const CARBONIC_ANHYDRASE_2_FASTA = join(ROOT, 'runtime-boxes/fixtures/proteins/P00918.fasta');
+const CARBONIC_ANHYDRASE_2_SHA256 = '74cc1e0de5c8488d747471c3b3f4d2c219bc0afbd3d324cc65e017a65209bf8b';
+// Median Ki against ChEMBL target CHEMBL205 over its exact nanomolar records, read on 2026-09-14.
+// Atom counts are Boltz's own: heavy atoms plus the hydrogens RDKit's RemoveHs keeps.
+const AFFINITY_LIGANDS = {
+  acetazolamide: {
+    chemblId: 'CHEMBL20', smiles: 'CC(=O)Nc1nnc(S(N)(=O)=O)s1', atoms: 13, medianKiNanomolar: 12, kiRecords: 516,
+  },
+  sulfanilamide: {
+    chemblId: 'CHEMBL21', smiles: 'Nc1ccc(S(N)(=O)=O)cc1', atoms: 11, medianKiNanomolar: 240, kiRecords: 75,
+  },
+};
+// A documented 12 nM inhibitor called less likely than not to bind is a result no user should be
+// shown. The repeat bound tolerates GPU arithmetic and still catches a prediction that drifts.
+const MINIMUM_BINDER_PROBABILITY = 0.5;
+const MAXIMUM_AFFINITY_REPEAT_DELTA = 0.01;
 
 // Single-sequence Boltz-2 on a protein this well determined should reproduce the backbone closely.
 // The bound is deliberately loose enough to survive a driver or seed difference and tight enough
@@ -224,6 +245,23 @@ try {
     version: 1,
     sequences: [{ protein: { id: 'A', sequence: UBIQUITIN, msa: 'empty' } }],
   };
+  const carbonicAnhydraseBytes = await readFile(CARBONIC_ANHYDRASE_2_FASTA);
+  assert.equal(
+    sha256(carbonicAnhydraseBytes), CARBONIC_ANHYDRASE_2_SHA256,
+    'The carbonic anhydrase II sequence is not the reviewed one.',
+  );
+  const carbonicAnhydrase2 = carbonicAnhydraseBytes.toString('utf8').split('\n')
+    .filter((line) => line && !line.startsWith('>')).join('');
+  assert.equal(carbonicAnhydrase2.length, 260);
+  // The shape the product adapter sends: short chain names, and the one ligand named as the binder.
+  const affinityInput = (smiles) => ({
+    version: 1,
+    sequences: [
+      { protein: { id: 'A', sequence: carbonicAnhydrase2, msa: 'empty' } },
+      { ligand: { id: 'B', smiles } },
+    ],
+    properties: [{ affinity: { binder: 'B' } }],
+  });
 
   async function productCase(id, payload, options = {}) {
     const execution = await execute(productPath, {
@@ -319,12 +357,63 @@ try {
     repeatComparison.backboneRmsdAngstrom - comparison.backboneRmsdAngstrom,
   );
 
+  const affinityPreflight = parseResult(await execute(productPath, {
+    ...base, action: 'preflight', boltzInput: affinityInput(AFFINITY_LIGANDS.acetazolamide.smiles),
+    outputDir: join(workDir, 'affinity-preflight'),
+  }, { accelerator: 'cpu' }), 'affinity preflight');
+  assert.equal(affinityPreflight.workloadId, 'affinity');
+  assert.equal(affinityPreflight.ligandAtomCount, AFFINITY_LIGANDS.acetazolamide.atoms);
+
+  const affinity = {};
+  for (const [name, ligand] of Object.entries(AFFINITY_LIGANDS)) {
+    const { summary } = await productCase(`carbonic-anhydrase-2-${name}`, {
+      boltzInput: affinityInput(ligand.smiles), seed: 17, diffusionSamples: 1, recyclingSteps: 3,
+    });
+    // Printed before anything is judged, so a failing gate still leaves the numbers it failed on.
+    console.error(
+      `Boltz-2 ${name}: binding probability ${summary.affinityProbabilityBinary}, `
+      + `log10(IC50 uM) ${summary.affinityPredValue}, measured Ki ${ligand.medianKiNanomolar} nM`,
+    );
+    assert.equal(summary.ligandAtomCount, ligand.atoms);
+    assert.ok(Number.isFinite(summary.affinityPredValue), `${name} has no finite log10(IC50)`);
+    assert.ok(
+      summary.affinityProbabilityBinary >= 0 && summary.affinityProbabilityBinary <= 1,
+      `${name} has a binding probability outside 0 to 1`,
+    );
+    affinity[name] = summary;
+  }
+  assert.ok(
+    affinity.acetazolamide.affinityProbabilityBinary >= MINIMUM_BINDER_PROBABILITY,
+    'Acetazolamide, a 12 nM carbonic anhydrase II inhibitor, was not predicted a binder.',
+  );
+  assert.ok(
+    affinity.acetazolamide.affinityPredValue < affinity.sulfanilamide.affinityPredValue,
+    'Acetazolamide (12 nM) was not predicted to bind more strongly than sulfanilamide (240 nM).',
+  );
+  const affinityRepeat = await productCase('carbonic-anhydrase-2-acetazolamide-repeat-seed-17', {
+    boltzInput: affinityInput(AFFINITY_LIGANDS.acetazolamide.smiles),
+    seed: 17, diffusionSamples: 1, recyclingSteps: 3,
+  });
+  const affinityRepeatDelta = Math.max(
+    Math.abs(affinityRepeat.summary.affinityPredValue - affinity.acetazolamide.affinityPredValue),
+    Math.abs(affinityRepeat.summary.affinityProbabilityBinary - affinity.acetazolamide.affinityProbabilityBinary),
+  );
+  assert.ok(
+    affinityRepeatDelta <= MAXIMUM_AFFINITY_REPEAT_DELTA,
+    `The same seed moved acetazolamide's affinity by ${affinityRepeatDelta}.`,
+  );
+
   await refusal('refuses-an-incomplete-installation', {
     boltzInput: ubiquitinInput, modelCacheDir: join(workDir, 'not-a-cache'),
   }, /installation is incomplete/);
   await refusal('refuses-an-empty-complex', {
     boltzInput: { version: 1, sequences: [] },
   }, /no complex to predict/);
+  // 130 atoms of polyethylene glycol: two past Boltz's limit, and chemistry ordinary enough that its
+  // size is the only reason left to turn it away.
+  await refusal('refuses-an-oversized-affinity-ligand', {
+    boltzInput: affinityInput(`O${'CCO'.repeat(43)}`),
+  }, /at most 128 atoms; this one has 130/);
 
   const evidence = {
     schemaVersion: 1,
@@ -390,6 +479,26 @@ try {
         complexPlddt: predicted.summary.complexPlddt,
         ptm: predicted.summary.ptm,
         determinismRmsdDeltaAngstrom: determinismDelta,
+      },
+      affinity: {
+        reference: 'chembl-carbonic-anhydrase-2-sulfonamide-ki',
+        target: {
+          uniprotAccession: 'P00918',
+          chemblId: 'CHEMBL205',
+          sha256: CARBONIC_ANHYDRASE_2_SHA256,
+          residues: carbonicAnhydrase2.length,
+          msaMode: 'single-sequence',
+        },
+        passed: true,
+        ligands: Object.fromEntries(Object.entries(AFFINITY_LIGANDS).map(([name, ligand]) => [name, {
+          ...ligand,
+          measuredLog10MicromolarKi: Math.log10(ligand.medianKiNanomolar / 1000),
+          bindingProbability: affinity[name].affinityProbabilityBinary,
+          log10MicromolarIc50: affinity[name].affinityPredValue,
+        }])),
+        minimumBinderProbability: MINIMUM_BINDER_PROBABILITY,
+        repeatDelta: affinityRepeatDelta,
+        repeatDeltaLimit: MAXIMUM_AFFINITY_REPEAT_DELTA,
       },
       finiteValues: comparison.allFinite,
       peakRamBytes: Math.max(...samples.map((sample) => sample.peakRamBytes)),

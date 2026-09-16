@@ -96,6 +96,34 @@ single_sequence_chains = sum(
     if "protein" in entry and entry["protein"].get("msa") == "empty"
 )
 
+# Boltz refuses an affinity ligand above 128 atoms, and warns above the 56 it was trained on, inside a
+# loop that turns any refusal into a skipped input and no prediction at all. The count is taken here
+# with Boltz's own functions, so the answer reaches the user before a Job starts.
+def affinity_ligand_atom_count():
+    affinity_request = (boltz_input.get("properties") or [{}])[0].get("affinity") or {}
+    ligand = next(
+        (entry["ligand"] for entry in boltz_input["sequences"]
+         if "ligand" in entry and entry["ligand"].get("id") == affinity_request.get("binder")),
+        None,
+    )
+    if ligand is None:
+        raise SystemExit("Boltz-2 affinity names a binder that is not a ligand in this complex.")
+    # Boltz's parser weighs the ligand with AllChem.Descriptors, which exists only if Descriptors was
+    # loaded before AllChem's first import: AllChem copies rdkit.Chem's namespace as it loads. Boltz's
+    # own CLI loads it first; this count reaches Boltz before the CLI does, so it keeps that order.
+    import rdkit.Chem.Descriptors  # noqa: F401
+    from rdkit.Chem import AllChem
+    from boltz.data.parse.schema import get_mol, standardize
+    try:
+        if ligand.get("smiles"):
+            molecule = AllChem.AddHs(AllChem.MolFromSmiles(standardize(ligand["smiles"])))
+            return AllChem.RemoveHs(molecule, sanitize=False).GetNumAtoms()
+        return get_mol(ligand.get("ccd") or "", {}, str(cache_dir / "mols")).GetNumAtoms()
+    except Exception as error:
+        raise SystemExit("Boltz-2 cannot read the affinity ligand: " + str(error))
+
+ligand_atom_count = affinity_ligand_atom_count() if predict_affinity else None
+
 if action == "preflight":
     print(json.dumps({
         "kind": "liatir.boltz-2-preflight",
@@ -105,8 +133,15 @@ if action == "preflight":
         "singleSequenceChains": single_sequence_chains,
         "diffusionSamples": diffusion_samples,
         "accelerator": accelerator,
+        "ligandAtomCount": ligand_atom_count,
     }, sort_keys=True))
     raise SystemExit(0)
+
+if ligand_atom_count is not None and ligand_atom_count > 128:
+    raise SystemExit(
+        "Boltz-2 affinity accepts a ligand of at most 128 atoms; this one has "
+        + str(ligand_atom_count) + "."
+    )
 
 output_dir = Path(payload["outputDir"]).resolve()
 output_dir.mkdir(parents=True, exist_ok=True)
@@ -227,6 +262,11 @@ if predict_affinity:
         "Predicted affinity is a ranking signal for one binder against one target, not a measured "
         "binding constant."
     )
+if ligand_atom_count is not None and ligand_atom_count > 56:
+    warnings.append(
+        "The ligand has " + str(ligand_atom_count) + " atoms, more than the 56 Boltz-2's affinity "
+        "module was trained on, so its affinity values may be inaccurate."
+    )
 
 print(json.dumps({
     "kind": "liatir.boltz-2-result",
@@ -252,6 +292,7 @@ print(json.dumps({
         "iptm": primary_confidence.get("iptm"),
         "affinityPredValue": (affinity or {}).get("affinity_pred_value"),
         "affinityProbabilityBinary": (affinity or {}).get("affinity_probability_binary"),
+        "ligandAtomCount": ligand_atom_count,
         "gpuModel": device.get("gpuModel"),
         "gpuMemoryBytes": device.get("gpuMemoryBytes"),
         "computeCapability": device.get("computeCapability"),

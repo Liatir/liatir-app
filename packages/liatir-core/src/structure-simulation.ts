@@ -525,21 +525,31 @@ export function validateProteinLigandAffinityComplex(spec: LiatirComplexSpec): s
 }
 
 /** Apply Boltz-2's declared affinity scope before loading the model. */
+/**
+ * Boltz-2's ligand size rule, applied to a count the installed box takes the way Boltz takes it:
+ * heavy atoms plus the hydrogens RDKit's `RemoveHs` keeps. Split from the request check because the
+ * preflight has the count long before it has anything else worth validating again.
+ */
+export function validateProteinLigandAffinityLigandAtoms(ligandAtomCount: number): LiatirValidationResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  if (!Number.isSafeInteger(ligandAtomCount) || ligandAtomCount < 1) {
+    errors.push("Ligand atom count must be a positive integer computed by the chemistry preflight.");
+  } else if (ligandAtomCount > BOLTZ_AFFINITY_MAX_LIGAND_ATOMS) {
+    errors.push(`Boltz-2 affinity prediction does not accept ligands above ${BOLTZ_AFFINITY_MAX_LIGAND_ATOMS} atoms.`);
+  } else if (ligandAtomCount > BOLTZ_AFFINITY_RECOMMENDED_LIGAND_ATOMS) {
+    warnings.push(`This ligand has more than ${BOLTZ_AFFINITY_RECOMMENDED_LIGAND_ATOMS} atoms and is outside Boltz-2's recommended training range.`);
+  }
+  return { valid: errors.length === 0, errors, warnings };
+}
+
 export function validateProteinLigandAffinityRequest(
   request: LiatirProteinLigandAffinityRequest,
 ): LiatirValidationResult {
   const structure = validateStructurePredictionRequest(request);
-  const errors = [...structure.errors, ...validateProteinLigandAffinityComplex(request.spec)];
-  const warnings = [...structure.warnings];
-
-  if (!Number.isSafeInteger(request.ligandAtomCount) || request.ligandAtomCount < 1) {
-    errors.push("Ligand atom count must be a positive integer computed by the chemistry preflight.");
-  } else if (request.ligandAtomCount > BOLTZ_AFFINITY_MAX_LIGAND_ATOMS) {
-    errors.push(`Boltz-2 affinity prediction does not accept ligands above ${BOLTZ_AFFINITY_MAX_LIGAND_ATOMS} atoms.`);
-  } else if (request.ligandAtomCount > BOLTZ_AFFINITY_RECOMMENDED_LIGAND_ATOMS) {
-    warnings.push(`This ligand has more than ${BOLTZ_AFFINITY_RECOMMENDED_LIGAND_ATOMS} atoms and is outside Boltz-2's recommended training range.`);
-  }
-
+  const atoms = validateProteinLigandAffinityLigandAtoms(request.ligandAtomCount);
+  const errors = [...structure.errors, ...validateProteinLigandAffinityComplex(request.spec), ...atoms.errors];
+  const warnings = [...structure.warnings, ...atoms.warnings];
   return { valid: errors.length === 0, errors, warnings };
 }
 
@@ -1003,21 +1013,22 @@ const OPENMM_LINUX_X86_64_CUDA129_DEVELOPMENT_PROFILE: LiatirHardwareValidationP
 };
 
 /**
- * Boltz-2 on the experimental ubiquitin structure, the only protein it has been measured on. VRAM is
- * a device-wide delta under WSL2, as for OpenMM. A longer sequence is beyond this evidence and must
- * be confirmed by the user rather than estimated from 76 residues.
+ * Boltz-2 on two measured inputs: structure on the experimental ubiquitin structure, and affinity on
+ * carbonic anhydrase II (260 residues) with acetazolamide and sulfanilamide. VRAM is a device-wide
+ * delta under WSL2, as for OpenMM. A longer input is beyond this evidence and must be confirmed by
+ * the user rather than estimated from what was measured.
  */
 const BOLTZ_2_LINUX_X86_64_CUDA129_DEVELOPMENT_PROFILE: LiatirHardwareValidationProfile = {
   schemaVersion: 1,
-  profileId: "boltz-2-2.2.1-beta.1-linux-x86_64-cuda12.9-development-2026-09-13",
+  profileId: "boltz-2-2.2.1-beta.1-linux-x86_64-cuda12.9-development-2026-09-16",
   componentId: BOLTZ_2_MODEL_ID,
   componentVersion: BOLTZ_2_VERSION,
   runtimeBoxRelease: "2.2.1-beta.1",
   target: { platform: "linux", arch: "x86_64", accelerator: "cuda", cudaVersion: "12.9" },
   precision: "upstream default",
-  measuredAt: "2026-09-13T18:13:55.959Z",
+  measuredAt: "2026-09-16T16:31:58.562Z",
   evidenceRecord:
-    "runtime-boxes/measurements/boltz-2-linux-x86_64-cuda12.9-development-2026-09-13.json",
+    "runtime-boxes/measurements/boltz-2-linux-x86_64-cuda12.9-development-2026-09-16.json",
   samples: [
     {
       fixtureId: "ubiquitin-single-sequence",
@@ -1026,9 +1037,9 @@ const BOLTZ_2_LINUX_X86_64_CUDA129_DEVELOPMENT_PROFILE: LiatirHardwareValidation
       maxAtomCount: 1,
       maxStepCount: 200,
       maxOutputItemCount: 1,
-      peakRamBytes: 5679542272,
-      peakVramBytes: 2518679552,
-      elapsedMs: 65546,
+      peakRamBytes: 5735636992,
+      peakVramBytes: 2489319424,
+      elapsedMs: 53907,
       outputBytes: 108042,
     },
     {
@@ -1038,10 +1049,46 @@ const BOLTZ_2_LINUX_X86_64_CUDA129_DEVELOPMENT_PROFILE: LiatirHardwareValidation
       maxAtomCount: 1,
       maxStepCount: 200,
       maxOutputItemCount: 1,
-      peakRamBytes: 5709299712,
-      peakVramBytes: 2496659456,
-      elapsedMs: 61076,
+      peakRamBytes: 5668208640,
+      peakVramBytes: 2488270848,
+      elapsedMs: 53159,
       outputBytes: 108042,
+    },
+    {
+      fixtureId: "carbonic-anhydrase-2-acetazolamide",
+      workloadId: "boltz-2:affinity",
+      maxTokenCount: 286,
+      maxAtomCount: 1,
+      maxStepCount: 200,
+      maxOutputItemCount: 1,
+      peakRamBytes: 9541210112,
+      peakVramBytes: 3493855232,
+      elapsedMs: 121336,
+      outputBytes: 369895,
+    },
+    {
+      fixtureId: "carbonic-anhydrase-2-sulfanilamide",
+      workloadId: "boltz-2:affinity",
+      maxTokenCount: 281,
+      maxAtomCount: 1,
+      maxStepCount: 200,
+      maxOutputItemCount: 1,
+      peakRamBytes: 9540218880,
+      peakVramBytes: 3605004288,
+      elapsedMs: 122346,
+      outputBytes: 369475,
+    },
+    {
+      fixtureId: "carbonic-anhydrase-2-acetazolamide-repeat-seed-17",
+      workloadId: "boltz-2:affinity",
+      maxTokenCount: 286,
+      maxAtomCount: 1,
+      maxStepCount: 200,
+      maxOutputItemCount: 1,
+      peakRamBytes: 9580208128,
+      peakVramBytes: 3498049536,
+      elapsedMs: 123101,
+      outputBytes: 369895,
     },
   ],
 };
