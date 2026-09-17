@@ -913,7 +913,7 @@
           ],
           "recipeId": "protenix-base-v1-0-0-linux-x86_64-cuda12.6",
           "runnerProfileId": "linux-x64-cuda-selfhosted",
-          "status": "native-lifecycle-validated",
+          "status": "published",
           "validationModes": [
             "build",
             "scientific",
@@ -929,7 +929,19 @@
             "safetyMarginBytes": 4294967296
           },
           "gpuRequired": true,
-          "nativeCiEnabled": true
+          "nativeCiEnabled": true,
+          "publication": {
+            "source": "github-actions",
+            "releaseManifestUrl": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/protenix-base-v1-0-0/1.0.0-beta.1/linux-x86_64-cuda12.6/263d2fa6b6fd96fedc4c366c058ed765351ecca960c42661aa5adea1ef3850d0.release.json",
+            "archiveSha256": "37c50af6be5722429ba70e329f4b264ae2b617c57ccc760ce9fa272f3791ca24",
+            "archiveSizeBytes": 8843054580,
+            "installedSizeBytes": 14813925953,
+            "signingKeyId": "liatir-runtime-box-kms-2026",
+            "publishedAt": "2026-09-17T17:34:30.895Z",
+            "workflowRunId": "35244917546",
+            "workflowRunUrl": "https://github.com/Liatir/liatir-stack/actions/runs/35244917546",
+            "evidenceRecord": "runtime-boxes/evidence/protenix-base-v1-0-0-linux-x86_64-cuda12.6-1.0.0-beta.1-run-35244917546.json"
+          }
         }
       ]
     }

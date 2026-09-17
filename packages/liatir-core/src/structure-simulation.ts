@@ -1097,19 +1097,20 @@ const BOLTZ_2_LINUX_X86_64_CUDA129_PRODUCTION_PROFILE: LiatirHardwareValidationP
 /**
  * Protenix base v1.0.0 on the same ubiquitin structure, at the product's own settings: five competing
  * seeds of five samples each, so every retained sample drew 25 structures. bf16 is Protenix's CLI
- * default and the product does not override it.
+ * default and the product does not override it. Measured by the production release that published
+ * this box (run 35244917546), on the KMS-signed build users install.
  */
-const PROTENIX_BASE_V1_LINUX_X86_64_CUDA126_DEVELOPMENT_PROFILE: LiatirHardwareValidationProfile = {
+const PROTENIX_BASE_V1_LINUX_X86_64_CUDA126_PRODUCTION_PROFILE: LiatirHardwareValidationProfile = {
   schemaVersion: 1,
-  profileId: "protenix-base-1.0.0-beta.1-linux-x86_64-cuda12.6-development-2026-09-13",
+  profileId: "protenix-base-1.0.0-beta.1-linux-x86_64-cuda12.6-production-2026-09-17",
   componentId: PROTENIX_BASE_V1_MODEL_ID,
   componentVersion: PROTENIX_BASE_V1_VERSION,
   runtimeBoxRelease: "1.0.0-beta.1",
   target: { platform: "linux", arch: "x86_64", accelerator: "cuda", cudaVersion: "12.6" },
   precision: "bf16",
-  measuredAt: "2026-09-13T18:25:07.649Z",
+  measuredAt: "2026-09-17T16:44:05.381Z",
   evidenceRecord:
-    "runtime-boxes/measurements/protenix-base-v1-0-0-linux-x86_64-cuda12.6-development-2026-09-13.json",
+    "runtime-boxes/measurements/protenix-base-v1-0-0-linux-x86_64-cuda12.6-production-run-35244917546.json",
   samples: [
     {
       fixtureId: "ubiquitin-single-sequence",
@@ -1118,9 +1119,9 @@ const PROTENIX_BASE_V1_LINUX_X86_64_CUDA126_DEVELOPMENT_PROFILE: LiatirHardwareV
       maxAtomCount: 1,
       maxStepCount: 200,
       maxOutputItemCount: 25,
-      peakRamBytes: 4774428672,
-      peakVramBytes: 3414163456,
-      elapsedMs: 274672,
+      peakRamBytes: 4255289344,
+      peakVramBytes: 3403677696,
+      elapsedMs: 263731,
       outputBytes: 1559791,
     },
     {
@@ -1130,9 +1131,9 @@ const PROTENIX_BASE_V1_LINUX_X86_64_CUDA126_DEVELOPMENT_PROFILE: LiatirHardwareV
       maxAtomCount: 1,
       maxStepCount: 200,
       maxOutputItemCount: 25,
-      peakRamBytes: 4725166080,
-      peakVramBytes: 3395289088,
-      elapsedMs: 276803,
+      peakRamBytes: 4236541952,
+      peakVramBytes: 3394240512,
+      elapsedMs: 252479,
       outputBytes: 1559738,
     },
   ],
@@ -1150,7 +1151,7 @@ export const LIATIR_PHASE3_HARDWARE_VALIDATION_PROFILES:
     OPENMM_MACOS_AARCH64_CPU_DEVELOPMENT_PROFILE,
     OPENMM_LINUX_X86_64_CUDA129_DEVELOPMENT_PROFILE,
     BOLTZ_2_LINUX_X86_64_CUDA129_PRODUCTION_PROFILE,
-    PROTENIX_BASE_V1_LINUX_X86_64_CUDA126_DEVELOPMENT_PROFILE,
+    PROTENIX_BASE_V1_LINUX_X86_64_CUDA126_PRODUCTION_PROFILE,
   ];
 
 export function phase3HardwareValidationProfile(input: {

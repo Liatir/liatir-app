@@ -19,9 +19,11 @@ The current product catalog contains:
 | [scGPT Whole-human](/ai/models/bowang-scgpt-whole-human) | macOS arm64 Metal; Linux/Windows CPU; Linux CUDA 12.9; Windows CUDA 12.8 | human single-cell embeddings |
 | [UCE 4-layer](/ai/models/snap-stanford-uce-4layer) | macOS arm64 Metal | multi-species single-cell embeddings |
 | [Boltz-2](/ai/models/jwohlwend-boltz-2) | Linux CUDA 12.9; Windows through WSL2 | structure prediction and protein–ligand affinity |
+| [Protenix base v1.0.0](/ai/models/bytedance-protenix-base-v1-0-0) | Linux CUDA 12.6; Windows through WSL2 | structure prediction |
 
 The AI Tools are [Single-cell Embedding](/ai/tools/single-cell-embedding), and
-Structure Prediction and Protein–Ligand Affinity, which run Boltz-2 from Tools.
+Structure Prediction and Protein–Ligand Affinity under Tools: the first runs
+Boltz-2 or Protenix, the second Boltz-2.
 No other AI Model or AI Tool is available until it has its own reviewed,
 published Runtime Box path.
 

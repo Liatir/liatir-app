@@ -1,0 +1,223 @@
+{
+  "schemaVersion": 1,
+  "kind": "liatir.runtime-box.ci-evidence",
+  "phase": "production-release",
+  "status": "passed",
+  "createdAt": "2026-09-17T17:34:30.895Z",
+  "subject": {
+    "componentKind": "ai-model",
+    "componentId": "bytedance-protenix-base-v1-0-0",
+    "modelId": "bytedance-protenix-base-v1-0-0",
+    "boxId": "protenix-base-v1-0-0",
+    "runtimeId": "structure-protenix-base-v1-0-0",
+    "recipeId": "protenix-base-v1-0-0-linux-x86_64-cuda12.6",
+    "recipeVersion": "1.0.1",
+    "version": "1.0.0-beta.1",
+    "targetId": "linux-x86_64-cuda12.6",
+    "mode": "native-lifecycle"
+  },
+  "source": {
+    "repository": "Liatir/liatir-stack",
+    "commitSha": "3d5bfb19e874205522684f9e15fb5feb901376ce",
+    "sourceTreeDirty": false
+  },
+  "workflow": {
+    "provider": "github-actions",
+    "workflow": "Runtime Box production release",
+    "runId": "35244917546",
+    "runAttempt": "1",
+    "runUrl": "https://github.com/Liatir/liatir-stack/actions/runs/35244917546",
+    "actor": "suffro",
+    "triggeringActor": "suffro",
+    "environment": "runtime-box-production",
+    "approver": null
+  },
+  "host": {
+    "platform": "linux",
+    "arch": "x86_64",
+    "runnerName": "liatir-linux-cuda-selfhosted-1789661402-355",
+    "runnerLabel": "liatir-linux-cuda-selfhosted",
+    "runnerEnvironment": "self-hosted",
+    "image": null,
+    "freeDiskBytesBefore": 871598129152,
+    "minimumFreeDiskBytes": 847438696448,
+    "peakAdditionalDiskBytes": 23991361536,
+    "gpuModel": "NVIDIA GeForce RTX 4060 Ti",
+    "gpuCount": 1,
+    "gpuMemoryBytes": 8585740288,
+    "computeCapability": "8.9",
+    "driverVersion": "610.62",
+    "reportedCudaCompatibility": "12.6",
+    "existingBuildStateBytes": 0,
+    "calculatedDiskPlan": {
+      "sourceAssetBytes": 2131059892,
+      "localSourceBytes": 11365,
+      "estimatedInstalledSizeBytes": 16106127360,
+      "estimatedArchiveSizeBytes": 9663676416,
+      "safetyMarginBytes": 4294967296,
+      "calculatedPeakDiskBytes": 32195842329,
+      "requiredBuildDiskBytes": 34359738368
+    }
+  },
+  "build": {
+    "recipeSha256": "70b082e1c660deb429c04864e9e63db4fa08a51d1d24f1460b2a0085fb4ee85c",
+    "dependencyLockSha256": "780e5a8c74b614be792aaea9dc231e27289add9436097e8869d2e455007b7d4f",
+    "pythonVersion": "3.11.16",
+    "pixiVersion": "0.73.0",
+    "archiveSha256": "37c50af6be5722429ba70e329f4b264ae2b617c57ccc760ce9fa272f3791ca24",
+    "archiveSizeBytes": 8843054580,
+    "installedSizeBytes": 14813925953,
+    "elapsedMs": 1057802,
+    "selfTest": {
+      "status": "passed",
+      "imports": [
+        "torch",
+        "numpy",
+        "pandas",
+        "rdkit",
+        "biotite",
+        "gemmi",
+        "ml_collections",
+        "click"
+      ],
+      "localSignatureVerified": true
+    }
+  },
+  "scientific": {
+    "validator": {
+      "path": "scripts/validate-protenix-runtime.mjs",
+      "sha256": "a5790fd41095514e1416cdf8c12da897f546a8f43e0511c5506d5a689bb45582"
+    },
+    "productScript": {
+      "path": "frontend/src/lib/tools/ai/python-scripts/protenix-structure.ts",
+      "sha256": "f9557c0da945302e79196bbb8728109cf7cc997e2001b34e64e932aa695ffbd6"
+    },
+    "fixture": {
+      "id": "pdb-1ubq-experimental-1.8A",
+      "sha256": "d4a6812d8951cf6594e6a0763f089e35f5a80b62acb3c117b2c5565228a7b161",
+      "residues": 76,
+      "msaMode": "no-alignment"
+    },
+    "sources": [
+      {
+        "kind": "checkpoint",
+        "identity": "https://protenix.tos-cn-beijing.volces.com/checkpoint/protenix_base_default_v1.0.0.pt",
+        "revision": "2475421477ab414b571149ad4a875c390ff8a35d+weights-protenix_base_default_v1.0.0",
+        "sha256": "2b7d5a8b30494514fc47fd2271a16260528cdba170ba09cc112fdecd8f85ec04"
+      },
+      {
+        "kind": "checkpoint",
+        "identity": "https://protenix.tos-cn-beijing.volces.com/common/components.cif",
+        "revision": "2475421477ab414b571149ad4a875c390ff8a35d+weights-protenix_base_default_v1.0.0",
+        "sha256": "bb31ae5cf6c8bc669924313077cb4231ee5ffefd3a20118cd14f3ec89f8bb6a5"
+      },
+      {
+        "kind": "checkpoint",
+        "identity": "https://protenix.tos-cn-beijing.volces.com/common/components.cif.rdkit_mol.pkl",
+        "revision": "2475421477ab414b571149ad4a875c390ff8a35d+weights-protenix_base_default_v1.0.0",
+        "sha256": "d1cfb71f5993a3ebea7c47877022d7f597bbfbaf86e28a4770e957da6c50cd35"
+      },
+      {
+        "kind": "checkpoint",
+        "identity": "https://protenix.tos-cn-beijing.volces.com/common/clusters-by-entity-40.txt",
+        "revision": "2475421477ab414b571149ad4a875c390ff8a35d+weights-protenix_base_default_v1.0.0",
+        "sha256": "1ab4af905e75b382eda8dec59917dc3608bee0729e36b9e71baf860bbe86850c"
+      },
+      {
+        "kind": "checkpoint",
+        "identity": "https://protenix.tos-cn-beijing.volces.com/common/obsolete_release_date.csv",
+        "revision": "2475421477ab414b571149ad4a875c390ff8a35d+weights-protenix_base_default_v1.0.0",
+        "sha256": "a4f3f63ac5d7eebd78b07995cc669b9eccd6f5d8813c9492c9df02868893cf33"
+      }
+    ],
+    "framework": {
+      "name": "torch",
+      "version": null,
+      "backend": "cuda"
+    },
+    "accelerator": {
+      "kind": "cuda",
+      "gpuModel": "NVIDIA GeForce RTX 4060 Ti",
+      "gpuMemoryBytes": 8585740288,
+      "computeCapability": "8.9",
+      "driverVersion": "610.62",
+      "vramMeasurementMethod": "device-wide-delta",
+      "runnerReportedGpuModel": "NVIDIA GeForce RTX 4060 Ti",
+      "reportedCudaCompatibility": "12.6"
+    },
+    "finiteValues": true,
+    "parity": {
+      "reference": "pdb-1ubq-experimental-structure",
+      "anchor": "experimental-structure",
+      "passed": true,
+      "cpuBaselinePassed": null,
+      "acceleratorPassed": true,
+      "backboneRmsdAngstrom": 2.1511863857248428,
+      "maximumDeviationAngstrom": 12.712812022975308,
+      "limitAngstrom": 3,
+      "plddt": 0.9325565338134766,
+      "rankingScore": 0.1840890645980835,
+      "ptm": 0.9204453229904175,
+      "determinismRmsdDeltaAngstrom": 0,
+      "repeatRmsdAngstrom": 1.7274779206958171e-15,
+      "repeatMaximumDeviationAngstrom": 3.956897784362198e-15,
+      "repeatLimitAngstrom": 0.01
+    },
+    "elapsedMs": 522509,
+    "peakRamBytes": 4255289344,
+    "peakVramBytes": 3403677696,
+    "outputContract": "passed",
+    "provenanceContract": "passed"
+  },
+  "productLifecycle": {
+    "status": "passed",
+    "targetId": "linux-x86_64-cuda12.6",
+    "version": "1.0.0-beta.1",
+    "jobId": "job_2",
+    "analysisRunId": "94a1d6f9-1979-4944-8048-4ee52d45f397",
+    "accelerator": "CUDA",
+    "gpuModel": "NVIDIA GeForce RTX 4060 Ti",
+    "computeCapability": "8.9",
+    "reportedCudaCompatibility": "12.6",
+    "peakVramBytes": 3051652096,
+    "resultArtifactCount": 8,
+    "assertions": {
+      "install": "passed",
+      "cancellation": "passed",
+      "measuredEstimate": "passed",
+      "realPrediction": "passed",
+      "confidence": "passed",
+      "jobs": "passed",
+      "results": "passed",
+      "provenance": "passed",
+      "offline": "passed",
+      "navigationResume": "passed",
+      "removal": "passed",
+      "resultArtifactsSurvivedRemoval": "passed"
+    }
+  },
+  "publication": {
+    "signingKeyIds": [
+      "liatir-runtime-box-kms-2026"
+    ],
+    "localSignatureVerified": true,
+    "archive": {
+      "url": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/protenix-base-v1-0-0/1.0.0-beta.1/linux-x86_64-cuda12.6/37c50af6be5722429ba70e329f4b264ae2b617c57ccc760ce9fa272f3791ca24.zip",
+      "sizeBytes": 8843054580,
+      "sha256": "37c50af6be5722429ba70e329f4b264ae2b617c57ccc760ce9fa272f3791ca24",
+      "streamedVerification": "passed"
+    },
+    "release": {
+      "url": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/protenix-base-v1-0-0/1.0.0-beta.1/linux-x86_64-cuda12.6/263d2fa6b6fd96fedc4c366c058ed765351ecca960c42661aa5adea1ef3850d0.release.json",
+      "sizeBytes": 3147,
+      "sha256": "263d2fa6b6fd96fedc4c366c058ed765351ecca960c42661aa5adea1ef3850d0",
+      "streamedVerification": "passed"
+    },
+    "channelUrl": "https://models.liatir.com/v1/channels/beta/protenix-base-v1-0-0/linux-x86_64-cuda12.6",
+    "promotionHttpStatus": 200,
+    "promotionResponse": {
+      "ok": true,
+      "key": "channels/beta/protenix-base-v1-0-0/linux-x86_64-cuda12.6.json"
+    }
+  }
+}

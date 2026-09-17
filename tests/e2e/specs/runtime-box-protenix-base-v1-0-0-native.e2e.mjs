@@ -9,7 +9,7 @@ export const tests = [structurePredictionLifecycleTest({
   defaultTargetId: 'linux-x86_64-cuda12.6',
   defaultVersion: '1.0.0-beta.1',
   hardwareProfiles: {
-    'linux-x86_64-cuda12.6': 'protenix-base-1.0.0-beta.1-linux-x86_64-cuda12.6-development-2026-09-13',
+    'linux-x86_64-cuda12.6': 'protenix-base-1.0.0-beta.1-linux-x86_64-cuda12.6-production-2026-09-17',
   },
   // The validator's own bound, which sits in the empty band between folded and misfolded runs.
   minimumPlddt: 0.85,

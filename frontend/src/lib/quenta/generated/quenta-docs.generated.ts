@@ -3,7 +3,7 @@
 
 import type { LiatirQuentaContextDocument } from '@liatir/core';
 
-export const QUENTA_DOCS_SEED_HASH = "3c32c30922472bfdffdc5eeab5ea4ea74d8350eb106ace7843e94da6ee306b1e";
+export const QUENTA_DOCS_SEED_HASH = "1340dc07d4149fdd0affa41b768871ab6bf5ee50357ac59af453a0ef619fc82f";
 
 export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
   {
@@ -20,7 +20,7 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "title": "Local AI for bioinformatics — AI Models and AI Tools",
     "locator": "Docs / Ai / Guide / AI Models and AI Tools",
     "excerpt": "AI Models and AI Tools An **AI Model** is the packaged scientific model. An **AI Tool** is the task that sends an input to a compatible installed model and turns its output into Jobs, Results, files, and provenance. The current product catalog contains: | AI…",
-    "content": "AI Models and AI Tools\nAn **AI Model** is the packaged scientific model. An **AI Tool** is the task\nthat sends an input to a compatible installed model and turns its output into\nJobs, Results, files, and provenance.\n\nThe current product catalog contains:\n\n| AI Model | Current published targets | Main use |\n| --- | --- | --- |\n| [Geneformer V1 10M](/ai/models/ctheodoris-geneformer-v1-10m) | macOS arm64 Metal; Linux CUDA 12.9; Windows CUDA 12.8 | human single-cell embeddings |\n| [scGPT Whole-human](/ai/models/bowang-scgpt-whole-human) | macOS arm64 Metal; Linux/Windows CPU; Linux CUDA 12.9; Windows CUDA 12.8 | human single-cell embeddings |\n| [UCE 4-layer](/ai/models/snap-stanford-uce-4layer) | macOS arm64 Metal | multi-species single-cell embeddings |\n| [Boltz-2](/ai/models/jwohlwend-boltz-2) | Linux CUDA 12.9; Windows through WSL2 | structure prediction and protein–ligand affinity |\n\nThe AI Tools are [Single-cell Embedding](/ai/tools/single-cell-embedding), and\nStructure Prediction and Protein–Ligand Affinity, which run Boltz-2 from Tools.\nNo other AI Model or AI Tool is available until it has its own reviewed,\npublished Runtime Box path."
+    "content": "AI Models and AI Tools\nAn **AI Model** is the packaged scientific model. An **AI Tool** is the task\nthat sends an input to a compatible installed model and turns its output into\nJobs, Results, files, and provenance.\n\nThe current product catalog contains:\n\n| AI Model | Current published targets | Main use |\n| --- | --- | --- |\n| [Geneformer V1 10M](/ai/models/ctheodoris-geneformer-v1-10m) | macOS arm64 Metal; Linux CUDA 12.9; Windows CUDA 12.8 | human single-cell embeddings |\n| [scGPT Whole-human](/ai/models/bowang-scgpt-whole-human) | macOS arm64 Metal; Linux/Windows CPU; Linux CUDA 12.9; Windows CUDA 12.8 | human single-cell embeddings |\n| [UCE 4-layer](/ai/models/snap-stanford-uce-4layer) | macOS arm64 Metal | multi-species single-cell embeddings |\n| [Boltz-2](/ai/models/jwohlwend-boltz-2) | Linux CUDA 12.9; Windows through WSL2 | structure prediction and protein–ligand affinity |\n| [Protenix base v1.0.0](/ai/models/bytedance-protenix-base-v1-0-0) | Linux CUDA 12.6; Windows through WSL2 | structure prediction |\n\nThe AI Tools are [Single-cell Embedding](/ai/tools/single-cell-embedding), and\nStructure Prediction and Protein–Ligand Affinity under Tools: the first runs\nBoltz-2 or Protenix, the second Boltz-2.\nNo other AI Model or AI Tool is available until it has its own reviewed,\npublished Runtime Box path."
   },
   {
     "id": "docs:ai/guide#installation",
@@ -117,6 +117,70 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "locator": "Docs / Ai / Models / Bowang Scgpt Whole Human / Official source",
     "excerpt": "Official source - [scGPT on GitHub](https://github.com/bowang-lab/scGPT)",
     "content": "Official source\n- [scGPT on GitHub](https://github.com/bowang-lab/scGPT)"
+  },
+  {
+    "id": "docs:ai/models/bytedance-protenix-base-v1-0-0",
+    "sourceKind": "documentation",
+    "title": "Protenix base v1.0.0",
+    "locator": "Docs / Ai / Models / Bytedance Protenix Base V1 0 0",
+    "excerpt": "Protenix predicts the 3D structure of proteins and molecular complexes from their sequences. It is an independent model from Boltz-2, built by a different team, so it is useful as a second opinion on a structure. Liatir runs it entirely on your computer.",
+    "content": "Protenix predicts the 3D structure of proteins and molecular complexes from their\nsequences. It is an independent model from Boltz-2, built by a different team,\nso it is useful as a second opinion on a structure. Liatir runs it entirely on\nyour computer."
+  },
+  {
+    "id": "docs:ai/models/bytedance-protenix-base-v1-0-0#what-it-does",
+    "sourceKind": "documentation",
+    "title": "Protenix base v1.0.0 — What it does",
+    "locator": "Docs / Ai / Models / Bytedance Protenix Base V1 0 0 / What it does",
+    "excerpt": "What it does From one or more protein, DNA or RNA sequences and optional small molecules, Protenix predicts where every atom sits, with a confidence score for each part of the structure. Liatir runs it from five different random seeds, draws five structures f…",
+    "content": "What it does\nFrom one or more protein, DNA or RNA sequences and optional small molecules,\nProtenix predicts where every atom sits, with a confidence score for each part\nof the structure.\n\nLiatir runs it from five different random seeds, draws five structures from\neach, and returns the one Protenix itself ranks highest. On ubiquitin, a single\nseed produced the wrong fold in 6 of 11 tries; competing seeds recovered the\nright one each time."
+  },
+  {
+    "id": "docs:ai/models/bytedance-protenix-base-v1-0-0#current-status-in-liatir",
+    "sourceKind": "documentation",
+    "title": "Protenix base v1.0.0 — Current status in Liatir",
+    "locator": "Docs / Ai / Models / Bytedance Protenix Base V1 0 0 / Current status in Liatir",
+    "excerpt": "Current status in Liatir Protenix base v1.0.0 is published as a signed Runtime Box for Linux x86_64 with an NVIDIA GPU (CUDA 12.6). Windows computers with an NVIDIA GPU run the same box through WSL2. There is no macOS version. Before publication, the exact bo…",
+    "content": "Current status in Liatir\nProtenix base v1.0.0 is published as a signed Runtime Box for Linux x86_64 with\nan NVIDIA GPU (CUDA 12.6). Windows computers with an NVIDIA GPU run the same box\nthrough WSL2. There is no macOS version.\n\nBefore publication, the exact box you download was checked against known\nscience: from the sequence of ubiquitin alone, it reproduced the experimentally\nsolved structure (PDB 1UBQ) to within 2.15 Å, and two runs from the same seed\ngave the same structure."
+  },
+  {
+    "id": "docs:ai/models/bytedance-protenix-base-v1-0-0#what-to-keep-in-mind",
+    "sourceKind": "documentation",
+    "title": "Protenix base v1.0.0 — What to keep in mind",
+    "locator": "Docs / Ai / Models / Bytedance Protenix Base V1 0 0 / What to keep in mind",
+    "excerpt": "What to keep in mind - Predictions run without a multiple sequence alignment, because Liatir works offline. This is markedly less accurate for many proteins, and each result says so. - On ubiquitin, Protenix was slightly less accurate and about four times slo…",
+    "content": "What to keep in mind\n- Predictions run without a multiple sequence alignment, because Liatir works\n  offline. This is markedly less accurate for many proteins, and each result\n  says so.\n- On ubiquitin, Protenix was slightly less accurate and about four times slower\n  than Boltz-2. Its value is that it is independent: when both models agree,\n  the structure is more trustworthy.\n- Protenix predicts structures only. For binding strength, use\n  [Boltz-2](/ai/models/jwohlwend-boltz-2)."
+  },
+  {
+    "id": "docs:ai/models/bytedance-protenix-base-v1-0-0#expected-inputs",
+    "sourceKind": "documentation",
+    "title": "Protenix base v1.0.0 — Expected inputs",
+    "locator": "Docs / Ai / Models / Bytedance Protenix Base V1 0 0 / Expected inputs",
+    "excerpt": "Expected inputs Sequences of the chains in the complex, and optionally small molecules as SMILES.",
+    "content": "Expected inputs\nSequences of the chains in the complex, and optionally small molecules as\nSMILES."
+  },
+  {
+    "id": "docs:ai/models/bytedance-protenix-base-v1-0-0#expected-outputs",
+    "sourceKind": "documentation",
+    "title": "Protenix base v1.0.0 — Expected outputs",
+    "locator": "Docs / Ai / Models / Bytedance Protenix Base V1 0 0 / Expected outputs",
+    "excerpt": "Expected outputs - The best-ranked predicted structure as mmCIF, which opens in the 3D Structure Viewer, plus every structure drawn. - Confidence scores (pLDDT, pTM). - Jobs, Results and Runtime Box provenance, like every Liatir run.",
+    "content": "Expected outputs\n- The best-ranked predicted structure as mmCIF, which opens in the 3D Structure\n  Viewer, plus every structure drawn.\n- Confidence scores (pLDDT, pTM).\n- Jobs, Results and Runtime Box provenance, like every Liatir run."
+  },
+  {
+    "id": "docs:ai/models/bytedance-protenix-base-v1-0-0#hardware-and-installation",
+    "sourceKind": "documentation",
+    "title": "Protenix base v1.0.0 — Hardware and installation",
+    "locator": "Docs / Ai / Models / Bytedance Protenix Base V1 0 0 / Hardware and installation",
+    "excerpt": "Hardware and installation You need an NVIDIA GPU. On the computer the box was validated on, a GeForce RTX 4060 Ti with 8 GB of memory, a 76-residue protein took about four minutes, using up to 3.4 GB of GPU memory and 4.3 GB of RAM. Before a larger run, Liati…",
+    "content": "Hardware and installation\nYou need an NVIDIA GPU. On the computer the box was validated on, a GeForce RTX\n4060 Ti with 8 GB of memory, a 76-residue protein took about four minutes, using\nup to 3.4 GB of GPU memory and 4.3 GB of RAM. Before a larger run, Liatir tells\nyou that it goes beyond what was measured and asks you to confirm.\n\nEverything Protenix needs lives inside the Runtime Box and is never added to\nyour system."
+  },
+  {
+    "id": "docs:ai/models/bytedance-protenix-base-v1-0-0#official-source",
+    "sourceKind": "documentation",
+    "title": "Protenix base v1.0.0 — Official source",
+    "locator": "Docs / Ai / Models / Bytedance Protenix Base V1 0 0 / Official source",
+    "excerpt": "Official source - [Protenix on GitHub](https://github.com/bytedance/Protenix/blob/v2.0.0/docs/supported_models.md), Apache License 2.0, for both the code and the model weights.",
+    "content": "Official source\n- [Protenix on GitHub](https://github.com/bytedance/Protenix/blob/v2.0.0/docs/supported_models.md),\n  Apache License 2.0, for both the code and the model weights."
   },
   {
     "id": "docs:ai/models/ctheodoris-geneformer-v1-10m",
@@ -252,7 +316,7 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "title": "AI Models — Available models",
     "locator": "Docs / Ai / Models / Overview / Available models",
     "excerpt": "Available models | AI Model | Input | Published support | | --- | --- | --- | | [Geneformer V1 10M](/ai/models/ctheodoris-geneformer-v1-10m) | human AnnData | macOS arm64 Metal; Linux CUDA 12.9; Windows CUDA 12.8 | | [scGPT Whole-human](/ai/models/bowang-scgp…",
-    "content": "Available models\n| AI Model | Input | Published support |\n| --- | --- | --- |\n| [Geneformer V1 10M](/ai/models/ctheodoris-geneformer-v1-10m) | human AnnData | macOS arm64 Metal; Linux CUDA 12.9; Windows CUDA 12.8 |\n| [scGPT Whole-human](/ai/models/bowang-scgpt-whole-human) | human AnnData | macOS arm64 Metal; Linux/Windows CPU; Linux CUDA 12.9; Windows CUDA 12.8 |\n| [UCE 4-layer](/ai/models/snap-stanford-uce-4layer) | multi-species AnnData | macOS arm64 Metal |\n| [Boltz-2](/ai/models/jwohlwend-boltz-2) | protein, DNA and RNA sequences; small molecules | Linux CUDA 12.9; Windows through WSL2 |\n\nThese are the complete product catalog. Models without a published Runtime Box\nare not shown as previews and cannot be installed through a legacy path."
+    "content": "Available models\n| AI Model | Input | Published support |\n| --- | --- | --- |\n| [Geneformer V1 10M](/ai/models/ctheodoris-geneformer-v1-10m) | human AnnData | macOS arm64 Metal; Linux CUDA 12.9; Windows CUDA 12.8 |\n| [scGPT Whole-human](/ai/models/bowang-scgpt-whole-human) | human AnnData | macOS arm64 Metal; Linux/Windows CPU; Linux CUDA 12.9; Windows CUDA 12.8 |\n| [UCE 4-layer](/ai/models/snap-stanford-uce-4layer) | multi-species AnnData | macOS arm64 Metal |\n| [Boltz-2](/ai/models/jwohlwend-boltz-2) | protein, DNA and RNA sequences; small molecules | Linux CUDA 12.9; Windows through WSL2 |\n| [Protenix base v1.0.0](/ai/models/bytedance-protenix-base-v1-0-0) | protein, DNA and RNA sequences; small molecules | Linux CUDA 12.6; Windows through WSL2 |\n\nThese are the complete product catalog. Models without a published Runtime Box\nare not shown as previews and cannot be installed through a legacy path."
   },
   {
     "id": "docs:ai/models/overview#installation-and-removal",
@@ -267,8 +331,8 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "AI Models — Running a model",
     "locator": "Docs / Ai / Models / Overview / Running a model",
-    "excerpt": "Running a model The single-cell models run through [Single-cell Embedding](/ai/tools/single-cell-embedding), either directly from the model page or as a pipeline step. Boltz-2 runs from the Structure Prediction and Protein–Ligand Affinity pages under Tools. R…",
-    "content": "Running a model\nThe single-cell models run through\n[Single-cell Embedding](/ai/tools/single-cell-embedding), either directly from\nthe model page or as a pipeline step. Boltz-2 runs from the Structure Prediction\nand Protein–Ligand Affinity pages under Tools. Runs produce Jobs, Results,\ndurable output files, and Runtime Box provenance."
+    "excerpt": "Running a model The single-cell models run through [Single-cell Embedding](/ai/tools/single-cell-embedding), either directly from the model page or as a pipeline step. Boltz-2 and Protenix run from the Structure Prediction page under Tools, and Boltz-2 also f…",
+    "content": "Running a model\nThe single-cell models run through\n[Single-cell Embedding](/ai/tools/single-cell-embedding), either directly from\nthe model page or as a pipeline step. Boltz-2 and Protenix run from the\nStructure Prediction page under Tools, and Boltz-2 also from Protein–Ligand\nAffinity. Runs produce Jobs, Results, durable output files, and Runtime Box\nprovenance."
   },
   {
     "id": "docs:ai/models/snap-stanford-uce-4layer",

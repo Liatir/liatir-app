@@ -252,7 +252,7 @@ const LINUX_CUDA_12_6_TARGET: LiatirRuntimeBoxTargetCandidate = {
 	minNvidiaDriverVersion: '525.60.13',
 };
 
-/** Non-distributable candidate metadata for Protenix base v1.0.0, the largest public checkpoint. */
+/** Protenix base v1.0.0, the largest public checkpoint, as published on `beta`. */
 export const PROTENIX_BASE_V1_RELEASE_CANDIDATE_METADATA: LiatirAIModelMetadata = {
 	id: PROTENIX_BASE_V1_MODEL_ID,
 	name: 'Protenix base v1.0.0',
@@ -300,7 +300,10 @@ export const PROTENIX_BASE_V1_RELEASE_CANDIDATE_METADATA: LiatirAIModelMetadata 
 			reason: 'Linux x86_64 with an NVIDIA GPU, natively or from Windows through WSL2.',
 		},
 	},
-	documentation: { officialUrl: 'https://github.com/bytedance/Protenix/blob/v2.0.0/docs/supported_models.md' },
+	documentation: {
+		liatirPath: '/ai/models/bytedance-protenix-base-v1-0-0',
+		officialUrl: 'https://github.com/bytedance/Protenix/blob/v2.0.0/docs/supported_models.md',
+	},
 	tags: ['runtime-box', 'structure', 'protein', 'ligand', 'local'],
 };
 
@@ -612,7 +615,8 @@ export const RUNTIME_BOX_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 		},
 		tags: ['built-in', 'runtime-box', 'single-cell', 'foundation-model', 'embedding', 'zero-shot']
 	},
-	BOLTZ_2_RELEASE_CANDIDATE_METADATA
+	BOLTZ_2_RELEASE_CANDIDATE_METADATA,
+	PROTENIX_BASE_V1_RELEASE_CANDIDATE_METADATA
 ];
 
 export function getRuntimeBoxAIModelMetadata(id: string): LiatirAIModelMetadata | undefined {

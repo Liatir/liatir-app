@@ -1,5 +1,29 @@
 # Current project status
 
+## Protenix base v1.0.0 is published too, so both structure models are in the product (2026-09-17)
+
+**Run `35244917546` on `3d5bfb1` released Protenix base v1.0.0 1.0.0-beta.1 for
+`linux-x86_64-cuda12.6` and wrote its evidence.** Every gate passed on the KMS-signed build: the
+scientific validator, 1UBQ at 2.151 Å with pLDDT 0.93 and a bit-identical repeat, torch CUDA 12.6,
+its CUDA run anchored to the experimental structure; publication with public re-hash of archive
+`37c50af6…` (8,843,054,580 bytes, 14,813,925,953 installed); the native Linux product lifecycle, all
+12 assertions, with a 3.05 GB allocator peak; promotion of `263d2fa6….release.json`, which the public
+`beta` channel now serves in place of run `35218459568`'s `d131b4a6…`; and the evidence record,
+retained as `runtime-boxes/evidence/protenix-base-v1-0-0-linux-x86_64-cuda12.6-1.0.0-beta.1-run-35244917546.json`.
+
+The catalog target is `published` with that record, and the product catalog carries Protenix: the AI
+Model registry, the Structure Prediction page, and a public docs page. Its hardware profile is that
+run's production measurement,
+`runtime-boxes/measurements/protenix-base-v1-0-0-linux-x86_64-cuda12.6-production-run-35244917546.json`
+— the `result` of its `scientific-result.json` (sha256 `6cce4695…`) unchanged. The VRAM peak is
+3,403,677,696 bytes, so the published minimum is 4,254,597,120 and the recommendation 5,105,516,544.
+
+The run before it, `35237234278`, built, validated and uploaded, then lost its evidence when the
+streamed public re-hash of its 8.8 GB archive was terminated at 6.4 GB. Public verification now
+resumes a dropped read with a range request that continues the same hash, up to five attempts, and
+still fails at once on a wrong status, size or hash (`3d5bfb1`); this run's read did not drop. That
+run's archive stays on R2, unreferenced, like the superseded uploads before it.
+
 ## Boltz-2 is published, with its release evidence (2026-09-17)
 
 **Run `35227045147` on `0f6ddd4` released Boltz-2 2.2.1-beta.1 for `linux-x86_64-cuda12.9` and wrote
@@ -18,14 +42,6 @@ a public docs page. The hardware profile moved to the production measurement,
 `result` of that run's `scientific-result.json` (sha256 `9d685ad7…`) unchanged — because a development
 measurement stays valid only for its own build. It carries the same five cases; RAM peaks are lower
 than the development build's (8.77 GB against 9.58 GB) and VRAM peaks within 7 MB.
-
-**Protenix's evidence release, run `35237234278`, lost its evidence to a dropped connection.** It
-built, validated and uploaded its 8,842,998,072-byte archive, then the streamed public re-hash was
-terminated at 6,442,450,944 bytes and the job failed before promotion; that archive stays on R2,
-unreferenced. The public verification now resumes a dropped read with a range request that continues
-the same hash, up to five attempts, and still fails at once on a wrong status, size or hash. The
-public domain was checked to answer such a request with `206` and the matching `Content-Range`. The
-Protenix product exposure is prepared and waits for the next release's evidence record.
 
 ## Publishing Boltz-2 and Protenix, and the signer defect that stood in front of it (2026-09-16)
 

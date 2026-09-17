@@ -187,7 +187,7 @@ describe('Phase 3 retained hardware envelopes', () => {
       runtimeBoxRelease: '1.0.0-beta.1',
       target: { platform: 'linux', arch: 'x86_64', accelerator: 'cuda', cudaVersion: '12.6' },
     })!;
-    expect(profile.profileId).toBe('protenix-base-1.0.0-beta.1-linux-x86_64-cuda12.6-development-2026-09-13');
+    expect(profile.profileId).toBe('protenix-base-1.0.0-beta.1-linux-x86_64-cuda12.6-production-2026-09-17');
     // Five seeds of five samples: the product's default is exactly what was measured.
     const ubiquitin = structurePredictionWorkloadMetrics(PROTENIX_BASE_V1_MODEL_ID, {
       tokenEstimate: 76, structureCount: 25, steps: PROTENIX_PRODUCT_DIFFUSION_STEPS, affinity: false,
@@ -202,9 +202,9 @@ describe('Phase 3 retained hardware envelopes', () => {
       .toMatchObject({ accepted: true, evidence: 'beyond-evidence', confirmationRequired: true });
     // A published VRAM minimum now exists, from the measured peak with the required margins.
     expect(publishedVramRequirements(profile)).toEqual({
-      measuredPeakVramBytes: 3414163456,
-      minimumVramBytes: 4267704320,
-      recommendedVramBytes: 5121245184,
+      measuredPeakVramBytes: 3403677696,
+      minimumVramBytes: 4254597120,
+      recommendedVramBytes: 5105516544,
     });
   });
 

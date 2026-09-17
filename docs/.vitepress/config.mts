@@ -145,6 +145,7 @@ export default defineConfig({
               { text: 'Geneformer V1 10M', link: '/ai/models/ctheodoris-geneformer-v1-10m' },
               { text: 'UCE 4-layer', link: '/ai/models/snap-stanford-uce-4layer' },
               { text: 'Boltz-2', link: '/ai/models/jwohlwend-boltz-2' },
+              { text: 'Protenix base v1.0.0', link: '/ai/models/bytedance-protenix-base-v1-0-0' },
             ],
           },
         ],
