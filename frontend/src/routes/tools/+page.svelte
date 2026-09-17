@@ -15,10 +15,13 @@
   import { toast } from '$lib/stores/toast.svelte';
 	import PageContent from '$lib/components/layout/PageContent.svelte';
   import {
+    BOLTZ_2_MODEL_ID,
     LIATIR_TOOL_RUNTIME_CATALOG,
     OPENMM_RUNTIME_COMPONENT_ID,
     PVACTOOLS_RUNTIME_COMPONENT_ID,
+    isLiatirStructureModelId,
   } from '@liatir/core';
+  import { RUNTIME_BOX_AI_MODEL_REGISTRY } from '$lib/ai/model-registry';
 
   interface BuiltinTool {
     id: string;
@@ -41,6 +44,9 @@
     (runtime) => runtime.id === OPENMM_RUNTIME_COMPONENT_ID
       && runtime.install.runtimeBox.publishedTargets.length > 0,
   );
+  // An AI Model enters the registry only once a target is published, so membership is the gate.
+  const structurePublished = RUNTIME_BOX_AI_MODEL_REGISTRY.some((model) => isLiatirStructureModelId(model.id));
+  const affinityPublished = RUNTIME_BOX_AI_MODEL_REGISTRY.some((model) => model.id === BOLTZ_2_MODEL_ID);
 
   const builtins: BuiltinTool[] = [
     {
@@ -186,6 +192,24 @@
       status: openmmPublished ? 'available' : 'soon',
       tags: ['DCD', 'Trajectory', 'OpenMM', 'CUDA'],
       category: 'Molecular Simulation',
+    },
+    {
+      id: 'biomolecular-structure-prediction',
+      label: 'Structure Prediction',
+      description: 'Predict the 3D structure of a protein or complex from its sequence, locally.',
+      ...(structurePublished ? { href: '/tools/structure/prediction' } : {}),
+      status: structurePublished ? 'available' : 'soon',
+      tags: ['Protein', 'mmCIF', 'Boltz-2', 'Protenix', 'CUDA'],
+      category: 'Structure Prediction',
+    },
+    {
+      id: 'protein-ligand-affinity',
+      label: 'Protein–Ligand Affinity',
+      description: 'Estimate how strongly a small molecule binds a protein, locally.',
+      ...(affinityPublished ? { href: '/tools/structure/affinity' } : {}),
+      status: affinityPublished ? 'available' : 'soon',
+      tags: ['Protein', 'Ligand', 'SMILES', 'Boltz-2', 'CUDA'],
+      category: 'Structure Prediction',
     },
     {
       id: 'viewer-structure-3d',

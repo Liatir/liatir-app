@@ -67,9 +67,9 @@ describe('Phase 3 Runtime Box candidate boundary', () => {
     expect(audit.packages.find((item: { name: string }) => item.name === 'pytorch').version).toBe('2.10.0');
   });
 
-  it('keeps every unvalidated Phase 3 component out of normal product catalogs', () => {
+  it('exposes published Boltz-2 and keeps every unpublished Phase 3 component out of normal product catalogs', () => {
     const productModels = RUNTIME_BOX_AI_MODEL_REGISTRY.map((model) => model.id);
-    expect(productModels).not.toContain(BOLTZ_2_MODEL_ID);
+    expect(productModels).toContain(BOLTZ_2_MODEL_ID);
     expect(productModels).not.toContain(PROTENIX_BASE_V1_MODEL_ID);
     expect(productModels).not.toContain(PROTENIX_V2_MODEL_ID);
     expect(productModels).not.toContain(PROTENIX_MINI_DEFAULT_MODEL_ID);

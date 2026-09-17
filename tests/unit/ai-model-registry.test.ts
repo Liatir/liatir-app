@@ -8,16 +8,18 @@ import {
   MHCFLURRY_CLASS1_PRESENTATION_MODEL_ID,
   getRuntimeBoxAIModelMetadata,
 } from '../../frontend/src/lib/ai/model-registry';
+import { BOLTZ_2_MODEL_ID } from '@liatir/core';
 
 const EXPECTED_MODEL_IDS = [
   MHCFLURRY_CLASS1_PRESENTATION_MODEL_ID,
   SCGPT_WHOLE_HUMAN_MODEL_ID,
   GENEFORMER_V1_10M_MODEL_ID,
   UCE_4LAYER_MODEL_ID,
+  BOLTZ_2_MODEL_ID,
 ];
 
 describe('AI model registry contracts', () => {
-  it('exposes exactly the four published Runtime Box models', () => {
+  it('exposes exactly the published Runtime Box models', () => {
     expect(RUNTIME_BOX_AI_MODEL_REGISTRY.map((model) => model.id)).toEqual(EXPECTED_MODEL_IDS);
   });
 
@@ -35,6 +37,9 @@ describe('AI model registry contracts', () => {
       if (model.id === MHCFLURRY_CLASS1_PRESENTATION_MODEL_ID) {
         expect(model.capabilities).toEqual(['mhc-class-i-epitope-prediction']);
         expect(model.modalities).toContain('protein');
+      } else if (model.id === BOLTZ_2_MODEL_ID) {
+        expect(model.capabilities).toEqual(['protein-structure-prediction', 'protein-binding']);
+        expect(model.modalities).toContain('ligand');
       } else {
         expect(model.capabilities).toEqual(['single-cell-embedding']);
         expect(model.modalities).toContain('single-cell');

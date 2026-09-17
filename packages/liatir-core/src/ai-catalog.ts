@@ -135,7 +135,7 @@ const LINUX_CUDA_12_9_TARGET: LiatirRuntimeBoxTargetCandidate = {
 	minNvidiaDriverVersion: '525.60.13',
 };
 
-/** Non-distributable candidate metadata; normal product exposure waits for retained release evidence. */
+/** Boltz-2 as published on `beta`: the release-built test app and the product share this metadata. */
 export const BOLTZ_2_RELEASE_CANDIDATE_METADATA: LiatirAIModelMetadata = {
 	id: BOLTZ_2_MODEL_ID,
 	name: 'Boltz-2',
@@ -186,7 +186,10 @@ export const BOLTZ_2_RELEASE_CANDIDATE_METADATA: LiatirAIModelMetadata = {
 			reason: 'Linux x86_64 with an NVIDIA GPU, natively or from Windows through WSL2.',
 		},
 	},
-	documentation: { officialUrl: 'https://github.com/jwohlwend/boltz/tree/v2.2.1' },
+	documentation: {
+		liatirPath: '/ai/models/jwohlwend-boltz-2',
+		officialUrl: 'https://github.com/jwohlwend/boltz/tree/v2.2.1',
+	},
 	tags: ['runtime-box', 'structure', 'protein', 'ligand', 'affinity', 'local'],
 };
 
@@ -608,7 +611,8 @@ export const RUNTIME_BOX_AI_MODEL_REGISTRY: LiatirAIModelMetadata[] = [
 			paperUrl: 'https://www.biorxiv.org/content/10.1101/2023.11.28.568918v2'
 		},
 		tags: ['built-in', 'runtime-box', 'single-cell', 'foundation-model', 'embedding', 'zero-shot']
-	}
+	},
+	BOLTZ_2_RELEASE_CANDIDATE_METADATA
 ];
 
 export function getRuntimeBoxAIModelMetadata(id: string): LiatirAIModelMetadata | undefined {

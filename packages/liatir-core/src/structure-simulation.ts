@@ -1014,21 +1014,22 @@ const OPENMM_LINUX_X86_64_CUDA129_DEVELOPMENT_PROFILE: LiatirHardwareValidationP
 
 /**
  * Boltz-2 on two measured inputs: structure on the experimental ubiquitin structure, and affinity on
- * carbonic anhydrase II (260 residues) with acetazolamide and sulfanilamide. VRAM is a device-wide
- * delta under WSL2, as for OpenMM. A longer input is beyond this evidence and must be confirmed by
- * the user rather than estimated from what was measured.
+ * carbonic anhydrase II (260 residues) with acetazolamide and sulfanilamide. Measured by the
+ * production release that published this box (run 35227045147), on the KMS-signed build users
+ * install. VRAM is a device-wide delta under WSL2, as for OpenMM. A longer input is beyond this
+ * evidence and must be confirmed by the user rather than estimated from what was measured.
  */
-const BOLTZ_2_LINUX_X86_64_CUDA129_DEVELOPMENT_PROFILE: LiatirHardwareValidationProfile = {
+const BOLTZ_2_LINUX_X86_64_CUDA129_PRODUCTION_PROFILE: LiatirHardwareValidationProfile = {
   schemaVersion: 1,
-  profileId: "boltz-2-2.2.1-beta.1-linux-x86_64-cuda12.9-development-2026-09-16",
+  profileId: "boltz-2-2.2.1-beta.1-linux-x86_64-cuda12.9-production-2026-09-17",
   componentId: BOLTZ_2_MODEL_ID,
   componentVersion: BOLTZ_2_VERSION,
   runtimeBoxRelease: "2.2.1-beta.1",
   target: { platform: "linux", arch: "x86_64", accelerator: "cuda", cudaVersion: "12.9" },
   precision: "upstream default",
-  measuredAt: "2026-09-16T16:31:58.562Z",
+  measuredAt: "2026-09-17T14:07:51.441Z",
   evidenceRecord:
-    "runtime-boxes/measurements/boltz-2-linux-x86_64-cuda12.9-development-2026-09-16.json",
+    "runtime-boxes/measurements/boltz-2-linux-x86_64-cuda12.9-production-run-35227045147.json",
   samples: [
     {
       fixtureId: "ubiquitin-single-sequence",
@@ -1037,9 +1038,9 @@ const BOLTZ_2_LINUX_X86_64_CUDA129_DEVELOPMENT_PROFILE: LiatirHardwareValidation
       maxAtomCount: 1,
       maxStepCount: 200,
       maxOutputItemCount: 1,
-      peakRamBytes: 5735636992,
-      peakVramBytes: 2489319424,
-      elapsedMs: 53907,
+      peakRamBytes: 5347454976,
+      peakVramBytes: 2491416576,
+      elapsedMs: 65332,
       outputBytes: 108042,
     },
     {
@@ -1049,9 +1050,9 @@ const BOLTZ_2_LINUX_X86_64_CUDA129_DEVELOPMENT_PROFILE: LiatirHardwareValidation
       maxAtomCount: 1,
       maxStepCount: 200,
       maxOutputItemCount: 1,
-      peakRamBytes: 5668208640,
-      peakVramBytes: 2488270848,
-      elapsedMs: 53159,
+      peakRamBytes: 5311242240,
+      peakVramBytes: 2495610880,
+      elapsedMs: 53313,
       outputBytes: 108042,
     },
     {
@@ -1061,9 +1062,9 @@ const BOLTZ_2_LINUX_X86_64_CUDA129_DEVELOPMENT_PROFILE: LiatirHardwareValidation
       maxAtomCount: 1,
       maxStepCount: 200,
       maxOutputItemCount: 1,
-      peakRamBytes: 9541210112,
-      peakVramBytes: 3493855232,
-      elapsedMs: 121336,
+      peakRamBytes: 8769425408,
+      peakVramBytes: 3495952384,
+      elapsedMs: 126110,
       outputBytes: 369895,
     },
     {
@@ -1073,9 +1074,9 @@ const BOLTZ_2_LINUX_X86_64_CUDA129_DEVELOPMENT_PROFILE: LiatirHardwareValidation
       maxAtomCount: 1,
       maxStepCount: 200,
       maxOutputItemCount: 1,
-      peakRamBytes: 9540218880,
-      peakVramBytes: 3605004288,
-      elapsedMs: 122346,
+      peakRamBytes: 8763674624,
+      peakVramBytes: 3610247168,
+      elapsedMs: 120872,
       outputBytes: 369475,
     },
     {
@@ -1085,9 +1086,9 @@ const BOLTZ_2_LINUX_X86_64_CUDA129_DEVELOPMENT_PROFILE: LiatirHardwareValidation
       maxAtomCount: 1,
       maxStepCount: 200,
       maxOutputItemCount: 1,
-      peakRamBytes: 9580208128,
-      peakVramBytes: 3498049536,
-      elapsedMs: 123101,
+      peakRamBytes: 8768024576,
+      peakVramBytes: 3494903808,
+      elapsedMs: 122669,
       outputBytes: 369895,
     },
   ],
@@ -1148,7 +1149,7 @@ export const LIATIR_PHASE3_HARDWARE_VALIDATION_PROFILES:
   readonly LiatirHardwareValidationProfile[] = [
     OPENMM_MACOS_AARCH64_CPU_DEVELOPMENT_PROFILE,
     OPENMM_LINUX_X86_64_CUDA129_DEVELOPMENT_PROFILE,
-    BOLTZ_2_LINUX_X86_64_CUDA129_DEVELOPMENT_PROFILE,
+    BOLTZ_2_LINUX_X86_64_CUDA129_PRODUCTION_PROFILE,
     PROTENIX_BASE_V1_LINUX_X86_64_CUDA126_DEVELOPMENT_PROFILE,
   ];
 

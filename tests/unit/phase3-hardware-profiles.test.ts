@@ -152,7 +152,7 @@ describe('Phase 3 retained hardware envelopes', () => {
       runtimeBoxRelease: '2.2.1-beta.1',
       target: { platform: 'linux', arch: 'x86_64', accelerator: 'cuda', cudaVersion: '12.9' },
     })!;
-    expect(profile.profileId).toBe('boltz-2-2.2.1-beta.1-linux-x86_64-cuda12.9-development-2026-09-16');
+    expect(profile.profileId).toBe('boltz-2-2.2.1-beta.1-linux-x86_64-cuda12.9-production-2026-09-17');
     const ubiquitin = structurePredictionWorkloadMetrics(BOLTZ_2_MODEL_ID, {
       tokenEstimate: 76, structureCount: 1, steps: BOLTZ_2_PRODUCT_SAMPLING_STEPS, affinity: false,
     });

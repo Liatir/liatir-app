@@ -1,5 +1,25 @@
 # Current project status
 
+## Boltz-2 is published, with its release evidence (2026-09-17)
+
+**Run `35227045147` on `0f6ddd4` released Boltz-2 2.2.1-beta.1 for `linux-x86_64-cuda12.9` and wrote
+its evidence.** Every gate passed on the KMS-signed build: `verify --self-test`; the scientific
+validator, 1UBQ at 1.990 Å and acetazolamide at 0.994 and −1.397 again, torch CUDA 12.9, its CUDA run
+anchored to the experimental structure; publication with public re-hash of archive `99591f65…`
+(12,688,668,610 bytes, 20,301,778,564 installed); the native Linux product lifecycle, 2 of 2 with all
+14 assertions and a 2.1 GB allocator peak on the RTX 4060 Ti; promotion of
+`4ecd1e78….release.json`, which the public `beta` channel serves; and the evidence record, retained
+as `runtime-boxes/evidence/boltz-2-linux-x86_64-cuda12.9-2.2.1-beta.1-run-35227045147.json`.
+
+The catalog target is `published` with that record, and the product catalog now carries Boltz-2: the
+AI Model registry, the Structure Prediction and Protein–Ligand Affinity cards on the Tools page, and
+a public docs page. The hardware profile moved to the production measurement,
+`runtime-boxes/measurements/boltz-2-linux-x86_64-cuda12.9-production-run-35227045147.json` — the
+`result` of that run's `scientific-result.json` (sha256 `9d685ad7…`) unchanged — because a development
+measurement stays valid only for its own build. It carries the same five cases; RAM peaks are lower
+than the development build's (8.77 GB against 9.58 GB) and VRAM peaks within 7 MB. Protenix's evidence
+release, run `35237234278`, is in progress.
+
 ## Publishing Boltz-2 and Protenix, and the signer defect that stood in front of it (2026-09-16)
 
 The owner authorized the whole publication sequence for both structure models: the signer redeploy,

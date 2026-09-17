@@ -144,6 +144,7 @@ export default defineConfig({
               { text: 'scGPT Whole-human', link: '/ai/models/bowang-scgpt-whole-human' },
               { text: 'Geneformer V1 10M', link: '/ai/models/ctheodoris-geneformer-v1-10m' },
               { text: 'UCE 4-layer', link: '/ai/models/snap-stanford-uce-4layer' },
+              { text: 'Boltz-2', link: '/ai/models/jwohlwend-boltz-2' },
             ],
           },
         ],

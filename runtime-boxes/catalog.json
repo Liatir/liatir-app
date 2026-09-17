@@ -853,7 +853,7 @@
           ],
           "recipeId": "boltz-2-linux-x86_64-cuda12.9",
           "runnerProfileId": "linux-x64-cuda-selfhosted",
-          "status": "native-lifecycle-validated",
+          "status": "published",
           "validationModes": [
             "build",
             "scientific",
@@ -869,7 +869,19 @@
             "safetyMarginBytes": 4294967296
           },
           "gpuRequired": true,
-          "nativeCiEnabled": true
+          "nativeCiEnabled": true,
+          "publication": {
+            "source": "github-actions",
+            "releaseManifestUrl": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/boltz-2/2.2.1-beta.1/linux-x86_64-cuda12.9/4ecd1e786af1992ed269004f74cd02afdd3b17abe7b676fe56e7643bd252cae7.release.json",
+            "archiveSha256": "99591f6536d76009f0be7d256466988ec833ce4e30320718e5fde8cde2c3b0ad",
+            "archiveSizeBytes": 12688668610,
+            "installedSizeBytes": 20301778564,
+            "signingKeyId": "liatir-runtime-box-kms-2026",
+            "publishedAt": "2026-09-17T14:57:12.718Z",
+            "workflowRunId": "35227045147",
+            "workflowRunUrl": "https://github.com/Liatir/liatir-stack/actions/runs/35227045147",
+            "evidenceRecord": "runtime-boxes/evidence/boltz-2-linux-x86_64-cuda12.9-2.2.1-beta.1-run-35227045147.json"
+          }
         }
       ]
     },
