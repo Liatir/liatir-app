@@ -3,7 +3,7 @@
 
 import type { LiatirQuentaContextDocument } from '@liatir/core';
 
-export const QUENTA_DOCS_SEED_HASH = "8718ef263fe04c9793c967802ebcaeafe5c7cadd6c4de265e7c82880bf0a7b06";
+export const QUENTA_DOCS_SEED_HASH = "3c32c30922472bfdffdc5eeab5ea4ea74d8350eb106ace7843e94da6ee306b1e";
 
 export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
   {
@@ -20,7 +20,7 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "title": "Local AI for bioinformatics — AI Models and AI Tools",
     "locator": "Docs / Ai / Guide / AI Models and AI Tools",
     "excerpt": "AI Models and AI Tools An **AI Model** is the packaged scientific model. An **AI Tool** is the task that sends an input to a compatible installed model and turns its output into Jobs, Results, files, and provenance. The current product catalog contains: | AI…",
-    "content": "AI Models and AI Tools\nAn **AI Model** is the packaged scientific model. An **AI Tool** is the task\nthat sends an input to a compatible installed model and turns its output into\nJobs, Results, files, and provenance.\n\nThe current product catalog contains:\n\n| AI Model | Current published targets | Main use |\n| --- | --- | --- |\n| [Geneformer V1 10M](/ai/models/ctheodoris-geneformer-v1-10m) | macOS arm64 Metal; Linux CUDA 12.9; Windows CUDA 12.8 | human single-cell embeddings |\n| [scGPT Whole-human](/ai/models/bowang-scgpt-whole-human) | macOS arm64 Metal; Linux/Windows CPU; Linux CUDA 12.9; Windows CUDA 12.8 | human single-cell embeddings |\n| [UCE 4-layer](/ai/models/snap-stanford-uce-4layer) | macOS arm64 Metal | multi-species single-cell embeddings |\n\nThe current AI Tool is [Single-cell Embedding](/ai/tools/single-cell-embedding).\nNo other AI Model or AI Tool is available until it has its own reviewed,\npublished Runtime Box path."
+    "content": "AI Models and AI Tools\nAn **AI Model** is the packaged scientific model. An **AI Tool** is the task\nthat sends an input to a compatible installed model and turns its output into\nJobs, Results, files, and provenance.\n\nThe current product catalog contains:\n\n| AI Model | Current published targets | Main use |\n| --- | --- | --- |\n| [Geneformer V1 10M](/ai/models/ctheodoris-geneformer-v1-10m) | macOS arm64 Metal; Linux CUDA 12.9; Windows CUDA 12.8 | human single-cell embeddings |\n| [scGPT Whole-human](/ai/models/bowang-scgpt-whole-human) | macOS arm64 Metal; Linux/Windows CPU; Linux CUDA 12.9; Windows CUDA 12.8 | human single-cell embeddings |\n| [UCE 4-layer](/ai/models/snap-stanford-uce-4layer) | macOS arm64 Metal | multi-species single-cell embeddings |\n| [Boltz-2](/ai/models/jwohlwend-boltz-2) | Linux CUDA 12.9; Windows through WSL2 | structure prediction and protein–ligand affinity |\n\nThe AI Tools are [Single-cell Embedding](/ai/tools/single-cell-embedding), and\nStructure Prediction and Protein–Ligand Affinity, which run Boltz-2 from Tools.\nNo other AI Model or AI Tool is available until it has its own reviewed,\npublished Runtime Box path."
   },
   {
     "id": "docs:ai/guide#installation",
@@ -175,6 +175,70 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "content": "Official source\n- [Geneformer on Hugging Face](https://huggingface.co/ctheodoris/Geneformer)\n- [Geneformer documentation](https://geneformer.readthedocs.io/en/latest/getstarted.html)"
   },
   {
+    "id": "docs:ai/models/jwohlwend-boltz-2",
+    "sourceKind": "documentation",
+    "title": "Boltz-2",
+    "locator": "Docs / Ai / Models / Jwohlwend Boltz 2",
+    "excerpt": "Boltz-2 predicts the 3D structure of proteins and molecular complexes from their sequences, and estimates how strongly a small molecule binds a protein. Liatir runs it entirely on your computer.",
+    "content": "Boltz-2 predicts the 3D structure of proteins and molecular complexes from their\nsequences, and estimates how strongly a small molecule binds a protein. Liatir\nruns it entirely on your computer."
+  },
+  {
+    "id": "docs:ai/models/jwohlwend-boltz-2#what-it-does",
+    "sourceKind": "documentation",
+    "title": "Boltz-2 — What it does",
+    "locator": "Docs / Ai / Models / Jwohlwend Boltz 2 / What it does",
+    "excerpt": "What it does - **Structure Prediction**: from one or more protein, DNA or RNA sequences and optional small molecules, Boltz-2 predicts where every atom sits, with a confidence score for each part of the structure. - **Protein–Ligand Affinity**: for one protei…",
+    "content": "What it does\n- **Structure Prediction**: from one or more protein, DNA or RNA sequences and\n  optional small molecules, Boltz-2 predicts where every atom sits, with a\n  confidence score for each part of the structure.\n- **Protein–Ligand Affinity**: for one protein and one small molecule written as\n  SMILES, it predicts the probability that the molecule binds, and an estimate\n  of binding strength as log10(IC50) in micromolar. Lower values mean stronger\n  binding."
+  },
+  {
+    "id": "docs:ai/models/jwohlwend-boltz-2#current-status-in-liatir",
+    "sourceKind": "documentation",
+    "title": "Boltz-2 — Current status in Liatir",
+    "locator": "Docs / Ai / Models / Jwohlwend Boltz 2 / Current status in Liatir",
+    "excerpt": "Current status in Liatir Boltz-2 2.2.1 is published as a signed Runtime Box for Linux x86_64 with an NVIDIA GPU (CUDA 12.9). Windows computers with an NVIDIA GPU run the same box through WSL2. There is no macOS version. Before publication, the exact box you d…",
+    "content": "Current status in Liatir\nBoltz-2 2.2.1 is published as a signed Runtime Box for Linux x86_64 with an\nNVIDIA GPU (CUDA 12.9). Windows computers with an NVIDIA GPU run the same box\nthrough WSL2. There is no macOS version.\n\nBefore publication, the exact box you download was checked against known\nscience:\n\n- From the sequence of ubiquitin alone, it reproduced the experimentally solved\n  structure (PDB 1UBQ) to within 1.99 Å.\n- For human carbonic anhydrase II it called acetazolamide a binder with\n  probability 0.99 and ranked it stronger than sulfanilamide, matching\n  laboratory measurements."
+  },
+  {
+    "id": "docs:ai/models/jwohlwend-boltz-2#what-to-keep-in-mind",
+    "sourceKind": "documentation",
+    "title": "Boltz-2 — What to keep in mind",
+    "locator": "Docs / Ai / Models / Jwohlwend Boltz 2 / What to keep in mind",
+    "excerpt": "What to keep in mind - Affinity values are estimates, not measurements. Boltz-2 predicts IC50, which is not the same quantity as a measured Ki, and on the molecules above its values were weaker than the laboratory ones. Use them to compare and rank candidates…",
+    "content": "What to keep in mind\n- Affinity values are estimates, not measurements. Boltz-2 predicts IC50, which\n  is not the same quantity as a measured Ki, and on the molecules above its\n  values were weaker than the laboratory ones. Use them to compare and rank\n  candidates, not as exact numbers.\n- Telling a real binder from a molecule that does not bind was not part of the\n  checks above.\n- Predictions run without a multiple sequence alignment, because Liatir works\n  offline. Proteins with few known relatives may be predicted less accurately."
+  },
+  {
+    "id": "docs:ai/models/jwohlwend-boltz-2#expected-inputs",
+    "sourceKind": "documentation",
+    "title": "Boltz-2 — Expected inputs",
+    "locator": "Docs / Ai / Models / Jwohlwend Boltz 2 / Expected inputs",
+    "excerpt": "Expected inputs - Structure Prediction: sequences of the chains in the complex, and optionally small molecules as SMILES. - Protein–Ligand Affinity: one protein sequence and one small molecule as SMILES. Following Boltz-2's own limits, Liatir warns above 56 h…",
+    "content": "Expected inputs\n- Structure Prediction: sequences of the chains in the complex, and optionally\n  small molecules as SMILES.\n- Protein–Ligand Affinity: one protein sequence and one small molecule as\n  SMILES. Following Boltz-2's own limits, Liatir warns above 56 heavy atoms and\n  refuses above 128."
+  },
+  {
+    "id": "docs:ai/models/jwohlwend-boltz-2#expected-outputs",
+    "sourceKind": "documentation",
+    "title": "Boltz-2 — Expected outputs",
+    "locator": "Docs / Ai / Models / Jwohlwend Boltz 2 / Expected outputs",
+    "excerpt": "Expected outputs - The predicted structure as mmCIF, which opens in the 3D Structure Viewer. - Confidence scores, and for affinity the binding probability and log10(IC50). - Jobs, Results and Runtime Box provenance, like every Liatir run.",
+    "content": "Expected outputs\n- The predicted structure as mmCIF, which opens in the 3D Structure Viewer.\n- Confidence scores, and for affinity the binding probability and log10(IC50).\n- Jobs, Results and Runtime Box provenance, like every Liatir run."
+  },
+  {
+    "id": "docs:ai/models/jwohlwend-boltz-2#hardware-and-installation",
+    "sourceKind": "documentation",
+    "title": "Boltz-2 — Hardware and installation",
+    "locator": "Docs / Ai / Models / Jwohlwend Boltz 2 / Hardware and installation",
+    "excerpt": "Hardware and installation You need an NVIDIA GPU. On the computer the box was validated on, a GeForce RTX 4060 Ti with 8 GB of memory, a 76-residue protein took about one minute, and a 260-residue protein with a small molecule took about two minutes, using up…",
+    "content": "Hardware and installation\nYou need an NVIDIA GPU. On the computer the box was validated on, a GeForce RTX\n4060 Ti with 8 GB of memory, a 76-residue protein took about one minute, and a\n260-residue protein with a small molecule took about two minutes, using up to\n3.6 GB of GPU memory and under 10 GB of RAM. Before a larger run, Liatir tells you\nthat it goes beyond what was measured and asks you to confirm.\n\nThe download is about 12.7 GB and needs about 20 GB of disk once installed.\nEverything Boltz-2 needs lives inside the Runtime Box and is never added to\nyour system."
+  },
+  {
+    "id": "docs:ai/models/jwohlwend-boltz-2#official-source",
+    "sourceKind": "documentation",
+    "title": "Boltz-2 — Official source",
+    "locator": "Docs / Ai / Models / Jwohlwend Boltz 2 / Official source",
+    "excerpt": "Official source - [Boltz on GitHub](https://github.com/jwohlwend/boltz/tree/v2.2.1), MIT License, for both the code and the model weights.",
+    "content": "Official source\n- [Boltz on GitHub](https://github.com/jwohlwend/boltz/tree/v2.2.1), MIT\n  License, for both the code and the model weights."
+  },
+  {
     "id": "docs:ai/models/overview",
     "sourceKind": "documentation",
     "title": "AI Models",
@@ -188,7 +252,7 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "title": "AI Models — Available models",
     "locator": "Docs / Ai / Models / Overview / Available models",
     "excerpt": "Available models | AI Model | Input | Published support | | --- | --- | --- | | [Geneformer V1 10M](/ai/models/ctheodoris-geneformer-v1-10m) | human AnnData | macOS arm64 Metal; Linux CUDA 12.9; Windows CUDA 12.8 | | [scGPT Whole-human](/ai/models/bowang-scgp…",
-    "content": "Available models\n| AI Model | Input | Published support |\n| --- | --- | --- |\n| [Geneformer V1 10M](/ai/models/ctheodoris-geneformer-v1-10m) | human AnnData | macOS arm64 Metal; Linux CUDA 12.9; Windows CUDA 12.8 |\n| [scGPT Whole-human](/ai/models/bowang-scgpt-whole-human) | human AnnData | macOS arm64 Metal; Linux/Windows CPU; Linux CUDA 12.9; Windows CUDA 12.8 |\n| [UCE 4-layer](/ai/models/snap-stanford-uce-4layer) | multi-species AnnData | macOS arm64 Metal |\n\nThese are the complete product catalog. Models without a published Runtime Box\nare not shown as previews and cannot be installed through a legacy path."
+    "content": "Available models\n| AI Model | Input | Published support |\n| --- | --- | --- |\n| [Geneformer V1 10M](/ai/models/ctheodoris-geneformer-v1-10m) | human AnnData | macOS arm64 Metal; Linux CUDA 12.9; Windows CUDA 12.8 |\n| [scGPT Whole-human](/ai/models/bowang-scgpt-whole-human) | human AnnData | macOS arm64 Metal; Linux/Windows CPU; Linux CUDA 12.9; Windows CUDA 12.8 |\n| [UCE 4-layer](/ai/models/snap-stanford-uce-4layer) | multi-species AnnData | macOS arm64 Metal |\n| [Boltz-2](/ai/models/jwohlwend-boltz-2) | protein, DNA and RNA sequences; small molecules | Linux CUDA 12.9; Windows through WSL2 |\n\nThese are the complete product catalog. Models without a published Runtime Box\nare not shown as previews and cannot be installed through a legacy path."
   },
   {
     "id": "docs:ai/models/overview#installation-and-removal",
@@ -203,8 +267,8 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "AI Models — Running a model",
     "locator": "Docs / Ai / Models / Overview / Running a model",
-    "excerpt": "Running a model All current models run through [Single-cell Embedding](/ai/tools/single-cell-embedding), either directly from the model page or as a pipeline step. Runs produce Jobs, Results, durable output files, and Runtime Box provenance.",
-    "content": "Running a model\nAll current models run through\n[Single-cell Embedding](/ai/tools/single-cell-embedding), either directly from\nthe model page or as a pipeline step. Runs produce Jobs, Results, durable output\nfiles, and Runtime Box provenance."
+    "excerpt": "Running a model The single-cell models run through [Single-cell Embedding](/ai/tools/single-cell-embedding), either directly from the model page or as a pipeline step. Boltz-2 runs from the Structure Prediction and Protein–Ligand Affinity pages under Tools. R…",
+    "content": "Running a model\nThe single-cell models run through\n[Single-cell Embedding](/ai/tools/single-cell-embedding), either directly from\nthe model page or as a pipeline step. Boltz-2 runs from the Structure Prediction\nand Protein–Ligand Affinity pages under Tools. Runs produce Jobs, Results,\ndurable output files, and Runtime Box provenance."
   },
   {
     "id": "docs:ai/models/snap-stanford-uce-4layer",
