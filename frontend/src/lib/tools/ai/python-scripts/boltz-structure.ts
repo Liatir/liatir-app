@@ -296,6 +296,10 @@ print(json.dumps({
         "gpuModel": device.get("gpuModel"),
         "gpuMemoryBytes": device.get("gpuMemoryBytes"),
         "computeCapability": device.get("computeCapability"),
+        # The CUDA this torch was built for, which a release holds to the target's, and the peak
+        # its allocator reached in this process, where Boltz ran.
+        "reportedCudaCompatibility": torch.version.cuda if accelerator == "cuda" else None,
+        "peakVramBytes": int(torch.cuda.max_memory_allocated()) if accelerator == "cuda" else None,
     },
     "paths": paths,
     "warnings": warnings,

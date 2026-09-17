@@ -103,6 +103,36 @@ replayed its journal cleanly. The virtual disk is still 240 GB for 143 GB used: 
 --set-sparse` is refused by WSL as unsafe, and compacting it (`diskpart` → `compact vdisk`, with WSL
 shut down) needs an elevated prompt. A local lifecycle must delete its test home when it ends.
 
+**The third release attempt was lost to the agent session, not to a defect.** Run `35179058040` on
+`865e1aa` passed its build and died in `verify --self-test` at 04:23 UTC, when the Claude Code
+session that had launched the runner ended: the launcher runs as that session's background task,
+WSL2 shuts the distribution down once its last `wsl.exe` process exits, and the runner and its job go
+with it. The launcher's cleanup never ran either, so a 50 GB runner root was left behind and has to
+be removed, by its marker file, before the next launch. A release on this machine needs the session
+that started it to stay open for the whole job. It was relaunched as run `35207954903`.
+
+**Boltz-2 is live on `beta`, and its release evidence could not be written.** Run `35207954903` on
+`865e1aa` passed every gate — build and KMS signature, `verify --self-test`, the scientific validator
+with identical values again, publication with public re-hash, the native Linux product lifecycle in
+the release, 2 of 2 with all 14 assertions — and promoted
+`boxes/boltz-2/2.2.1-beta.1/linux-x86_64-cuda12.9/961d6479….release.json` (archive `383a238e…`,
+12,688,668,608 bytes, installed 20,301,783,892). The public channel serves it. Only the last step
+failed: `write-release-evidence` refused with *CUDA host compatibility differs from the target*.
+
+The evidence contract for a CUDA release asks for four readings neither structure model gave. Its
+validator must state the CUDA version torch was built for, and its product lifecycle must record the
+GPU model, compute capability, that CUDA version and a peak VRAM figure from the product's own run;
+the Boltz-2 and Protenix validators left the first `null`, and `structure-prediction-lifecycle.mjs`
+recorded none of the four. No earlier release had met this path: scGPT's lifecycle reads them from
+its runner summary, and OpenMM's CUDA target was never released. Both structure runners now report
+`torch.version.cuda` and `torch.cuda.max_memory_allocated()`; both validators assert the first equals
+the target's CUDA version on every predicting case — 12.9 for Boltz-2's conda torch 2.8.0 and 12.6
+for Protenix's PyPI torch 2.7.1+cu126, both read from the development payloads — and record it; the
+lifecycle reads the four values from the Job's result line and writes them. The receipts of run
+`35207954903` died with its runner root, and assembling that record by hand would claim a CI
+provenance nothing produced, so Boltz-2 is released once more to obtain it. The channel then points
+at that release instead.
+
 ## Boltz-2 affinity is measured, and proving it found two defects (2026-09-16)
 
 **Boltz-2 ranks a known inhibitor pair correctly on the signed box.** The validator now also predicts

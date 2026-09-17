@@ -92,6 +92,25 @@ async function finishedJob(browser, expect, toolId, label) {
   return productJob;
 }
 
+/**
+ * The runner's own result line from a finished Job. It carries what the predicting process saw of
+ * the GPU, which a CUDA release's evidence holds against the host it ran on.
+ */
+async function runnerSummary(browser, jobId, label) {
+  const output = await browser.execute(
+    async (id) => window.Liatir.invoke('lia_jobs_get_output', { jobId: id, since: 0 }), jobId,
+  );
+  for (const line of [...output.stdout].reverse()) {
+    try {
+      const parsed = JSON.parse(line);
+      if (parsed?.summary) return parsed.summary;
+    } catch {
+      // Progress lines are not JSON.
+    }
+  }
+  throw new Error(`${label} Job printed no result summary`);
+}
+
 /** Waits for this tool's Job to be finalized into Results, and reads back what was persisted. */
 async function finalizedResult(browser, expect, toolId, label) {
   let result = null;
@@ -259,6 +278,11 @@ export function structurePredictionLifecycleTest(component) {
       await navigateInApp(browser, '/jobs');
 
       const productJob = await finishedJob(browser, expect, TOOL_ID, component.modelLabel);
+      const device = await runnerSummary(browser, productJob.id, component.modelLabel);
+      expect(device.gpuModel).toEqual(expect.any(String));
+      expect(device.computeCapability).toMatch(/^\d+\.\d+$/);
+      expect(device.reportedCudaCompatibility).toBe(targetCandidates[0].target.cudaVersion);
+      expect(device.peakVramBytes).toBeGreaterThan(0);
       const { result, provenance, stats } = await finalizedResult(browser, expect, TOOL_ID, component.modelLabel);
       const structure = result.outputFiles.find((file) => file.fieldKey === 'predictedStructure');
       if (!structure) throw new Error(`${component.modelLabel} produced no predicted structure`);
@@ -312,6 +336,10 @@ export function structurePredictionLifecycleTest(component) {
           status: 'passed', boxId: component.boxId, modelId: component.modelId, runtimeId: component.runtimeId,
           targetId, hostEnvironment, version, jobId: productJob.id, analysisRunId: result.id,
           accelerator: 'CUDA', resultArtifactCount: result.outputFiles.length,
+          gpuModel: device.gpuModel,
+          computeCapability: device.computeCapability,
+          reportedCudaCompatibility: device.reportedCudaCompatibility,
+          peakVramBytes: device.peakVramBytes,
           // The exact bytes this lifecycle exercised, so the record ties back to one build.
           release: {
             archiveSha256: installed.activation.release.archive.sha256,

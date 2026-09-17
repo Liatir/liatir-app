@@ -270,6 +270,10 @@ try {
       assert.deepEqual(execution.measurement.vramMeasurementErrors, []);
       assert.ok(execution.measurement.peakVramBytes > 0, `${id} measured no CUDA memory`);
       assert.ok(result.summary.gpuModel, `${id} reported no GPU`);
+      // A box whose torch was built for another CUDA would pass here on a new enough driver and
+      // fail on a user's older one, so the target name has to be what the box actually carries.
+      assert.equal(result.summary.reportedCudaCompatibility, recipe.target.cudaVersion, `${id} torch CUDA build`);
+      assert.ok(result.summary.peakVramBytes > 0, `${id} reported no allocator peak`);
     }
     let outputBytes = 0;
     for (const path of Object.values(result.paths)) {
@@ -410,7 +414,10 @@ try {
         residues: UBIQUITIN.length,
         msaMode: 'no-alignment',
       },
-      framework: { name: 'torch', version: null, backend: predicted.summary.accelerator },
+      framework: {
+        name: 'torch', version: null, backend: predicted.summary.accelerator,
+        reportedCudaCompatibility: predicted.summary.reportedCudaCompatibility ?? null,
+      },
       // Every field here comes from the measuring process's own `nvidia-smi` query, because CI
       // cross-checks them against a host probe it runs separately; mixing in what PyTorch reported
       // would compare two different readings of the same card and fail on rounding. What the
