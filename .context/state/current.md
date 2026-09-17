@@ -17,8 +17,15 @@ a public docs page. The hardware profile moved to the production measurement,
 `runtime-boxes/measurements/boltz-2-linux-x86_64-cuda12.9-production-run-35227045147.json` — the
 `result` of that run's `scientific-result.json` (sha256 `9d685ad7…`) unchanged — because a development
 measurement stays valid only for its own build. It carries the same five cases; RAM peaks are lower
-than the development build's (8.77 GB against 9.58 GB) and VRAM peaks within 7 MB. Protenix's evidence
-release, run `35237234278`, is in progress.
+than the development build's (8.77 GB against 9.58 GB) and VRAM peaks within 7 MB.
+
+**Protenix's evidence release, run `35237234278`, lost its evidence to a dropped connection.** It
+built, validated and uploaded its 8,842,998,072-byte archive, then the streamed public re-hash was
+terminated at 6,442,450,944 bytes and the job failed before promotion; that archive stays on R2,
+unreferenced. The public verification now resumes a dropped read with a range request that continues
+the same hash, up to five attempts, and still fails at once on a wrong status, size or hash. The
+public domain was checked to answer such a request with `206` and the matching `Content-Range`. The
+Protenix product exposure is prepared and waits for the next release's evidence record.
 
 ## Publishing Boltz-2 and Protenix, and the signer defect that stood in front of it (2026-09-16)
 

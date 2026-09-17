@@ -1,11 +1,15 @@
 import { describe, expect, it, vi } from 'vitest';
+import { createHash, randomBytes } from 'node:crypto';
 import { readFileSync } from 'node:fs';
+import { createServer } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { resolve } from 'node:path';
 
 import {
   SOURCE_MIRROR_SPECS,
   multipartPartRanges,
   parseHttpByteRange,
+  verifyRemoteObject,
 } from '../../scripts/runtime-box/distribution-cli.mjs';
 import { dispatchRuntimeBox } from '../../scripts/runtime-box/scrollcase-adapter.mjs';
 import {
@@ -187,5 +191,54 @@ describe('Runtime Box candidate registry byte ranges', () => {
     expect(parseHttpByteRange('bytes=400-399', 1_000)).toEqual({ satisfiable: false });
     expect(parseHttpByteRange('bytes=0-1,4-5', 1_000)).toEqual({ satisfiable: false });
     expect(parseHttpByteRange('items=0-1', 1_000)).toEqual({ satisfiable: false });
+  });
+});
+
+describe('public object verification', () => {
+  /** Serves `body`, dropping the first full read halfway through and honouring later range reads. */
+  async function flakyObjectServer(body: Buffer) {
+    const ranges: string[] = [];
+    const server = createServer((request, response) => {
+      const range = request.headers.range;
+      ranges.push(range ?? 'full');
+      if (!range) {
+        response.writeHead(200, { 'content-length': body.length });
+        response.write(body.subarray(0, body.length / 2), () => response.destroy());
+        return;
+      }
+      const start = Number(/^bytes=(\d+)-$/.exec(range)?.[1]);
+      response.writeHead(206, {
+        'content-length': body.length - start,
+        'content-range': `bytes ${start}-${body.length - 1}/${body.length}`,
+      });
+      response.end(body.subarray(start));
+    });
+    await new Promise<void>((ready) => server.listen(0, '127.0.0.1', ready));
+    const { port } = server.address() as AddressInfo;
+    return { url: `http://127.0.0.1:${port}/object.zip`, ranges, close: () => server.close() };
+  }
+
+  it('resumes a dropped read where it stopped and still proves the whole object', async () => {
+    const body = randomBytes(64 * 1024);
+    const sha256 = createHash('sha256').update(body).digest('hex');
+    const server = await flakyObjectServer(body);
+    try {
+      const verified = await verifyRemoteObject(server.url, body.length, sha256);
+      expect(verified).toMatchObject({ httpStatus: 200, sizeBytes: body.length, sha256 });
+      expect(server.ranges[0]).toBe('full');
+      expect(server.ranges[1]).toMatch(/^bytes=\d+-$/);
+    } finally {
+      server.close();
+    }
+  });
+
+  it('still refuses bytes that do not match the signed hash after resuming', async () => {
+    const body = randomBytes(64 * 1024);
+    const server = await flakyObjectServer(body);
+    try {
+      await expect(verifyRemoteObject(server.url, body.length, 'a'.repeat(64))).rejects.toThrow(/SHA-256 mismatch/);
+    } finally {
+      server.close();
+    }
   });
 });

@@ -270,31 +270,73 @@ async function registryAdminRequest(url, token, options) {
   return body;
 }
 
-/** Streams and hashes the public object, proving the bytes R2 serves match the signed manifest. */
+/** Attempts to read one public object before a dropped connection fails its verification. */
+const REMOTE_VERIFICATION_ATTEMPTS = 5;
+
+/**
+ * Streams and hashes the public object, proving the bytes R2 serves match the signed manifest.
+ *
+ * A connection that drops partway through resumes where it stopped: the hash already covers every
+ * byte before that point, so a range request continues it exactly. Only transport failures resume;
+ * a wrong status, size or hash still fails at once. Release run 35237234278 lost a published
+ * Protenix box's evidence when its 8.8 GB read stalled at 6.4 GB and was terminated.
+ */
 async function verifyRemoteObject(url, expectedSizeBytes, expectedSha256) {
   const verificationUrl = new URL(url);
   verificationUrl.searchParams.set('liatir-verify', expectedSha256);
-  const response = await fetch(verificationUrl, {
-    headers: { 'accept-encoding': 'identity', 'cache-control': 'no-cache' },
-  });
-  if (!response.ok || !response.body) fail(`Remote object verification failed (${response.status}): ${url}`);
-  const declaredSizeHeader = response.headers.get('content-length');
-  const declaredSize = declaredSizeHeader === null ? null : Number(declaredSizeHeader);
-  if (!response.headers.has('content-encoding')
-    && declaredSize !== null
-    && Number.isSafeInteger(declaredSize)
-    && declaredSize !== expectedSizeBytes) {
-    fail(`Remote object Content-Length mismatch: ${url}`);
-  }
   const hash = createHash('sha256');
   let received = 0;
   let nextProgress = 1024 * 1024 * 1024;
-  for await (const chunk of response.body) {
-    hash.update(chunk);
-    received += chunk.byteLength;
-    if (expectedSizeBytes > 1024 * 1024 * 1024 && received >= nextProgress) {
-      console.log(`Verified ${Math.min(received, expectedSizeBytes)} / ${expectedSizeBytes} remote bytes`);
-      nextProgress += 1024 * 1024 * 1024;
+  let httpStatus = null;
+  for (let attempt = 1; ; attempt += 1) {
+    const interrupted = (error) => {
+      const reason = error instanceof Error ? error.message : String(error);
+      if (attempt >= REMOTE_VERIFICATION_ATTEMPTS) {
+        fail(`Remote object verification was interrupted at byte ${received} of ${expectedSizeBytes}: ${reason}: ${url}`);
+      }
+      console.log(`Remote verification interrupted at byte ${received} of ${expectedSizeBytes} (${reason}); resuming`);
+    };
+    let response;
+    try {
+      response = await fetch(verificationUrl, {
+        headers: {
+          'accept-encoding': 'identity',
+          'cache-control': 'no-cache',
+          ...(received > 0 ? { range: `bytes=${received}-` } : {}),
+        },
+      });
+    } catch (error) {
+      interrupted(error);
+      continue;
+    }
+    if (received === 0) {
+      if (!response.ok || !response.body) fail(`Remote object verification failed (${response.status}): ${url}`);
+      httpStatus = response.status;
+      const declaredSizeHeader = response.headers.get('content-length');
+      const declaredSize = declaredSizeHeader === null ? null : Number(declaredSizeHeader);
+      if (!response.headers.has('content-encoding')
+        && declaredSize !== null
+        && Number.isSafeInteger(declaredSize)
+        && declaredSize !== expectedSizeBytes) {
+        fail(`Remote object Content-Length mismatch: ${url}`);
+      }
+    } else if (response.status !== 206
+      || !response.body
+      || !response.headers.get('content-range')?.startsWith(`bytes ${received}-`)) {
+      fail(`Remote object cannot resume verification at byte ${received} (${response.status}): ${url}`);
+    }
+    try {
+      for await (const chunk of response.body) {
+        hash.update(chunk);
+        received += chunk.byteLength;
+        if (expectedSizeBytes > 1024 * 1024 * 1024 && received >= nextProgress) {
+          console.log(`Verified ${Math.min(received, expectedSizeBytes)} / ${expectedSizeBytes} remote bytes`);
+          nextProgress += 1024 * 1024 * 1024;
+        }
+      }
+      break;
+    } catch (error) {
+      interrupted(error);
     }
   }
   if (received !== expectedSizeBytes) fail(`Remote object size mismatch: ${url}`);
@@ -303,7 +345,7 @@ async function verifyRemoteObject(url, expectedSizeBytes, expectedSha256) {
   console.log(`Verified remote SHA-256 ${expectedSha256}: ${url}`);
   return {
     url,
-    httpStatus: response.status,
+    httpStatus,
     sizeBytes: received,
     sha256: actualSha256,
   };
