@@ -434,7 +434,11 @@ try {
       },
       parity: {
         reference: 'pdb-1ubq-experimental-structure',
+        // Diffusion draws different noise on a CPU, so the accelerator run is held to experiment.
+        anchor: 'experimental-structure',
         passed: true,
+        cpuBaselinePassed: null,
+        acceleratorPassed: recipe.target.accelerator === 'cuda' ? true : null,
         backboneRmsdAngstrom: comparison.backboneRmsdAngstrom,
         maximumDeviationAngstrom: comparison.maximumDeviationAngstrom,
         limitAngstrom: MAXIMUM_BACKBONE_RMSD_ANGSTROM,

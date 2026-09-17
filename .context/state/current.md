@@ -133,6 +133,21 @@ lifecycle reads the four values from the Job's result line and writes them. The 
 provenance nothing produced, so Boltz-2 is released once more to obtain it. The channel then points
 at that release instead.
 
+**Protenix base v1.0.0 is live on `beta` too, and its evidence stopped one rule later.** Run
+`35218459568` on `fa9c085` passed every gate: the validator on the production build gave 1UBQ at
+2.151 Å, pLDDT 0.933 and torch CUDA 12.6; the native Linux lifecycle recorded the RTX 4060 Ti, compute
+capability 8.9, CUDA 12.6 and a 3.05 GB peak; and it promoted
+`boxes/protenix-base-v1-0-0/1.0.0-beta.1/linux-x86_64-cuda12.6/d131b4a6….release.json`. The evidence
+writer then refused with *CUDA evidence lacks a passed CPU baseline*. That rule cannot hold for a
+diffusion model, which draws different noise on a CPU at the same seed; the structure validators now
+declare their experimental anchor, and the contract accepts it — see
+[Diffusion models anchor CUDA evidence to experiment](../decisions/diffusion-models-anchor-cuda-evidence-to-experiment.md).
+Before relaunching, the evidence writer was dry-run in WSL2 on this run's own kept validator result
+(parity patched as the fixed validator writes it), host, metrics and verification receipts,
+lifecycle artifact, and the signed release and channel documents fetched from R2 and the Registry,
+with only the two lost receipts simulated: it passed every rule. Both models are released once more
+for evidence, Boltz-2 first.
+
 ## Boltz-2 affinity is measured, and proving it found two defects (2026-09-16)
 
 **Boltz-2 ranks a known inhibitor pair correctly on the signed box.** The validator now also predicts

@@ -568,7 +568,15 @@ export function validateRuntimeBoxCiEvidence(record) {
         requireEvidence(record.scientific.accelerator.driverVersion === record.host.driverVersion, 'scientific driver differs from the host');
         requireEvidence(record.scientific.accelerator.reportedCudaCompatibility === cudaVersion, 'scientific CUDA compatibility differs from the target');
         requireEvidence(Number.isSafeInteger(record.scientific.peakVramBytes) && record.scientific.peakVramBytes > 0, 'CUDA peak VRAM evidence is missing');
-        requireEvidence(record.scientific.parity?.cpuBaselinePassed === true, 'CUDA evidence lacks a passed CPU baseline');
+        // A diffusion model draws different noise on a CPU than on a GPU at the same seed, so no CPU
+        // run can be its parity baseline. Its accelerator run is held to an experimental structure
+        // instead, which is the stronger reference.
+        const experimentalAnchor = record.scientific.parity?.anchor === 'experimental-structure'
+          && record.scientific.parity?.passed === true;
+        requireEvidence(
+          experimentalAnchor || record.scientific.parity?.cpuBaselinePassed === true,
+          'CUDA evidence lacks a passed CPU baseline or experimental structure',
+        );
         requireEvidence(record.scientific.parity?.acceleratorPassed === true, 'CUDA accelerator parity did not pass');
       }
     }

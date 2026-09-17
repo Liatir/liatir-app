@@ -202,7 +202,15 @@ describe('Runtime Box CI evidence contract', () => {
     expect(() => validateRuntimeBoxCiEvidence(record)).not.toThrow();
     record.scientific.parity.cpuBaselinePassed = false;
     expect(() => validateRuntimeBoxCiEvidence(record)).toThrow(/CPU baseline/);
-    record.scientific.parity.cpuBaselinePassed = true;
+    // A structure model anchors its CUDA run to an experimental structure instead, and only a passed
+    // comparison counts; the accelerator run itself must still have passed.
+    record.scientific.parity = { anchor: 'experimental-structure', passed: true, cpuBaselinePassed: null, acceleratorPassed: true };
+    expect(() => validateRuntimeBoxCiEvidence(record)).not.toThrow();
+    record.scientific.parity.passed = false;
+    expect(() => validateRuntimeBoxCiEvidence(record)).toThrow(/CPU baseline or experimental structure/);
+    record.scientific.parity = { anchor: 'experimental-structure', passed: true, cpuBaselinePassed: null, acceleratorPassed: null };
+    expect(() => validateRuntimeBoxCiEvidence(record)).toThrow(/accelerator parity/);
+    record.scientific.parity = { passed: true, cpuBaselinePassed: true, acceleratorPassed: true };
     record.productLifecycle.peakVramBytes = null;
     expect(() => validateRuntimeBoxCiEvidence(record)).toThrow(/product peak VRAM/);
   });
