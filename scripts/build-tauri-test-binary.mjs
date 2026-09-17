@@ -25,11 +25,19 @@ const capabilityFiles = [
 // Tuned for CI: capped parallelism to stay inside the runner's memory, and no incremental
 // artefacts or debug symbols, which cost time and disk for a binary that is only driven by tests.
 // Each is overridable, so a developer running this locally can restore the faster settings.
+//
+// The dev profile is optimized like the release profile, keeping debug assertions and the
+// debug-only test commands. A Runtime Box install hashes its archive twice and its extracted
+// payload once inside the app, and unoptimized that ran single-threaded at 25-36 MB/s: installing
+// the 12.7 GB Boltz-2 box took about 32 minutes and missed the product lifecycle's deadline.
+// Optimizing only the hashing crates changed nothing, because SHA-256's inline functions compile
+// into the calling crate.
 const env = {
   ...process.env,
   CARGO_BUILD_JOBS: process.env.CARGO_BUILD_JOBS ?? '2',
   CARGO_INCREMENTAL: process.env.CARGO_INCREMENTAL ?? '0',
-  CARGO_PROFILE_DEV_DEBUG: process.env.CARGO_PROFILE_DEV_DEBUG ?? '0'
+  CARGO_PROFILE_DEV_DEBUG: process.env.CARGO_PROFILE_DEV_DEBUG ?? '0',
+  CARGO_PROFILE_DEV_OPT_LEVEL: process.env.CARGO_PROFILE_DEV_OPT_LEVEL ?? '2'
 };
 
 /** Original file contents, keyed by path, so the patch can be undone exactly. */
@@ -74,8 +82,9 @@ try {
     patchCapability(filePath);
   }
 
-  // `--debug` keeps the build fast (tests do not need release optimisation), `--features wdio`
-  // compiles in the WebDriver hooks, and `--ci` keeps cargo-tauri non-interactive.
+  // `--debug` keeps debug assertions and the debug-only test commands (optimisation comes from the
+  // environment above), `--features wdio` compiles in the WebDriver hooks, and `--ci` keeps
+  // cargo-tauri non-interactive.
   const result = spawnSync(
     tauriCli.command,
     [

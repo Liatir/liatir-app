@@ -154,7 +154,11 @@ function startTauriApp() {
     logPath,
     logStream,
     spawnError: null,
+    exitedAt: null,
   };
+  // Recorded unconditionally: a wait that polls the app cannot tell a dead app from a slow one, and
+  // release run 35163643418 learned the app had exited only when a 28-minute install wait ended.
+  child.once('exit', () => { app.exitedAt = new Date().toISOString(); });
   child.once('error', (error) => {
     app.spawnError = error;
     if (traceLifecycle) {
@@ -304,9 +308,19 @@ class WebDriverElement {
 }
 
 class NativeWebDriverClient {
-  constructor(session) {
+  constructor(session, app) {
     this.sessionId = session.sessionId;
     this.capabilities = session.capabilities;
+    this.app = app;
+  }
+
+  /** Fails at once, with the exit and its time, when the app process is gone. */
+  requireAppRunning() {
+    const { child, exitedAt } = this.app;
+    if (child.exitCode === null && child.signalCode === null) return;
+    throw new Error(
+      `The Liatir app exited at ${exitedAt ?? 'an unknown time'} with code ${child.exitCode ?? 'none'} and signal ${child.signalCode ?? 'none'}.`,
+    );
   }
 
   async request(method, endpoint, body) {
@@ -404,6 +418,8 @@ class NativeWebDriverClient {
       } catch (error) {
         lastError = error;
       }
+      // A condition that throws is retried, which is right for a slow page and wrong for a dead app.
+      this.requireAppRunning();
       await new Promise((resolve) => setTimeout(resolve, interval));
     }
 
@@ -543,7 +559,7 @@ async function run() {
   try {
     await waitForWebDriver(app);
     const session = await createSession();
-    browser = new NativeWebDriverClient(session);
+    browser = new NativeWebDriverClient(session, app);
     // Heavy Runtime Box Jobs (cold torch/scipy/anndata imports plus real inference) can exceed the
     // W3C default 30s script timeout, especially on slower Windows CPU runners, so a slow-but-
     // successful Job would be reported as "Script execution timed out". Raise the script timeout to

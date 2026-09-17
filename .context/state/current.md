@@ -57,6 +57,51 @@ therefore re-signed as version 3 with its same two entries — Geneformer `1.0.0
 `runtime-box-revoke.yml` could not do it as it stood: it carries the served set forward by verifying
 it, and a version 3 verifier refuses a version 2 document by name. It gains a `carry_forward` input,
 checked by default; unchecked, it passes `--no-carry-forward` and the plan must list every entry.
+Run `35163548338` re-signed and promoted it; the Registry now serves a version 3 set with both
+entries.
+
+**The second Boltz-2 release passed the Registry and failed the native Linux product lifecycle.**
+Run `35163643418` on `2258248` built, verified and validated again with identical science (kept as
+`~/liatir-build/release-evidence/boltz-2-release-35163643418-scientific.json`, peak RAM 8.77 GB,
+VRAM 3.60 GB), then uploaded archive `1f4999e5…` and release document `546e5eab…` — both on R2, and
+neither promoted. In the product lifecycle the app process exited with code 0 and no signal about 28
+minutes into `waitForRuntimeBoxInstall`, so the next WebDriver request found no server (`fetch
+failed`); its stderr holds only Mesa and EGL warnings, and WSL2 had restarted before the kernel log
+could be read. This is the first native Linux product lifecycle of a Phase 3 box: every earlier one
+ran the Windows app through WSL2, and the published Linux boxes that passed natively in CI were at
+most 7.9 GB. Nothing is promoted, so no user can see either archive. Ruled out so far: the install
+does not write to the 12 GB `/tmp` tmpfs (it downloads beside the runtime directory), and install
+progress is emitted every 500 ms rather than per chunk.
+
+**Reproduced locally: the install overran because the test binary was unoptimized.** On the same commit, native in
+WSL2 against the development-signed box, the install did not finish inside the spec's 1,693-second
+deadline either. Sampling the app's own IO and threads split the install into phases, each on one
+tokio thread at 100% CPU: download, 2 min; Liatir's `sha256_of_file` over the 12.7 GB archive at
+25 MB/s, 8 min; Scrollcase's archive hash at 36 MB/s, 6 min; extraction, 6 min; Scrollcase's hash of
+the 20 GB payload at 36 MB/s, about 10 min — some 32 minutes. `sha256sum` on the same machine reads
+142 MB/s, and memory, disk (333 MB/s written with `fdatasync`) and the kernel log were all clean.
+Optimizing only `sha2`, `zip`, `flate2` and the inflate backends in the dev profile changed nothing:
+SHA-256's work sits in `#[inline]` functions, which compile into the calling crate at its own level.
+`scripts/build-tauri-test-binary.mjs` now builds the dev profile at `opt-level` 2, the release
+profile's level, keeping debug assertions and the debug-only commands; the Linux test binary takes
+13.4 minutes to build instead of 5.3. With it, the same lifecycle passed locally, 2 of 2, in 9.5
+minutes for install, structure, affinity and removal together. What this does not explain is why
+the release run's app exited with status 0 where the local one kept running: the earlier Geneformer
+loss in run `31290534596` had that shape too and was attributed to WebKitGTK's GPU paths. A much
+shorter install leaves far less time for it, and the next run will say when it happens.
+
+The e2e harness also hid how long the app had been gone: `waitUntil` retried a throwing condition,
+so a dead app looked like a slow install until the deadline. The WebDriver client now records when
+the app process exits and fails the wait at once, naming the exit.
+
+**The reproduction filled the Windows drive.** WSL2 keeps its filesystem in
+`%LOCALAPPDATA%\wsl\{167f5967-…}\ext4.vhdx`, which grows but never shrinks on its own. Each local run
+left its own 20 GB install plus download under `tests/.artifacts/home` — 97 GB after four runs — and
+drive C: reached 0.2 GB free, WSL2 failed with I/O errors, and a run died on a bus error. Deleting the
+Windows `src-tauri/target/debug/incremental` cache (11 GB) and the test homes recovered it; ext4
+replayed its journal cleanly. The virtual disk is still 240 GB for 143 GB used: `wsl --manage
+--set-sparse` is refused by WSL as unsafe, and compacting it (`diskpart` → `compact vdisk`, with WSL
+shut down) needs an elevated prompt. A local lifecycle must delete its test home when it ends.
 
 ## Boltz-2 affinity is measured, and proving it found two defects (2026-09-16)
 
