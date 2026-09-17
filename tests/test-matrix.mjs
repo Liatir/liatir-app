@@ -127,7 +127,10 @@ export const testSuites = [
     layer: 'tauri',
     command: npm.command,
     args: npmArgs(['run', 'test:tauri:prepare']),
-    timeoutMs: 600_000,
+    // A cold build takes about twenty minutes on Windows since the test binary compiles at
+    // opt-level 2 — unoptimized, it hashes a 12.7 GB Runtime Box too slowly to install one inside a
+    // lifecycle test. The old ten-minute budget failed the suite while the build ran on to finish.
+    timeoutMs: 2_400_000,
     description: 'Builds the debug Tauri binary with embedded WebDriver enabled.',
   },
   {

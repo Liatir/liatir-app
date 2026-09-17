@@ -128,7 +128,9 @@ SHA-256's work sits in `#[inline]` functions, which compile into the calling cra
 `scripts/build-tauri-test-binary.mjs` now builds the dev profile at `opt-level` 2, the release
 profile's level, keeping debug assertions and the debug-only commands; the Linux test binary takes
 13.4 minutes to build instead of 5.3. With it, the same lifecycle passed locally, 2 of 2, in 9.5
-minutes for install, structure, affinity and removal together. What this does not explain is why
+minutes for install, structure, affinity and removal together. The same slower build then failed the
+`tauri-prepare` suite on Windows at its ten-minute budget while the build itself ran on to finish in
+19.6; the budget is 40 minutes now, and `test:ui` passes 7 of 7 with 2 platform skips. What this does not explain is why
 the release run's app exited with status 0 where the local one kept running: the earlier Geneformer
 loss in run `31290534596` had that shape too and was attributed to WebKitGTK's GPU paths. A much
 shorter install leaves far less time for it, and the next run will say when it happens.
