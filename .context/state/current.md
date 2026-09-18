@@ -144,9 +144,14 @@ the app process exits and fails the wait at once, naming the exit.
 left its own 20 GB install plus download under `tests/.artifacts/home` — 97 GB after four runs — and
 drive C: reached 0.2 GB free, WSL2 failed with I/O errors, and a run died on a bus error. Deleting the
 Windows `src-tauri/target/debug/incremental` cache (11 GB) and the test homes recovered it; ext4
-replayed its journal cleanly. The virtual disk is still 240 GB for 143 GB used: `wsl --manage
---set-sparse` is refused by WSL as unsafe, and compacting it (`diskpart` → `compact vdisk`, with WSL
-shut down) needs an elevated prompt. A local lifecycle must delete its test home when it ends.
+replayed its journal cleanly. A local lifecycle must delete its test home when it ends.
+
+The virtual disk was compacted on 2026-09-18, once both releases were published: `fstrim -av` as
+root inside the distro (which reports the free blocks to the host), `wsl --shutdown`, then an
+elevated `diskpart` with `attach vdisk readonly` → `compact vdisk` → `detach vdisk`. It went from
+239.7 GB to 144.2 GB for the same 143 GB used, and drive C: from 21 GB free to 116 GB. The distro
+boots and still sees the RTX 4060 Ti. `wsl --manage --set-sparse`, which would keep it from growing
+in the first place, is still refused by WSL as unsafe on this machine.
 
 **The third release attempt was lost to the agent session, not to a defect.** Run `35179058040` on
 `865e1aa` passed its build and died in `verify --self-test` at 04:23 UTC, when the Claude Code
