@@ -1,5 +1,35 @@
 # Current project status
 
+## The pipeline editor is covered, and the Native Tools gates ran green on both platforms (2026-09-18)
+
+**`tests/e2e/specs/pipeline-editor.e2e.mjs` passes 4 of 4 on Windows x86_64.** The authoring half of
+the product — the canvas a user builds on — had no native coverage at all: every other pipeline test
+seeds `pipeline-workspace.json` on disk and presses Run. The four now prove it through the real UI:
+a graph built from the step menu with a wire dragged between two handles survives a reload; a note
+walks back and forward through undo and redo, and the redone canvas is the one that survives a
+restart; a named pipeline reaches disk under that name and reopens as exactly that pipeline, checked
+by its id and not by "the editor still shows something"; and a seeded grid far wider than the window
+opens already framed, every node measured and inside the pane, below zoom 1, with all its edges
+drawn. The editor gained five test hooks for this (`pipeline-undo`, `pipeline-redo`,
+`pipeline-add-note`, `pipeline-name-input`, `pipeline-rename`) and no behavior change.
+
+Two harness facts worth keeping. The E2E driver has **no keyboard** — `browser.keys` does not exist —
+so a field that commits on Enter is committed by focusing and blurring it instead; `blur()` on an
+element that is not the active one fires nothing, and the editor focuses that input on a timer. And
+the viewport fitter has a 0.1 minimum zoom: a fixture laid out in one 12,000-unit row cannot be
+framed, and its edge nodes stay outside the pane *correctly* — the wide fixture is a grid for that
+reason. A variable node has only an output handle, so the chain is one variable feeding math steps;
+variable→variable edges have nowhere to land and xyflow draws none of them.
+
+**The Native Tools gates were re-run on the Scrollcase v3 artifact and pass on both platforms**:
+Windows through WSL2, and native Linux under Xvfb (7/7 UI suites, native suite 42 passed / 0 failed
+/ 32 skipped). The Linux run exposed a real defect rather than a test problem: Ubuntu 26.04 ships
+`python3` as 3.14, which Liatir does not support (the requirement is >=3.10,<3.14), and the
+interpreter search never looked for `python3.13` — so the app told the user to install a Python that
+was already on their PATH. `python3.13` is now in both search lists (`python_env::python_candidates`
+and `deps::preferred_python`), with a regression test that drives the search against a fixture PATH
+directory (`cd64171`, `c5da0d3`).
+
 ## The 3D structure viewer is covered, and the public docs were promising a retired path (2026-09-18)
 
 **`tests/e2e/specs/structure-viewer.e2e.mjs` passes 6 of 6 on Windows x86_64**, and the whole `ui`

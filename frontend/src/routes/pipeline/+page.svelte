@@ -727,6 +727,7 @@
         {#if editingName}
           <input
             type="text"
+            data-testid="pipeline-name-input"
             bind:this={nameEditorInput}
             bind:value={nameInput}
             onblur={commitName}
@@ -735,6 +736,7 @@
           />
         {:else}
           <button
+            data-testid="pipeline-rename"
             onclick={() => editingName = true}
             class="flex items-center gap-1.5 text-xs text-text-muted hover:text-brand transition-colors px-2 py-1.5 rounded-lg hover:bg-surface-2"
           >
@@ -756,6 +758,7 @@
         <div class="flex items-center gap-1">
           <button
             type="button"
+            data-testid="pipeline-undo"
             title="Undo"
             aria-label="Undo"
             onclick={() => void undoGraphChange()}
@@ -766,6 +769,7 @@
           </button>
           <button
             type="button"
+            data-testid="pipeline-redo"
             title="Redo"
             aria-label="Redo"
             onclick={() => void redoGraphChange()}
@@ -822,6 +826,7 @@
       <Panel position="top-left" class="rounded-lg border border-border bg-surface/95 shadow-sm">
         <button
           type="button"
+          data-testid="pipeline-add-note"
           title="Add note"
           aria-label="Add note"
           onclick={() => void addNote()}
