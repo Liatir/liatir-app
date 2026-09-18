@@ -794,12 +794,44 @@ async function promote(channelDocumentPath, flags) {
 /** The contract's cap on one revocations document, mirrored by the signer policy. */
 const MAX_REVOCATIONS_PER_DOCUMENT = 100;
 
+/** Every field a box target has. Anything else in one is a mistake, not an extension. */
+const REVOCATION_TARGET_FIELDS = ['platform', 'arch', 'accelerator', 'cudaVersion'];
+
 /** Reads one repeated flag as strings, rejecting the bare `--flag` form that carries no value. */
 function repeatedStringFlag(flags, name) {
   return flags.all(name).map((value) => {
     if (typeof value !== 'string' || value.trim() === '') fail(`--${name} requires a value.`);
     return value.trim();
   });
+}
+
+/**
+ * Reads the optional target that narrows a revocation to one build of a version.
+ *
+ * Rebuilt field by field rather than passed through, because the app parses the signed list with
+ * unknown fields denied: one stray key inside a target would make the whole document unreadable,
+ * and an unreadable kill-list fails every install, not just this box's.
+ */
+function normalizeRevocationTarget(target, source) {
+  if (target === undefined || target === null) return undefined;
+  if (typeof target !== 'object' || Array.isArray(target)) fail(`${source} entry has a malformed "target".`);
+  const unknown = Object.keys(target).filter((key) => !REVOCATION_TARGET_FIELDS.includes(key));
+  if (unknown.length > 0) fail(`${source} entry target has unknown field(s): ${unknown.join(', ')}.`);
+  const normalized = {
+    platform: target.platform,
+    arch: target.arch,
+    accelerator: target.accelerator,
+    ...(target.cudaVersion === undefined ? {} : { cudaVersion: target.cudaVersion }),
+  };
+  // Rejects an impossible combination — a made-up platform, or CUDA without its ABI. A target that
+  // matches nothing is the dangerous outcome here: the document would claim a build was withdrawn
+  // while the app kept installing it.
+  try {
+    boxTargetId(normalized);
+  } catch (error) {
+    fail(`${source} entry has an invalid "target": ${error instanceof Error ? error.message : String(error)}`);
+  }
+  return normalized;
 }
 
 /** Rejects an entry whose fields are missing or blank, whatever form it arrived in. */
@@ -809,9 +841,13 @@ function normalizeRevocationEntry(entry, revokedAt, source) {
     if (typeof value !== 'string' || value.trim() === '') fail(`${source} entry is missing "${name}".`);
     return value.trim();
   };
+  const target = normalizeRevocationTarget(entry?.target, source);
   return {
     boxId: field('boxId'),
     version: field('version'),
+    // Omitted for the usual case — the whole version goes, on every platform. Present only to
+    // withdraw one target of a version whose other targets stay live, as a retired platform does.
+    ...(target ? { target } : {}),
     // Surfaced verbatim to users, so it should explain why the box was pulled.
     reason: field('reason'),
     revokedAt,
@@ -892,17 +928,24 @@ async function liveRevocations(registry, publicKeyPath) {
  * withdrawn is a historical fact, and an unrelated later revocation must not rewrite it.
  */
 function mergeRevocations(carried, added) {
-  const identity = (entry) => [
-    entry.boxId,
-    entry.version,
-    entry.target ? boxTargetId(entry.target) : '',
-  ].join(' ');
-  const merged = new Map(carried.map((entry) => [identity(entry), entry]));
+  const merged = new Map(carried.map((entry) => [revocationIdentity(entry), entry]));
   for (const entry of added) {
-    const previous = merged.get(identity(entry));
-    merged.set(identity(entry), previous ? { ...entry, revokedAt: previous.revokedAt } : entry);
+    const previous = merged.get(revocationIdentity(entry));
+    merged.set(revocationIdentity(entry), previous ? { ...entry, revokedAt: previous.revokedAt } : entry);
   }
   return [...merged.values()];
+}
+
+/**
+ * How a client matches a revocation, and therefore what makes two of them the same entry.
+ *
+ * The target belongs in it. Withdrawing one target of a version and withdrawing the whole version
+ * are different statements, and an identity blind to the target would let the narrow one overwrite
+ * the broad — quietly restoring every other target the broad entry had covered. The separator is a
+ * NUL because no field may contain one, so no two different entries can collide on one key.
+ */
+function revocationIdentity(entry) {
+  return [entry.boxId, entry.version, entry.target ? boxTargetId(entry.target) : ''].join(' ');
 }
 
 /**
@@ -948,10 +991,11 @@ async function createRevocation(flags) {
   const path = join(paths.dist, 'runtime-box-revocations.json');
   await writeFile(path, `${JSON.stringify(signed, null, 2)}\n`);
   // Printed in full: this document replaces the live set, so the operator should see all of it.
-  const addedIdentities = new Set(added.map((entry) => `${entry.boxId} ${entry.version}`));
+  const addedIdentities = new Set(added.map(revocationIdentity));
   for (const entry of revocations) {
-    const origin = addedIdentities.has(`${entry.boxId} ${entry.version}`) ? 'revoked' : 'carried forward';
-    console.log(`  ${entry.boxId} ${entry.version} (${origin})`);
+    const origin = addedIdentities.has(revocationIdentity(entry)) ? 'revoked' : 'carried forward';
+    const scope = entry.target ? boxTargetId(entry.target) : 'every target';
+    console.log(`  ${entry.boxId} ${entry.version} ${scope} (${origin})`);
   }
   console.log(`Signed ${revocations.length} revocation(s): ${relative(paths.root, path)}`);
 }
@@ -971,11 +1015,13 @@ Revocation:
   --box and --version repeat and pair in order, so one signed document can
   withdraw several boxes. --reason is either given once for the batch or once
   per --box. --from <file> reads the same entries as a JSON array of
-  {"boxId","version","reason"}, which is how automation passes them. The
-  registry stores the document whole and cannot merge into it, so the entries
-  it already serves are carried forward into the new one; pass
-  --no-carry-forward only for local or loopback use, where dropping the live
-  set is intended.
+  {"boxId","version","reason"}, which is how automation passes them, and each
+  entry may add a "target" {platform,arch,accelerator[,cudaVersion]} to withdraw
+  one build of a version while its other targets stay installable — a retired
+  platform, not a bad box. The registry stores the document whole and cannot
+  merge into it, so the entries it already serves are carried forward into the
+  new one; pass --no-carry-forward only for local or loopback use, where
+  dropping the live set is intended.
 
     revoke --box a --version 1.0.0 --box b --version 2.0.0 --reason "<why>"
     revoke --from revocations.json
@@ -1030,7 +1076,9 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
 
 export {
   SOURCE_MIRROR_SPECS,
+  mergeRevocations,
   multipartPartRanges,
+  normalizeRevocationEntry,
   parseHttpByteRange,
   registryAdminRequest,
   registryAdminToken,

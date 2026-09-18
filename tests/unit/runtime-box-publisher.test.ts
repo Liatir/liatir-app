@@ -7,7 +7,9 @@ import { resolve } from 'node:path';
 
 import {
   SOURCE_MIRROR_SPECS,
+  mergeRevocations,
   multipartPartRanges,
+  normalizeRevocationEntry,
   parseHttpByteRange,
   verifyRemoteObject,
 } from '../../scripts/runtime-box/distribution-cli.mjs';
@@ -240,5 +242,74 @@ describe('public object verification', () => {
     } finally {
       server.close();
     }
+  });
+});
+
+/**
+ * Withdrawing one target of a version is the only way to retire a platform without pulling the
+ * versions that are still live on the others, and the app matches a revocation's target exactly.
+ * These tests hold the signing side to that: what the document says must be what the app can act on.
+ */
+describe('Runtime Box revocation entries', () => {
+  const revokedAt = '2026-09-18T12:00:00.000Z';
+  const windowsCuda = { platform: 'windows', arch: 'x86_64', accelerator: 'cuda', cudaVersion: '12.8' };
+
+  it('carries a target through, so one retired platform does not withdraw the live ones', () => {
+    const entry = normalizeRevocationEntry(
+      { boxId: 'geneformer-v1-10m', version: '1.0.0-beta.2', target: windowsCuda, reason: 'retired platform' },
+      revokedAt,
+      'plan.json',
+    );
+
+    expect(entry).toEqual({
+      boxId: 'geneformer-v1-10m',
+      version: '1.0.0-beta.2',
+      target: windowsCuda,
+      reason: 'retired platform',
+      revokedAt,
+    });
+  });
+
+  it('omits the target when none was asked for, which withdraws every target of the version', () => {
+    const entry = normalizeRevocationEntry(
+      { boxId: 'scgpt-whole-human', version: '0.2.5-beta.1', reason: 'superseded by beta.2' },
+      revokedAt,
+      'plan.json',
+    );
+
+    expect(entry).not.toHaveProperty('target');
+  });
+
+  // The app parses the signed list with unknown fields denied, and a list it cannot parse fails
+  // every install — so a stray key has to stop at the signer rather than reach the document.
+  it('refuses a target carrying anything that is not a target field', () => {
+    expect(() => normalizeRevocationEntry(
+      { boxId: 'b', version: '1.0.0', target: { ...windowsCuda, note: 'retired' }, reason: 'retired platform' },
+      revokedAt,
+      'plan.json',
+    )).toThrow(/unknown field\(s\): note/);
+  });
+
+  it('refuses a target that could never match a published build', () => {
+    expect(() => normalizeRevocationEntry(
+      { boxId: 'b', version: '1.0.0', target: { platform: 'windows', arch: 'x86_64', accelerator: 'cuda' }, reason: 'retired platform' },
+      revokedAt,
+      'plan.json',
+    )).toThrow(/invalid "target"/);
+  });
+
+  it('keeps a target-scoped entry distinct from the whole-version one it must not replace', () => {
+    const wholeVersion = { boxId: 'b', version: '1.0.0', reason: 'superseded release', revokedAt };
+    const oneTarget = { boxId: 'b', version: '1.0.0', target: windowsCuda, reason: 'retired platform', revokedAt };
+
+    expect(mergeRevocations([wholeVersion], [oneTarget])).toEqual([wholeVersion, oneTarget]);
+  });
+
+  // Re-stating a revocation may correct its wording; it may never rewrite when the box was pulled.
+  it('keeps the original withdrawal time when an entry is revoked again', () => {
+    const original = { boxId: 'b', version: '1.0.0', target: windowsCuda, reason: 'retired platform', revokedAt };
+    const restated = { ...original, reason: 'retired: Windows runs the Linux box through WSL2', revokedAt: '2026-10-01T00:00:00.000Z' };
+
+    expect(mergeRevocations([original], [restated])).toEqual([{ ...restated, revokedAt }]);
   });
 });

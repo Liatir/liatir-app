@@ -15,7 +15,9 @@ on:
         description: >-
           JSON array of {"boxId","version","reason"} — the boxes to withdraw. The document signed
           here also carries forward everything the registry already serves, so this lists what is
-          being *added*, not the complete set.
+          being *added*, not the complete set. An entry may add
+          "target":{"platform","arch","accelerator"[,"cudaVersion"]} to withdraw one build while
+          the other targets of that version stay installable, which is how a platform is retired.
         required: true
         type: string
         default: '[{"boxId":"","version":"","reason":""}]'
@@ -80,7 +82,8 @@ jobs:
         run: |
           set -euo pipefail
           jq -e '
-            if type != "array" or length == 0 then error("revocations must be a non-empty array")
+            ["platform", "arch", "accelerator", "cudaVersion"] as $targetFields
+            | if type != "array" or length == 0 then error("revocations must be a non-empty array")
             elif length > 100 then error("a revocations document holds at most 100 entries")
             else . end
             | map(
@@ -88,14 +91,25 @@ jobs:
                 elif (.version | test("^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?$") | not) then error("invalid version: \(.version)")
                 elif (.reason | type) != "string" or ((.reason | ltrimstr(" ") | length) < 8) then error("revocation reason is too short")
                 elif ((.boxId + .version + .reason) | test("[\n\r]")) then error("revocation fields cannot contain newlines")
+                # An absent target withdraws the version everywhere. A target that is present but
+                # wrong is the dangerous case: it matches no build, so the document would claim a
+                # withdrawal the app never acts on.
+                elif (has("target") | not) then .
+                elif (.target | type) != "object" then error("target must be an object")
+                elif ((.target | keys) - $targetFields | length) > 0 then error("target has unknown field(s): \((.target | keys) - $targetFields | join(", "))")
+                elif (.target.platform | IN("macos", "linux", "windows") | not) then error("invalid target platform: \(.target.platform)")
+                elif (.target.arch | IN("aarch64", "x86_64") | not) then error("invalid target arch: \(.target.arch)")
+                elif (.target.accelerator | IN("cpu", "metal", "cuda") | not) then error("invalid target accelerator: \(.target.accelerator)")
+                elif (.target.accelerator == "cuda") != (.target | has("cudaVersion")) then error("cudaVersion belongs to a cuda target and to no other")
+                elif (.target | has("cudaVersion")) and ((.target.cudaVersion | test("^[0-9]+\\.[0-9]+$")) | not) then error("invalid cudaVersion: \(.target.cudaVersion)")
                 else . end
               )' <<< "$REVOCATIONS" > plan.json
           {
             echo '### Revocation plan'
             echo
-            jq -r '.[] | "- `\(.boxId)` `\(.version)` — \(.reason)"' plan.json
+            jq -r '.[] | "- `\(.boxId)` `\(.version)` — \(if .target then "target `\(.target.platform)-\(.target.arch)-\(.target.accelerator)\(.target.cudaVersion // "")`" else "**every target**" end) — \(.reason)"' plan.json
           } >> "$GITHUB_STEP_SUMMARY"
-          jq -r '.[] | "\(.boxId) \(.version)"' plan.json
+          jq -r '.[] | "\(.boxId) \(.version) \(if .target then "\(.target.platform)-\(.target.arch)-\(.target.accelerator)\(.target.cudaVersion // "")" else "every-target" end)"' plan.json
 
       - id: revoke-auth
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
@@ -150,9 +164,11 @@ jobs:
           curl -fsS --retry 3 --retry-delay 2 -H 'cache-control: no-cache' \
             "$REGISTRY/v1/revocations" > served.json
           jq -r '.payloadBase64' served.json | base64 -d | jq '.revocations' > served-entries.json
+          # Compared including the target: a served entry that dropped it would be withdrawing far
+          # more than was asked for, and one that changed it would be withdrawing nothing.
           jq -e --slurpfile served served-entries.json '
-            (($served[0] // []) | map({boxId, version})) as $live
-            | map({boxId, version})
+            (($served[0] // []) | map({boxId, version, target})) as $live
+            | map({boxId, version, target})
             | if all(.[]; . as $wanted | $live | any(. == $wanted)) then .
               else error("the registry does not serve every requested revocation") end
           ' plan.json > /dev/null
@@ -160,7 +176,7 @@ jobs:
             echo
             echo '### Live revocations'
             echo
-            jq -r '.[] | "- `\(.boxId)` `\(.version)`"' served-entries.json
+            jq -r '.[] | "- `\(.boxId)` `\(.version)` \(if .target then "`\(.target.platform)-\(.target.arch)-\(.target.accelerator)\(.target.cudaVersion // "")`" else "(every target)" end)"' served-entries.json
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload the revocation receipt
