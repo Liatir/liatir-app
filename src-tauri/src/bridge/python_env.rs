@@ -678,7 +678,12 @@ fn find_in_path(name: &str) -> Option<String> {
 
 fn python_candidates() -> Vec<String> {
     let mut candidates = Vec::new();
+    // Newest supported first, and every supported minor has to be named here: a distribution whose
+    // `python3` is already past what Liatir supports — Ubuntu 26.04 ships 3.14 — is usable only
+    // through the versioned name of an interpreter installed beside it. Omitting 3.13 made that
+    // host fail with "install a compatible Python" while a compatible Python was on its PATH.
     for name in [
+        "python3.13",
         "python3.12",
         "python3.11",
         "python3.10",

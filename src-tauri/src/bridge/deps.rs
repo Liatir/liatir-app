@@ -29,7 +29,10 @@ fn first_available(names: &[&str]) -> Option<String> {
 }
 
 fn preferred_python() -> Option<String> {
+    // Kept in step with `python_env::python_candidates`: the Dependencies screen and the runtime must
+    // agree on which interpreters exist, or one reports a Python the other refuses to use.
     first_available(&[
+        "python3.13",
         "python3.12",
         "python3.11",
         "python3.10",
