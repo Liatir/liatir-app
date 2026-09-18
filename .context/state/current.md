@@ -27,8 +27,9 @@ in a browser download and is still uncovered, as is the genome (JBrowse) viewer.
 `docs/ai/guide.md` and `docs/ai/models/overview.md` still listed Windows CUDA 12.8 for Geneformer
 and scGPT, and the hardware section still described native Windows CUDA as supported. The catalog
 holds no native Windows target, and the app's model registry offers none: Windows runs the Linux box
-through WSL2. Both pages and `truth/architecture/runtime-box-system-explained.md` — which also still
-called WSL2 execution "unsupported and unverified" — now say what the product does. Left open for a
+through WSL2. Both pages and the
+[Runtime Box system](../truth/architecture/runtime-box-system-explained.md) truth document — which
+also still called WSL2 execution "unsupported and unverified" — now say what the product does. Left open for a
 decision: the retired Windows releases still answer `200` on the public `beta` channel. A v3 app
 refuses those v2 boxes by name, so nobody can install one, but nothing removes them either.
 
