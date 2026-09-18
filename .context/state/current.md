@@ -1,5 +1,43 @@
 # Current project status
 
+## The 3D structure viewer is covered, and the public docs were promising a retired path (2026-09-18)
+
+**`tests/e2e/specs/structure-viewer.e2e.mjs` passes 6 of 6 on Windows x86_64**, and the whole `ui`
+profile passes with it: the native suite is 42 passed / 0 failed / 32 skipped, and the five other
+suites are 1 of 1 each. The viewer had no test hook at all before this, which is why it stayed
+unverified while the single-cell viewer did not.
+
+What the six prove: a missing 3Dmol runtime is offered for install instead of failing; an installed
+runtime is handed the file as `pdb` with the requested cartoon style and reports back that it drew
+it; a runtime that throws leaves the user on the viewer's own coordinate projection, with all six
+fixture atoms and a named warning; a runtime recorded as installed whose files are gone returns to
+*available* in Dependencies rather than the raw `os error 2` this exact state used to produce; a
+file that is not a structure is named as such; and leaving fullscreen gives page scrolling back.
+
+Two things made that possible without a network download. 3Dmol.js is third-party and fetched on
+demand, so the spec installs a **stand-in runtime** that validates what it is given and either
+reports success or throws — the assertions live inside it, because the iframe has an opaque origin
+and nothing outside can read what the library received. And the component now records the iframe's
+`liatir-structure-viewer-ready` message, so `data-state` separates a frame that exists from a
+structure that was drawn. Screenshot capture is asserted at its native contract, which is macOS-only
+today (`screencapture`) and says so on other platforms; the in-page PNG fallback used off macOS ends
+in a browser download and is still uncovered, as is the genome (JBrowse) viewer.
+
+**The public docs promised native Windows CUDA 12.8 boxes that were retired on 2026-09-11.**
+`docs/ai/guide.md` and `docs/ai/models/overview.md` still listed Windows CUDA 12.8 for Geneformer
+and scGPT, and the hardware section still described native Windows CUDA as supported. The catalog
+holds no native Windows target, and the app's model registry offers none: Windows runs the Linux box
+through WSL2. Both pages and `truth/architecture/runtime-box-system-explained.md` — which also still
+called WSL2 execution "unsupported and unverified" — now say what the product does. Left open for a
+decision: the retired Windows releases still answer `200` on the public `beta` channel. A v3 app
+refuses those v2 boxes by name, so nobody can install one, but nothing removes them either.
+
+**Operational note for `test:ui` on this machine.** `test:tauri:prepare` runs `npm ci --prefix
+frontend`, which failed three times with `EPERM` unlinking `lightningcss` and then `rollup` native
+modules: VS Code keeps the workspace's `.node` files mapped, and Windows refuses to delete a mapped
+image (renaming one out of the way works, and is how the first was cleared). With the binary already
+current, running the `ui` suites minus `tauri-prepare` is the way through without closing the editor.
+
 ## Protenix base v1.0.0 is published too, so both structure models are in the product (2026-09-17)
 
 **Run `35244917546` on `3d5bfb1` released Protenix base v1.0.0 1.0.0-beta.1 for

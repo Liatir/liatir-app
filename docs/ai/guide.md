@@ -15,8 +15,8 @@ The current product catalog contains:
 
 | AI Model | Current published targets | Main use |
 | --- | --- | --- |
-| [Geneformer V1 10M](/ai/models/ctheodoris-geneformer-v1-10m) | macOS arm64 Metal; Linux CUDA 12.9; Windows CUDA 12.8 | human single-cell embeddings |
-| [scGPT Whole-human](/ai/models/bowang-scgpt-whole-human) | macOS arm64 Metal; Linux/Windows CPU; Linux CUDA 12.9; Windows CUDA 12.8 | human single-cell embeddings |
+| [Geneformer V1 10M](/ai/models/ctheodoris-geneformer-v1-10m) | macOS arm64 Metal; Linux CUDA 12.9; Windows through WSL2 | human single-cell embeddings |
+| [scGPT Whole-human](/ai/models/bowang-scgpt-whole-human) | macOS arm64 Metal; Linux CPU; Linux CUDA 12.9; Windows through WSL2 | human single-cell embeddings |
 | [UCE 4-layer](/ai/models/snap-stanford-uce-4layer) | macOS arm64 Metal | multi-species single-cell embeddings |
 | [Boltz-2](/ai/models/jwohlwend-boltz-2) | Linux CUDA 12.9; Windows through WSL2 | structure prediction and protein–ligand affinity |
 | [Protenix base v1.0.0](/ai/models/bytedance-protenix-base-v1-0-0) | Linux CUDA 12.6; Windows through WSL2 | structure prediction |
@@ -68,9 +68,12 @@ analysis; it is not a final biological conclusion.
 ## Hardware support
 
 Liatir installs only a published target that exactly matches the operating
-system, architecture, accelerator, memory, and driver constraints. Native
-Windows CUDA support is limited to the exact published CUDA 12.8 Geneformer and
-scGPT targets; other Windows CUDA combinations are not inferred from them.
+system, architecture, accelerator, memory, and driver constraints.
+
+On Windows, AI Models run through WSL2, the Linux environment Liatir already
+requires on Windows: the model you install is the Linux one, on your own NVIDIA
+GPU. There are no native Windows model packages, and none are inferred from the
+Linux ones.
 
 ## Related pages
 

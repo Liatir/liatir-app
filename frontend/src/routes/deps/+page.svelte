@@ -947,7 +947,12 @@
 					{#each viewerRuntimesStore.runtimes as runtime (runtime.id)}
 						{@const progress = viewerRuntimeProgress[runtime.id]}
 						{@const installable = runtime.install.kind === 'managed-script'}
-						<div class="flex items-center gap-3 px-4 py-3">
+						<div
+							class="flex items-center gap-3 px-4 py-3"
+							data-testid="viewer-runtime-row"
+							data-runtime-id={runtime.id}
+							data-status={runtime.status}
+						>
 							<span
 								class="h-2 w-2 rounded-full shrink-0 {runtime.status === 'installed'
 									? 'bg-emerald-500'

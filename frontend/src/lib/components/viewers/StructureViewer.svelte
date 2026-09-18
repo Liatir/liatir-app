@@ -34,6 +34,8 @@
   let runtimeWarning = $state<string | null>(null);
   let frameUrl = $state('');
   let fallbackContent = $state('');
+  /** The iframe reported that 3Dmol actually drew the structure, not merely that the frame exists. */
+  let ready = $state(false);
 
   // Identifies *this* viewer instance, so a postMessage from one iframe is not acted on by another
   // structure viewer rendered on the same page.
@@ -197,6 +199,21 @@
   }
 
   /**
+   * Which of the viewer's states is on screen, as one readable value.
+   *
+   * `runtime-loading` and `runtime-ready` are deliberately separate: the iframe exists as soon as the
+   * document is built, but only its ready message proves 3Dmol drew the structure inside it. Across
+   * the sandbox boundary that message is the single piece of evidence available.
+   */
+  const viewerState = $derived(
+    loading ? 'loading'
+      : error ? 'error'
+        : frameUrl ? (ready ? 'runtime-ready' : 'runtime-loading')
+          : fallbackAtoms.length > 0 ? 'fallback'
+            : 'empty',
+  );
+
+  /**
    * Builds the sandboxed document: the payload as JSON, the 3Dmol library inlined, and a bootstrap
    * script that renders it. Failures inside the iframe are reported back to this component by
    * postMessage — an exception thrown in there cannot otherwise be observed out here.
@@ -288,9 +305,14 @@
     function onMessage(event: MessageEvent) {
       const data = event.data as { type?: string; viewerId?: string; message?: string } | null;
       if (!data || data.viewerId !== viewerId) return;
+      if (data.type === 'liatir-structure-viewer-ready') {
+        ready = true;
+        return;
+      }
       if (data.type === 'liatir-structure-viewer-error') {
         setRuntimeWarning(data.message ?? 'Structure viewer failed.');
         frameUrl = '';
+        ready = false;
       }
     }
 
@@ -299,6 +321,7 @@
         loading = true;
         error = null;
         runtimeWarning = null;
+        ready = false;
         const content = await loadStructureContent();
         fallbackContent = content;
         validateStructureContent(content, section.format);
@@ -331,14 +354,14 @@
   height={section.height ?? 420}
   openHref={section.path ? `/tools/visualization/structure?file=${encodeURIComponent(section.path)}` : undefined}
 >
-  <div class="relative h-full overflow-hidden bg-white">
+  <div class="relative h-full overflow-hidden bg-white" data-testid="structure-viewer" data-state={viewerState}>
     {#if loading}
       <div class="absolute inset-0 flex items-center justify-center text-xs text-zinc-400">
         Loading structure...
       </div>
     {:else if error}
       <div class="absolute inset-0 flex flex-col items-center justify-center gap-3 px-4 text-center text-xs text-red-600">
-        <p>{sanitizeLocalPathsForDisplay(error, 2)}</p>
+        <p data-testid="structure-viewer-error">{sanitizeLocalPathsForDisplay(error, 2)}</p>
         {#if error.includes('not installed')}
           <Button size="sm" variant="secondary" onclick={() => goto('/deps')}>
             Open Dependencies
@@ -351,13 +374,15 @@
         src={frameUrl}
         sandbox="allow-scripts"
         class="absolute inset-0 h-full w-full border-0"
+        data-testid="structure-viewer-frame"
       ></iframe>
     {:else if fallbackAtoms.length > 0}
       <div class="absolute inset-0">
-        <svg viewBox="0 0 100 100" class="h-full w-full bg-white">
+        <svg viewBox="0 0 100 100" class="h-full w-full bg-white" data-testid="structure-fallback">
           {#each fallbackAtoms as atom}
             {@const point = atomPoint(atom)}
             <circle
+              data-testid="structure-fallback-atom"
               cx={point.x}
               cy={point.y}
               r={atom.name === 'CA' ? 1.7 : 1.15}
@@ -369,7 +394,10 @@
           {/each}
         </svg>
         {#if runtimeWarning}
-          <div class="absolute bottom-3 left-3 right-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+          <div
+            class="absolute bottom-3 left-3 right-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700"
+            data-testid="structure-viewer-runtime-warning"
+          >
             3Dmol.js runtime failed, showing lightweight PDB preview. {sanitizeLocalPathsForDisplay(runtimeWarning, 2)}
           </div>
         {/if}

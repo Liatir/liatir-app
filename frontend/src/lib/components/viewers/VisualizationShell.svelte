@@ -143,7 +143,11 @@
 	});
 </script>
 
-<div class={expanded ? 'fixed inset-0 h-full z-[9980] bg-white p-4' : ''}>
+<div
+	class={expanded ? 'fixed inset-0 h-full z-[9980] bg-white p-4' : ''}
+	data-testid="visualization-shell"
+	data-expanded={expanded}
+>
 	<div
 		class={[
 			'rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4',
@@ -172,6 +176,7 @@
 				{/if}
 				<button
 					type="button"
+					data-testid="viewer-capture"
 					title="Capture screenshot"
 					aria-label="Capture screenshot"
 					class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-800 disabled:cursor-not-allowed disabled:opacity-40"
@@ -182,6 +187,7 @@
 				</button>
 				<button
 					type="button"
+					data-testid="viewer-fullscreen"
 					title={expanded ? 'Close fullscreen' : 'Fullscreen'}
 					aria-label={expanded ? 'Close fullscreen' : 'Fullscreen'}
 					class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-800"
@@ -198,7 +204,10 @@
 		</div>
 
 		{#if captureError}
-			<div class="mb-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+			<div
+				class="mb-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700"
+				data-testid="viewer-capture-error"
+			>
 				{sanitizeLocalPathsForDisplay(captureError, 2)}
 			</div>
 		{/if}

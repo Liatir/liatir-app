@@ -47,7 +47,7 @@ to make it look like one.
 
 | Item | Blocker |
 | --- | --- |
-| Apple Developer ID identity and notarization credentials | Apple Developer Program, currently 99 USD/year. There is no free path to distributing outside the App Store without a Gatekeeper warning. |
+| Apple Developer ID identity and notarization credentials | The maintainer's Apple Developer Program membership is active as of 2026-09-18 and they own this work, so the cost is no longer the blocker: what remains is issuing the Developer ID identity and notarization credentials and giving them to `build-desktop-release.mjs`. |
 | A clean macOS arm64 machine or user for the install proof | Access, not code. |
 | The Windows distribution decision and its build path | See below. |
 | Linux package signing keys and a distributable package per format | `build-desktop-release.mjs` still deliberately rejects `linux`; that contract is unwritten. |

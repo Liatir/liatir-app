@@ -61,16 +61,24 @@ The complete current product catalog is:
 
 | AI Model | Published native targets |
 | --- | --- |
-| Geneformer V1 10M | macOS arm64 Metal, Linux x86_64 CUDA 12.9, Windows x86_64 CUDA 12.8 |
-| scGPT Whole-human | macOS arm64 Metal, Linux/Windows CPU, Linux CUDA 12.9, Windows CUDA 12.8 |
+| Geneformer V1 10M | macOS arm64 Metal, Linux x86_64 CUDA 12.9 |
+| scGPT Whole-human | macOS arm64 Metal, Linux x86_64 CPU, Linux x86_64 CUDA 12.9 |
 | UCE 4-layer | macOS arm64 Metal |
+| MHCflurry class-1 presentation | macOS arm64 Metal, Linux x86_64 CPU |
+| pVACtools pVACseq | macOS arm64 CPU, Linux x86_64 CPU |
+| Boltz-2 | Linux x86_64 CUDA 12.9 |
+| Protenix base v1.0.0 | Linux x86_64 CUDA 12.6 |
 
-All three run through the shared Single-cell Embedding AI Tool. Every listed
-target has reviewed scientific and product-lifecycle evidence and is served by
-the public `beta` channel. Geneformer CPU targets were dropped after measured
-throughput showed they were not viable. UCE expansion beyond macOS is not part
-of the completed P5 release matrix and needs a separate feasibility and evidence
-decision.
+The first three run through the shared Single-cell Embedding AI Tool; Boltz-2
+and Protenix run from Structure Prediction, and Boltz-2 also from Protein–Ligand
+Affinity. Every listed target has reviewed scientific and product-lifecycle
+evidence and is served by the public `beta` channel. Every Linux target declares
+`windows-wsl2` as well, which is how a Windows machine runs these models: see
+[no native Windows Runtime Box targets](../../decisions/no-native-windows-runtime-box-targets.md),
+which retired the three published Windows boxes on 2026-09-11. Geneformer CPU
+targets were dropped after measured throughput showed they were not viable. UCE
+expansion beyond macOS is not part of the completed P5 release matrix and needs a
+separate feasibility and evidence decision.
 
 A future model must complete the same legal, build, scientific, signing,
 publication, product lifecycle, and evidence gates for every feasible native
@@ -811,30 +819,33 @@ documentation build. Gate 10 required no paid or remote execution.
 | Target | State |
 | --- | --- |
 | macOS arm64 Metal | Supported and published |
-| Linux x86_64 CUDA 12.9 | Supported and published |
-| Windows x86_64 CUDA 12.8 | Supported and published |
+| Linux x86_64 CUDA 12.9 | Supported and published, natively and through WSL2 |
+| Windows x86_64 CUDA 12.8 | Retired on 2026-09-11; Windows runs the Linux box through WSL2 |
 | Linux/Windows x86_64 CPU | Not product targets; measured throughput was not viable |
 
 ### Other current boxes
 
 - UCE 4-layer: supported and published for macOS arm64 Metal.
-- scGPT Whole-human: supported and published for macOS arm64 Metal,
-  Linux/Windows CPU, Linux CUDA 12.9 and Windows CUDA 12.8.
-- WSL2 Runtime Box execution: unsupported and unverified.
+- scGPT Whole-human: supported and published for macOS arm64 Metal, Linux CPU
+  and Linux CUDA 12.9; its Windows CPU and Windows CUDA 12.8 boxes were retired
+  with Geneformer's on 2026-09-11.
+- Boltz-2 and Protenix base v1.0.0: supported and published for Linux CUDA 12.9
+  and 12.6 respectively, natively and through WSL2.
+- WSL2 Runtime Box execution: supported and verified — it is the Windows path
+  for every model, with product-lifecycle evidence per published CUDA target.
 - macOS Intel: not an active Runtime Box target.
 
 CUDA support must always be stated with its operating system. “CUDA works” is
-too vague; the reviewed evidence covers the specific Linux 12.9 and Windows
-12.8 targets above.
+too vague; the reviewed evidence covers the specific Linux 12.9 and 12.6 targets
+above, run natively or through WSL2.
 
 ## What the completed foundation does not prove
 
 Completing Gates 0–10 does **not** mean:
 
 - every Liatir AI Model is validated on every platform;
-- every future Windows/CUDA combination works beyond the exact published
-  Windows CUDA 12.8 targets;
-- WSL2 works;
+- any CUDA combination works beyond the exact published Linux targets, whether
+  run natively or through WSL2;
 - every scientific integration in Liatir is production-ready;
 - the complete desktop application release matrix is finished;
 - a true upgrade from one Runtime Box version to a newer version has passed;
