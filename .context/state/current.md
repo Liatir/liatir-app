@@ -59,9 +59,16 @@ and scGPT, and the hardware section still described native Windows CUDA as suppo
 holds no native Windows target, and the app's model registry offers none: Windows runs the Linux box
 through WSL2. Both pages and the
 [Runtime Box system](../truth/architecture/runtime-box-system-explained.md) truth document — which
-also still called WSL2 execution "unsupported and unverified" — now say what the product does. Left open for a
-decision: the retired Windows releases still answer `200` on the public `beta` channel. A v3 app
-refuses those v2 boxes by name, so nobody can install one, but nothing removes them either.
+also still called WSL2 execution "unsupported and unverified" — now say what the product does.
+
+**Closed on 2026-09-18: the three retired Windows targets are revoked.** They were still answering
+`200` on the public `beta` channel, and retiring something in the catalog says nothing to the
+registry. Run
+[35391985705](https://github.com/Liatir/liatir-stack/actions/runs/35391985705) withdrew them by
+name, each entry scoped to its target because all three share a version with macOS and Linux targets
+that are still live — see
+[no native Windows Runtime Box targets](../decisions/no-native-windows-runtime-box-targets.md) for
+what that cost and what it deliberately leaves alone.
 
 **Operational note for `test:ui` on this machine.** `test:tauri:prepare` runs `npm ci --prefix
 frontend`, which failed three times with `EPERM` unlinking `lightningcss` and then `rollup` native

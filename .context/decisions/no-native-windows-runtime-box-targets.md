@@ -1,5 +1,29 @@
 # No native Windows Runtime Box targets
 
+## Amended 2026-09-18: the three retired targets are withdrawn, by name
+
+Retiring them in the catalog stopped Liatir offering them; it did not say anything to the registry,
+which went on serving all three channel manifests with `200`. They are now **revoked**, which is the
+control plane's own withdrawal mechanism: run
+[35391985705](https://github.com/Liatir/liatir-stack/actions/runs/35391985705) signed and promoted
+`geneformer-v1-10m 1.0.0-beta.2` and `scgpt-whole-human 0.2.5-beta.2` on `windows-x86_64-cuda12.8`,
+and `scgpt-whole-human 0.2.5-beta.2` on `windows-x86_64-cpu`, with the reason users would read:
+*retired platform: Windows installs the Linux box through WSL2, on the same GPU*.
+
+**Each entry names its target, and that is the whole point.** All three share their version with the
+macOS and Linux targets that are still live, so a revocation of the version alone would have taken
+those down with them. The contract, the signer policy and the app all understood a target-scoped
+revocation already; the signing CLI was the one link that dropped the field, and `59ca21d` fixed it.
+The live document was verified after promotion: five entries, the two earlier `beta.1` ones carried
+forward with their original withdrawal times, and the five still-live targets answering unchanged.
+
+Two things this does **not** do, deliberately. It does not delete the archives — about 9.3 GB across
+the three — because the registry has no delete route and the R2 credentials live only in CI; a
+revoked box that is still downloadable is refused before a byte is used, so the bytes are a storage
+cost, not a risk. And it does not remove the three targets from the signer policy: the policy checks
+every entry of a revocation set each time one is signed, carried-forward entries included, so
+dropping an approved target there would make every future revocation fail to sign.
+
 ## Amended 2026-09-11: the three published ones are retired too
 
 The rule was forward-looking, and three native Windows boxes stayed published because withdrawing a
