@@ -657,14 +657,18 @@ fn validate_env_id(env_id: &str) -> Result<(), String> {
 }
 
 fn find_in_path(name: &str) -> Option<String> {
-    let path_var = std::env::var_os("PATH")?;
+    find_in_path_var(name, &std::env::var_os("PATH")?)
+}
 
+/// Split from `find_in_path` so the interpreter search order can be tested against a fixture PATH
+/// instead of whatever this machine happens to have installed.
+fn find_in_path_var(name: &str, path_var: &std::ffi::OsStr) -> Option<String> {
     #[cfg(target_os = "windows")]
     let extensions = ["", ".exe", ".cmd", ".bat"];
     #[cfg(not(target_os = "windows"))]
     let extensions = [""];
 
-    for dir in std::env::split_paths(&path_var) {
+    for dir in std::env::split_paths(path_var) {
         for ext in &extensions {
             let candidate = dir.join(format!("{name}{ext}"));
             if candidate.is_file() {
@@ -677,6 +681,13 @@ fn find_in_path(name: &str) -> Option<String> {
 }
 
 fn python_candidates() -> Vec<String> {
+    match std::env::var_os("PATH") {
+        Some(path_var) => python_candidates_in(&path_var),
+        None => Vec::new(),
+    }
+}
+
+fn python_candidates_in(path_var: &std::ffi::OsStr) -> Vec<String> {
     let mut candidates = Vec::new();
     // Newest supported first, and every supported minor has to be named here: a distribution whose
     // `python3` is already past what Liatir supports — Ubuntu 26.04 ships 3.14 — is usable only
@@ -690,7 +701,7 @@ fn python_candidates() -> Vec<String> {
         "python3",
         "python",
     ] {
-        if let Some(path) = find_in_path(name) {
+        if let Some(path) = find_in_path_var(name, path_var) {
             if !candidates.contains(&path) {
                 candidates.push(path);
             }
@@ -1350,6 +1361,34 @@ fn now_ms() -> u64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A host whose `python3` is newer than Liatir supports can only be served through a versioned
+    /// name, so every supported minor must be searched, newest first. Ubuntu 26.04 ships 3.14: with
+    /// 3.13 missing from this list the app told users to install a Python that was already there.
+    #[test]
+    fn python_candidates_prefer_the_newest_supported_interpreter() {
+        let dir = std::env::temp_dir().join(format!("liatir-python-candidates-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).expect("fixture directory");
+        for name in ["python3", "python3.12", "python3.13"] {
+            std::fs::write(dir.join(name), b"").expect("fixture interpreter");
+        }
+
+        let found = python_candidates_in(dir.as_os_str());
+        let names: Vec<String> = found
+            .iter()
+            .map(|path| {
+                // `file_name`, not `file_stem`: the latter reads `.13` as an extension and would
+                // flatten python3.13 into python3, hiding the very ordering under test.
+                Path::new(path)
+                    .file_name()
+                    .map(|name| name.to_string_lossy().into_owned())
+                    .unwrap_or_default()
+            })
+            .collect();
+        std::fs::remove_dir_all(&dir).ok();
+
+        assert_eq!(names, vec!["python3.13", "python3.12", "python3"]);
+    }
 
     /// A Job captures stdout through a pipe, and CPython block-buffers into a pipe. Without this
     /// variable a long run shows no output at all until it exits, which is what made a
