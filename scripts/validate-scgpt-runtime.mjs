@@ -107,11 +107,19 @@ function parseLastJson(stdout) {
   throw new Error('scGPT runner did not emit a final JSON result.');
 }
 
-/** Reads the complete one-cell embedding from the product CSV artifact. */
+/**
+ * Reads the complete one-cell embedding from the product CSV artifact. Columns are selected by
+ * their `dim_*` header, because the artifact also carries viewer projection columns.
+ */
 async function readEmbedding(result) {
   const rows = (await readFile(result.embeddingPreviewPath, 'utf8')).trim().split(/\r?\n/);
   if (rows.length !== 2) throw new Error('scGPT preview must contain one header and one cell.');
-  const values = rows[1].split(',').slice(1).map(Number);
+  const header = rows[0].split(',');
+  const cells = rows[1].split(',');
+  if (cells.length !== header.length) throw new Error('scGPT preview row does not match its header.');
+  const values = header
+    .map((name, index) => (/^dim_\d+$/.test(name) ? Number(cells[index]) : null))
+    .filter((value) => value !== null);
   if (values.length !== 512 || values.some((value) => !Number.isFinite(value))) {
     throw new Error('scGPT embedding artifact is non-finite or has the wrong shape.');
   }
