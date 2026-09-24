@@ -226,7 +226,7 @@ export const tests = [
         });
         expect(inference.summary.gpuModel).toEqual(expect.any(String));
         expect(inference.summary.gpuModel.length).toBeGreaterThan(0);
-        expect(inference.summary.computeCapability).toMatch(/^d+.d+$/);
+        expect(inference.summary.computeCapability).toMatch(/^\d+\.\d+$/);
         expect(inference.summary.peakVramBytes).toBeGreaterThan(0);
       }
 
