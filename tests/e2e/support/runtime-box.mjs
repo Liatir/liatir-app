@@ -6,7 +6,13 @@ import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { resolveRuntimeBoxAuthoringInput } from '../../../scripts/runtime-box/authoring-input.mjs';
-import { openSandboxWorkspace } from './liatir-app.mjs';
+import {
+  navigateInApp,
+  openSandboxWorkspace,
+  readDataJson,
+  reloadLiatirApp,
+  selectFileFromPicker,
+} from './liatir-app.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const CATALOG = JSON.parse(fs.readFileSync(path.join(ROOT, 'runtime-boxes/catalog.json'), 'utf8'));
@@ -250,4 +256,90 @@ export async function firstDownloadOffset(browser, downloadId) {
     const progress = window.__liatirRuntimeBoxInstall?.[id]?.progress ?? [];
     return progress.find((item) => !item.done)?.bytesDownloaded ?? 0;
   }, downloadId);
+}
+
+async function writeAppJson(browser, rel, value) {
+  await browser.execute(async ({ file, content }) => window.Liatir.invoke('lia_app_write_text', {
+    rel: file,
+    content: JSON.stringify(content, null, 2),
+    createDirs: true,
+  }), { file: rel, content: value });
+}
+
+/**
+ * Runs a single-cell embedding AI Model the way a user does: the input is registered in Data, the
+ * model page starts the run, and the app finalizes it into a Result.
+ *
+ * A job spawned straight through the bridge is never finalized: the Result is owned by the
+ * execution record the model page begins before it spawns, and the bridge has no such record.
+ * Returns the finished Job, its buffered output, and the Result with its persisted output.
+ */
+export async function runSingleCellEmbeddingFromModelPage(browser, {
+  modelId, toolId, installed, inputPath, batchSize, maxCsvRows,
+}) {
+  await writeAppJson(browser, `ai-model-installs/${modelId}.json`, {
+    status: 'installed', runtimePath: installed.runtimeDir, installedSizeBytes: installed.sizeBytes,
+    runtimeBoxActivation: installed.activation, enabled: true, updatedAt: Date.now(),
+  });
+  await writeAppJson(browser, 'workspaces/__test__/data-files.json', {
+    files: [{
+      id: crypto.randomUUID(), name: path.basename(inputPath), path: inputPath,
+      ext: 'h5ad', size: fs.statSync(inputPath).size, addedAt: Date.now(), folder: '',
+    }],
+    folders: [],
+  });
+  await reloadLiatirApp(browser);
+  await activateCleanSandbox(browser);
+
+  await navigateInApp(browser, `/ai/${modelId}`);
+  await selectFileFromPicker(browser, 'ai-model-input-file', path.basename(inputPath));
+  await (await browser.$('#batch-size')).setValue(String(batchSize));
+  await (await browser.$('#csv-rows')).setValue(String(maxCsvRows));
+  const runButton = await browser.$('[data-testid="ai-model-run"]');
+  await browser.waitUntil(() => runButton.isEnabled(), {
+    timeout: 20_000, timeoutMsg: `${modelId} Run did not become enabled`,
+  });
+  await runButton.click();
+  // Leaving the model page while it runs is part of the contract: the Job keeps going and is
+  // still finalized into a Result.
+  await navigateInApp(browser, '/jobs');
+
+  let job = null;
+  await browser.waitUntil(async () => {
+    const jobs = await browser.execute(
+      async () => window.Liatir.invoke('lia_jobs_list', { workspaceId: '__test__' }),
+    );
+    job = jobs.find((entry) => entry.metadata?.toolId === toolId) ?? null;
+    return job !== null && job.status.type !== 'running';
+  }, { timeout: 900_000, interval: 1_000, timeoutMsg: `${modelId} Job did not finish` });
+  const output = await browser.execute(
+    async (id) => window.Liatir.invoke('lia_jobs_get_output', { jobId: id, since: 0 }),
+    job.id,
+  );
+  if (job.status.type !== 'done') {
+    const tail = (lines) => (lines ?? []).filter(Boolean).join('\n').slice(-4000);
+    throw new Error(
+      `${modelId} inference finished as ${job.status.type} (exit code ${job.status.exitCode ?? 'none'})`
+        + `\nstderr:\n${tail(output.stderr) || '<empty>'}`
+        + `\nstdout:\n${tail(output.stdout) || '<empty>'}`,
+    );
+  }
+
+  const analysisRunId = job.metadata.analysisRunId;
+  let result = null;
+  await browser.waitUntil(async () => {
+    try {
+      const index = JSON.parse(await browser.execute(
+        async (rel) => window.Liatir.invoke('lia_app_read_text', { rel }),
+        'workspaces/__test__/analysis-runs/index.json',
+      ));
+      result = index.find((run) => run.id === analysisRunId) ?? null;
+      return result?.status === 'done';
+    } catch { return false; }
+  }, { timeout: 60_000, interval: 1_000, timeoutMsg: `${modelId} Job was not finalized into a Result` });
+  const persistedOutput = await readDataJson(
+    browser,
+    `workspaces/__test__/runs/${analysisRunId}/result.json`,
+  );
+  return { job, output, analysisRunId, result, persistedOutput };
 }

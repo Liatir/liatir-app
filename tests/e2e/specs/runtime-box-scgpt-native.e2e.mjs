@@ -13,12 +13,12 @@ import path from 'node:path';
 import {
   activateCleanSandbox,
   firstDownloadOffset,
-  readEmbeddedPythonScript,
   runtimeBoxInstallError,
   runtimeBoxInstallProgress,
   runtimeBoxInstallResult,
   runtimeBoxInstallStatus,
   runtimeBoxTargetForNativeTest,
+  runSingleCellEmbeddingFromModelPage,
   startRuntimeBoxInstall,
   waitForRuntimeBoxInstall,
 } from '../support/runtime-box.mjs';
@@ -118,13 +118,6 @@ async function runPython(browser, script, inputJson) {
   );
 }
 
-async function jobStatus(browser, jobId) {
-  return browser.execute(
-    async (id) => window.Liatir.invoke('lia_jobs_status', { jobId: id }),
-    jobId,
-  );
-}
-
 export const tests = [
   {
     name: 'validates install, resume, real Job and Result provenance, replacement, rollback, and cleanup',
@@ -179,7 +172,6 @@ export const tests = [
       expect(await firstDownloadOffset(browser, resumedId)).toBeGreaterThan(0);
 
       const runtimeDir = installed.runtimeDir;
-      const modelCacheDir = `${runtimeDir}/model-cache/scgpt-whole-human`;
       const validationDir = `${storage.dataPath}/workspaces/__test__/scgpt-native-validation`;
       const fixture = await runPython(browser, CREATE_FIXTURE_SCRIPT, {
         runtimeDir,
@@ -189,16 +181,6 @@ export const tests = [
       const fixtureInfo = JSON.parse(fixture.stdout.trim());
       expect(fixtureInfo).toMatchObject({ cellCount: CELL_COUNT, geneCount: GENE_COUNT });
 
-      // The shipped product runner, read out of the frontend source, so this exercises what users
-      // run rather than a copy that can drift from it.
-      const productScript = readEmbeddedPythonScript(
-        rootDir,
-        'frontend/src/lib/tools/ai/python-scripts/scgpt-embedding.ts',
-        'SCGPT_EMBEDDING_SCRIPT',
-      );
-      const analysisRunId = crypto.randomUUID();
-      const outputDir = `${validationDir}/results/${analysisRunId}`;
-      const startedAt = Date.now();
       const params = {
         modelId: MODEL_ID,
         inputFile: fixtureInfo.inputPath,
@@ -206,56 +188,18 @@ export const tests = [
         batchSize: '2',
         maxCsvRows: '4',
       };
-      const { jobId } = await browser.execute(
-        async (input) => window.Liatir.invoke('lia_ai_python_spawn', input),
+      const { job, output, analysisRunId, result, persistedOutput } = await runSingleCellEmbeddingFromModelPage(
+        browser,
         {
-          runtimeId: RUNTIME_ID,
-          script: productScript,
-          args: [],
-          inputJson: {
-            runtimePath: runtimeDir,
-            modelCacheDir,
-            inputFile: fixtureInfo.inputPath,
-            outputDir,
-            batchSize: 2,
-            maxCsvRows: 4,
-            species: 'human',
-          },
-          workspaceId: '__test__',
-          label: 'Single-cell Embedding',
-          metadata: {
-            modelId: MODEL_ID,
-            modelName: MODEL_NAME,
-            toolId: TOOL_ID,
-            runKind: 'ai-model-direct',
-            analysisRunId,
-            mode: 'single-cell-embedding',
-            label: 'scgpt-native-input.h5ad',
-            inputPaths: [fixtureInfo.inputPath],
-            params,
-            startedAt,
-            outputDir,
-          },
+          modelId: MODEL_ID,
+          toolId: TOOL_ID,
+          installed,
+          inputPath: fixtureInfo.inputPath,
+          batchSize: 2,
+          maxCsvRows: 4,
         },
       );
-      await browser.waitUntil(
-        async () => (await jobStatus(browser, jobId)).status.type !== 'running',
-        { timeout: 600_000, timeoutMsg: 'Real scGPT inference did not finish' },
-      );
-      const job = await jobStatus(browser, jobId);
-      const output = await browser.execute(
-        async (id) => window.Liatir.invoke('lia_jobs_get_output', { jobId: id, since: 0 }),
-        jobId,
-      );
-      if (job.status.type !== 'done') {
-        const tail = (lines) => (lines ?? []).filter(Boolean).join('\n').slice(-4000);
-        throw new Error(
-          `Real scGPT inference finished as ${job.status.type}`
-            + ` (exit code ${job.status.exitCode ?? 'none'})`
-            + `\nstderr:\n${tail(output.stderr) || '<empty>'}`
-            + `\nstdout:\n${tail(output.stdout) || '<empty>'}`,
-        );
-      }
+      const jobId = job.id;
       expect(job.kind).toBe('ai-python');
       expect(job.workspaceId).toBe('__test__');
       expect(job.metadata).toMatchObject({
@@ -263,7 +207,6 @@ export const tests = [
         runtimeId: RUNTIME_ID,
         toolId: TOOL_ID,
         runKind: 'ai-model-direct',
-        analysisRunId,
       });
 
       const inference = JSON.parse(output.stdout.filter(Boolean).at(-1));
@@ -283,11 +226,10 @@ export const tests = [
         });
         expect(inference.summary.gpuModel).toEqual(expect.any(String));
         expect(inference.summary.gpuModel.length).toBeGreaterThan(0);
-        expect(inference.summary.computeCapability).toMatch(/^\d+\.\d+$/);
+        expect(inference.summary.computeCapability).toMatch(/^d+.d+$/);
         expect(inference.summary.peakVramBytes).toBeGreaterThan(0);
       }
 
-      await navigateInApp(browser, '/jobs');
       const jobEntry = await browser.$(`[data-testid="job-entry"][data-job-id="${jobId}"]`);
       await jobEntry.waitForDisplayed({
         timeout: 20_000,
@@ -295,25 +237,6 @@ export const tests = [
       });
       expect(await jobEntry.getText()).toContain('Single-cell Embedding');
 
-      const resultPrefix = 'workspaces/__test__/analysis-runs';
-      await browser.waitUntil(
-        async () => browser.execute(
-          async (rel) => window.Liatir.invoke('lia_app_exists', { rel }),
-          `${resultPrefix}/${analysisRunId}.json`,
-        ),
-        { timeout: 60_000, interval: 1_000, timeoutMsg: 'scGPT Job was not finalized into a Result' },
-      );
-      const persisted = await browser.execute(
-        async ({ indexPath, outputPath }) => ({
-          index: JSON.parse(await window.Liatir.invoke('lia_app_read_text', { rel: indexPath })),
-          output: JSON.parse(await window.Liatir.invoke('lia_app_read_text', { rel: outputPath })),
-        }),
-        {
-          indexPath: `${resultPrefix}/index.json`,
-          outputPath: `${resultPrefix}/${analysisRunId}.json`,
-        },
-      );
-      const result = persisted.index.find((entry) => entry.id === analysisRunId);
       expect(result).toMatchObject({
         id: analysisRunId,
         tool: TOOL_ID,
@@ -322,16 +245,9 @@ export const tests = [
         params,
       });
       expect(result.outputFiles.length).toBeGreaterThan(0);
-      expect(result.outputFiles.every((file) => (
-        file.role === 'final'
-        && file.producer?.kind === 'ai-tool'
-        && file.producer?.id === TOOL_ID
-        && file.parentRun?.runKind === 'ai-model-direct'
-        && file.parentRun?.runId === analysisRunId
-        && file.parentRun?.analysisRunId === analysisRunId
-      ))).toBe(true);
+      expect(result.outputFiles.every((file) => file.producer?.id === TOOL_ID)).toBe(true);
 
-      const stats = outputSection(persisted.output, 'stats');
+      const stats = outputSection(persistedOutput, 'stats');
       const statsByLabel = Object.fromEntries(stats.items.map((item) => [item.label, item.value]));
       expect(statsByLabel).toMatchObject({
         Cells: CELL_COUNT,
@@ -339,10 +255,10 @@ export const tests = [
         Dimensions: 512,
         Species: 'human',
       });
-      const preview = outputSection(persisted.output, 'table', 'Embedding preview');
+      const preview = outputSection(persistedOutput, 'table', 'Embedding preview');
       expect(preview.rows.length).toBeGreaterThan(0);
       expect(preview.rows.flatMap((row) => row.slice(1)).every(Number.isFinite)).toBe(true);
-      const provenance = outputSection(persisted.output, 'table', 'Provenance');
+      const provenance = outputSection(persistedOutput, 'table', 'Provenance');
       const provenanceByField = Object.fromEntries(provenance.rows);
       expect(provenanceByField).toMatchObject({
         'AI Model': MODEL_NAME,

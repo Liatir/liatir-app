@@ -129,6 +129,16 @@ Full evidence for the blocker is in [the Boltz source review](./phase3-boltz-sou
    - ⏳ `scgpt-whole-human` linux-x86_64-cpu
    - ⏳ `scgpt-whole-human` linux-x86_64-cuda12.9
    - ⏳ `geneformer-v1-10m` linux-x86_64-cuda12.9
+
+   The single-cell models had not been through the release workflow since August, and three
+   things had drifted under them, each found by a failed run before promotion: the scGPT validator
+   read the embedding by position after the product added two viewer columns (`034019b`); the
+   release test build rejected any candidate it did not list, and a published model was not listed
+   (`7b19e40`); and their lifecycle specs spawned the Job through the bridge, so no execution
+   record owned it and it was never finalized into a Result. The scGPT and Geneformer specs now
+   start the run from the model page, as a user does, through
+   `runSingleCellEmbeddingFromModelPage`. **The UCE spec (macOS) still spawns through the bridge
+   and will fail the same way**; it needs the same change before its republish.
 5. ✅ **Then Boltz-2**: scroll, local build with a development key, `verify --self-test`, product
    runner, scientific validator, real inputs, measurements — all done on 2026-09-11. It predicts
    ubiquitin to 1.99 Å of the experimental structure from sequence alone. What it does **not** have

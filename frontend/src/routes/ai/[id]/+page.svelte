@@ -392,7 +392,7 @@
 					<Card class="p-5 space-y-4">
 						<div><div class="flex items-center gap-1"><p class="text-sm font-semibold text-text">Input</p><InfoPopup text={AI_MODEL_INPUT_HELP.runInput} /></div><p class="mt-1 text-xs text-text-muted">{model.runtime.name} · single-cell</p></div>
 						<fieldset disabled={modelRunActive} class="space-y-4 disabled:opacity-70">
-							<FilePickerPopup files={h5adFiles} value={inputFile} label="AnnData file" info={inputHelp} emptyText="No h5ad files in Data yet." disabled={modelRunActive} artifactRequirement={singleCellAnnDataRequirement(modelId, humanOnlyModel ? 'human' : species)} onchange={(path) => (inputFile = path)} />
+							<FilePickerPopup files={h5adFiles} value={inputFile} label="AnnData file" info={inputHelp} testId="ai-model-input-file" emptyText="No h5ad files in Data yet." disabled={modelRunActive} artifactRequirement={singleCellAnnDataRequirement(modelId, humanOnlyModel ? 'human' : species)} onchange={(path) => (inputFile = path)} />
 							{#if inputFile && inputCompatibility && inputCompatibilityMessage}
 								<div class="text-xs leading-relaxed {inputCompatibility.status === 'incompatible' ? 'text-red-600' : 'text-amber-700'}">
 									<p data-testid="ai-input-compatibility">{inputCompatibilityMessage}</p>
@@ -419,7 +419,7 @@
 							</div>
 						</fieldset>
 						<div class="flex items-center gap-3 pt-1">
-							<Button variant="primary" disabled={!canRun} loading={running} onclick={runModel}>Run</Button>
+							<Button variant="primary" testId="ai-model-run" disabled={!canRun} loading={running} onclick={runModel}>Run</Button>
 							{#if running}<Button variant="secondary" size="sm" onclick={cancelModelRun}>Cancel</Button>{/if}
 							{#if modelRunActive && runStartedAt}<span class="text-xs text-text-subtle">Elapsed: {fmtDuration(runStartedAt, now)}</span>{/if}
 							{#if activeModelJob && !running}<Button variant="ghost" size="sm" onclick={() => goto('/jobs')}><Icon icon="lucide:radio" width="13" height="13" />Open Jobs</Button>{/if}
