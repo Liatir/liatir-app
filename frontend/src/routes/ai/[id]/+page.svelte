@@ -246,7 +246,12 @@
 				startedAt: t0,
 				outputDir: absDir,
 				signal: executionRuns.signal(runId),
-				onJobId: (jobId) => void executionRuns.attachJob(runId, jobId).catch(() => {})
+				onJobId: (jobId) => {
+					void executionRuns.attachJob(runId, jobId).catch(() => {});
+					// Publish the Job to the shared list now: a Jobs page opened right after Run has
+					// already loaded an empty list and only polls while it holds a running job.
+					void jobsStore.refresh();
+				}
 			};
 			const result = await runSingleCellEmbeddingStep(inputs, absDir, onLog, context);
 			const endedAt = Date.now();
