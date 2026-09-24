@@ -344,7 +344,7 @@ export const tests = [
         }
       }, RUNTIME_ID);
       expect(legacyInlineError).toBe(
-        'AI Runtime Box format is unsupported; remove and reinstall this Runtime Box',
+        'Runtime Box format is unsupported; remove and reinstall this Runtime Box',
       );
       const legacyJobError = await browser.execute(async (runtimeId) => {
         try {
@@ -363,7 +363,7 @@ export const tests = [
         }
       }, RUNTIME_ID);
       expect(legacyJobError).toBe(
-        'AI Runtime Box format is unsupported; remove and reinstall this Runtime Box',
+        'Runtime Box format is unsupported; remove and reinstall this Runtime Box',
       );
 
       const removed = await browser.execute(
