@@ -9,7 +9,7 @@ export const tests = [{
   async run({ browser, expect }) {
     await openSandboxWorkspace(browser);
     const candidateId = process.env.LIATIR_RUNTIME_BOX_RELEASE_CANDIDATE_ID;
-    const route = candidateId === 'openvax-mhcflurry-class1-presentation'
+    const route = ['openvax-mhcflurry-class1-presentation', 'bowang-scgpt-whole-human', 'ctheodoris-geneformer-v1-10m', 'snap-stanford-uce-4layer'].includes(candidateId)
       ? `/ai/${candidateId}`
       : candidateId === 'griffithlab-pvactools-pvacseq'
         ? '/tools/oncology/neoantigen-prioritization'

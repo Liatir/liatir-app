@@ -79,6 +79,10 @@ describe('Runtime Box product E2E support', () => {
         { target: { platform: 'macos', arch: 'aarch64', accelerator: 'metal' } },
         { target: { platform: 'linux', arch: 'x86_64', accelerator: 'cpu' } },
       ] } } } });
+    // Published models are republished against their product metadata.
+    for (const id of ['bowang-scgpt-whole-human', 'ctheodoris-geneformer-v1-10m', 'snap-stanford-uce-4layer']) {
+      expect(resolveRuntimeBoxReleaseCandidate(id)).toMatchObject({ kind: 'ai-model', metadata: { id } });
+    }
     expect(resolveRuntimeBoxReleaseCandidate('griffithlab-pvactools-pvacseq'))
       .toMatchObject({ kind: 'tool-runtime', metadata: { install: { runtimeBox: { publishedTargets: [
         { target: { platform: 'macos', arch: 'aarch64', accelerator: 'cpu' } },
