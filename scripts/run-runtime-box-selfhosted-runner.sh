@@ -244,7 +244,9 @@ tar -xzf "$RUNNER_ROOT/$RUNNER_ARCHIVE" -C "$RUNNER_ROOT"
 /bin/rm -f -- "$RUNNER_ROOT/$RUNNER_ARCHIVE"
 
 # The Linux runner links against libicu; report it here instead of failing opaquely inside config.sh.
-if [[ "$RUNNER_PLATFORM" == "linux-x64" ]] && ! ldconfig -p 2>/dev/null | grep -q libicuuc; then
+# grep reads the whole listing: with `-q` it exits at the first match, ldconfig dies of SIGPIPE, and
+# pipefail turns a present libicu into a missing one.
+if [[ "$RUNNER_PLATFORM" == "linux-x64" ]] && ! ldconfig -p 2>/dev/null | grep libicuuc >/dev/null; then
   echo "Missing libicu. Install it once with: sudo $RUNNER_ROOT/bin/installdependencies.sh" >&2
   exit 1
 fi

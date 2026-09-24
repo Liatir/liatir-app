@@ -126,7 +126,7 @@ Full evidence for the blocker is in [the Boltz source review](./phase3-boltz-sou
    are removed only once all ten are v3. Linux, on `beta`:
    - ✅ `mhcflurry-class1-presentation` linux-x86_64-cpu — run 36017886905
    - ✅ `pvactools-pvacseq` linux-x86_64-cpu — run 36025526169
-   - ⏳ `scgpt-whole-human` linux-x86_64-cpu
+   - ✅ `scgpt-whole-human` linux-x86_64-cpu — run 36056702126
    - ⏳ `scgpt-whole-human` linux-x86_64-cuda12.9
    - ⏳ `geneformer-v1-10m` linux-x86_64-cuda12.9
 
