@@ -127,7 +127,7 @@ Full evidence for the blocker is in [the Boltz source review](./phase3-boltz-sou
    - ✅ `mhcflurry-class1-presentation` linux-x86_64-cpu — run 36017886905
    - ✅ `pvactools-pvacseq` linux-x86_64-cpu — run 36025526169
    - ✅ `scgpt-whole-human` linux-x86_64-cpu — run 36056702126
-   - ⏳ `scgpt-whole-human` linux-x86_64-cuda12.9
+   - ✅ `scgpt-whole-human` linux-x86_64-cuda12.9 — run 36068289796
    - ⏳ `geneformer-v1-10m` linux-x86_64-cuda12.9
 
    The single-cell models had not been through the release workflow since August, and three

@@ -414,14 +414,15 @@
           "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/scgpt-whole-human-linux-x86_64-cuda12.9.json",
           "publication": {
             "source": "github-actions",
-            "releaseManifestUrl": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/scgpt-whole-human/0.2.5-beta.2/linux-x86_64-cuda12.9/3883fcecf4462966137fd3a87f49923b5f51db9ac70198e16c973c5103350c70.release.json",
-            "archiveSha256": "04db33348eac53c642df7631df93a5849b529fefcd2519c291318842ee2fb525",
-            "archiveSizeBytes": 7857676563,
+            "releaseManifestUrl": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/scgpt-whole-human/0.2.5-beta.2/linux-x86_64-cuda12.9/65d364a6953cb09de418f36c145a32f300fd10a8736e24fb4d15670ee6d4de93.release.json",
+            "archiveSha256": "3da31f6ef9c6ca48e55af52190451e4ca8ce293cd9421fc88e997c8cfceed932",
+            "archiveSizeBytes": 7857676593,
+            "installedSizeBytes": 13278575392,
             "signingKeyId": "liatir-runtime-box-kms-2026",
-            "publishedAt": "2026-08-10T04:04:43.337Z",
-            "workflowRunId": "31350903591",
-            "workflowRunUrl": "https://github.com/Liatir/liatir-stack/actions/runs/31350903591",
-            "evidenceRecord": "runtime-boxes/evidence/scgpt-whole-human-linux-x86_64-cuda12.9-0.2.5-beta.2-run-31350903591.json"
+            "publishedAt": "2026-09-24T23:44:43.941Z",
+            "workflowRunId": "36068289796",
+            "workflowRunUrl": "https://github.com/Liatir/liatir-stack/actions/runs/36068289796",
+            "evidenceRecord": "runtime-boxes/evidence/scgpt-whole-human-linux-x86_64-cuda12.9-0.2.5-beta.2-run-36068289796.json"
           }
         }
       ]
