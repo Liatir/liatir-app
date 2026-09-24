@@ -570,15 +570,15 @@
           "nativeCiEnabled": true,
           "publication": {
             "source": "github-actions",
-            "releaseManifestUrl": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/mhcflurry-class1-presentation/2.2.1-beta.2/linux-x86_64-cpu/51b55fa0ede81c4f946eaa3869db92e2f86d16e08731add9a902320d665aa63d.release.json",
-            "archiveSha256": "f9444985f6fc5163625dea1fddac50121522bec5d3a29461180f5708c3452227",
-            "archiveSizeBytes": 806866215,
-            "installedSizeBytes": 2421400094,
+            "releaseManifestUrl": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/mhcflurry-class1-presentation/2.2.1-beta.2/linux-x86_64-cpu/847da3a4c7da1ccdec8699ed649aa40b8da239a61eb181b85dd51e1e3397a07a.release.json",
+            "archiveSha256": "0ce8058fea28c18d41c5d749b45889b74777790fa8c6d47506cc35d1afa940c9",
+            "archiveSizeBytes": 806866231,
+            "installedSizeBytes": 2421400196,
             "signingKeyId": "liatir-runtime-box-kms-2026",
-            "publishedAt": "2026-09-01T02:51:08.120Z",
-            "workflowRunId": "33462667589",
-            "workflowRunUrl": "https://github.com/Liatir/liatir-stack/actions/runs/33462667589",
-            "evidenceRecord": "runtime-boxes/evidence/mhcflurry-class1-presentation-linux-x86_64-cpu-2.2.1-beta.2-run-33462667589.json"
+            "publishedAt": "2026-09-24T15:37:31.101Z",
+            "workflowRunId": "36017886905",
+            "workflowRunUrl": "https://github.com/Liatir/liatir-stack/actions/runs/36017886905",
+            "evidenceRecord": "runtime-boxes/evidence/mhcflurry-class1-presentation-linux-x86_64-cpu-2.2.1-beta.2-run-36017886905.json"
           }
         },
         {

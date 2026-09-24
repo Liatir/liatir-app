@@ -1,5 +1,15 @@
 # Current project status
 
+## The Linux Runtime Boxes are being republished as Scrollcase v3 (2026-09-24)
+
+Step 4 of [Scrollcase v3 adoption](./roadmap/scrollcase-v3-adoption.md), authorized by the owner.
+Each box goes through the production release workflow on the WSL2 self-hosted runner, and its
+evidence and catalog `publication` block replace the v2 ones. Done so far:
+`mhcflurry-class1-presentation` linux-x86_64-cpu (run 36017886905). The checklist is in the roadmap.
+
+A WSL2 self-hosted runner must be started with `setsid nohup … < /dev/null`: a plain `nohup … &`
+launched through `wsl.exe` is killed by SIGHUP as soon as that `wsl.exe` session exits.
+
 ## The pipeline editor is covered, and the Native Tools gates ran green on both platforms (2026-09-18)
 
 **`tests/e2e/specs/pipeline-editor.e2e.mjs` passes 4 of 4 on Windows x86_64.** The authoring half of

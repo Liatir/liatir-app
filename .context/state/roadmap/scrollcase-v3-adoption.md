@@ -120,7 +120,15 @@ Full evidence for the blocker is in [the Boltz source review](./phase3-boltz-sou
    not need repeating, by the owner's decision of 2026-09-11. Eight on Linux and Windows, seven on
    macOS, no failure anywhere.
 4. ⏳ **Republish**, together with an app build that can read v3. Separately authorized, and the
-   reason this is not a quiet dependency bump.
+   reason this is not a quiet dependency bump. Authorized by the owner on 2026-09-24 (no users yet,
+   so republishing is safe); the Linux boxes run from the Windows host's WSL2 self-hosted runner,
+   the macOS boxes from the Mac, through the same `runtime-box-release.yml`. Old v2 objects on R2
+   are removed only once all ten are v3. Linux, on `beta`:
+   - ✅ `mhcflurry-class1-presentation` linux-x86_64-cpu — run 36017886905
+   - ⏳ `pvactools-pvacseq` linux-x86_64-cpu
+   - ⏳ `scgpt-whole-human` linux-x86_64-cpu
+   - ⏳ `scgpt-whole-human` linux-x86_64-cuda12.9
+   - ⏳ `geneformer-v1-10m` linux-x86_64-cuda12.9
 5. ✅ **Then Boltz-2**: scroll, local build with a development key, `verify --self-test`, product
    runner, scientific validator, real inputs, measurements — all done on 2026-09-11. It predicts
    ubiquitin to 1.99 Å of the experimental structure from sequence alone. What it does **not** have
