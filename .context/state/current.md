@@ -5,7 +5,8 @@
 Step 4 of [Scrollcase v3 adoption](./roadmap/scrollcase-v3-adoption.md), authorized by the owner.
 Each box goes through the production release workflow on the WSL2 self-hosted runner, and its
 evidence and catalog `publication` block replace the v2 ones. Done so far:
-`mhcflurry-class1-presentation` linux-x86_64-cpu (run 36017886905). The checklist is in the roadmap.
+`mhcflurry-class1-presentation` linux-x86_64-cpu (run 36017886905), `pvactools-pvacseq`
+linux-x86_64-cpu (run 36025526169). The checklist is in the roadmap.
 
 A WSL2 self-hosted runner must be started with `setsid nohup … < /dev/null`: a plain `nohup … &`
 launched through `wsl.exe` is killed by SIGHUP as soon as that `wsl.exe` session exits.

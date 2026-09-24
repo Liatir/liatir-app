@@ -703,15 +703,15 @@
           "nativeCiEnabled": true,
           "publication": {
             "source": "github-actions",
-            "releaseManifestUrl": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/pvactools-pvacseq/7.1.2-beta.2/linux-x86_64-cpu/cf2d1950d99a2fb812306da507f1697b683621713af4c9259e6c4258d7e0cc54.release.json",
-            "archiveSha256": "1fcca89636801592c6f3da5414f88988bfbca84eeccf9b48878e0b2ff5daa0db",
-            "archiveSizeBytes": 1167379910,
-            "installedSizeBytes": 3851450140,
+            "releaseManifestUrl": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/pvactools-pvacseq/7.1.2-beta.2/linux-x86_64-cpu/86c799be0b6d3b72d523aef5286963b3bb24b055d70f0f8bc8336867be93b67d.release.json",
+            "archiveSha256": "048fd81e2eacdec3184dfaf1c805af9b822456f574bb4072d7ac7760bd9a1ec3",
+            "archiveSizeBytes": 1167379937,
+            "installedSizeBytes": 3851450252,
             "signingKeyId": "liatir-runtime-box-kms-2026",
-            "publishedAt": "2026-09-01T03:21:40.275Z",
-            "workflowRunId": "33464208587",
-            "workflowRunUrl": "https://github.com/Liatir/liatir-stack/actions/runs/33464208587",
-            "evidenceRecord": "runtime-boxes/evidence/pvactools-pvacseq-linux-x86_64-cpu-7.1.2-beta.2-run-33464208587.json"
+            "publishedAt": "2026-09-24T16:44:16.561Z",
+            "workflowRunId": "36025526169",
+            "workflowRunUrl": "https://github.com/Liatir/liatir-stack/actions/runs/36025526169",
+            "evidenceRecord": "runtime-boxes/evidence/pvactools-pvacseq-linux-x86_64-cpu-7.1.2-beta.2-run-36025526169.json"
           }
         }
       ]
