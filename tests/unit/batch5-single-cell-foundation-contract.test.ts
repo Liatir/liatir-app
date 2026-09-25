@@ -290,6 +290,19 @@ describe('Batch 5 single-cell foundation model contract', () => {
     expect(validatorSource).not.toMatch(/^export const UCE_EMBEDDING_SCRIPT/m);
   });
 
+  it('expects the UCE preview columns the product runner actually writes', () => {
+    // Release run 36176235701 failed here: the validator still counted 1281 columns after the
+    // runner gained two viewer projection columns ahead of the embedding.
+    const leading = '["cell_id", "preview_pc_1", "preview_pc_2"] + [f"dim_{i}" for i in range(';
+    const runner = readFileSync(
+      resolve(rootDir, 'frontend/src/lib/tools/ai/python-scripts/uce-embedding.ts'),
+      'utf8',
+    );
+    const validator = readFileSync(resolve(rootDir, 'scripts/validate-uce-runtime.mjs'), 'utf8');
+    expect(runner).toContain(`writer.writerow(${leading}embeddings.shape[1])])`);
+    expect(validator).toContain(`expected_header = ${leading}1280)]`);
+  });
+
   it('keeps scGPT and UCE validation recipe-driven and cross-platform', () => {
     const scgptValidator = readFileSync(
       resolve(rootDir, 'scripts/validate-scgpt-runtime.mjs'),

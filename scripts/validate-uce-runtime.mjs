@@ -130,10 +130,15 @@ def validate_run(label, result, expected_accelerator):
     if persisted_summary != summary:
         raise SystemExit(f"{label}: persisted summary differs from stdout")
 
+    # The product runner writes two viewer projection columns before the embedding, so the
+    # header is checked by name rather than counted.
     with preview_path.open("r", encoding="utf-8", newline="") as source:
         rows = list(csv.reader(source))
-    if len(rows) != 11 or len(rows[0]) != 1281:
+    expected_header = ["cell_id", "preview_pc_1", "preview_pc_2"] + [f"dim_{i}" for i in range(1280)]
+    if len(rows) != 11 or rows[0] != expected_header:
         raise SystemExit(f"{label}: CSV preview has the wrong shape")
+    if any(len(row) != len(expected_header) for row in rows[1:]):
+        raise SystemExit(f"{label}: a CSV preview row does not match its header")
 
     expected_intermediates = {
         "uce-validation-input_proc.h5ad",
