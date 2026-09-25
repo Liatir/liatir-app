@@ -663,15 +663,15 @@
           "nativeCiEnabled": true,
           "publication": {
             "source": "github-actions",
-            "releaseManifestUrl": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/pvactools-pvacseq/7.1.2-beta.1/macos-aarch64-cpu/563fbd508ac1c2fc2975ca89ba95f3a4a969bfb663c37e16dcdcc2aa959ca8ef.release.json",
-            "archiveSha256": "e9dbac894d1acec99434fec05c3b39c1e5acce2f2fe0bc6856466173c9a609f5",
-            "archiveSizeBytes": 994583880,
-            "installedSizeBytes": 3598150920,
+            "releaseManifestUrl": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/pvactools-pvacseq/7.1.2-beta.1/macos-aarch64-cpu/72e67ad992e35eda7cfce7065ebe4f3d37619ae2618e85dbcd545b7d2ee7d43a.release.json",
+            "archiveSha256": "2e4ab3069982c9702f7f6ff5a5cd2a172f29c575279d217cb9bde08460ac5de3",
+            "archiveSizeBytes": 994583902,
+            "installedSizeBytes": 3598151032,
             "signingKeyId": "liatir-runtime-box-kms-2026",
-            "publishedAt": "2026-08-30T19:36:56.695Z",
-            "workflowRunId": "33330550558",
-            "workflowRunUrl": "https://github.com/Liatir/liatir-stack/actions/runs/33330550558",
-            "evidenceRecord": "runtime-boxes/evidence/pvactools-pvacseq-macos-aarch64-cpu-7.1.2-beta.1-run-33330550558.json"
+            "publishedAt": "2026-09-25T18:02:09.914Z",
+            "workflowRunId": "36168390892",
+            "workflowRunUrl": "https://github.com/Liatir/liatir-stack/actions/runs/36168390892",
+            "evidenceRecord": "runtime-boxes/evidence/pvactools-pvacseq-macos-aarch64-cpu-7.1.2-beta.1-run-36168390892.json"
           }
         },
         {
