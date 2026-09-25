@@ -19,14 +19,18 @@ const CATALOG = JSON.parse(fs.readFileSync(path.join(ROOT, 'runtime-boxes/catalo
 
 const MIN_INSTALL_TIMEOUT_MS = 180_000;
 const INSTALL_SIZE_DISCOVERY_TIMEOUT_MS = 30_000;
-// Eight MiB/s is intentionally below the observed protected-release transfer rate. The native
-// allowance covers signature verification, multi-gigabyte ZIP extraction, self-test, and activation.
+// The native allowance covers signature verification, multi-gigabyte ZIP extraction, self-test,
+// and activation.
 const NATIVE_INSTALL_FIXED_OVERHEAD_MS = 180_000;
 // WSL2 additionally crosses the Windows/Linux boundary before extracting and activating the box.
 // Run 33522895351 reached 1,161,379,840 of 1,167,379,910 bytes with no install error at the old
 // 320-second bound, so this measured path needs a separate bounded allowance.
 const WSL2_INSTALL_FIXED_OVERHEAD_MS = 360_000;
-const CONSERVATIVE_DOWNLOAD_BYTES_PER_SECOND = 8 * 1024 * 1024;
+// The self-hosted release runners download over a home connection, so the rate has to sit below
+// its dips, not its typical speed. Eight MiB/s was the typical speed: run 36021697255 reached
+// 403,279,872 of 459,529,412 bytes with no install error when that bound expired (about 1.7 MB/s),
+// on a link that measured 8.1 MB/s minutes later. This bound catches a hang, not a slow download.
+const CONSERVATIVE_DOWNLOAD_BYTES_PER_SECOND = 2 * 1024 * 1024;
 
 /** Sizes an install bound from observed archive bytes and the selected host boundary. */
 export function runtimeBoxInstallTimeoutMs(archiveSizeBytes, hostEnvironment = 'native') {

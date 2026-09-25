@@ -251,8 +251,15 @@ describe('Runtime Box product E2E support', () => {
     expect(cpuArchiveTimeout).toBeGreaterThanOrEqual(180_000);
     expect(cudaArchiveTimeout).toBeGreaterThanOrEqual(9 * 60_000);
     expect(cudaArchiveTimeout).toBeGreaterThan(cpuArchiveTimeout);
-    expect(pvacWsl2Timeout).toBe(499_163);
+    expect(pvacWsl2Timeout).toBe(916_651);
     expect(pvacWsl2Timeout - runtimeBoxInstallTimeoutMs(1_167_379_910)).toBe(180_000);
+  });
+
+  it('leaves room for a home-connection dip, as measured on run 36021697255', () => {
+    const archiveSizeBytes = 459_529_412;
+    const observedBytesPerSecond = 403_279_872 / 235;
+    const downloadMs = (archiveSizeBytes / observedBytesPerSecond) * 1_000;
+    expect(runtimeBoxInstallTimeoutMs(archiveSizeBytes)).toBeGreaterThan(downloadMs + 60_000);
   });
 
   it('proves Result artifacts are unchanged across removal without rejecting valid empty output', () => {
