@@ -279,7 +279,7 @@ async function writeAppJson(browser, rel, value) {
  * Returns the finished Job, its buffered output, and the Result with its persisted output.
  */
 export async function runSingleCellEmbeddingFromModelPage(browser, {
-  modelId, toolId, installed, inputPath, batchSize, maxCsvRows,
+  modelId, toolId, installed, inputPath, batchSize, maxCsvRows, inferenceTimeoutMs = 900_000,
 }) {
   await writeAppJson(browser, `ai-model-installs/${modelId}.json`, {
     status: 'installed', runtimePath: installed.runtimeDir, installedSizeBytes: installed.sizeBytes,
@@ -315,7 +315,7 @@ export async function runSingleCellEmbeddingFromModelPage(browser, {
     );
     job = jobs.find((entry) => entry.metadata?.toolId === toolId) ?? null;
     return job !== null && job.status.type !== 'running';
-  }, { timeout: 900_000, interval: 1_000, timeoutMsg: `${modelId} Job did not finish` });
+  }, { timeout: inferenceTimeoutMs, interval: 1_000, timeoutMsg: `${modelId} Job did not finish` });
   const output = await browser.execute(
     async (id) => window.Liatir.invoke('lia_jobs_get_output', { jobId: id, since: 0 }),
     job.id,
