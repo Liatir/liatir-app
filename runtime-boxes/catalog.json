@@ -271,14 +271,15 @@
           "nativeCiEnabled": true,
           "publication": {
             "source": "github-actions",
-            "releaseManifestUrl": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/geneformer-v1-10m/1.0.0-beta.2/linux-x86_64-cuda12.9/84a10fcc5beef619ce39ade0f8a081d61d5d2763b2002bec5704551a357bc4b2.release.json",
-            "archiveSha256": "c156c8f4b16bb3059bc674f69a2c3b0170aabe94dd2c5ea5c314d900ef75eb4e",
-            "archiveSizeBytes": 7803294017,
+            "releaseManifestUrl": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/geneformer-v1-10m/1.0.0-beta.2/linux-x86_64-cuda12.9/c143f9d59365d62e2177c9e77692916747b1ffb7c498d0d4ea3ef1021bef2732.release.json",
+            "archiveSha256": "c76bc4387733fda3dc8b6793d449425e5d8288d72b8ec5cbf676e5a7572401bd",
+            "archiveSizeBytes": 7803294047,
+            "installedSizeBytes": 13488585337,
             "signingKeyId": "liatir-runtime-box-kms-2026",
-            "publishedAt": "2026-08-09T18:08:11.248Z",
-            "workflowRunId": "31325208258",
-            "workflowRunUrl": "https://github.com/Liatir/liatir-stack/actions/runs/31325208258",
-            "evidenceRecord": "runtime-boxes/evidence/geneformer-v1-10m-linux-x86_64-cuda12.9-1.0.0-beta.2-run-31325208258.json"
+            "publishedAt": "2026-09-25T00:49:14.889Z",
+            "workflowRunId": "36074390654",
+            "workflowRunUrl": "https://github.com/Liatir/liatir-stack/actions/runs/36074390654",
+            "evidenceRecord": "runtime-boxes/evidence/geneformer-v1-10m-linux-x86_64-cuda12.9-1.0.0-beta.2-run-36074390654.json"
           }
         }
       ]

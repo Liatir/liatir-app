@@ -1,14 +1,21 @@
 # Current project status
 
-## The Linux Runtime Boxes are being republished as Scrollcase v3 (2026-09-24)
+## The five Linux Runtime Boxes are republished as Scrollcase v3 (2026-09-25)
 
 Step 4 of [Scrollcase v3 adoption](./roadmap/scrollcase-v3-adoption.md), authorized by the owner.
-Each box goes through the production release workflow on the WSL2 self-hosted runner, and its
-evidence and catalog `publication` block replace the v2 ones. Done so far:
-`mhcflurry-class1-presentation` linux-x86_64-cpu (run 36017886905), `pvactools-pvacseq`
-linux-x86_64-cpu (run 36025526169), `scgpt-whole-human` linux-x86_64-cpu (run 36056702126,
-after five runs that each exposed one drift in the single-cell release path — see the roadmap),
-`scgpt-whole-human` linux-x86_64-cuda12.9 (run 36068289796). The checklist is in the roadmap.
+Each box went through the production release workflow on the WSL2 self-hosted runner and was
+promoted to `beta`; its evidence and catalog `publication` block replace the v2 ones:
+`mhcflurry-class1-presentation` cpu (run 36017886905), `pvactools-pvacseq` cpu (36025526169),
+`scgpt-whole-human` cpu (36056702126) and cuda12.9 (36068289796), `geneformer-v1-10m` cuda12.9
+(36074390654). The macOS five are next, from the Mac; the old v2 objects on R2 go only after all ten.
+
+The single-cell models had not been through the release workflow since August, and five drifts
+surfaced one per failed run — all before promotion, so beta never served a broken box. Four were
+test or tooling drift (the scGPT validator's CSV read, the release test build's candidate list,
+lifecycle specs that spawned the Job behind the product, a stale error message); one was a real
+product defect: a Jobs page opened right after Run stayed on "No jobs yet" (`3a09123`). **The UCE
+spec (macOS) still spawns its Job through the bridge and must move to
+`runSingleCellEmbeddingFromModelPage` before UCE is republished**, or it fails the same way.
 
 A WSL2 self-hosted runner must be started with `setsid nohup … < /dev/null`: a plain `nohup … &`
 launched through `wsl.exe` is killed by SIGHUP as soon as that `wsl.exe` session exits.

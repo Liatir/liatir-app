@@ -128,7 +128,10 @@ Full evidence for the blocker is in [the Boltz source review](./phase3-boltz-sou
    - ✅ `pvactools-pvacseq` linux-x86_64-cpu — run 36025526169
    - ✅ `scgpt-whole-human` linux-x86_64-cpu — run 36056702126
    - ✅ `scgpt-whole-human` linux-x86_64-cuda12.9 — run 36068289796
-   - ⏳ `geneformer-v1-10m` linux-x86_64-cuda12.9
+   - ✅ `geneformer-v1-10m` linux-x86_64-cuda12.9 — run 36074390654
+
+   **Linux is done (2026-09-25).** Next: the five macOS boxes from the Mac, then the Mac session
+   removes the old v2 objects from R2 once all ten are v3.
 
    The single-cell models had not been through the release workflow since August, and three
    things had drifted under them, each found by a failed run before promotion: the scGPT validator
