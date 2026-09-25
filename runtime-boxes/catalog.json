@@ -228,14 +228,15 @@
           "nativeCiEnabled": true,
           "publication": {
             "source": "github-actions",
-            "releaseManifestUrl": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/geneformer-v1-10m/1.0.0-beta.2/macos-aarch64-metal/423cab5c19a8abf22e041c541eb073bdcc0e331218af50197a474331c4b8583f.release.json",
-            "archiveSha256": "f88f54f178bce6460ba5752ecba1dcfabb8d9a3b0e80501c8684ab6164614449",
-            "archiveSizeBytes": 463378929,
+            "releaseManifestUrl": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/geneformer-v1-10m/1.0.0-beta.2/macos-aarch64-metal/a6ec808367cd97c12930063045f3791ffd181e05d44fef970407ec80c6f9c56a.release.json",
+            "archiveSha256": "3fe5f3cdbe1890602176f885a8507b6f5ceee48c72cd750c89fef6e1cf52d9ba",
+            "archiveSizeBytes": 463378960,
+            "installedSizeBytes": 1538447154,
             "signingKeyId": "liatir-runtime-box-kms-2026",
-            "publishedAt": "2026-08-08T01:55:47+02:00",
-            "workflowRunId": "31229152183",
-            "workflowRunUrl": "https://github.com/Liatir/liatir-stack/actions/runs/31229152183",
-            "evidenceRecord": "runtime-boxes/evidence/geneformer-v1-10m-macos-aarch64-metal-1.0.0-beta.2-run-31229152183.json"
+            "publishedAt": "2026-09-25T18:22:59.410Z",
+            "workflowRunId": "36171019826",
+            "workflowRunUrl": "https://github.com/Liatir/liatir-stack/actions/runs/36171019826",
+            "evidenceRecord": "runtime-boxes/evidence/geneformer-v1-10m-macos-aarch64-metal-1.0.0-beta.2-run-36171019826.json"
           }
         },
         {
