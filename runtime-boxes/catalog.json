@@ -330,14 +330,15 @@
           "nativeCiEnabled": true,
           "publication": {
             "source": "github-actions",
-            "releaseManifestUrl": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/scgpt-whole-human/0.2.5-beta.2/macos-aarch64-metal/a6168a152a5f2aac1b19ddcb47091315a7bf2fb1eb061aacb3b9911ed52b0920.release.json",
-            "archiveSha256": "86c0415da87742c2106daa4078603330de925727da23995020e8f14613a9a199",
-            "archiveSizeBytes": 532421324,
+            "releaseManifestUrl": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/scgpt-whole-human/0.2.5-beta.2/macos-aarch64-metal/0bebbe5a556b2733fade77d2c7cf7204d6fdeb3f98725252ff4446f9e49dfa73.release.json",
+            "archiveSha256": "1ec7ec5c57e58c4112e69b70ea9ad68d3bb48f1dca18b1cb0820ab8c52a64866",
+            "archiveSizeBytes": 532421348,
+            "installedSizeBytes": 1372956881,
             "signingKeyId": "liatir-runtime-box-kms-2026",
-            "publishedAt": "2026-08-08T01:55:47+02:00",
-            "workflowRunId": "31228656398",
-            "workflowRunUrl": "https://github.com/Liatir/liatir-stack/actions/runs/31228656398",
-            "evidenceRecord": "runtime-boxes/evidence/scgpt-whole-human-macos-aarch64-metal-0.2.5-beta.2-run-31228656398.json"
+            "publishedAt": "2026-09-25T18:52:03.465Z",
+            "workflowRunId": "36173142919",
+            "workflowRunUrl": "https://github.com/Liatir/liatir-stack/actions/runs/36173142919",
+            "evidenceRecord": "runtime-boxes/evidence/scgpt-whole-human-macos-aarch64-metal-0.2.5-beta.2-run-36173142919.json"
           }
         },
         {
