@@ -1,0 +1,232 @@
+{
+  "schemaVersion": 1,
+  "kind": "liatir.runtime-box.ci-evidence",
+  "phase": "production-release",
+  "status": "passed",
+  "createdAt": "2026-09-26T14:29:14.311Z",
+  "subject": {
+    "componentKind": "ai-model",
+    "componentId": "snap-stanford-uce-4layer",
+    "modelId": "snap-stanford-uce-4layer",
+    "boxId": "uce-4layer",
+    "runtimeId": "single-cell-foundation-uce",
+    "recipeId": "uce-4layer-macos-arm64-metal",
+    "recipeVersion": "1.0.0",
+    "version": "1.0.0-beta.2",
+    "targetId": "macos-aarch64-metal",
+    "mode": "native-lifecycle"
+  },
+  "source": {
+    "repository": "Liatir/liatir-stack",
+    "commitSha": "edc55a3221110eafb3ae574e5ee80cf492536015",
+    "sourceTreeDirty": false
+  },
+  "workflow": {
+    "provider": "github-actions",
+    "workflow": "Runtime Box production release",
+    "runId": "36246477862",
+    "runAttempt": "1",
+    "runUrl": "https://github.com/Liatir/liatir-stack/actions/runs/36246477862",
+    "actor": "suffro",
+    "triggeringActor": "suffro",
+    "environment": "runtime-box-production",
+    "approver": null
+  },
+  "host": {
+    "platform": "macos",
+    "arch": "aarch64",
+    "runnerName": "liatir-macos-heavy-1790430590-15499",
+    "runnerLabel": "liatir-macos-arm64-heavy",
+    "runnerEnvironment": "self-hosted",
+    "image": null,
+    "freeDiskBytesBefore": 44614094848,
+    "minimumFreeDiskBytes": 22352769024,
+    "peakAdditionalDiskBytes": 22095396864,
+    "gpuModel": "Apple M1",
+    "gpuCount": 1,
+    "gpuMemoryBytes": null,
+    "computeCapability": null,
+    "driverVersion": null,
+    "reportedCudaCompatibility": null,
+    "existingBuildStateBytes": 0,
+    "calculatedDiskPlan": {
+      "sourceAssetBytes": 9122326793,
+      "localSourceBytes": 6867,
+      "estimatedInstalledSizeBytes": 11169027146,
+      "estimatedArchiveSizeBytes": 9899283940,
+      "safetyMarginBytes": 3221225472,
+      "calculatedPeakDiskBytes": 33411870218,
+      "requiredBuildDiskBytes": 36507222016
+    }
+  },
+  "build": {
+    "recipeSha256": "5bcafeb8dd58a1e153eda9bc6bcbb646454147852aeeb0147ad1d2c268af5100",
+    "dependencyLockSha256": "a539412003c6ac355da2ce1dca05b7aa76ef3274a71150839c0b3396ae824a98",
+    "pythonVersion": "3.11.15",
+    "pixiVersion": "0.73.0",
+    "archiveSha256": "6aeafe5f6d0d29004517eeabaf80072406feeca3581d46a45e682959094f2cb4",
+    "archiveSizeBytes": 9899283975,
+    "installedSizeBytes": 11169027258,
+    "elapsedMs": 493905,
+    "selfTest": {
+      "status": "passed",
+      "imports": [
+        "torch",
+        "scanpy",
+        "accelerate",
+        "anndata",
+        "numpy",
+        "scipy",
+        "pandas",
+        "h5py",
+        "tqdm"
+      ],
+      "localSignatureVerified": true
+    }
+  },
+  "scientific": {
+    "validator": {
+      "path": "scripts/validate-uce-runtime.mjs",
+      "sha256": "82a74220dc17e49582967df22c9bbf7e46439bef573bba810ede9dcbe37baf51"
+    },
+    "productScript": {
+      "path": "frontend/src/lib/tools/ai/python-scripts/uce-embedding.ts",
+      "sha256": "23e1c0635d1e8146bf373ded519082841f8effd2f148e431acbd810e11973055"
+    },
+    "fixture": {
+      "id": "uce-pinned-human-10-cell-32-gene-v1",
+      "sha256": "1886e38071688bb1b4647ae98f3c280749155e5f5b430f8d4d90b13726dfc27d",
+      "inputShapes": {
+        "counts": [
+          10,
+          32
+        ]
+      }
+    },
+    "sources": [
+      {
+        "kind": "checkpoint",
+        "identity": "https://ndownloader.figshare.com/files/42706555",
+        "revision": "8ead6e07af0c80f75653598138bb704e865b45c8",
+        "sha256": "abda5b2bc4018187e408623b292686a061912f449daceb4c9c9603caf0d62538"
+      },
+      {
+        "kind": "checkpoint",
+        "identity": "https://ndownloader.figshare.com/files/42706558",
+        "revision": "8ead6e07af0c80f75653598138bb704e865b45c8",
+        "sha256": "a9e801829ffaf05b5d7e6c6ef12404326cf6796ad561ad62ce701884f07969f5"
+      },
+      {
+        "kind": "checkpoint",
+        "identity": "https://ndownloader.figshare.com/files/42706576",
+        "revision": "8ead6e07af0c80f75653598138bb704e865b45c8",
+        "sha256": "acb28f3f0a1d803e4a4ffe891b9bab38bf93c84762dc06b2452f0d515da91560"
+      },
+      {
+        "kind": "checkpoint",
+        "identity": "https://ndownloader.figshare.com/files/42706585",
+        "revision": "8ead6e07af0c80f75653598138bb704e865b45c8",
+        "sha256": "07397ab3828502fb7d0bab658125c47f145f989f384db8f55fe106f6826b2a54"
+      },
+      {
+        "kind": "checkpoint",
+        "identity": "https://ndownloader.figshare.com/files/42715213",
+        "revision": "8ead6e07af0c80f75653598138bb704e865b45c8",
+        "sha256": "dc0138b50a3238979e32ccb65caab4e3f99d49146b8bc3b975f79683d9ce9ec9"
+      },
+      {
+        "kind": "source",
+        "identity": "https://codeload.github.com/snap-stanford/UCE/zip/8ead6e07af0c80f75653598138bb704e865b45c8",
+        "revision": "8ead6e07af0c80f75653598138bb704e865b45c8",
+        "sha256": "fb1284122eb2773c194ccfa6f952a1bfa18218b519f9e83f85b7ceabf2ba88b9"
+      }
+    ],
+    "framework": {
+      "name": "torch",
+      "version": "2.8.0",
+      "backend": "cpu-reference-and-metal"
+    },
+    "accelerator": {
+      "kind": "metal",
+      "gpuModel": "Apple M1",
+      "driverVersion": null,
+      "reportedCudaCompatibility": null
+    },
+    "outputShapes": {
+      "embeddings": [
+        10,
+        1280
+      ]
+    },
+    "finiteValues": true,
+    "tolerances": {
+      "absolute": 0.02,
+      "relative": 0.02,
+      "minimumCosineSimilarity": 0.999
+    },
+    "parity": {
+      "reference": "pinned-cpu-product-runner",
+      "passed": true,
+      "cpuBaselinePassed": true,
+      "acceleratorPassed": true,
+      "maximumAbsoluteDifference": 4.0046870708465576e-7,
+      "meanAbsoluteDifference": 6.001529528010252e-8,
+      "minimumCosineSimilarity": 0.9999999999904319
+    },
+    "elapsedMs": 47188,
+    "peakRamBytes": null,
+    "peakVramBytes": null,
+    "outputContract": "passed",
+    "provenanceContract": "passed"
+  },
+  "productLifecycle": {
+    "status": "passed",
+    "targetId": "macos-aarch64-metal",
+    "version": "1.0.0-beta.2",
+    "jobId": "job_1",
+    "analysisRunId": "9ab94f49-ba80-46a6-ade9-553b3cc7fd54",
+    "accelerator": "mps",
+    "gpuModel": null,
+    "computeCapability": null,
+    "reportedCudaCompatibility": null,
+    "peakVramBytes": null,
+    "resultArtifactCount": 9,
+    "assertions": {
+      "isolatedStorage": "passed",
+      "install": "passed",
+      "downloadMatchesRelease": "passed",
+      "realInference": "passed",
+      "navigationDuringRun": "passed",
+      "jobs": "passed",
+      "results": "passed",
+      "provenance": "passed",
+      "resultDetail": "passed",
+      "removal": "passed",
+      "resultArtifactsSurvivedRemoval": "passed"
+    }
+  },
+  "publication": {
+    "signingKeyIds": [
+      "liatir-runtime-box-kms-2026"
+    ],
+    "localSignatureVerified": true,
+    "archive": {
+      "url": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/uce-4layer/1.0.0-beta.2/macos-aarch64-metal/6aeafe5f6d0d29004517eeabaf80072406feeca3581d46a45e682959094f2cb4.zip",
+      "sizeBytes": 9899283975,
+      "sha256": "6aeafe5f6d0d29004517eeabaf80072406feeca3581d46a45e682959094f2cb4",
+      "streamedVerification": "passed"
+    },
+    "release": {
+      "url": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/uce-4layer/1.0.0-beta.2/macos-aarch64-metal/ca9aa499f3e7466da0c36c0bafe395710f2b2ecde6c5a2b8f04c3520b100cff9.release.json",
+      "sizeBytes": 2803,
+      "sha256": "ca9aa499f3e7466da0c36c0bafe395710f2b2ecde6c5a2b8f04c3520b100cff9",
+      "streamedVerification": "passed"
+    },
+    "channelUrl": "https://models.liatir.com/v1/channels/beta/uce-4layer/macos-aarch64-metal",
+    "promotionHttpStatus": 200,
+    "promotionResponse": {
+      "ok": true,
+      "key": "channels/beta/uce-4layer/macos-aarch64-metal.json"
+    }
+  }
+}
