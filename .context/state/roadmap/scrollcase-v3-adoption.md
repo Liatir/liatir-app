@@ -135,7 +135,10 @@ Full evidence for the blocker is in [the Boltz source review](./phase3-boltz-sou
    - ✅ `pvactools-pvacseq` macos-aarch64-cpu — run 36168390892
    - ✅ `geneformer-v1-10m` macos-aarch64-metal — run 36171019826
    - ✅ `scgpt-whole-human` macos-aarch64-metal — run 36173142919
-   - ⏳ `uce-4layer` macos-aarch64-metal — in progress
+   - ✅ `uce-4layer` macos-aarch64-metal — run 36246477862
+
+   **All ten are v3 on `beta` (2026-09-26).** What is left of this step is the app build that reads
+   v3, and the R2 cleanup below.
 
    Then the old v2 objects on R2 go, which **needs a wrangler login with R2 write**: the Mac's
    OAuth token carries only `workers_scripts:write`, and `wrangler r2 object delete` answers 403.

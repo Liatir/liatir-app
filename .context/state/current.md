@@ -1,13 +1,15 @@
 # Current project status
 
-## Four macOS Runtime Boxes are republished as Scrollcase v3; UCE is last (2026-09-26)
+## All five macOS Runtime Boxes are republished as Scrollcase v3, so all ten are (2026-09-26)
 
 From the Mac, same workflow and terms as the Linux five below: mhcflurry (run 36134812748), pVACseq
-(36168390892), Geneformer (36171019826) and scGPT (36173142919) are on `beta`, each with its
-evidence retained and its catalog `publication` replaced. UCE is in progress. The ledger is step 4
-of [Scrollcase v3 adoption](./roadmap/scrollcase-v3-adoption.md).
+(36168390892), Geneformer (36171019826), scGPT (36173142919) and UCE (36246477862) are on `beta`,
+each with its evidence retained and its catalog `publication` replaced. With the Linux five, every
+published box is now v3. The ledger is step 4 of
+[Scrollcase v3 adoption](./roadmap/scrollcase-v3-adoption.md); still open there: the app build that
+reads v3, and deleting the old v2 objects on R2, which needs a wrangler login with R2 write.
 
-Four things stood in the way, none of them a box defect:
+Seven things stood in the way, none of them a box defect:
 
 - **The install bound assumed a home link's typical speed.** 8 MiB/s is what the Mac's connection
   does on a good minute; a replacement install reached 88% at 1.7 MB/s when it expired. It now
@@ -22,6 +24,14 @@ Four things stood in the way, none of them a box defect:
   agent session ending, but a Mac that sleeps mid-build loses the job, and the listener then hangs
   until killed. Launch the release under `caffeinate -dimsu`, with the lid open and on AC. Closing
   the Liatir window a lifecycle spec opens also kills the run: the app exits with code 0.
+- **The release kept the ~11 GB build prefix on disk through the lifecycle**, whose own install of
+  the 9 GB UCE box then found 16.1 GB free of the 19.9 GB it needs. A release step now frees the
+  build directory right after publication (`5e0a19e`).
+- **The UCE spec compared the download to the v2 archive's size**, a literal 31 bytes short of the
+  v3 archive; it reads the size from the installed release now (`49018be`).
+- **The UCE spec never wrote the product lifecycle receipt.** Run 36244057906 passed the lifecycle
+  and promoted, then could not write its evidence; the spec writes the receipt now (`edc55a3`) and
+  the rerun is the recorded release.
 
 ## The five Linux Runtime Boxes are republished as Scrollcase v3 (2026-09-25)
 
