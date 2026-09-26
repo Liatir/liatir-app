@@ -26,7 +26,6 @@ const TARGET_ID = process.env.LIATIR_RUNTIME_BOX_TARGET_ID ?? 'macos-aarch64-met
 const REGISTRY_BASE_URL = process.env.LIATIR_RUNTIME_BOX_REGISTRY_BASE_URL
   ?? 'https://models.liatir.com/v1';
 const VERSION = process.env.LIATIR_RUNTIME_BOX_EXPECTED_VERSION ?? '1.0.0-beta.2';
-const ARCHIVE_SIZE_BYTES = 9_899_283_940;
 const INSTALL_TIMEOUT_MS = 45 * 60 * 1000;
 const INFERENCE_TIMEOUT_MS = 30 * 60 * 1000;
 const PROGRESS_REPORT_BYTES = 1024 ** 3;
@@ -164,12 +163,14 @@ export const tests = [
           );
         }
         expect(installError).toBe(null);
+        installed = await runtimeBoxInstallResult(browser, downloadId);
+        // The size comes from the release under test, never a literal: run 36241822090 installed
+        // the rebuilt box completely and then failed on the previous build's archive size.
         const progress = await runtimeBoxInstallProgress(browser, downloadId);
         expect(progress.eventCount).toBeGreaterThan(0);
-        expect(progress.bytesTotal).toBe(ARCHIVE_SIZE_BYTES);
+        expect(progress.bytesTotal).toBe(installed.activation.release.archive.sizeBytes);
         expect(progress.maxBytesDownloaded).toBeGreaterThan(8_000_000_000);
 
-        installed = await runtimeBoxInstallResult(browser, downloadId);
         expect(installed.version).toBe(VERSION);
         expect(installed.rollbackAvailable).toBe(false);
         expect(installed.sizeBytes).toBeGreaterThan(10_000_000_000);
