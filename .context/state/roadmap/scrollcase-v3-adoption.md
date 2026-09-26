@@ -130,8 +130,19 @@ Full evidence for the blocker is in [the Boltz source review](./phase3-boltz-sou
    - ✅ `scgpt-whole-human` linux-x86_64-cuda12.9 — run 36068289796
    - ✅ `geneformer-v1-10m` linux-x86_64-cuda12.9 — run 36074390654
 
-   **Linux is done (2026-09-25).** Next: the five macOS boxes from the Mac, then the Mac session
-   removes the old v2 objects from R2 once all ten are v3.
+   **Linux is done (2026-09-25).** macOS, on `beta`, from the Mac's ephemeral self-hosted runner:
+   - ✅ `mhcflurry-class1-presentation` macos-aarch64-metal — run 36134812748
+   - ✅ `pvactools-pvacseq` macos-aarch64-cpu — run 36168390892
+   - ✅ `geneformer-v1-10m` macos-aarch64-metal — run 36171019826
+   - ✅ `scgpt-whole-human` macos-aarch64-metal — run 36173142919
+   - ⏳ `uce-4layer` macos-aarch64-metal — in progress
+
+   Then the old v2 objects on R2 go, which **needs a wrangler login with R2 write**: the Mac's
+   OAuth token carries only `workers_scripts:write`, and `wrangler r2 object delete` answers 403.
+   The list is rebuilt, not guessed — every release the catalog ever referenced but no longer does,
+   its archive, and every object a failed release run uploaded, each confirmed present and none
+   referenced by the catalog or by any channel the Registry serves. Six release documents stay:
+   the revoked retired targets' channels still point at them, so only their archives go.
 
    The single-cell models had not been through the release workflow since August, and three
    things had drifted under them, each found by a failed run before promotion: the scGPT validator

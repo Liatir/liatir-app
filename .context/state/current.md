@@ -1,5 +1,28 @@
 # Current project status
 
+## Four macOS Runtime Boxes are republished as Scrollcase v3; UCE is last (2026-09-26)
+
+From the Mac, same workflow and terms as the Linux five below: mhcflurry (run 36134812748), pVACseq
+(36168390892), Geneformer (36171019826) and scGPT (36173142919) are on `beta`, each with its
+evidence retained and its catalog `publication` replaced. UCE is in progress. The ledger is step 4
+of [Scrollcase v3 adoption](./roadmap/scrollcase-v3-adoption.md).
+
+Four things stood in the way, none of them a box defect:
+
+- **The install bound assumed a home link's typical speed.** 8 MiB/s is what the Mac's connection
+  does on a good minute; a replacement install reached 88% at 1.7 MB/s when it expired. It now
+  assumes 2 MiB/s (`9bc1432`), with a regression test.
+- **The UCE validator counted CSV columns** and missed the two viewer projection columns the runner
+  has written since August — the scGPT drift again, met only now because UCE is macOS-only and had
+  not been released since. Checked by name now (`56297f2`).
+- **The UCE lifecycle spec spawned its Job through the bridge**, as the Linux session warned; it now
+  runs from the model page like scGPT and Geneformer (`57f9ee1`). The release that would have run
+  the old spec was cancelled before its lifecycle.
+- **A self-hosted runner does not survive the machine sleeping.** A detached launch survives the
+  agent session ending, but a Mac that sleeps mid-build loses the job, and the listener then hangs
+  until killed. Launch the release under `caffeinate -dimsu`, with the lid open and on AC. Closing
+  the Liatir window a lifecycle spec opens also kills the run: the app exits with code 0.
+
 ## The five Linux Runtime Boxes are republished as Scrollcase v3 (2026-09-25)
 
 Step 4 of [Scrollcase v3 adoption](./roadmap/scrollcase-v3-adoption.md), authorized by the owner.
@@ -13,9 +36,8 @@ The single-cell models had not been through the release workflow since August, a
 surfaced one per failed run — all before promotion, so beta never served a broken box. Four were
 test or tooling drift (the scGPT validator's CSV read, the release test build's candidate list,
 lifecycle specs that spawned the Job behind the product, a stale error message); one was a real
-product defect: a Jobs page opened right after Run stayed on "No jobs yet" (`3a09123`). **The UCE
-spec (macOS) still spawns its Job through the bridge and must move to
-`runSingleCellEmbeddingFromModelPage` before UCE is republished**, or it fails the same way.
+product defect: a Jobs page opened right after Run stayed on "No jobs yet" (`3a09123`). The UCE
+spec (macOS) had the same defect and is fixed (`57f9ee1`).
 
 A WSL2 self-hosted runner must be started with `setsid nohup … < /dev/null`: a plain `nohup … &`
 launched through `wsl.exe` is killed by SIGHUP as soon as that `wsl.exe` session exits.
