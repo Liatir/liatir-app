@@ -272,6 +272,11 @@ jobs:
           --public-key runtime-boxes/trust/production-public.json
           --receipt .runtime-box-ci/publish-receipt.json
 
+      # Run 36239768655 published UCE, then its product lifecycle refused to install it: 19.9 GB
+      # needed, 16.1 GB free, with the ~11 GB extracted build prefix still on the same disk.
+      - name: Free the build scratch before the product lifecycle
+        run: npm run runtime-box:ci -- release-build-scratch
+
       - name: Build the real Liatir product test binary
         env:
           # This binary is never distributed. It exposes only the exact release candidate so the

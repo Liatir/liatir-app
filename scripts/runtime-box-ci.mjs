@@ -945,6 +945,12 @@ async function main() {
     return writeReleaseEvidence(evidenceOptions, catalog);
   }
   if (command === 'clean') return cleanBuildState();
+  // Once the box is published, its extracted build prefix has served the self-test and the
+  // validator and nothing reads it again. The product lifecycle then installs the same box a
+  // second time on the same disk, so holding both is what ran UCE's release out of space.
+  if (command === 'release-build-scratch') {
+    return rm(getWorkspace().buildDir, { recursive: true, force: true });
+  }
   throw new Error(`Unknown Runtime Box CI command: ${command ?? '<none>'}`);
 }
 

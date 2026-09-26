@@ -413,4 +413,32 @@ describe('Runtime Box CI cost controls', () => {
     expect(heartbeatLine('scientific validation', 17 * 60_000))
       .toBe('[runtime-box heartbeat] scientific validation is still running (17 min elapsed)');
   });
+
+  it('frees the build scratch after the last step that reads it and before the lifecycle install', () => {
+    // Run 36239768655: the lifecycle's own install of the published UCE box needed 19.9 GB with
+    // 16.1 GB free, because the extracted build prefix was still on the disk.
+    const workflow = readFileSync(resolve('.github/workflows/runtime-box-release.yml'), 'utf8');
+    const step = (name: string) => {
+      const index = workflow.indexOf(`- name: ${name}`);
+      expect(index, `missing release step: ${name}`).toBeGreaterThan(-1);
+      return index;
+    };
+    const release = step('Free the build scratch before the product lifecycle');
+    expect(workflow.slice(release, release + 200)).toContain('npm run runtime-box:ci -- release-build-scratch');
+    expect(release).toBeGreaterThan(step('Run scientific validation before publication'));
+    expect(release).toBeGreaterThan(step('Publish immutable objects and verify their public hashes'));
+    expect(release).toBeLessThan(step('Build the real Liatir product test binary'));
+
+    const root = mkdtempSync(join(tmpdir(), 'liatir-release-scratch-'));
+    try {
+      const buildDir = join(root, 'scratch');
+      execFileSync('mkdir', ['-p', join(buildDir, 'box/payload')]);
+      execFileSync(process.execPath, [
+        'scripts/runtime-box-ci.mjs', 'release-build-scratch', '--build-dir', buildDir,
+      ]);
+      expect(spawnSync('test', ['-e', buildDir]).status).not.toBe(0);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
 });
