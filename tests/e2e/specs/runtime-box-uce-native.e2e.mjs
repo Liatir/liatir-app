@@ -5,6 +5,8 @@
  * This focused gate exists because UCE is unusually large and because its real product runner must finalize a
  * finite 1,280-dimensional embedding into the same Jobs and Results surfaces used by every other AI Tool.
  */
+import fs from 'node:fs';
+import path from 'node:path';
 import {
   activateCleanSandbox,
   runtimeBoxTargetForNativeTest,
@@ -26,6 +28,7 @@ const TARGET_ID = process.env.LIATIR_RUNTIME_BOX_TARGET_ID ?? 'macos-aarch64-met
 const REGISTRY_BASE_URL = process.env.LIATIR_RUNTIME_BOX_REGISTRY_BASE_URL
   ?? 'https://models.liatir.com/v1';
 const VERSION = process.env.LIATIR_RUNTIME_BOX_EXPECTED_VERSION ?? '1.0.0-beta.2';
+const PRODUCT_EVIDENCE_PATH = process.env.LIATIR_RUNTIME_BOX_PRODUCT_EVIDENCE ?? null;
 const INSTALL_TIMEOUT_MS = 45 * 60 * 1000;
 const INFERENCE_TIMEOUT_MS = 30 * 60 * 1000;
 const PROGRESS_REPORT_BYTES = 1024 ** 3;
@@ -109,7 +112,7 @@ export const tests = [
   {
     name: 'installs live UCE, finalizes a direct Job into a Result, and removes the box',
     heavy: true,
-    async run({ browser, expect }) {
+    async run({ browser, expect, rootDir }) {
       await activateCleanSandbox(browser);
       const storage = await browser.execute(async () => ({
         appPath: await window.Liatir.invoke('lia_app_path'),
@@ -294,6 +297,40 @@ export const tests = [
             file.path,
           );
           expect(size).toBeGreaterThan(0);
+        }
+
+        // The release's evidence step refuses a passed release without this receipt. Each
+        // assertion names a check this test made above, and nothing it did not.
+        if (PRODUCT_EVIDENCE_PATH) {
+          const evidencePath = path.resolve(rootDir, PRODUCT_EVIDENCE_PATH);
+          fs.mkdirSync(path.dirname(evidencePath), { recursive: true });
+          fs.writeFileSync(evidencePath, `${JSON.stringify({
+            schemaVersion: 1,
+            kind: 'liatir.runtime-box.product-lifecycle-evidence',
+            status: 'passed',
+            boxId: BOX_ID,
+            modelId: MODEL_ID,
+            runtimeId: RUNTIME_ID,
+            targetId: TARGET_ID,
+            version: VERSION,
+            jobId: job.id,
+            analysisRunId,
+            accelerator: String(provenanceByField.Accelerator),
+            resultArtifactCount: result.outputFiles.length,
+            assertions: {
+              isolatedStorage: 'passed',
+              install: 'passed',
+              downloadMatchesRelease: 'passed',
+              realInference: 'passed',
+              navigationDuringRun: 'passed',
+              jobs: 'passed',
+              results: 'passed',
+              provenance: 'passed',
+              resultDetail: 'passed',
+              removal: 'passed',
+              resultArtifactsSurvivedRemoval: 'passed',
+            },
+          }, null, 2)}\n`);
         }
       } finally {
         if (installed && !removedByAssertion) {

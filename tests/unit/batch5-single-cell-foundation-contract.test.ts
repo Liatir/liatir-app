@@ -290,6 +290,16 @@ describe('Batch 5 single-cell foundation model contract', () => {
     expect(validatorSource).not.toMatch(/^export const UCE_EMBEDDING_SCRIPT/m);
   });
 
+  it('writes the product lifecycle receipt a UCE release needs for its evidence', () => {
+    // Release run 36244057906 passed UCE's lifecycle and promoted it, then could not write its
+    // evidence: the spec had never produced the receipt the evidence step requires.
+    const spec = readFileSync(resolve(rootDir, 'tests/e2e/specs/runtime-box-uce-native.e2e.mjs'), 'utf8');
+    expect(spec).toContain('process.env.LIATIR_RUNTIME_BOX_PRODUCT_EVIDENCE');
+    expect(spec).toContain("kind: 'liatir.runtime-box.product-lifecycle-evidence'");
+    const assertions = spec.slice(spec.indexOf('assertions: {'), spec.indexOf('},', spec.indexOf('assertions: {')));
+    expect(assertions.match(/: 'passed'/g)?.length ?? 0).toBeGreaterThanOrEqual(10);
+  });
+
   it('expects the UCE preview columns the product runner actually writes', () => {
     // Release run 36176235701 failed here: the validator still counted 1281 columns after the
     // runner gained two viewer projection columns ahead of the embedding.
