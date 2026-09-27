@@ -1,6 +1,6 @@
 # Scientific AI Workbench Product Plan
 
-Last reviewed: 2026-08-22
+Last reviewed: 2026-09-27
 
 This document is the canonical product direction and execution sequence for
 Liatir during and after the current Runtime Box CI foundation program. It turns
@@ -19,12 +19,12 @@ It does not replace the evidence ledgers:
 
 The Runtime Box CI foundation completed Gates 0 through 10 on 2026-07-22, and
 the subsequent pixi/Scrollcase migration and protected re-release are now
-complete. The public `beta` matrix has nine schema-v2 targets: Geneformer on
-macOS Metal plus Linux CUDA 12.9 and Windows CUDA 12.8; scGPT on macOS Metal,
-Linux/Windows CPU and both CUDA targets; and UCE on macOS Metal. The old CUDA
-12.4 identities were deleted rather than renamed, and the successor targets are
-published. Geneformer and scGPT `beta.1` are revoked; UCE `beta.1` remains an
-explicit retirement decision.
+complete. As of 2026-09-27 the public `beta` matrix has twelve Scrollcase v3
+targets across seven components — Geneformer, scGPT, UCE, MHCflurry, pVACseq,
+Boltz-2 and Protenix base v1.0.0 — listed in the
+[AI Model ledger](./ai-batches.md). There are no native Windows targets: Windows
+runs the Linux boxes through WSL2. Geneformer and scGPT `beta.1` are revoked;
+UCE `beta.1` remains an explicit retirement decision.
 
 Scrollcase adoption P5.0 through P5.7 is complete. Runtime Box security Gate 1
 is also complete: one lightweight signed fixture proves a real cross-version
@@ -901,8 +901,12 @@ Protein sequence plus optional ligand
 ```
 
 The earlier Boltz-2 and Chai product integrations were removed during the
-Runtime Box-only cutover. A future structure model must first obtain a legal,
-target-specific Runtime Box and full scientific/product lifecycle evidence.
+Runtime Box-only cutover. Structure prediction returned the right way: Boltz-2
+and Protenix base v1.0.0 are published Runtime Boxes with scientific and product
+lifecycle evidence (2026-09-17), behind the Structure Prediction and
+Protein–Ligand Affinity tools; see
+[Phase 3 implementation status](./phase3-implementation-status.md). OpenMM,
+for relaxation and molecular dynamics, is validated but not published.
 
 Each vertical exits only when it has:
 
@@ -985,8 +989,10 @@ The local desktop matrix and controlled local MCP gate are complete. The signed
 public release remains a separate credential-dependent gate and does not block
 this product sequence:
 
-1. validate the predictive/variant genomics and protein structure/binding
-    verticals;
+1. finish the protein structure/binding vertical by publishing OpenMM; the
+    oncology (MHCflurry, pVACseq) and structure models (Boltz-2, Protenix) are
+    already published, and a predictive-genomics family would start from a new
+    Runtime Box plan;
 2. publish useful verified Plugin and pipeline templates;
 3. evaluate another external workflow engine only from the reusable adapter
     contract, then reconsider other advanced expansion.

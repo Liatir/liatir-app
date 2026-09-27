@@ -62,7 +62,6 @@ export default defineConfig({
           { text: 'Release gate: signed distribution', link: '/state/roadmap/release-signed-distribution' },
           { text: 'New AI models integration plan', link: '/state/roadmap/new-ai-models-integration-plan' },
           { text: 'Phase 3 implementation status', link: '/state/roadmap/phase3-implementation-status' },
-          { text: 'Phase 3: Boltz-2 source review', link: '/state/roadmap/phase3-boltz-source-review' },
           { text: 'Phase 3: Protenix source review', link: '/state/roadmap/phase3-protenix-source-review' },
           { text: 'Native Tools bundled environment', link: '/state/roadmap/native-tools-bundled-environment' },
           { text: 'Native Tool support matrix', link: '/state/roadmap/native-tool-support' },
@@ -87,6 +86,10 @@ export default defineConfig({
         collapsed: true,
         items: [
           { text: 'About history', link: '/history/README' },
+          { text: 'Status log, July to September 2026', link: '/history/status-log-2026-07-to-2026-09' },
+          { text: 'Scrollcase v3 adoption', link: '/history/scrollcase-v3-adoption' },
+          { text: 'Phase 3: Boltz-2 source review', link: '/history/phase3-boltz-source-review' },
+          { text: 'Phase 3: Linux + NVIDIA handoff', link: '/history/phase3-linux-nvidia-handoff' },
           { text: 'Runtime Box production report', link: '/history/runtime-box-production-report' },
           { text: 'Runtime Box pixi migration', link: '/history/runtime-box-pixi-migration' },
           { text: 'Runtime Box model platform expansion', link: '/history/runtime-box-model-platform-expansion' },

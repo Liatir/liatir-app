@@ -33,8 +33,8 @@ Markdown and stays complete and meaningful without the tool.
   [AI batch ledger](./state/roadmap/ai-batches.md), the
   [Runtime Box CI foundation](./state/roadmap/runtime-box-ci-foundation.md), the
   open [signed public distribution gate](./state/roadmap/release-signed-distribution.md),
-  and [adopting Scrollcase v3](./state/roadmap/scrollcase-v3-adoption.md), which
-  every remaining Phase 3 model now waits on.
+  and the [Phase 3 implementation status](./state/roadmap/phase3-implementation-status.md),
+  where OpenMM is still to publish.
 - `.context/truth/` — what is stable: architecture, the `window.Liatir` and
   Rust command surfaces, AI Model and AI Tool boundaries, the testing strategy,
   and the working agreements addressed to agents.
@@ -44,7 +44,9 @@ Markdown and stays complete and meaningful without the tool.
 ## Historical
 
 - `.context/history/` — completed, superseded or closed operational
-  context: the gate evidence records, the
+  context: the [status log](./history/status-log-2026-07-to-2026-09.md) that
+  `state/current.md` accumulated until 2026-09-27, the gate evidence records, the
+  closed [Scrollcase v3 adoption](./history/scrollcase-v3-adoption.md), the
   [Runtime Box production report](./history/runtime-box-production-report.md),
   the completed [pixi migration](./history/runtime-box-pixi-migration.md), and
   the completed [Scrollcase extraction](./history/scrollcase-extraction-plan.md)

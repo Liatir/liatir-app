@@ -129,7 +129,7 @@ Component Dictionary**, which the PDB archive places under **CC0 1.0**. Traced r
 upstream's `scripts/process/ccd.py` reads a PDB components file through `pdbeccdutils` and writes one
 pickle per component; the archive's own members are exactly `mols/<CCD id>.pkl`; and the dictionary
 is published inside the `/pub/pdb/` archive tree the CC0 policy covers. Details and sources are in
-[the legal record](../../../runtime-boxes/legal/boltz-2.md).
+[the legal record](../../runtime-boxes/legal/boltz-2.md).
 
 **A claim in that record was wrong and is corrected**: `frozendict` was not the project's first
 copyleft dependency. The complete inventory has **seventeen** GPL-family distributions, sixteen of
@@ -225,7 +225,7 @@ replaces that one function with a check over the bundled cache and leaves everyt
 
 - **Decide where PyPI licences are expressed** — in Scrollcase (recommended: it owns the inventory
   contract) or in a Liatir-side declared inventory. Nothing downstream can start until this is
-  settled; see [current status](../current.md).
+  settled; see [current status](../state/current.md).
 - Answer the two legal questions above.
 - Then: author the scroll with the assets pinned to the SHA-256 values above and a bounded offline
   self-test; build locally with a development key; `verify --self-test`.

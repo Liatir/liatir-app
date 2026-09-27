@@ -1,6 +1,6 @@
 # AI Model Integration Ledger
 
-Last reviewed: 2026-08-10
+Last reviewed: 2026-09-27
 
 This ledger records the current product boundary for AI Models and AI Tools.
 The canonical Runtime Box build and publication evidence remains in
@@ -37,15 +37,24 @@ must close before the model is treated as generally available.
 
 ## Current product catalog
 
-| AI Model | AI Tool | Published native support | Cross-platform state |
-| --- | --- | --- | --- |
-| Geneformer V1 10M | Single-cell Embedding | macOS arm64 Metal; Linux x86_64 CUDA 12.9; Windows x86_64 CUDA 12.8 | Current published matrix complete; CPU targets were dropped after measured throughput showed they were not viable |
-| scGPT Whole-human | Single-cell Embedding | macOS arm64 Metal; Linux/Windows CPU; Linux CUDA 12.9; Windows CUDA 12.8 | All five current targets are published and product-lifecycle verified |
-| UCE 4-layer | Single-cell Embedding | macOS arm64 Metal | Current P5 release target is published and product-lifecycle verified; broader platform feasibility and the model's large footprint require a separate expansion decision |
+Every Linux target below also serves Windows through WSL2; native Windows targets were retired on
+2026-09-11 and revoked on 2026-09-18 — see
+[no native Windows Runtime Box targets](../../decisions/no-native-windows-runtime-box-targets.md).
+All are Scrollcase v3 and on the public `beta` channel; `runtime-boxes/catalog.json` holds the exact
+releases and runs.
 
-Published CUDA support now exists on Linux CUDA 12.9 and Windows CUDA 12.8 for
-both Geneformer and scGPT. The old Geneformer CUDA 12.4 identities were deleted,
-not renamed; their successors have independent evidence and publication records.
+| AI Model | AI Tool | Published targets | Cross-platform state |
+| --- | --- | --- | --- |
+| Geneformer V1 10M | Single-cell Embedding | macOS arm64 Metal; Linux x86_64 CUDA 12.9 | Complete; CPU targets were dropped after measured throughput showed they were not viable |
+| scGPT Whole-human | Single-cell Embedding | macOS arm64 Metal; Linux CPU; Linux CUDA 12.9 | Complete |
+| UCE 4-layer | Single-cell Embedding | macOS arm64 Metal | Broader platform feasibility and the model's large footprint require a separate expansion decision |
+| MHCflurry class I presentation | MHC-I Epitope Prediction | macOS arm64 Metal; Linux CPU | Linux CUDA 12.9 is `planned` |
+| pVACseq (Tool Runtime) | Neoantigen Prioritization | macOS arm64 CPU; Linux CPU | Complete |
+| Boltz-2 | Structure Prediction; Protein–Ligand Affinity | Linux CUDA 12.9 | macOS out of scope by the owner's 2026-09-07 decision |
+| Protenix base v1.0.0 | Structure Prediction | Linux CUDA 12.6 | macOS impossible upstream; v2 waits on ByteDance |
+
+OpenMM, a Tool Runtime for Molecular Relaxation and Molecular Dynamics, is validated on both Linux
+targets but not published; see [Phase 3 implementation status](./phase3-implementation-status.md).
 
 ## Removed experimental integrations
 
@@ -75,11 +84,11 @@ must be reviewed again when a candidate Runtime Box program starts.
 
 | Model family | Current license assessment | Practical target assessment | Decision |
 | --- | --- | --- | --- |
-| Geneformer | Apache-2.0 model repository; accepted Runtime Box legal audits | Published and validated on macOS Metal, Linux CUDA 12.9 and Windows CUDA 12.8; measured CPU throughput was not viable | Keep and maintain |
-| scGPT | MIT code repository; the reviewed upstream revision distributes the selected checkpoint without separate checkpoint terms | Published and validated on macOS Metal, Linux/Windows CPU, Linux CUDA 12.9 and Windows CUDA 12.8 | Keep and maintain |
+| Geneformer | Apache-2.0 model repository; accepted Runtime Box legal audits | Published and validated on macOS Metal and Linux CUDA 12.9; measured CPU throughput was not viable | Keep and maintain |
+| scGPT | MIT code repository; the reviewed upstream revision distributes the selected checkpoint without separate checkpoint terms | Published and validated on macOS Metal, Linux CPU and Linux CUDA 12.9 | Keep and maintain |
 | UCE | MIT code; selected Figshare model assets are CC BY 4.0 and require attribution | Published and validated on macOS Metal; non-macOS expansion needs its own feasibility, footprint and evidence review | Keep current target; re-plan expansion separately |
 | ESM-2 8M | MIT model repository and weights | PyTorch makes CPU on all three operating systems, macOS MPS, and Linux/Windows CUDA plausible, subject to native validation | Strong future candidate |
-| Boltz-2 | Upstream states that code and weights are MIT and permits commercial use | Upstream supports CPU/non-CUDA execution, although slowly, and optional CUDA; native dependencies still require validation on each operating system | Strong future candidate |
+| Boltz-2 | MIT code and weights, commercial use permitted; legal record pinned to the source revision | Published and validated on Linux CUDA 12.9 | Keep and maintain |
 | CellTypist | MIT code; explicit redistribution terms for the separately downloaded model files were not established by the current review | CPU execution appears portable | Hold until the model-asset license is explicit |
 | Enformer, Basenji2, Borzoi | Permissive code repositories; exact coverage of distributed weights still needs a model-asset audit | TensorFlow supports desktop CPU broadly, but not official macOS GPU and not native Windows GPU after TensorFlow 2.10 | Conditional: audit assets, then target CPU on all operating systems and Linux CUDA only |
 | Nucleotide Transformer 50M/500M | CC BY-NC-SA 4.0 model terms | Technically portable through PyTorch/Transformers | Exclude from the general product catalog unless Liatir deliberately accepts non-commercial restrictions or obtains permission |
@@ -102,10 +111,8 @@ For each additional model:
 9. add the model to `packages/liatir-core` only after the preceding evidence is
    complete.
 
-The current nine-target release matrix is complete. The immediate priority is
-not another model family: close the Scrollcase P5 consumer/deletion boundary,
-then cross-version Runtime Box update, persisted anti-replay state, and the
-common execution spine defined in
-[Scientific AI Workbench](./scientific-ai-workbench.md). UCE platform expansion
-must be re-planned as a separate evidence-backed decision rather than inferred
-from the completed macOS target.
+What comes next for AI Models is OpenMM's publication, then Protenix Mini Default and, once
+ByteDance publishes it, Protenix v2. Phase 4 of the
+[integration plan](./new-ai-models-integration-plan.md) — RFdiffusion3 and ProteinMPNN — is not
+started. UCE platform expansion must be re-planned as a separate evidence-backed decision rather
+than inferred from the completed macOS target.

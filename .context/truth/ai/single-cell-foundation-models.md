@@ -8,12 +8,13 @@ AI Model registry and public docs.
 ## Current status
 
 Batch 5 has three installable/runnable slices: UCE 4-layer, Geneformer V1 10M,
-and scGPT Whole-human. All use KMS-signed schema-v2 Runtime Boxes. The public
-`beta` matrix contains nine targets: Geneformer on macOS Metal, Linux CUDA 12.9
-and Windows CUDA 12.8; scGPT on macOS Metal, Linux/Windows CPU and both CUDA
-targets; UCE on macOS Metal. Every target has reviewed native lifecycle and
+and scGPT Whole-human. All use KMS-signed Scrollcase v3 Runtime Boxes. The public
+`beta` channel carries six single-cell targets: Geneformer on macOS Metal and
+Linux CUDA 12.9; scGPT on macOS Metal, Linux CPU and Linux CUDA 12.9; UCE on
+macOS Metal. Windows runs the Linux targets through WSL2; the native Windows
+targets were retired on 2026-09-11. Every target has reviewed native lifecycle and
 scientific evidence. Geneformer and scGPT `beta.1` are revoked; UCE `beta.1` is
-unselected and rejected by the v2-only client but not explicitly revoked. These
+unselected and rejected by the v3-only client but not explicitly revoked. These
 three entries are the complete product AI Model catalog; scFoundation is not
 registered or visible.
 
@@ -76,13 +77,13 @@ Geneformer V1 10M is the second slice. It uses the isolated runtime ID
 `single-cell-foundation-geneformer-v1-10m`, checksummed V1-only assets and the
 same compatible `ai-single-cell-embedding` AI Tool. The runner uses
 Genecorpus-30M median-scaled rank encoding. Its current published matrix is
-macOS arm64 Metal, Linux x86_64 CUDA 12.9 and Windows x86_64 CUDA 12.8; CPU
+macOS arm64 Metal and Linux x86_64 CUDA 12.9; CPU
 targets were dropped after measured throughput showed they were not viable.
 
 scGPT Whole-human is the third slice. It uses runtime ID
 `single-cell-foundation-scgpt-whole-human`, the pinned Whole-human checkpoint
 and the shared embedding Tool. Its current published matrix is macOS arm64
-Metal, Linux and Windows CPU, Linux CUDA 12.9 and Windows CUDA 12.8.
+Metal, Linux CPU and Linux CUDA 12.9.
 
 The tool outputs:
 

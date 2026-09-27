@@ -67,7 +67,7 @@ natively — there is no WSL2 on a Mac.
 | macOS | 5 | a Mac, natively | ✅ all five, plus `native-tools` and OpenMM |
 
 The three native Windows targets were **retired** on 2026-09-11 rather than rebuilt — see
-[no native Windows Runtime Box targets](../../decisions/no-native-windows-runtime-box-targets.md).
+[no native Windows Runtime Box targets](../decisions/no-native-windows-runtime-box-targets.md).
 Their Linux counterparts now declare `windows-wsl2` and carry those users, which is why all five
 Linux targets do.
 
@@ -188,7 +188,7 @@ handled explicitly, exactly as the v1→v2 cutover did.
 ## Related
 
 - [Boltz-2 source review](./phase3-boltz-source-review.md) — the blocker, with the evidence.
-- [Scrollcase extraction](../../history/scrollcase-extraction-plan.md) — how Scrollcase became an
+- [Scrollcase extraction](./scrollcase-extraction-plan.md) — how Scrollcase became an
   independent project, and why adoption is downstream Liatir work.
-- [Runtime Box ownership boundary](../../decisions/runtime-box-ownership-boundary.md) — what belongs
+- [Runtime Box ownership boundary](../decisions/runtime-box-ownership-boundary.md) — what belongs
   to Scrollcase and what belongs here.

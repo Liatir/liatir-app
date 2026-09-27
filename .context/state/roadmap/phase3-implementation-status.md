@@ -1,7 +1,11 @@
 # Phase 3 implementation evidence and remaining work
 
 The full scope is [Phase 3 of the integration plan](./new-ai-models-integration-plan.md#fase-3--strutture-affinità-e-simulazione).
-Status on 2026-09-06: in progress; no Phase 3 component is published or in the normal product catalog.
+Status on 2026-09-27: **Boltz-2 and Protenix base v1.0.0 are published** on `beta` (runs
+35227045147 and 35244917546, 2026-09-17) and in the product catalog. **OpenMM is not**: its two
+Linux targets are `native-lifecycle-validated` and its macOS CPU target is `planned`. Protenix v2
+waits on ByteDance, and Protenix Mini Default is unauthored. The dated sections below are the
+evidence as it accumulated; the checklist near the end is the current state.
 
 ## GitHub audit (2026-09-07)
 
@@ -326,7 +330,7 @@ the box targets. Evidence: `npm run test:verify` on this Windows host now passes
   candidate. Resolution only: nothing installed, no weights, no GPU execution, no workflow dispatch.
   The inspected graph, the three findings it raised — Boltz hard-requires `wandb` and `sentry-sdk`,
   the loose `pandas>=2.2.2` bound resolved to `pandas 3.0.5`, and `fsspec` no longer has the `http`
-  extra — and the remaining gates are in the [Boltz source review](./phase3-boltz-source-review.md).
+  extra — and the remaining gates are in the [Boltz source review](../../history/phase3-boltz-source-review.md).
   Boltz-2 still has no scroll, self-test, legal record, catalog entry, runner or measurement.
 - **OpenMM is measured on real proteins with a real drug, not toys.** The macOS arm64 CPU validator
   runs a size ladder whose structures and molecules all ship inside the signed payload — OpenMM's
@@ -358,7 +362,7 @@ the box targets. Evidence: `npm run test:verify` on this Windows host now passes
   of solvated DHFR would be roughly 5.5 hours on this CPU, a projection and not a measurement;
   *size above ~30,000 atoms* — large complexes reach 50,000–200,000 atoms and land in the
   beyond-evidence path; *GPU* — every figure above is CPU, and no CUDA target has ever been built.
-  See the [Linux + NVIDIA handoff](./phase3-linux-nvidia-handoff.md).
+  See the [Linux + NVIDIA handoff](../../history/phase3-linux-nvidia-handoff.md).
 - Scientific and product evidence now share **one** archive,
   `e5e1f3ba48bb0e2affe006b0b2cbbc793ee4b7af2475589e6f047d827b8c97d1`: the validator verified the
   signed payload it measured, and the product lifecycle installed that same box. Previously the two
@@ -494,7 +498,7 @@ the box targets. Evidence: `npm run test:verify` on this Windows host now passes
   not cover the unmounted complex editor or prove any Phase 3 model execution.
 
 - Boltz-2 immutable source/model inputs and offline-cache requirements are recorded in the
-  [source review](./phase3-boltz-source-review.md). Its Linux CUDA candidate manifest and, since
+  [source review](../../history/phase3-boltz-source-review.md). Its Linux CUDA candidate manifest and, since
   2026-09-08, its resolved lock both exist. No completed box, downloaded weights or GPU execution is
   claimed.
 - `.github/workflows/phase3-dependency-lock.yml` prepares a manual Linux CPU-only authoring path
@@ -550,7 +554,8 @@ by this audit; production actions require the owner's separate confirmation.
   Molecular Dynamics. The CUDA envelope reaches solvated DHFR at 29,419 atoms, so realistic inputs
   are inside measured evidence there. Still open: the remaining `linux-x86_64-cpu` target, CI builds
   on production keys from a clean tree, a signer redeploy, and publication.
-- [ ] Boltz-2: official source and structure/affinity checkpoints, legal review, reproducible Linux
+- [x] Boltz-2 — **published 2026-09-17**, run 35227045147, KMS-signed, with its release evidence;
+  the history below is how it got there. Official source and structure/affinity checkpoints, legal review, reproducible Linux
   CUDA box, real product runner and validator. Done locally for Linux x86_64 CUDA 12.9 through WSL2:
   lock, scroll, legal record pinned to the exact source revision, build, self-test, scientific
   validation (1UBQ at 1.99 Å, correct on 8 of 8 seeds), retained measurement and hardware profile,
@@ -565,9 +570,10 @@ by this audit; production actions require the owner's separate confirmation.
   Results, provenance, offline, navigation back, and removal with both Results' artifacts
   surviving. Retained record, superseding the 2026-09-14 one:
   `runtime-boxes/measurements/boltz-2-linux-x86_64-cuda12.9-product-lifecycle-development-2026-09-16.json`.
-  Still open: CI builds on production keys from a clean tree, a signer redeploy, and publication.
+  The CI build on production keys, the signer redeploy and the publication all followed.
   macOS is out of scope by the owner's 2026-09-07 decision, so no Metal feasibility review is owed.
-- [ ] Protenix: ships as **base v1.0.0** (`protenix_base_default_v1.0.0`) on Linux x86_64 CUDA 12.6
+- [x] Protenix base v1.0.0 — **published 2026-09-17**, run 35244917546, with its release evidence;
+  v2 and Mini remain open. Protenix ships as **base v1.0.0** (`protenix_base_default_v1.0.0`) on Linux x86_64 CUDA 12.6
   while v2 and Mini wait — [Protenix ships v1 while v2 waits](../../decisions/protenix-ships-v1-while-v2-waits.md);
   Mini must still never install ESM2-3B when it comes. Done locally through WSL2: build, self-test,
   scientific validation (1UBQ at 2.151 Å, deterministic, five competing seeds), retained measurement
@@ -575,8 +581,8 @@ by this audit; production actions require the owner's separate confirmation.
   cancellation, measured estimate, a real ubiquitin prediction at pLDDT 0.93, Job, Result,
   provenance, offline, navigation back, and removal with the artifacts surviving. Retained record:
   `runtime-boxes/measurements/protenix-base-v1-0-0-linux-x86_64-cuda12.6-product-lifecycle-development-2026-09-13.json`.
-  Local alignments and templates are refused rather than supported. Still open: CI builds on
-  production keys from a clean tree, a signer redeploy, and publication.
+  Local alignments and templates are refused rather than supported. The CI build on production
+  keys, the signer redeploy and the publication all followed.
 - [ ] Structure/affinity pages: simple complex builder, advanced contract input, file validation,
   explicit single-sequence choice, 128-atom refusal and 56-atom warning, distinct affinity values,
   structures/confidence/PAE/PDE/table/3D output. Proven in the real app through WSL2 for structure
@@ -590,8 +596,8 @@ by this audit; production actions require the owner's separate confirmation.
   runtime install/update/rollback/remove/revocation lifecycle on **each declared host environment**,
   not each payload: native Linux and Windows-through-WSL2 are two proofs of one signed box. For
   Boltz-2 and Protenix, Windows-through-WSL2 now proves install, cancellation, Jobs, Results,
-  provenance, navigation, offline execution and removal; native Linux, update, rollback, restart and
-  revocation are still unproven for both.
+  provenance, navigation, offline execution and removal, and each release's CI product lifecycle
+  proved native Linux too; update, rollback, restart and revocation are still unproven for both.
 - [x] Hardware gate reworked to the corrected rule of 2026-09-07, and proven in the real app.
   `estimateHardwareResources` now returns three outcomes: `measured` (real figures from the smallest
   dominating sample), `beyond-evidence` (`confirmationRequired`, carrying no invented estimate — only

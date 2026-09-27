@@ -1,6 +1,7 @@
 # Native Tools as one Scrollcase box
 
-Status: **Migrated to a signed Scrollcase v2 box on 2026-08-22. The previous
+Status: **Migrated to a signed Scrollcase box on 2026-08-22 and rebuilt as Scrollcase v3 on
+2026-09-11; the Native Tools gates passed on the v3 artifact on 2026-09-18. The previous
 custom tar implementation was built and verified end to end on macOS arm64
 2026-08-21, on Windows x86_64 through WSL2 the same day, and inside a native
 Linux x86_64 Liatir ELF app during Gate 8 on 2026-08-22. The Windows and Linux
@@ -24,11 +25,11 @@ target and is declared unsupported there.
 
 There is no catalog or runtime download for these tools because the complete
 box is embedded in the application. The box nevertheless uses the same
-Scrollcase v2 format and its own signed release: one objective has one packaging
+Scrollcase v3 format and its own signed release: one objective has one packaging
 and verification solution regardless of whether the payload is an AI Model.
 
-`scrollcase@0.8.0` owns authoring, locked installation, self-test, deterministic
-ZIP, release signature and verification. `scrollcase-consumer 0.3.2` owns native
+`scrollcase@1.2.0` owns authoring, locked installation, self-test, deterministic
+ZIP, release signature and verification. `scrollcase-consumer 0.4.0` owns native
 verification and extraction. Windows invokes a static Linux build of that same
 consumer inside WSL2. The deleted tar sidecar and shell extractor are not an
 alternative path.
@@ -62,12 +63,12 @@ is the same reason Runtime Boxes exist for models.
   provenance revision binds the current product metadata and self-test, while
   `dependencyLockSha256` binds the target lock; `native-tools:require` rejects a
   correctly signed but stale artifact.
-- Native macOS/Linux preparation goes through `scrollcase-consumer 0.3.2`,
+- Native macOS/Linux preparation goes through `scrollcase-consumer 0.4.0`,
   including release signature, archive identity, manifest agreement and payload
   digest. Windows ships the Linux box plus a static Rust consumer whose digest
   is compiled into the Windows executable, and performs the same operation
   inside WSL2. No `tar`, completion marker or custom shell extraction remains.
-- Scrollcase v2 requires its own Python interpreter even though Liatir executes
+- The box declares its own Python runtime (`runtime.id` `python` in each scroll) even though Liatir executes
   the six native binaries directly. That interpreter is part of the box and is
   not a user dependency.
 

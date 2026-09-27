@@ -5,9 +5,9 @@ NVIDIA GPU — including Windows with WSL2, which is the same host environment a
 Runtime Box is concerned. It exists because three of Phase 3's four components cannot run
 anywhere else, and because the fourth has a GPU target nobody has ever executed.
 
-Read it together with the [Phase 3 implementation status](./phase3-implementation-status.md),
+Read it together with the [Phase 3 implementation status](../state/roadmap/phase3-implementation-status.md),
 which holds the evidence, and the
-[integration plan](./new-ai-models-integration-plan.md), which holds the requirements.
+[integration plan](../state/roadmap/new-ai-models-integration-plan.md), which holds the requirements.
 
 ## Why this machine, specifically
 
@@ -37,7 +37,7 @@ Checked on 2026-09-09 and updated 2026-09-10, not inferred:
 OpenMM went from five targets to three: its two native Windows targets were deleted on 2026-09-09,
 and both Linux targets now declare `["native", "windows-wsl2"]`. No new component gets a native
 Windows target — see
-[No native Windows Runtime Box targets](../../decisions/no-native-windows-runtime-box-targets.md).
+[No native Windows Runtime Box targets](../decisions/no-native-windows-runtime-box-targets.md).
 Every component here is developed for Linux and Windows-through-WSL2, plus macOS where possible;
 for the three AI Models macOS is out of scope by the 2026-09-07 decision.
 
@@ -65,12 +65,12 @@ OpenMM is the complete worked example to imitate: `runtime-boxes/scrolls/openmm/
 1. ~~**Verify the hardware from inside WSL2**~~ — done 2026-09-09. RTX 4060 Ti, 8188 MiB VRAM,
    driver 610.62, Ubuntu 26.04, 6 CPUs, 24 GiB to WSL2, 893 GiB free in the Linux filesystem. The
    full record is in the
-   [Phase 3 status](./phase3-implementation-status.md#the-linux-cuda-authoring-and-measurement-host-2026-09-08).
+   [Phase 3 status](../state/roadmap/phase3-implementation-status.md#the-linux-cuda-authoring-and-measurement-host-2026-09-08).
 2. ~~**Build and measure OpenMM `linux-x86_64-cuda12.9`**~~ — done 2026-09-09. Built, signed,
    `verify --self-test` passed on a fresh extraction, and the scientific validator passed 18 cases
    on the GPU. The toolchain is therefore proven end to end — driver, WSL2, CUDA 12.9, OpenMM — and
    the harder components can rely on it. Figures and the measurement defect this run exposed are in
-   the [Phase 3 status](./phase3-implementation-status.md#openmm-cuda-is-built-self-tested-and-measured-on-a-real-gpu-2026-09-09).
+   the [Phase 3 status](../state/roadmap/phase3-implementation-status.md#openmm-cuda-is-built-self-tested-and-measured-on-a-real-gpu-2026-09-09).
    Building needs `--allow-dirty` while the tree has uncommitted work, `--conda-pack` pointing at
    the pixi-global binary, and `--build-dir` inside the Linux filesystem.
 3. ~~**Resolve the Boltz-2 lock**~~ — done 2026-09-09 with pixi 0.73.0 in WSL2, graph inspected.
@@ -85,7 +85,7 @@ OpenMM is the complete worked example to imitate: `runtime-boxes/scrolls/openmm/
    `tools/native-tools-box-consumer` changes, a rebuild inside WSL2 after
    `rustup target add x86_64-unknown-linux-musl`. Done for OpenMM on 2026-09-10 — the five gates it
    had to clear first are in the
-   [Phase 3 status](./phase3-implementation-status.md#openmm-cuda-passes-its-product-lifecycle-in-the-real-app-through-wsl2-2026-09-10).
+   [Phase 3 status](../state/roadmap/phase3-implementation-status.md#openmm-cuda-passes-its-product-lifecycle-in-the-real-app-through-wsl2-2026-09-10).
 4. **Write the Boltz-2 scroll**: assets with pinned SHA-256 (use the revision and hashes already
    in the source review), an offline self-test, a legal record with the source revision, a
    licence inventory.
@@ -121,9 +121,9 @@ work in the same session, and finish with `syngraphe check`.
 
 ## Records
 
-- [Phase 3 implementation status](./phase3-implementation-status.md) — the evidence ledger.
+- [Phase 3 implementation status](../state/roadmap/phase3-implementation-status.md) — the evidence ledger.
 - [Boltz-2 source review](./phase3-boltz-source-review.md) — pinned revision and asset hashes.
-- [Protenix source review](./phase3-protenix-source-review.md) — commit
+- [Protenix source review](../state/roadmap/phase3-protenix-source-review.md) — commit
   `2475421477ab414b571149ad4a875c390ff8a35d`, candidate assets, the 403.
-- [Runtime Box CI foundation](./runtime-box-ci-foundation.md) — runner profiles and cost policy.
-- [Publication runs on hosted CI](../../decisions/runtime-box-publication-runs-on-hosted-ci.md).
+- [Runtime Box CI foundation](../state/roadmap/runtime-box-ci-foundation.md) — runner profiles and cost policy.
+- [Publication runs on hosted CI](../decisions/runtime-box-publication-runs-on-hosted-ci.md).

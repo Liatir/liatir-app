@@ -174,8 +174,10 @@ combination. Examples are:
 - `macos-aarch64-metal`;
 - `linux-x86_64-cpu`;
 - `linux-x86_64-cuda12.9`;
-- `windows-x86_64-cuda12.8`;
-- `windows-x86_64-cpu`.
+- `linux-x86_64-cuda12.6`.
+
+There are no native Windows targets: a Linux target that declares the
+`windows-wsl2` host environment serves Windows through WSL2.
 
 A Linux CUDA box is not a Windows CUDA box. A CPU box is not silently treated
 as a GPU box. Matching the model name alone is never enough.
@@ -365,8 +367,7 @@ installed Scrollcase executable. Scrollcase:
 9. calculates archive and installed sizes.
 
 The resulting box remains self-contained: the final user does not install
-Scrollcase, pixi, conda-pack, or Python. Model authoring records that have not
-yet moved to schema-v2 scrolls are frozen build inputs until P5.4 migrates them;
+Scrollcase, pixi, conda-pack, or Python. Every authored scroll is Scrollcase v3;
 new generic pixi work must not bypass Scrollcase.
 
 #### 7. Run an independent self-test
@@ -928,9 +929,11 @@ behavior.
 
 ### Is Windows CUDA supported?
 
-Yes, for the exact published `windows-x86_64-cuda12.8` Geneformer and scGPT
-targets. This does not imply support for old CUDA 12.4 identities, arbitrary
-CUDA versions, WSL2 execution, or another model without its own evidence.
+Yes, through WSL2 only. The native `windows-x86_64-cuda12.8` targets were
+retired on 2026-09-11 and revoked on 2026-09-18; a Linux CUDA target that
+declares `windows-wsl2` and has passed its product lifecycle inside the Windows
+app is what serves Windows users. It does not imply support for arbitrary CUDA
+versions or for another model without its own evidence.
 
 ### Does a successful self-test prove scientific correctness?
 
@@ -972,11 +975,11 @@ their own scoped evidence.
 | Live model/target/publication catalog | `runtime-boxes/catalog.json` |
 | Human-readable support matrix | `runtime-boxes/compatibility-matrix.md` |
 | Reviewed compact evidence | `runtime-boxes/evidence/` |
-| V2 scrolls and dependency locks | `runtime-boxes/scrolls/` |
+| V3 scrolls and dependency locks | `runtime-boxes/scrolls/` |
 | Legal reviews | `runtime-boxes/legal/` |
 | Shared TypeScript contract | `packages/liatir-core/src/runtime-box.ts` |
-| Generic box contract, pixi build, signing envelope and verify | Exact v2-only external dependency `scrollcase@0.8.0`; public exports and declared `scrollcase` executable only |
-| Rust generic consumer | Exact `scrollcase-consumer 0.3.2` through its public API |
+| Generic box contract, pixi build, signing envelope and verify | Exact v3 external dependency `scrollcase@1.2.0`; public exports and declared `scrollcase` executable only |
+| Rust generic consumer | Exact `scrollcase-consumer 0.4.0` through its public API |
 | Stable Liatir operator dispatcher | `scripts/runtime-box.mjs` and `scripts/runtime-box/scrollcase-adapter.mjs` |
 | Private signer adapter | `scripts/runtime-box/signer-command.mjs` |
 | Liatir distribution operations | `scripts/runtime-box/distribution-cli.mjs` |

@@ -12,11 +12,13 @@ now an independent external npm tool and Liatir's active adoption/migration
 state lives in
 [Scrollcase P5](../../history/scrollcase-p5-liatir-adoption.md),
 [the pixi migration](../../history/runtime-box-pixi-migration.md), and
-`runtime-boxes/catalog.json`. The later migration and release are complete: the
-public `beta` channel serves nine schema-v2 targets across Geneformer, scGPT and
-UCE, including Linux CUDA 12.9 and Windows CUDA 12.8. Geneformer and scGPT
-`beta.1` are revoked; UCE `beta.1` is unselected and v2-incompatible but not
-explicitly revoked. Statements such as “CUDA is validated only on Linux” are
+`runtime-boxes/catalog.json`. The later migrations and releases are complete: as
+of 2026-09-27 the public `beta` channel serves twelve Scrollcase v3 targets across
+seven components, with no native Windows target — Windows runs the Linux boxes
+through WSL2 — and releases run through `runtime-box-release.yml` on self-hosted
+ephemeral runners; see [current project status](../current.md). Geneformer and
+scGPT `beta.1` are revoked; UCE `beta.1` is unselected and v2-incompatible but
+not explicitly revoked. Statements such as “CUDA is validated only on Linux” are
 true only at the dated Gate 10 closure.
 
 **P5.3 v2 foundation revalidation (2026-07-31):** the manual-only
