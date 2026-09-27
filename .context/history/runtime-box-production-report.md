@@ -319,7 +319,8 @@ because new releases use the KMS key.
   publication authority.
 - `runtime-boxes/evidence/`: reviewed compact production evidence.
 - `runtime-boxes/compatibility-matrix.md`: user-facing support boundary for
-  maintainers.
+  maintainers. Deleted on 2026-09-28 once it had fallen behind; the AI Model
+  ledger in `.context/state/roadmap/ai-batches.md` replaced it.
 - `services/runtime-box-signer/policy.json`: signable model/target/origin
   allowlist.
 - `scripts/configure-runtime-box-ci.sh`: protected identity and environment

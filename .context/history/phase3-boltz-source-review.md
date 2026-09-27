@@ -129,7 +129,7 @@ Component Dictionary**, which the PDB archive places under **CC0 1.0**. Traced r
 upstream's `scripts/process/ccd.py` reads a PDB components file through `pdbeccdutils` and writes one
 pickle per component; the archive's own members are exactly `mols/<CCD id>.pkl`; and the dictionary
 is published inside the `/pub/pdb/` archive tree the CC0 policy covers. Details and sources are in
-[the legal record](../../runtime-boxes/legal/boltz-2.md).
+the legal record, `runtime-boxes/legal/boltz-2.md`.
 
 **A claim in that record was wrong and is corrected**: `frozendict` was not the project's first
 copyleft dependency. The complete inventory has **seventeen** GPL-family distributions, sixteen of

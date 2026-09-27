@@ -973,7 +973,7 @@ their own scoped evidence.
 | Complete gate history | `.context/state/roadmap/runtime-box-ci-foundation.md` |
 | Production resources and operator procedures | `.context/history/runtime-box-production-report.md` |
 | Live model/target/publication catalog | `runtime-boxes/catalog.json` |
-| Human-readable support matrix | `runtime-boxes/compatibility-matrix.md` |
+| Human-readable support matrix | `.context/state/roadmap/ai-batches.md` |
 | Reviewed compact evidence | `runtime-boxes/evidence/` |
 | V3 scrolls and dependency locks | `runtime-boxes/scrolls/` |
 | Legal reviews | `runtime-boxes/legal/` |

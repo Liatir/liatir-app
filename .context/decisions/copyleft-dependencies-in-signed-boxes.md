@@ -60,5 +60,5 @@ the answer would have depended on who was asked.
 
 ## Related
 
-- [Boltz-2 redistribution record](../../runtime-boxes/legal/boltz-2.md) — the seventeen GPL-family
+- The Boltz-2 redistribution record, `runtime-boxes/legal/boltz-2.md` — the seventeen GPL-family
   distributions in that box, named, and the CC0 provenance of its molecule dictionary.

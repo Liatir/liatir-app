@@ -223,7 +223,7 @@ mirror.
 
 Every advertised size matched the bytes actually received. `components.cif` is the same wwPDB
 Chemical Component Dictionary that Boltz-2 bundles in a different form, so the CC0 provenance
-established in [the Boltz legal record](../../../runtime-boxes/legal/boltz-2.md) covers it too.
+established in the Boltz legal record, `runtime-boxes/legal/boltz-2.md`, covers it too.
 
 ### The target is CUDA 12.6, because that is what the box contains
 
