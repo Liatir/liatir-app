@@ -2,7 +2,7 @@
 
 Opened 2026-09-11. **Status: the code is migrated and green, and every published box is rebuilt as
 v3 on every platform, republished on `beta`, and the old v2 objects are deleted from R2.**
-Adoption is done; Boltz-2's product surface is the next piece of work it unblocked.
+Adoption is done, and Boltz-2, which it unblocked, is published too.
 
 Done: `scrollcase@1.2.0` and `scrollcase-consumer 0.4.0` pinned, all 22 scrolls rewritten and
 accepted by `audit`, the Rust bridge, the WSL2 consumer, the shared contract, every script, the
@@ -160,9 +160,11 @@ Full evidence for the blocker is in [the Boltz source review](./phase3-boltz-sou
    `runSingleCellEmbeddingFromModelPage`, and so does UCE's since its republish.
 5. ✅ **Then Boltz-2**: scroll, local build with a development key, `verify --self-test`, product
    runner, scientific validator, real inputs, measurements — all done on 2026-09-11. It predicts
-   ubiquitin to 1.99 Å of the experimental structure from sequence alone. What it does **not** have
-   is a product surface: no execution path in the app, so no Jobs or Results lifecycle, no catalog
-   entry and no CI workflow. See [the Boltz source review](./phase3-boltz-source-review.md).
+   ubiquitin to 1.99 Å of the experimental structure from sequence alone. Its product surface
+   followed: it is in the AI Model registry and on the Tools page (Structure Prediction and
+   Protein–Ligand Affinity), and it was published on `beta` for `linux-x86_64-cuda12.9` by run
+   35227045147 on 2026-09-17, v3, with its release evidence. See
+   [the Boltz source review](./phase3-boltz-source-review.md).
 
 ## What the format change touches in Liatir
 
