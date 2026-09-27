@@ -1,13 +1,27 @@
 # Current project status
 
+## Scrollcase v3 adoption is closed: the old v2 objects are off R2 (2026-09-27)
+
+By the owner's authorization, 127 stale objects (about 215 GB) were deleted from `liatir-storage`
+by hand with `wrangler r2 object delete`, after a fresh `wrangler login` whose token reached R2.
+Each one was a release the catalog no longer references, its archive, or an upload from a failed
+release run. Afterwards all 127 answer 404, the 36 kept objects answer 200, and every `beta`
+channel decodes to exactly the release the catalog records. The deletion list and the keep list
+are host-local operational files on the Mac, not project state.
+
+There was no separate "app build that reads v3" left to do: the app has accepted only v3 since
+`2ea19a7` (2026-09-11), and every one of the ten release runs built the real product binary from
+`main` and installed, ran and removed its v3 box. With no released app, nothing older is in the
+field to replace.
+
 ## All five macOS Runtime Boxes are republished as Scrollcase v3, so all ten are (2026-09-26)
 
 From the Mac, same workflow and terms as the Linux five below: mhcflurry (run 36134812748), pVACseq
 (36168390892), Geneformer (36171019826), scGPT (36173142919) and UCE (36246477862) are on `beta`,
 each with its evidence retained and its catalog `publication` replaced. With the Linux five, every
 published box is now v3. The ledger is step 4 of
-[Scrollcase v3 adoption](./roadmap/scrollcase-v3-adoption.md); still open there: the app build that
-reads v3, and deleting the old v2 objects on R2, which needs a wrangler login with R2 write.
+[Scrollcase v3 adoption](./roadmap/scrollcase-v3-adoption.md); the R2 cleanup that followed is
+recorded above.
 
 Seven things stood in the way, none of them a box defect:
 

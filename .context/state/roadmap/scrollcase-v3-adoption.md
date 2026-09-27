@@ -1,7 +1,8 @@
 # Adopting Scrollcase v3, and what it unblocks
 
 Opened 2026-09-11. **Status: the code is migrated and green, and every published box is rebuilt as
-v3 on every platform.** Nothing is left to rebuild.
+v3 on every platform, republished on `beta`, and the old v2 objects are deleted from R2.**
+Adoption is done; Boltz-2's product surface is the next piece of work it unblocked.
 
 Done: `scrollcase@1.2.0` and `scrollcase-consumer 0.4.0` pinned, all 22 scrolls rewritten and
 accepted by `audit`, the Rust bridge, the WSL2 consumer, the shared contract, every script, the
@@ -119,7 +120,7 @@ Full evidence for the blocker is in [the Boltz source review](./phase3-boltz-sou
    A rebuild is enough to prove the scroll: each model's science was already validated and does
    not need repeating, by the owner's decision of 2026-09-11. Eight on Linux and Windows, seven on
    macOS, no failure anywhere.
-4. ⏳ **Republish**, together with an app build that can read v3. Separately authorized, and the
+4. ✅ **Republish**, together with an app build that can read v3. Separately authorized, and the
    reason this is not a quiet dependency bump. Authorized by the owner on 2026-09-24 (no users yet,
    so republishing is safe); the Linux boxes run from the Windows host's WSL2 self-hosted runner,
    the macOS boxes from the Mac, through the same `runtime-box-release.yml`. Old v2 objects on R2
@@ -137,12 +138,14 @@ Full evidence for the blocker is in [the Boltz source review](./phase3-boltz-sou
    - ✅ `scgpt-whole-human` macos-aarch64-metal — run 36173142919
    - ✅ `uce-4layer` macos-aarch64-metal — run 36246477862
 
-   **All ten are v3 on `beta` (2026-09-26).** What is left of this step is the app build that reads
-   v3, and the R2 cleanup below.
+   **All ten are v3 on `beta` (2026-09-26).** The app build that reads v3 was already there: the
+   app has accepted only v3 since `2ea19a7`, and each of the ten release runs built the real
+   product binary from `main` and installed, ran and removed its v3 box.
 
-   Then the old v2 objects on R2 go, which **needs a wrangler login with R2 write**: the Mac's
-   OAuth token carries only `workers_scripts:write`, and `wrangler r2 object delete` answers 403.
-   The list is rebuilt, not guessed — every release the catalog ever referenced but no longer does,
+   **The old v2 objects are off R2 (2026-09-27)**: 127 objects, about 215 GB, deleted by hand with
+   `wrangler r2 object delete` after a fresh `wrangler login` (an older token had answered 403).
+   All 127 now answer 404, the 36 kept objects 200, and every `beta` channel decodes to the
+   release the catalog records. The list was rebuilt, not guessed — every release the catalog ever referenced but no longer does,
    its archive, and every object a failed release run uploaded, each confirmed present and none
    referenced by the catalog or by any channel the Registry serves. Six release documents stay:
    the revoked retired targets' channels still point at them, so only their archives go.
@@ -154,8 +157,7 @@ Full evidence for the blocker is in [the Boltz source review](./phase3-boltz-sou
    (`7b19e40`); and their lifecycle specs spawned the Job through the bridge, so no execution
    record owned it and it was never finalized into a Result. The scGPT and Geneformer specs now
    start the run from the model page, as a user does, through
-   `runSingleCellEmbeddingFromModelPage`. **The UCE spec (macOS) still spawns through the bridge
-   and will fail the same way**; it needs the same change before its republish.
+   `runSingleCellEmbeddingFromModelPage`, and so does UCE's since its republish.
 5. ✅ **Then Boltz-2**: scroll, local build with a development key, `verify --self-test`, product
    runner, scientific validator, real inputs, measurements — all done on 2026-09-11. It predicts
    ubiquitin to 1.99 Å of the experimental structure from sequence alone. What it does **not** have
