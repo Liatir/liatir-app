@@ -37,12 +37,14 @@ deleted from R2 on 2026-09-27 — see [Scrollcase v3 adoption](../history/scroll
 
 ## What is open, in order
 
-1. **Signed distribution** — [the release gate](./roadmap/release-signed-distribution.md). The
-   channel is decided ([decision](../decisions/desktop-distribution-channel.md)): version `0.1.0`,
-   updates from `updates.liatir.com` for macOS and Linux, Windows only through the Microsoft
-   Store. The build paths exist for all three, the updater key pair exists and the Store name is
-   reserved; what is missing is the notarization key, the credentials in GitHub, the first signed
-   builds, the R2 feed, and proof that Runtime Boxes work inside the MSIX container.
+1. **Signed distribution** — [the release gate](./roadmap/release-signed-distribution.md), in
+   progress for `0.1.0` ([decision](../decisions/desktop-distribution-channel.md)): updates from
+   `updates.liatir.com` (R2 bucket `liatir-updates`) for macOS and Linux, downloads from the public
+   `Liatir/liatir-releases` repository, Windows only through the Microsoft Store. The app checks for
+   a newer version at startup and offers it in a notice. The bundled Native Tools are signed and
+   notarized inside their box with Scrollcase 1.4.0. Open: the final signed builds of all three
+   platforms from one commit, publishing, the Store submission, and proof that Runtime Boxes work
+   inside the MSIX container.
 2. **OpenMM publication.** Both Linux targets are `native-lifecycle-validated` and the macOS CPU
    target is still `planned`; none is published. See
    [Phase 3 implementation status](./roadmap/phase3-implementation-status.md).
