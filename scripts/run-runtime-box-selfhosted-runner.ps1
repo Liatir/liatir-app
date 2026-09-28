@@ -25,7 +25,7 @@ $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
 $RepositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
-$Repository = 'Liatir/liatir-stack'
+$Repository = 'Liatir/liatir-app'
 $RunnerVersion = '2.336.0'
 # Pinned from https://github.com/actions/runner/releases/tag/v2.336.0
 $RunnerArchiveSha256 = 'd59123a43003e357b0805b5d0f611d0bd2f65ab67d51bd070dd4e7a0f685c162'
@@ -91,7 +91,7 @@ if ([string]::IsNullOrEmpty($Foundation)) {
   }
   # Pixi relocates files inside the prefix. On Windows, longer prefixes can rewrite conda-managed
   # bytecode and make conda-pack correctly reject the environment, so fail before registration.
-  $expectedCondaPrefix = Join-Path $RunnerRoot "_work\liatir-stack\liatir-stack\$buildDirectoryRelative\$($resolved.recipe_id)\pixi-workspace\.pixi\envs\default"
+  $expectedCondaPrefix = Join-Path $RunnerRoot "_work\liatir-app\liatir-app\$buildDirectoryRelative\$($resolved.recipe_id)\pixi-workspace\.pixi\envs\default"
   if ($expectedCondaPrefix.Length -gt $MaxWindowsCondaPrefixLength) {
     Fail "Runner root is too long for a relocatable Windows conda prefix ($($expectedCondaPrefix.Length) characters; maximum $MaxWindowsCondaPrefixLength): $RunnerRoot"
   }

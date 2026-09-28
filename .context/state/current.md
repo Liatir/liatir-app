@@ -66,6 +66,9 @@ revocations.
 
 ## Operational facts still in force
 
+- **The repositories are `Liatir/liatir-app` and `Liatir/liatir-sdk`** since 2026-09-28 (formerly
+  `liatir-stack` and `sdk`); Runtime Box signing was re-bound to the new name
+  ([decision](../decisions/repository-names.md)).
 - **A Runtime Box release runs on a self-hosted ephemeral runner, one at a time**, through
   `runtime-box-release.yml`: the Linux targets from the Windows host's WSL2, the macOS targets from
   the Mac. A runner does not survive its machine sleeping — on the Mac launch it under

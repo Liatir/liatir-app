@@ -3,7 +3,7 @@ set -euo pipefail
 
 # Idempotently provisions the protected identities and GitHub Environments used by Runtime Box CI.
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-REPOSITORY="${LIATIR_GITHUB_REPOSITORY:-Liatir/liatir-stack}"
+REPOSITORY="${LIATIR_GITHUB_REPOSITORY:-Liatir/liatir-app}"
 PROJECT_ID="${GOOGLE_CLOUD_PROJECT:-liatir-release-security}"
 REGION="${LIATIR_SIGNER_REGION:-europe-west1}"
 SIGNER_SERVICE="${LIATIR_SIGNER_SERVICE:-liatir-runtime-box-signer}"

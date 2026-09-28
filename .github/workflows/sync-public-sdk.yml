@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   sync:
-    name: Mirror Core, API and CLI to liatir/sdk
+    name: Mirror Core, API and CLI to Liatir/liatir-sdk
     runs-on: ubuntu-latest
 
     permissions:
@@ -32,7 +32,7 @@ jobs:
           app-id: ${{ vars.LIATIR_MIRROR_APP_ID }}
           private-key: ${{ secrets.LIATIR_MIRROR_APP_PRIVATE_KEY }}
           owner: liatir
-          repositories: sdk
+          repositories: liatir-sdk
 
       - name: Checkout private monorepo
         uses: actions/checkout@v4
@@ -43,7 +43,7 @@ jobs:
       - name: Checkout public SDK repo
         uses: actions/checkout@v4
         with:
-          repository: liatir/sdk
+          repository: Liatir/liatir-sdk
           ref: main
           path: public-sdk-repo
           token: ${{ steps.app-token.outputs.token }}

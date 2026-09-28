@@ -1,6 +1,6 @@
 ![License: GNU GPL v3](https://img.shields.io/badge/License-gpl3.0-blue.svg)
 
-[![CI](https://github.com/Liatir/liatir-stack/actions/workflows/ci.yml/badge.svg)](https://github.com/Liatir/liatir-stack/actions/workflows/ci.yml)
+[![CI](https://github.com/Liatir/liatir-app/actions/workflows/ci.yml/badge.svg)](https://github.com/Liatir/liatir-app/actions/workflows/ci.yml)
 
 ---
 

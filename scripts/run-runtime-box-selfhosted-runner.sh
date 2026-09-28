@@ -7,7 +7,7 @@ set -euo pipefail
 # operational parameter (label, name prefix, bootstrap disk floor) is read from that catalog so the
 # launcher and CI can never disagree.
 REPOSITORY_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-REPOSITORY="Liatir/liatir-stack"
+REPOSITORY="Liatir/liatir-app"
 RUNNER_VERSION="2.336.0"
 # Pinned per OS/arch from https://github.com/actions/runner/releases/tag/v2.336.0
 RUNNER_ARCHIVE_SHA256_OSX_ARM64="8e8839c49b7060b6b2154f4931f815df330c27f167d53ef2239ee3dfce28b079"

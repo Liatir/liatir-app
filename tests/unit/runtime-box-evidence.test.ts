@@ -30,13 +30,13 @@ function productionRecord() {
       targetId: 'macos-aarch64-metal',
       mode: 'native-lifecycle',
     },
-    source: { repository: 'Liatir/liatir-stack', commitSha: 'b'.repeat(40), sourceTreeDirty: false },
+    source: { repository: 'Liatir/liatir-app', commitSha: 'b'.repeat(40), sourceTreeDirty: false },
     workflow: {
       provider: 'github-actions',
       workflow: 'Runtime Box production release',
       runId: '123',
       runAttempt: '1',
-      runUrl: 'https://github.com/Liatir/liatir-stack/actions/runs/123',
+      runUrl: 'https://github.com/Liatir/liatir-app/actions/runs/123',
       actor: 'operator',
       triggeringActor: 'operator',
       environment: 'runtime-box-production',
@@ -110,15 +110,15 @@ describe('Runtime Box CI evidence contract', () => {
   it('keeps signed build cleanliness when later product preparation changes tracked files', () => {
     const commitSha = 'b'.repeat(40);
     expect(signedBuildSourceEvidence(
-      { repository: 'Liatir/liatir-stack', commitSha, sourceTreeDirty: true },
+      { repository: 'Liatir/liatir-app', commitSha, sourceTreeDirty: true },
       { builderRevision: commitSha, sourceTreeDirty: false },
     )).toEqual({
-      repository: 'Liatir/liatir-stack',
+      repository: 'Liatir/liatir-app',
       commitSha,
       sourceTreeDirty: false,
     });
     expect(() => signedBuildSourceEvidence(
-      { repository: 'Liatir/liatir-stack', commitSha, sourceTreeDirty: false },
+      { repository: 'Liatir/liatir-app', commitSha, sourceTreeDirty: false },
       { builderRevision: 'c'.repeat(40), sourceTreeDirty: false },
     )).toThrow(/release commit/);
   });

@@ -1,5 +1,5 @@
 {
-  "name": "liatir-stack",
+  "name": "liatir-app",
   "version": "0.1.0",
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260711.1",
