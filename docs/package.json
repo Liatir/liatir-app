@@ -11,6 +11,7 @@
     "deploy": "npm run build && npx wrangler pages deploy"
   },
   "devDependencies": {
+    "markdown-it-mathjax3": "^4.3.2",
     "vitepress": "^2.0.0-alpha.17"
   },
   "dependencies": {

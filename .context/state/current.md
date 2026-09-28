@@ -81,6 +81,9 @@ revocations.
   On 2026-09-29, the Cloudflare build of `97ee849` was reproduced in an isolated docs-only
   installation: math rendering needed `markdown-it-mathjax3`, which was declared only at the
   repository root. The docs manifest now declares it too, with its own lockfile updated.
+  An isolated `npm ci` followed by the full docs build passed after the change, including
+  the Quenta prebuild and all Markdown copies; all seven `test:verify` gates passed.
+  A successful Cloudflare deployment of the dependency fix is still to be verified.
 - **The repositories are `Liatir/liatir-app` and `Liatir/liatir-sdk`** since 2026-09-28 (formerly
   `liatir-stack` and `sdk`); Runtime Box signing was re-bound to the new name
   ([decision](../decisions/repository-names.md)).
