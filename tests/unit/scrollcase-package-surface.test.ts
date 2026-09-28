@@ -63,15 +63,15 @@ function sourceFiles(directory: string): string[] {
 describe("published Scrollcase package surface", () => {
   it("pins the immutable package and all required public entry points", () => {
     expect(packageJson.name).toBe("scrollcase");
-    expect(packageJson.version).toBe("1.2.0");
+    expect(packageJson.version).toBe("1.3.0");
     expect(packageJson.bin).toEqual({ scrollcase: "src/cli.mjs" });
     expect(packageJson.exports).toEqual(expectedExports);
-    expect(rootPackageJson.dependencies.scrollcase).toBe("1.2.0");
-    expect(corePackageJson.dependencies.scrollcase).toBe("1.2.0");
+    expect(rootPackageJson.dependencies.scrollcase).toBe("1.3.0");
+    expect(corePackageJson.dependencies.scrollcase).toBe("1.3.0");
     expect(lockfile.packages["node_modules/scrollcase"]).toMatchObject({
-      version: "1.2.0",
-      resolved: "https://registry.npmjs.org/scrollcase/-/scrollcase-1.2.0.tgz",
-      integrity: "sha512-Yzn6hFmptH+qInMabR6T6WA+tKPVOK+kQwc88UwJ/k40BNAfcUwAl63+D5fjHkt4OpsIJJr2/anf8kAac9cODg==",
+      version: "1.3.0",
+      resolved: "https://registry.npmjs.org/scrollcase/-/scrollcase-1.3.0.tgz",
+      integrity: "sha512-a9CkqeADpLhmxExKHs1rcivi9IwEZDb4hnoozOFrmT9KPM6L+Krlya/Mlm1vaDgJoQBmEhB20iaV/uspGJjfmw==",
     });
   });
 

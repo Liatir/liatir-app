@@ -222,6 +222,12 @@ function build(placement) {
     if (process.env.SCROLLCASE_BUILD_DIR) {
       arguments_.push('--build-dir', process.env.SCROLLCASE_BUILD_DIR);
     }
+    // The macOS app is notarized, and Apple rejects it unless every Mach-O file inside this box
+    // carries a Developer ID signature; those can only be applied while the box is built. The
+    // release's own identity is reused, so a build without one stays ad-hoc exactly as before.
+    if (placement.targetId.startsWith('macos-') && process.env.APPLE_SIGNING_IDENTITY) {
+      arguments_.push('--codesign', process.env.APPLE_SIGNING_IDENTITY);
+    }
     if (sourceTreeIsDirty()) arguments_.push('--allow-dirty');
     scrollcase(arguments_);
 

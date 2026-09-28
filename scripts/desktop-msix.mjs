@@ -13,8 +13,11 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { localNodeCliInvocation } from './node-cli.mjs';
 
-/** Store tile images `tauri icon` generates; the manifest references exactly these. */
-const ASSETS = ['StoreLogo.png', 'Square44x44Logo.png', 'Square71x71Logo.png', 'Square150x150Logo.png', 'Square310x310Logo.png'];
+/**
+ * Store tile images `tauri icon` generates; the manifest references exactly these. The large square
+ * tile is left out: the manifest schema then demands a wide one too, which `tauri icon` does not make.
+ */
+const ASSETS = ['StoreLogo.png', 'Square44x44Logo.png', 'Square71x71Logo.png', 'Square150x150Logo.png'];
 
 /** The Store requires a four-part numeric version whose last part is 0. */
 export function msixVersion(appVersion) {
@@ -63,7 +66,7 @@ export function msixManifest({ identity, version, displayName, executable, schem
   <Applications>
     <Application Id="Liatir" Executable="${escapeXml(executable)}" uap10:RuntimeBehavior="packagedClassicApp" uap10:TrustLevel="mediumIL">
       <uap:VisualElements DisplayName="${escapeXml(displayName)}" Description="${escapeXml(displayName)}" BackgroundColor="transparent" Square150x150Logo="Assets\\Square150x150Logo.png" Square44x44Logo="Assets\\Square44x44Logo.png">
-        <uap:DefaultTile Square71x71Logo="Assets\\Square71x71Logo.png" Square310x310Logo="Assets\\Square310x310Logo.png" />
+        <uap:DefaultTile Square71x71Logo="Assets\\Square71x71Logo.png" />
       </uap:VisualElements>${extensions}
     </Application>
   </Applications>

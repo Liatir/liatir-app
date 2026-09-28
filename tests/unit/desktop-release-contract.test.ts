@@ -110,6 +110,8 @@ describe('Gate 7 desktop release contract', () => {
     expect(manifest).toContain('Version="0.1.0.0"');
     expect(manifest).toContain('<uap:Protocol Name="liatir" />');
     expect(manifest).toContain('R&#38;D');
+    // MakeAppx rejects a large square tile without a wide one (error 80080204).
+    expect(manifest).not.toContain('Square310x310Logo');
     expect(() => msixVersion('0.1.0-beta.1')).toThrow('numeric X.Y.Z');
   });
 

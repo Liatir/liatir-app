@@ -20,8 +20,11 @@ import { assembleMsix } from './desktop-msix.mjs';
 import { localNodeCliInvocation, npmInvocation } from './node-cli.mjs';
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
+// Cargo.lock is listed because it records the crate version the generated Cargo.toml carries, so a
+// release build rewrites it; restoring it keeps the checkout clean for the next build.
 const GENERATED_CONFIG = [
   'src-tauri/Cargo.toml',
+  'src-tauri/Cargo.lock',
   'src-tauri/tauri.conf.json',
   'src-tauri/capabilities/local.json',
   'src-tauri/window.env',
@@ -324,7 +327,8 @@ async function main() {
   assertReleaseCheckout(process.env);
   const originals = captureGeneratedConfig();
   try {
-    runNpm(['install']);
+    // Dependencies come from the lockfiles, installed with `npm ci` before this runs: an install here
+    // would rewrite package-lock.json on a machine with another npm.
     runNpm(['run', 'test:verify']);
     if (distribution === 'msix') buildStorePackage();
     else buildDirectRelease();
