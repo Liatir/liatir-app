@@ -137,6 +137,11 @@ These are the current commands. If one no longer exists, read the `scripts` sect
 - `npm run test:verify` — **the gate before declaring work done**: unit + SDK type generation + core build + frontend check/build + `src-ts` compile.
 - `npm run test:ui` — end-to-end against a real compiled binary. `npm run test:ui:visual` for visual snapshots.
 - `npm run lint:ts`, plus `cargo clippy` / `cargo test` inside `src-tauri/` for Rust work.
+- `npm run desktop-release:build` — the signed release build for this host (macOS: signed and
+  notarized; Linux: updater-signed packages). Add `-- --msix` on Windows for the Microsoft Store
+  package, which carries no in-app updater. It refuses to start without every release input and
+  never publishes. Linux and the Store package are normally built by the hand-dispatched
+  `desktop-release-build.yml` workflow.
 - `npm run desktop-beta:package:<macos|windows|linux>` and
   `npm run desktop-beta:test:<macos|windows|linux>` — the per-platform Gate 7 desktop package and
   install-lifecycle gates. Each refuses to run off its own platform, and every artifact they build

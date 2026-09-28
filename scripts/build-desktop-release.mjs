@@ -6,12 +6,18 @@
  * Publishing and remote release creation deliberately live outside this script:
  * producing local artifacts and making them public are separate authorization
  * boundaries. Generated configuration is restored even after a failed build.
+ *
+ * `--msix` builds the Microsoft Store package instead: no in-app updater, no
+ * code signature (the Store signs what it certifies), and the Store identity
+ * reserved in Partner Center.
  */
 
 import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { assembleMsix } from './desktop-msix.mjs';
+import { localNodeCliInvocation, npmInvocation } from './node-cli.mjs';
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const GENERATED_CONFIG = [
@@ -31,12 +37,34 @@ function hasAll(environment, names) {
 }
 
 /** Platforms whose native signing and artifact contract is implemented and verified. */
-const RELEASE_PLATFORMS = new Set(['darwin', 'win32']);
+const RELEASE_PLATFORMS = new Set(['darwin', 'win32', 'linux']);
 
-export function validateReleaseEnvironment(environment, platform = process.platform) {
+function validateMsixEnvironment(environment, platform) {
+  const errors = [];
+  if (platform !== 'win32') errors.push('The Microsoft Store package can only be built on Windows');
+  if (!/^\d+\.\d+\.\d+$/.test(environment.APP_VERSION ?? '')) {
+    errors.push('APP_VERSION must be a numeric X.Y.Z version for the Microsoft Store');
+  }
+  if (!/^[0-9a-f]{40}$/.test(environment.RELEASE_REVISION ?? '')) {
+    errors.push('RELEASE_REVISION must be the exact 40-character Git commit SHA');
+  }
+  // All three come from the app's Product identity page in Partner Center; a package that does not
+  // match the reservation is rejected at submission.
+  if (!environment.MSIX_IDENTITY_NAME?.trim()) errors.push('MSIX_IDENTITY_NAME is required (Partner Center Package/Identity/Name)');
+  if (!/^CN=/.test(environment.MSIX_IDENTITY_PUBLISHER ?? '')) {
+    errors.push('MSIX_IDENTITY_PUBLISHER must be the Partner Center publisher, starting with CN=');
+  }
+  if (!environment.MSIX_PUBLISHER_DISPLAY_NAME?.trim()) {
+    errors.push('MSIX_PUBLISHER_DISPLAY_NAME is required (Partner Center publisher display name)');
+  }
+  return errors;
+}
+
+export function validateReleaseEnvironment(environment, platform = process.platform, distribution = 'direct') {
+  if (distribution === 'msix') return validateMsixEnvironment(environment, platform);
   const errors = [];
   if (!RELEASE_PLATFORMS.has(platform)) {
-    errors.push('This Gate 7 release contract is implemented for macOS and Windows; add and verify the native platform contract first');
+    errors.push('This Gate 7 release contract is implemented for macOS, Windows and Linux; add and verify the native platform contract first');
   }
   if (!isSemver(environment.APP_VERSION ?? '')) {
     errors.push('APP_VERSION must be an explicit semantic version');
@@ -89,6 +117,8 @@ export function validateReleaseEnvironment(environment, platform = process.platf
     }
   }
 
+  // Linux packages carry no code signature of their own: the signed updater artifact is what a
+  // running Liatir trusts, and it is already required above.
   return errors;
 }
 
@@ -103,6 +133,27 @@ function run(command, args, options = {}) {
   if (result.status !== 0) {
     throw new Error(`${command} ${args.join(' ')} exited with ${result.status ?? result.signal}`);
   }
+}
+
+function runNpm(args, options = {}) {
+  const invocation = npmInvocation(args);
+  run(invocation.command, invocation.args, options);
+}
+
+function runTauri(args) {
+  const invocation = localNodeCliInvocation('@tauri-apps/cli/tauri.js', args);
+  run(invocation.command, invocation.args);
+}
+
+/** Every default Cargo feature except the updater, which a Store build must not contain. */
+function storeFeatures() {
+  const metadata = JSON.parse(execFileSync('cargo', ['metadata', '--no-deps', '--format-version', '1'], {
+    cwd: join(ROOT, 'src-tauri'),
+    encoding: 'utf8',
+  }));
+  const crate = metadata.packages.find((entry) => entry.name === 'liatir');
+  if (!crate) throw new Error('The liatir crate is missing from cargo metadata');
+  return crate.features.default.filter((feature) => feature !== 'tauri-plugin-updater');
 }
 
 function captureGeneratedConfig() {
@@ -196,6 +247,17 @@ function requireArtifacts(platform, version, buildStartedAt) {
     requireSignedWindowsArtifact(setup);
   }
 
+  if (platform === 'linux') {
+    const current = (suffix) => files.find((path) => path.endsWith(suffix) && basename(path).includes(version));
+    const appImage = current('.AppImage');
+    if (!appImage || !current('.deb') || !current('.rpm')) {
+      throw new Error('Linux release must contain a current-version AppImage, .deb and .rpm');
+    }
+    // The AppImage is the only Linux format that replaces itself; .deb and .rpm update through
+    // their package manager.
+    if (!existsSync(`${appImage}.sig`)) throw new Error(`${basename(appImage)} has no updater signature`);
+  }
+
   console.log(`Verified ${files.length} release files; updater signature: ${basename(updater)}`);
 }
 
@@ -208,14 +270,52 @@ function assertReleaseCheckout(environment) {
   }
 }
 
-export function validateDesktopReleaseInputs(environment = process.env, platform = process.platform) {
-  const errors = validateReleaseEnvironment(environment, platform);
+export function validateDesktopReleaseInputs(
+  environment = process.env,
+  platform = process.platform,
+  distribution = 'direct',
+) {
+  const errors = validateReleaseEnvironment(environment, platform, distribution);
   if (errors.length > 0) throw new Error(`Desktop release inputs are incomplete:\n- ${errors.join('\n- ')}`);
+}
+
+function buildDirectRelease() {
+  const buildStartedAt = Date.now();
+  runNpm(['run', 'build:prepare', '--prefix', 'src-tauri']);
+  runTauri(['build', '--ci']);
+  requireArtifacts(process.platform, process.env.APP_VERSION, buildStartedAt);
+}
+
+function buildStorePackage() {
+  const buildStartedAt = Date.now();
+  runNpm(['run', 'build:prepare', '--prefix', 'src-tauri'], { env: { ...process.env, DISTRIBUTION: 'msix' } });
+  runTauri(['build', '--ci', '--no-bundle', '--features', storeFeatures().join(','), '--', '--no-default-features']);
+
+  const executable = join(ROOT, 'src-tauri', 'target', 'release', 'liatir.exe');
+  if (statSync(executable).mtimeMs < buildStartedAt - 2_000) {
+    throw new Error('The Windows application executable was not produced by this Store build');
+  }
+  // Absent, not merely unconfigured: a compiled-in updater leaves its crate path in the binary.
+  if (readFileSync(executable).includes('tauri-plugin-updater')) {
+    throw new Error('The Store executable still contains the in-app updater');
+  }
+  const msix = assembleMsix({
+    root: ROOT,
+    appVersion: process.env.APP_VERSION,
+    executable,
+    identity: {
+      name: process.env.MSIX_IDENTITY_NAME,
+      publisher: process.env.MSIX_IDENTITY_PUBLISHER,
+      publisherDisplayName: process.env.MSIX_PUBLISHER_DISPLAY_NAME,
+    },
+  });
+  console.log(`Built the unsigned Microsoft Store package ${msix}; the Store signs it on certification.`);
 }
 
 async function main() {
   const validateOnly = process.argv.includes('--validate-only');
-  validateDesktopReleaseInputs();
+  const distribution = process.argv.includes('--msix') ? 'msix' : 'direct';
+  validateDesktopReleaseInputs(process.env, process.platform, distribution);
   if (validateOnly) {
     console.log('Desktop release inputs are complete. No build or remote action was performed.');
     return;
@@ -224,10 +324,10 @@ async function main() {
   assertReleaseCheckout(process.env);
   const originals = captureGeneratedConfig();
   try {
-    run('npm', ['run', 'test:verify']);
-    const buildStartedAt = Date.now();
-    run('npm', ['run', 'build']);
-    requireArtifacts(process.platform, process.env.APP_VERSION, buildStartedAt);
+    runNpm(['install']);
+    runNpm(['run', 'test:verify']);
+    if (distribution === 'msix') buildStorePackage();
+    else buildDirectRelease();
   } finally {
     restoreGeneratedConfig(originals);
   }

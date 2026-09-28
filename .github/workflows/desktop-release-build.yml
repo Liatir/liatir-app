@@ -1,0 +1,145 @@
+name: Desktop release build
+
+# Builds, but never publishes, the Linux packages and the Microsoft Store MSIX
+# from the dispatched revision. The macOS release is built and notarized on the
+# maintainer's Mac with the same script. Publishing is a separate, explicit step.
+#
+# Linux needs the updater key pair:
+#   secrets   TAURI_SIGNING_PRIVATE_KEY, TAURI_SIGNING_PRIVATE_KEY_PASSWORD
+#   variable  TAURI_SIGNING_PUBLIC_KEY
+# The Store package needs the identity reserved in Partner Center (not secret):
+#   variables MSIX_IDENTITY_NAME, MSIX_IDENTITY_PUBLISHER, MSIX_PUBLISHER_DISPLAY_NAME
+# The script refuses to start when its inputs are incomplete.
+
+on:
+  workflow_dispatch:
+    inputs:
+      app_version:
+        description: "App version (X.Y.Z)"
+        type: string
+        required: true
+      targets:
+        description: "What to build"
+        type: choice
+        options: [linux-and-store, linux, store]
+        default: linux-and-store
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  # Decided 2026-09-28; see .context/decisions/desktop-distribution-channel.md.
+  UPDATE_ENDPOINT: https://updates.liatir.com/desktop/latest.json
+
+jobs:
+  native-tools:
+    name: Native Tools box (Linux)
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: ./.github/actions/native-tools-box
+        with:
+          target-id: linux-x86_64-cpu
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-tools-linux-x86_64-cpu
+          path: src-tauri/resources/native-tools/
+          if-no-files-found: error
+          retention-days: 7
+
+  linux:
+    name: Linux packages
+    needs: native-tools
+    if: inputs.targets != 'store'
+    # The oldest supported runner: an AppImage runs on systems at least as new as the one it was
+    # built on.
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - name: Install the Tauri system libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev \
+            librsvg2-dev libssl-dev libxdo-dev build-essential file libfuse2
+      - run: npm ci
+      - run: npm ci --prefix packages/liatir-cli
+      - run: npm ci --prefix packages/liatir-api
+      - run: npm ci --prefix frontend
+      - uses: actions/download-artifact@v4
+        with:
+          name: native-tools-linux-x86_64-cpu
+          path: src-tauri/resources/native-tools/
+      - name: Build and verify the signed release
+        env:
+          APP_VERSION: ${{ inputs.app_version }}
+          RELEASE_REVISION: ${{ github.sha }}
+          TAURI_SIGNING_PUBLIC_KEY: ${{ vars.TAURI_SIGNING_PUBLIC_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: node scripts/build-desktop-release.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: liatir-${{ inputs.app_version }}-linux
+          path: |
+            src-tauri/target/release/bundle/appimage/*.AppImage
+            src-tauri/target/release/bundle/appimage/*.AppImage.sig
+            src-tauri/target/release/bundle/deb/*.deb
+            src-tauri/target/release/bundle/rpm/*.rpm
+          if-no-files-found: error
+          retention-days: 14
+
+  store:
+    name: Microsoft Store package
+    needs: native-tools
+    if: inputs.targets != 'linux'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: npm ci
+      - run: npm ci --prefix packages/liatir-cli
+      - run: npm ci --prefix packages/liatir-api
+      - run: npm ci --prefix frontend
+      # Windows runs the Linux box inside WSL2, so the package ships the Linux box and its consumer.
+      - uses: actions/download-artifact@v4
+        with:
+          name: native-tools-linux-x86_64-cpu
+          path: src-tauri/resources/native-tools/
+      - name: Build the Store package
+        env:
+          APP_VERSION: ${{ inputs.app_version }}
+          RELEASE_REVISION: ${{ github.sha }}
+          MSIX_IDENTITY_NAME: ${{ vars.MSIX_IDENTITY_NAME }}
+          MSIX_IDENTITY_PUBLISHER: ${{ vars.MSIX_IDENTITY_PUBLISHER }}
+          MSIX_PUBLISHER_DISPLAY_NAME: ${{ vars.MSIX_PUBLISHER_DISPLAY_NAME }}
+        run: node scripts/build-desktop-release.mjs --msix
+      - uses: actions/upload-artifact@v4
+        with:
+          name: liatir-${{ inputs.app_version }}-microsoft-store
+          path: src-tauri/target/release/bundle/msix/*.msix
+          if-no-files-found: error
+          retention-days: 14

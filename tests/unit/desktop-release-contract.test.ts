@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { validateReleaseEnvironment } from '../../scripts/build-desktop-release.mjs';
+import { msixManifest, msixVersion } from '../../scripts/desktop-msix.mjs';
 
 const root = resolve(import.meta.dirname, '../..');
 
@@ -52,9 +53,64 @@ describe('Gate 7 desktop release contract', () => {
       UPDATE_ENDPOINT: 'https://updates.liatir.com/{{target}}/{{arch}}/{{current_version}}',
       ED25519_PUBKEY: 'test-public-key',
       TAURI_SIGNING_PRIVATE_KEY: '/secure/updater.key',
-    }, 'linux')).toContain(
-      'This Gate 7 release contract is implemented for macOS and Windows; add and verify the native platform contract first',
+    }, 'freebsd')).toContain(
+      'This Gate 7 release contract is implemented for macOS, Windows and Linux; add and verify the native platform contract first',
     );
+  });
+
+  it('requires only the signed updater inputs on Linux, whose packages carry no code signature', () => {
+    expect(validateReleaseEnvironment({}, 'linux')).toEqual(expect.arrayContaining([
+      'UPDATE_ENDPOINT must be an explicit HTTPS URL',
+      'TAURI_SIGNING_PRIVATE_KEY is required to produce signed updater artifacts',
+    ]));
+    expect(validateReleaseEnvironment({
+      APP_VERSION: '0.1.0',
+      RELEASE_REVISION: 'a'.repeat(40),
+      UPDATE_ENDPOINT: 'https://updates.liatir.com/desktop/latest.json',
+      ED25519_PUBKEY: 'test-public-key',
+      TAURI_SIGNING_PRIVATE_KEY: '/secure/updater.key',
+    }, 'linux')).toEqual([]);
+  });
+
+  it('builds the Microsoft Store package without updater or certificate, from the reserved identity', () => {
+    const store = {
+      APP_VERSION: '0.1.0',
+      RELEASE_REVISION: 'a'.repeat(40),
+      MSIX_IDENTITY_NAME: 'Liatir.Liatir',
+      MSIX_IDENTITY_PUBLISHER: 'CN=00000000-0000-0000-0000-000000000000',
+      MSIX_PUBLISHER_DISPLAY_NAME: 'Liatir',
+    };
+    expect(validateReleaseEnvironment(store, 'win32', 'msix')).toEqual([]);
+    expect(validateReleaseEnvironment(store, 'darwin', 'msix'))
+      .toEqual(['The Microsoft Store package can only be built on Windows']);
+    // The Store only accepts numeric versions, so a pre-release label is refused up front.
+    expect(validateReleaseEnvironment({ ...store, APP_VERSION: '0.1.0-beta.1' }, 'win32', 'msix'))
+      .toEqual(['APP_VERSION must be a numeric X.Y.Z version for the Microsoft Store']);
+    expect(validateReleaseEnvironment({ ...store, MSIX_IDENTITY_PUBLISHER: 'Liatir' }, 'win32', 'msix'))
+      .toEqual(['MSIX_IDENTITY_PUBLISHER must be the Partner Center publisher, starting with CN=']);
+  });
+
+  it('keeps the updater out of Store builds and registers deep links in the package manifest', async () => {
+    const [backend, main, prodConf] = await Promise.all([
+      readFile(resolve(root, 'src-tauri/src/bridge/app_updates.rs'), 'utf8'),
+      readFile(resolve(root, 'src-tauri/src/main.rs'), 'utf8'),
+      readFile(resolve(root, 'scripts/prod-conf.sh'), 'utf8'),
+    ]);
+    expect(main).toMatch(/#\[cfg\(feature = "tauri-plugin-updater"\)\]\s*\{\s*builder = builder\.plugin\(tauri_plugin_updater/);
+    expect(backend).toContain('This copy of Liatir is updated by the Microsoft Store');
+    expect(prodConf).toContain('del(.plugins.updater)');
+
+    const manifest = msixManifest({
+      identity: { name: 'Liatir.Liatir', publisher: 'CN=Test', publisherDisplayName: 'R&D' },
+      version: msixVersion('0.1.0'),
+      displayName: 'Liatir',
+      executable: 'liatir.exe',
+      schemes: ['liatir'],
+    });
+    expect(manifest).toContain('Version="0.1.0.0"');
+    expect(manifest).toContain('<uap:Protocol Name="liatir" />');
+    expect(manifest).toContain('R&#38;D');
+    expect(() => msixVersion('0.1.0-beta.1')).toThrow('numeric X.Y.Z');
   });
 
   it('requires code-signing and a countersigned timestamp on Windows', () => {
@@ -111,6 +167,15 @@ describe('Gate 7 desktop release contract', () => {
     expect(types).toContain('updates: AppUpdatesInterface');
     expect(settings).toContain('Check for updates');
     expect(settings).toContain('Your data and analyses stay local');
+  });
+
+  it('signs macOS with entitlements a Developer ID app can actually launch with', async () => {
+    const entitlements = await readFile(resolve(root, 'src-tauri/Entitlements.plist'), 'utf8');
+    // Restricted entitlements need an embedded provisioning profile; without one the notarized app
+    // is killed at launch, which an ad-hoc signed gate never shows.
+    expect(entitlements).not.toMatch(/<key>com\.apple\.developer\./);
+    // In-process Wasmtime makes generated code executable without MAP_JIT.
+    expect(entitlements).toContain('<key>com.apple.security.cs.allow-unsigned-executable-memory</key>');
   });
 
   it('keeps the ad-hoc package gate visibly separate from public release artifacts', async () => {

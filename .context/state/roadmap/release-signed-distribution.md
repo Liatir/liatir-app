@@ -1,8 +1,9 @@
 # Release gate — signed public distribution
 
-Status: **Open, and deliberately not started (2026-08-20).** Every prerequisite
-that does not require a credential, a paid account or a distribution decision is
-already complete and executed.
+Status: **Open, in progress since 2026-09-28.** The distribution channel is
+decided ([decision](../../decisions/desktop-distribution-channel.md)) and the
+build paths for all three platforms are implemented; no signed release has been
+built yet.
 
 This gate is deliberately unnumbered. The workbench plan numbers its gates 1 to
 8, but "Gate 8" and "Gate 9" already name Runtime Box CI gates elsewhere in this
@@ -42,16 +43,23 @@ to make it look like one.
   countersignature.
 - Both platforms have a local, unsigned package gate that is visibly separate
   from a release and produces no updater signature.
+- Since 2026-09-28 the script also covers **Linux** (updater-signed AppImage plus
+  `.deb` and `.rpm`, no code signature) and, with `--msix`, the **Microsoft
+  Store package**: built without the updater crate and assembled by
+  `scripts/desktop-msix.mjs`. `.github/workflows/desktop-release-build.yml`
+  runs both on GitHub-hosted runners, dispatched by hand, and never publishes.
 
 ## What is missing
 
 | Item | Blocker |
 | --- | --- |
-| Apple Developer ID identity and notarization credentials | The maintainer's Apple Developer Program membership is active as of 2026-09-18 and they own this work, so the cost is no longer the blocker: what remains is issuing the Developer ID identity and notarization credentials and giving them to `build-desktop-release.mjs`. |
+| Apple notarization credentials | The Developer ID Application identity is in the maintainer's keychain; three copies are installed, all valid to 2031, so builds name the newest by its SHA-1, `CF1EC4A38CD20857E8C2A15DA87D06307EE4DCF2`, since the common name is ambiguous. An App Store Connect API key for notarization is not yet issued. |
+| Updater key pair in GitHub | Generated 2026-09-28 on the maintainer's Mac: private key `~/.tauri/liatir-updater.key`, its password in the login Keychain item `liatir-updater-key`, public key in `~/.tauri/liatir-updater.key.pub`. Not yet backed up outside that Mac, and not yet in GitHub (`TAURI_SIGNING_PRIVATE_KEY`, `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`, variable `TAURI_SIGNING_PUBLIC_KEY`). Losing the private key means installed copies can never be updated again. |
+| The `updates.liatir.com` feed on R2 and a manifest generator | Not started; only needed to publish, not to build. |
+| Microsoft Store identity in GitHub | Reserved 2026-09-28 (Store ID `9NDBJVZJVV1Z`, Package Family Name `Desktopr.Liatir_2a6896ac5t66t`): `MSIX_IDENTITY_NAME=Desktopr.Liatir`, `MSIX_IDENTITY_PUBLISHER=CN=B27DF8BD-5700-47C4-9719-CA85B3F0938A`, `MSIX_PUBLISHER_DISPLAY_NAME=Desktopr` — the Partner Center account's name, shown to users as the publisher. Not secret; not yet set as repository variables. |
 | A clean macOS arm64 machine or user for the install proof | Access, not code. |
-| The Windows distribution decision and its build path | See below. |
-| Linux package signing keys and a distributable package per format | `build-desktop-release.mjs` still deliberately rejects `linux`; that contract is unwritten. |
-| A real signed Beta A to Beta B update through the configured HTTPS feed, on every platform | Depends on all of the above. |
+| MSIX containment of Runtime Boxes, Python environments and WSL2 | See consequence 3 below; unproven until the package runs on a real Windows machine. |
+| A real signed Beta A to Beta B update through the configured HTTPS feed, on macOS and Linux | Depends on all of the above. |
 
 ## The Windows decision: Microsoft Store (2026-08-20)
 
@@ -62,21 +70,12 @@ the certificate, and it invalidates part of what Gate 7 proved on Windows.
 
 Three consequences have to be settled before this route is committed to:
 
-1. **The NSIS installer is not what a Store submission takes.** A packaged
-   submission wants an MSIX, and Tauri does not emit one — the production
-   `targets` are `["nsis", "app", "dmg", "deb", "rpm", "appimage"]` — so it
-   would have to be packaged separately. Microsoft also accepts unpackaged
-   EXE/MSI apps, but that route has historically still required the installer to
-   be signed by a trusted CA, which would defeat the purpose. **Which of the two
-   routes actually avoids buying a certificate must be verified against current
-   Microsoft documentation**; the rules have changed more than once and are not
-   safe to assume.
-2. **A Store app must not update itself.** The in-app updater, together with the
-   Job-safety guard that refuses install or restart while a scientific Job is
-   running, is a Gate 7 deliverable and would have to be disabled in a Store
-   build. That is a separate build variant, not a configuration flag, and the
-   Store build then needs its own evidence that the update path is absent rather
-   than merely unused.
+1. **The NSIS installer is not what a Store submission takes.** Settled
+   2026-09-28: an MSIX, assembled by `scripts/desktop-msix.mjs` and left
+   unsigned for the Store to sign.
+2. **A Store app must not update itself.** Settled 2026-09-28: the Store build
+   is compiled without `tauri-plugin-updater`, and the release script refuses an
+   executable that still contains it.
 3. **MSIX runs the app in a container with a virtualized filesystem.** Liatir
    downloads and executes managed binaries, creates Python virtual environments
    and installs Runtime Boxes. That is precisely the behaviour that has to be

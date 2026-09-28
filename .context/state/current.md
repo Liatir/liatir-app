@@ -38,11 +38,11 @@ deleted from R2 on 2026-09-27 — see [Scrollcase v3 adoption](../history/scroll
 ## What is open, in order
 
 1. **Signed distribution** — [the release gate](./roadmap/release-signed-distribution.md). The
-   recommended order is macOS first: the Apple Developer Program membership is active, so what is
-   missing is issuing the Developer ID identity and notarization credentials, then a signed and
-   notarized build, a clean-machine install and a real signed A-to-B update. Windows goes through
-   the Microsoft Store, which still needs its packaging route verified (MSIX, no in-app updater,
-   Runtime Boxes inside the container); Linux package signing is unwritten.
+   channel is decided ([decision](../decisions/desktop-distribution-channel.md)): version `0.1.0`,
+   updates from `updates.liatir.com` for macOS and Linux, Windows only through the Microsoft
+   Store. The build paths exist for all three, the updater key pair exists and the Store name is
+   reserved; what is missing is the notarization key, the credentials in GitHub, the first signed
+   builds, the R2 feed, and proof that Runtime Boxes work inside the MSIX container.
 2. **OpenMM publication.** Both Linux targets are `native-lifecycle-validated` and the macOS CPU
    target is still `planned`; none is published. See
    [Phase 3 implementation status](./roadmap/phase3-implementation-status.md).

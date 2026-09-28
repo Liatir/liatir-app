@@ -15,6 +15,7 @@ on:
       - 'tools/native-tools-box-consumer/**'
       - 'scripts/build-native-tools-box.mjs'
       - 'scripts/build-native-tools-wsl-consumer.mjs'
+      - '.github/actions/native-tools-box/**'
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/native-tools-box.yml'
@@ -47,31 +48,9 @@ jobs:
       - name: Install the pinned Scrollcase package
         run: npm ci
 
-      - name: Install pinned pixi and conda-pack
-        shell: bash
-        env:
-          PIXI_VERSION: v0.77.0
-          PIXI_HOME: ${{ runner.temp }}/liatir-pixi
-          PIXI_NO_PATH_UPDATE: '1'
-        run: |
-          curl -fsSL https://pixi.sh/install.sh | bash
-          echo "$PIXI_HOME/bin" >> "$GITHUB_PATH"
-          "$PIXI_HOME/bin/pixi" global install 'conda-pack==0.9.2'
-
-      - name: Refuse a stale dependency lock
-        run: pixi lock --check --manifest-path runtime-boxes/scrolls/native-tools/${{ matrix.target-id }}/pixi.toml
-
-      - uses: dtolnay/rust-toolchain@stable
-        if: matrix.target-id == 'linux-x86_64-cpu'
+      - uses: ./.github/actions/native-tools-box
         with:
-          targets: x86_64-unknown-linux-musl
-
-      - name: Build the statically linked WSL2 Scrollcase consumer
-        if: matrix.target-id == 'linux-x86_64-cpu'
-        run: npm run native-tools:wsl-consumer:build
-
-      - name: Build, self-test, sign and verify the Scrollcase box
-        run: npm run native-tools:build
+          target-id: ${{ matrix.target-id }}
 
       - name: Upload the macOS Scrollcase box
         if: matrix.target-id == 'macos-aarch64-cpu'

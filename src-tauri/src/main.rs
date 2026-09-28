@@ -89,8 +89,13 @@ fn main() {
     .plugin(tauri_plugin_clipboard_manager::init())
     .plugin(tauri_plugin_dialog::init())
     .plugin(tauri_plugin_shell::init())
-    .plugin(tauri_plugin_updater::Builder::new().build())
     .plugin(bridge::autostart::init_plugin());
+
+  // Microsoft Store builds compile the updater out: the Store owns updates there.
+  #[cfg(feature = "tauri-plugin-updater")]
+  {
+    builder = builder.plugin(tauri_plugin_updater::Builder::new().build());
+  }
 
   #[cfg(feature = "wdio")]
   {

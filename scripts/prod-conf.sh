@@ -8,14 +8,25 @@ set -euo pipefail
 : "${CARGO_PACKAGE_NAME:=liatir}"
 : "${CARGO_PACKAGE_VERSION:=$APP_VERSION}"
 : "${APP_IDENTIFIER:=app.liatir.app}"
-: "${UPDATE_ENDPOINT:?Missing UPDATE_ENDPOINT (set by CI)}"
+# direct: the app updates itself from UPDATE_ENDPOINT. msix: the Microsoft Store
+# owns updates, so the build carries no updater configuration at all.
+: "${DISTRIBUTION:=direct}"
 : "${TAURI_SIGNING_PUBLIC_KEY:=}"
 
-if [ -z "${ED25519_PUBKEY:-}" ] && [ -n "${TAURI_SIGNING_PUBLIC_KEY:-}" ]; then
-  ED25519_PUBKEY="$TAURI_SIGNING_PUBLIC_KEY"
-fi
-
-: "${ED25519_PUBKEY:?Missing ED25519_PUBKEY (CI var/secret)}"
+case "$DISTRIBUTION" in
+  direct)
+    : "${UPDATE_ENDPOINT:?Missing UPDATE_ENDPOINT (set by CI)}"
+    if [ -z "${ED25519_PUBKEY:-}" ] && [ -n "${TAURI_SIGNING_PUBLIC_KEY:-}" ]; then
+      ED25519_PUBKEY="$TAURI_SIGNING_PUBLIC_KEY"
+    fi
+    : "${ED25519_PUBKEY:?Missing ED25519_PUBKEY (CI var/secret)}"
+    ;;
+  msix) ;;
+  *)
+    echo "DISTRIBUTION must be direct or msix, got: $DISTRIBUTION"
+    exit 1
+    ;;
+esac
 : "${DEEPLINK_SCHEME:=}"
 : "${MAIN_WINDOW_TITLE:=Liatir}"
 : "${MAIN_WINDOW_WIDTH:=1200}"
@@ -45,7 +56,7 @@ if [ -n "$MAIN_WINDOW_URL" ]; then
   exit 1
 fi
 
-if ! printf '%s' "$UPDATE_ENDPOINT" | grep -Eq '^https://'; then
+if [ "$DISTRIBUTION" = direct ] && ! printf '%s' "$UPDATE_ENDPOINT" | grep -Eq '^https://'; then
   echo "UPDATE_ENDPOINT must use HTTPS for a production build"
   exit 1
 fi
@@ -108,15 +119,22 @@ jq \
   src-tauri/tauri.conf.json > src-tauri/tauri.conf.json.tmp && mv src-tauri/tauri.conf.json.tmp src-tauri/tauri.conf.json
 
 # Updater config
-echo "6. Patching updater settings (Tauri v2 plugin)"
-jq --arg endpoint "$UPDATE_ENDPOINT" --arg pubkey "$ED25519_PUBKEY" '
-  .bundle = (.bundle // {}) |
-  .bundle.createUpdaterArtifacts = true |
-  .plugins = (.plugins // {}) |
-  .plugins.updater = (.plugins.updater // {}) |
-  .plugins.updater.endpoints = [ $endpoint ] |
-  .plugins.updater.pubkey = $pubkey
-' src-tauri/tauri.conf.json > src-tauri/tauri.conf.json.tmp && mv src-tauri/tauri.conf.json.tmp src-tauri/tauri.conf.json
+echo "6. Patching updater settings (Tauri v2 plugin, $DISTRIBUTION)"
+if [ "$DISTRIBUTION" = direct ]; then
+  jq --arg endpoint "$UPDATE_ENDPOINT" --arg pubkey "$ED25519_PUBKEY" '
+    .bundle = (.bundle // {}) |
+    .bundle.createUpdaterArtifacts = true |
+    .plugins = (.plugins // {}) |
+    .plugins.updater = (.plugins.updater // {}) |
+    .plugins.updater.endpoints = [ $endpoint ] |
+    .plugins.updater.pubkey = $pubkey
+  ' src-tauri/tauri.conf.json > src-tauri/tauri.conf.json.tmp && mv src-tauri/tauri.conf.json.tmp src-tauri/tauri.conf.json
+else
+  jq '
+    .bundle.createUpdaterArtifacts = false |
+    del(.plugins.updater)
+  ' src-tauri/tauri.conf.json > src-tauri/tauri.conf.json.tmp && mv src-tauri/tauri.conf.json.tmp src-tauri/tauri.conf.json
+fi
 
 # Deep link config
 echo "7. Patching deep-link plugin configuration"

@@ -2,16 +2,20 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <!-- Required for App Store / notarization -->
   <key>com.apple.security.app-sandbox</key>
   <false/>
 
-  <!-- Allows outbound network connections (needed for remote webview URL) -->
   <key>com.apple.security.network.client</key>
   <true/>
 
-  <!-- Required for reliable User Notifications delivery on macOS Ventura+ -->
-  <key>com.apple.developer.usernotifications.time-sensitive</key>
+  <!-- Wasmtime runs WASM plugins in-process: it writes compiled code to anonymous memory and then
+       mprotects it executable, without MAP_JIT. Under the hardened runtime that notarization
+       requires, the process is killed at the first such call unless this is granted
+       (allow-jit alone is not enough; measured 2026-09-28). -->
+  <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
   <true/>
+
+  <!-- No com.apple.developer.* entitlements: they need an embedded provisioning profile, and a
+       Developer ID app that claims one without it is killed at launch. -->
 </dict>
 </plist>
