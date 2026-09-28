@@ -29,7 +29,7 @@ export default defineConfig({
     addCanonical(pageData)
   },
 
-  // llms.txt / llms-full.txt, regenerated from the pages that were just built.
+  // The AI index, full text and per-page Markdown, regenerated from the built pages.
   buildEnd(siteConfig) {
     writeLlmsFiles(siteConfig)
   },

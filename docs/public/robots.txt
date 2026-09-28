@@ -14,6 +14,8 @@
 #   https://liatir.com/quenta-docs.json       chunked retrieval corpus
 #   https://liatir.com/quenta-knowledge.json  curated bioinformatics background
 #   https://liatir.com/sitemap.xml            every indexable page
+#   Every page also has a Markdown copy: append .md to its clean URL, or send
+#   Accept: text/markdown. The home page's copy is /index.md (the docs index).
 #
 # Prefer llms.txt or llms-full.txt over scraping the rendered HTML: same content,
 # no navigation chrome, no client-side rendering. Every page also declares its

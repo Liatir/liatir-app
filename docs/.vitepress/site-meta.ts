@@ -1,5 +1,5 @@
 // Machine-facing site metadata: the canonical URL of every page, plus the
-// llms.txt / llms-full.txt pair that AI assistants read instead of scraping HTML.
+// llms.txt / llms-full.txt and per-page Markdown that AI assistants can read.
 //
 // Everything is derived from the Markdown actually being built, so adding,
 // renaming or deleting a page updates the canonical tag, the sitemap and both
@@ -10,6 +10,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import type { PageData, SiteConfig } from 'vitepress'
+import { markdownPathFor } from '../markdown-path.mjs'
 
 /** Production origin. Single copy: `sitemap.hostname` and canonical URLs both read it. */
 export const HOSTNAME = 'https://liatir.com'
@@ -38,8 +39,13 @@ export function addCanonical(pageData: PageData): void {
   const hasCanonical = head.some(
     ([tag, attrs]: [string, Record<string, string>?]) => tag === 'link' && attrs?.rel === 'canonical'
   )
-  if (hasCanonical) return
-  head.push(['link', { rel: 'canonical', href: pageUrl(pageData.relativePath) }])
+  if (!hasCanonical) head.push(['link', { rel: 'canonical', href: pageUrl(pageData.relativePath) }])
+  if (pageData.relativePath === '404.md') return
+  head.push(['link', {
+    rel: 'alternate',
+    type: 'text/markdown',
+    href: `${HOSTNAME}${markdownPathFor(new URL(pageUrl(pageData.relativePath)).pathname)}`,
+  }])
 }
 
 // ── Index shape ──────────────────────────────────────────────────────────────
@@ -55,6 +61,7 @@ const SECTIONS: Array<{ dir: string; title: string }> = [
   { dir: 'ai', title: 'AI Models and AI Tools' },
   { dir: 'visualization', title: 'Visualization' },
   { dir: 'pipeline', title: 'Pipelines' },
+  { dir: 'mcp', title: 'Local MCP' },
   { dir: 'plugins', title: 'Plugins (.lia)' },
 ]
 
@@ -137,7 +144,8 @@ function firstParagraph(body: string): string {
 
 function readPage(srcDir: string, relativePath: string): DocPage {
   const raw = fs.readFileSync(path.join(srcDir, relativePath), 'utf8')
-  const { data, body } = parseFrontmatter(raw)
+  const { data } = parseFrontmatter(raw)
+  const body = toPlainMarkdown(raw, relativePath)
   const h1 = /^#\s+(.*)$/m.exec(body)
   return {
     relativePath,
@@ -147,6 +155,46 @@ function readPage(srcDir: string, relativePath: string): DocPage {
     // Drop the leading H1: the title is emitted separately by both writers.
     body: (h1 ? body.replace(h1[0], '') : body).trim(),
   }
+}
+
+/** Flatten presentation outside code fences; examples must survive byte for byte. */
+export function toPlainMarkdown(source: string, relativePath: string): string {
+  const { body } = parseFrontmatter(source)
+  const sourceUrl = `${HOSTNAME}/${relativePath}`
+  const flatten = (text: string) => text
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, '')
+    .replace(/^[ \t]*<HomePage\b[^>]*\/?>[ \t]*$/gim, '')
+    .replace(/^[ \t]*<\/?Tabs\b[^>]*>[ \t]*$/gim, '')
+    .replace(/^[ \t]*<Tab\s+title="([^"]*)"[^>]*>[ \t]*$/gim, '### $1')
+    .replace(/^[ \t]*<\/Tab>[ \t]*$/gim, '')
+    .replace(/<PatreonButton\s*\/>/g, '[Support Liatir on Patreon](https://www.patreon.com/16427094/join)')
+    .replace(/<iframe\b[^>]*\bsrc=['"]([^'"]+)['"][^>]*>\s*<\/iframe>/gi, '[Support Liatir]($1)')
+    .replace(/\]\(([^\s)]+)(\s+"[^"]*")?\)/g, (match, target, title = '') => {
+      if (/^[a-z][a-z\d+.-]*:/i.test(target) || target.startsWith('//')) return match
+      return `](${new URL(target, sourceUrl).href}${title})`
+    })
+    .replace(/\b(href|src)=(['"])(\/[^'"]*)\2/g, '$1=$2' + HOSTNAME + '$3$2')
+    .replace(/<\/?(?:div|span|center|small|figure)\b[^>]*>/gi, '')
+    .replace(/\n{3,}/g, '\n\n')
+
+  const parts: string[] = []
+  let prose = ''
+  let fence = ''
+  for (const line of body.split(/(?<=\n)/)) {
+    const marker = /^ {0,3}(`{3,}|~{3,})/.exec(line)?.[1]
+    if (fence) {
+      parts.push(line)
+      if (marker?.[0] === fence[0] && marker.length >= fence.length && line.trim() === marker) fence = ''
+    } else if (marker) {
+      parts.push(flatten(prose), line)
+      prose = ''
+      fence = marker
+    } else {
+      prose += line
+    }
+  }
+  parts.push(flatten(prose))
+  return parts.join('').trim()
 }
 
 function sectionOf(relativePath: string): string {
@@ -205,6 +253,7 @@ function renderLlmsTxt(
     'app keeps working offline. The pages below are the product documentation.',
     '',
     `- Full text of every page in this index: ${HOSTNAME}/llms-full.txt`,
+    `- Single-page Markdown: append .md to a page URL, for example ${HOSTNAME}/getting-started/install.md; or request the page with Accept: text/markdown.`,
     `- Chunked retrieval corpus (JSON): ${HOSTNAME}/quenta-docs.json`,
     `- Curated bioinformatics background (JSON): ${HOSTNAME}/quenta-knowledge.json`,
     `- Sitemap: ${HOSTNAME}/sitemap.xml`,
@@ -247,7 +296,7 @@ function renderLlmsFullTxt(
 }
 
 /**
- * Writes llms.txt and llms-full.txt into the build output. Called from
+ * Writes llms.txt, llms-full.txt and each page's Markdown into the build output. Called from
  * `buildEnd`, once SSG has finished and `siteConfig.pages` is final.
  */
 export function writeLlmsFiles(siteConfig: SiteConfig): void {
@@ -255,9 +304,27 @@ export function writeLlmsFiles(siteConfig: SiteConfig): void {
   const generatedAt = new Date().toISOString()
   const sections = groupPages(srcDir, pages)
 
-  fs.writeFileSync(path.join(outDir, 'llms.txt'), renderLlmsTxt(sections, site.description, generatedAt))
+  const index = renderLlmsTxt(sections, site.description, generatedAt)
+  fs.writeFileSync(path.join(outDir, 'llms.txt'), index)
   fs.writeFileSync(path.join(outDir, 'llms-full.txt'), renderLlmsFullTxt(sections, site.description, generatedAt))
 
+  for (const relativePath of pages.filter((page) => page !== '404.md')) {
+    const page = readPage(srcDir, relativePath)
+    const file = path.join(outDir, markdownPathFor(new URL(page.url).pathname)!.slice(1))
+    const document = [
+      '---',
+      `title: ${JSON.stringify(page.title)}`,
+      `description: ${JSON.stringify(page.description || site.description)}`,
+      `source: ${page.url}`,
+      '---',
+      '',
+      relativePath === 'index.md' ? index.trimEnd() : `# ${page.title}\n\n${page.body}`,
+      '',
+    ].join('\n')
+    fs.mkdirSync(path.dirname(file), { recursive: true })
+    fs.writeFileSync(file, document)
+  }
+
   const count = sections.reduce((total, section) => total + section.pages.length, 0)
-  siteConfig.logger.info(`llms: llms.txt + llms-full.txt (${count} pages, ${sections.length} sections)`)
+  siteConfig.logger.info(`llms: llms.txt + llms-full.txt + page Markdown (${count} indexed pages, ${sections.length} sections)`)
 }

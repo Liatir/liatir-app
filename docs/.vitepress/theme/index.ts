@@ -6,6 +6,7 @@ import CookieBanner from './CookieBanner.vue'
 import PatreonButton from './PatreonButton.vue'
 import Tabs from './tabs-component/Tabs.vue'
 import Tab from './tabs-component/Tab.vue'
+import PageActions from './PageActions.vue'
 import './custom.css'
 
 export default {
@@ -16,6 +17,7 @@ export default {
     return h(DefaultTheme.Layout, null, {
       'layout-bottom': () => h(CookieBanner),
       'nav-bar-content-after': () => h(ShareThis),
+      'doc-before': () => h(PageActions),
     })
   },
   enhanceApp({ app }) {

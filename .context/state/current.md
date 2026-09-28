@@ -68,6 +68,16 @@ revocations.
 
 ## Operational facts still in force
 
+- **Public docs have generated Markdown copies and page actions** as of 2026-09-28:
+  each documentation page offers Markdown Copy/View and Ask an AI; the build generates
+  the copies alongside the existing AI index. Website deployment has not been verified.
+  See [documentation conventions](../truth/conventions.md#public-markdown-and-page-actions).
+  Validation: 65 published pages and their copies checked; ten Markdown generation/HTTP tests;
+  headless browser checks for copy, View, AI prompt URLs, navigation and mobile width; docs build,
+  Pages Functions compilation, and `test:verify` passed (83 unit files / 654 tests, seven gates).
+  `syngraphe check` with 0.4.1 reports existing CTX003/AGENT006: the committed context manifest
+  lacks `protocol: repository-context` and the existing VitePress/static entries are rejected.
+  Internal references pass; no context schema or managed agent block was changed.
 - **The repositories are `Liatir/liatir-app` and `Liatir/liatir-sdk`** since 2026-09-28 (formerly
   `liatir-stack` and `sdk`); Runtime Box signing was re-bound to the new name
   ([decision](../decisions/repository-names.md)).
