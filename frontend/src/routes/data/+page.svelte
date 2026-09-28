@@ -488,8 +488,16 @@
     <div class="flex-1 overflow-y-auto p-6 {previewFileId ? 'border-r border-border' : ''}">
 
       {#if dataFiles.files.length > 0}
-        <h2 class="mb-4 text-sm font-semibold text-text wrap-break-word">
-          {selectedFolder === null ? 'All files' : selectedFolder.split('/').pop()}
+        <h2 class="mb-4 flex items-start gap-2 text-sm font-semibold text-text">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="mt-0.5 shrink-0 text-text-subtle">
+            {#if selectedFolder === null}
+              <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
+              <rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" />
+            {:else}
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+            {/if}
+          </svg>
+          <span class="min-w-0 wrap-break-word">{selectedFolder === null ? 'All files' : selectedFolder.split('/').pop()}</span>
         </h2>
       {/if}
 
