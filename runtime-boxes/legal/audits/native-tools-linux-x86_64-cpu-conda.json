@@ -2,7 +2,7 @@
   "schemaVersion": 2,
   "kind": "scrollcase.box.dependency-license-audit",
   "targetId": "linux-x86_64-cpu",
-  "dependencyLockSha256": "4fecf29fb26462aa28c56096ce02916fde2531fa6b531027c939f2e082998b71",
+  "dependencyLockSha256": "ef090259b601672027ac099034c63c65d25799e66f863868566cf4e5b38cb3b4",
   "packages": [
     {
       "name": "_openmp_mutex",
@@ -17,9 +17,69 @@
       "source": "conda"
     },
     {
+      "name": "aws-c-auth",
+      "version": "0.10.4",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "aws-c-cal",
+      "version": "0.9.15",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "aws-c-common",
+      "version": "0.14.3",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "aws-c-compression",
+      "version": "0.3.2",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "aws-c-http",
+      "version": "0.11.0",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "aws-c-io",
+      "version": "0.27.5",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "aws-c-s3",
+      "version": "0.13.1",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "aws-c-sdkutils",
+      "version": "0.2.7",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "aws-checksums",
+      "version": "0.2.10",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
       "name": "bcftools",
       "version": "1.24",
       "declaredLicense": "GPL",
+      "source": "conda"
+    },
+    {
+      "name": "blosc",
+      "version": "1.21.6",
+      "declaredLicense": "BSD-3-Clause",
       "source": "conda"
     },
     {
@@ -41,9 +101,27 @@
       "source": "conda"
     },
     {
+      "name": "c-blosc2",
+      "version": "3.3.5",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
       "name": "ca-certificates",
       "version": "2026.7.22",
       "declaredLicense": "ISC",
+      "source": "conda"
+    },
+    {
+      "name": "cached-property",
+      "version": "2.0.1",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "cached_property",
+      "version": "2.0.1",
+      "declaredLicense": "BSD-3-Clause",
       "source": "conda"
     },
     {
@@ -56,6 +134,24 @@
       "name": "gsl",
       "version": "2.6",
       "declaredLicense": "GPL-3.0-or-later",
+      "source": "conda"
+    },
+    {
+      "name": "h5py",
+      "version": "3.16.0",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "hdf5",
+      "version": "2.2.0",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "hdf5plugin",
+      "version": "7.0.0",
+      "declaredLicense": "MIT",
       "source": "conda"
     },
     {
@@ -104,6 +200,12 @@
       "name": "ld_impl_linux-64",
       "version": "2.46.1",
       "declaredLicense": "GPL-3.0-only",
+      "source": "conda"
+    },
+    {
+      "name": "libaec",
+      "version": "1.1.5",
+      "declaredLicense": "BSD-2-Clause",
       "source": "conda"
     },
     {
@@ -197,6 +299,12 @@
       "source": "conda"
     },
     {
+      "name": "liblapack",
+      "version": "3.11.0",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
       "name": "liblzma",
       "version": "5.8.3",
       "declaredLicense": "0BSD",
@@ -263,6 +371,12 @@
       "source": "conda"
     },
     {
+      "name": "lz4-c",
+      "version": "1.10.0",
+      "declaredLicense": "BSD-2-Clause",
+      "source": "conda"
+    },
+    {
       "name": "minimap2",
       "version": "2.31",
       "declaredLicense": "MIT",
@@ -275,8 +389,20 @@
       "source": "conda"
     },
     {
+      "name": "numpy",
+      "version": "2.4.6",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
       "name": "openssl",
       "version": "3.6.3",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "packaging",
+      "version": "26.3",
       "declaredLicense": "Apache-2.0",
       "source": "conda"
     },
@@ -299,9 +425,21 @@
       "source": "conda"
     },
     {
+      "name": "python_abi",
+      "version": "3.11",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
       "name": "readline",
       "version": "8.3",
       "declaredLicense": "GPL-3.0-only",
+      "source": "conda"
+    },
+    {
+      "name": "s2n",
+      "version": "1.7.6",
+      "declaredLicense": "Apache-2.0",
       "source": "conda"
     },
     {
@@ -323,6 +461,12 @@
       "source": "conda"
     },
     {
+      "name": "snappy",
+      "version": "1.2.2",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
       "name": "sysroot_linux-64",
       "version": "2.28",
       "declaredLicense": "LGPL-2.0-or-later AND LGPL-2.0-or-later WITH exceptions AND GPL-2.0-or-later",
@@ -338,6 +482,12 @@
       "name": "tzdata",
       "version": "2026c",
       "declaredLicense": "LicenseRef-Public-Domain",
+      "source": "conda"
+    },
+    {
+      "name": "zlib-ng",
+      "version": "2.3.3",
+      "declaredLicense": "Zlib",
       "source": "conda"
     },
     {

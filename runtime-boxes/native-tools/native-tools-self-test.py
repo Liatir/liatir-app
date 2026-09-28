@@ -10,6 +10,9 @@ import subprocess
 import sys
 import tempfile
 
+import h5py
+import hdf5plugin  # registers the Blosc filter in this process, to write a Blosc fixture
+
 
 ROOT = Path.cwd()
 BIN = ROOT / "venv" / "bin"
@@ -20,18 +23,27 @@ METADATA = json.loads((ROOT / "native-tools.json").read_text(encoding="utf-8"))
 # to the box it is verifying.
 SIMPLEAF_HOME = Path(tempfile.mkdtemp(prefix="liatir-simpleaf-home-"))
 
+# The Blosc decoder h5repack reads simpleaf's .h5ad with. Liatir passes h5repack this same
+# path (`HDF5_PLUGIN_DIR` in native_tools.rs), so a Python upgrade that moves it fails here.
+HDF5_PLUGINS = ROOT / "venv/lib/python3.11/site-packages/hdf5plugin/plugins"
+
 
 def run(
     tool: str,
     *args: str,
     ok: tuple[int, ...] = (0,),
     cwd: Path | None = None,
+    hdf5_plugins: bool = True,
 ) -> subprocess.CompletedProcess[str]:
     environment = os.environ.copy()
     environment["PATH"] = f"{BIN}{os.pathsep}{environment.get('PATH', '')}"
     library_variable = "DYLD_LIBRARY_PATH" if sys.platform == "darwin" else "LD_LIBRARY_PATH"
     environment[library_variable] = str(BIN.parent / "lib")
     environment["ALEVIN_FRY_HOME"] = str(SIMPLEAF_HOME)
+    # As in Liatir, only h5repack is shown the plugins; nothing inherits them from the build host.
+    environment.pop("HDF5_PLUGIN_PATH", None)
+    if tool == "h5repack" and hdf5_plugins:
+        environment["HDF5_PLUGIN_PATH"] = str(HDF5_PLUGINS)
     result = subprocess.run(
         [str(BIN / tool), *args],
         cwd=cwd or ROOT,
@@ -65,6 +77,7 @@ assert_version("bwa", (), versions["bwa"], ok=(1,))
 assert_version("minimap2", ("--version",), versions["minimap2"])
 assert_version("simpleaf", ("--version",), versions["simpleaf"])
 assert_version("alevin-fry", ("--version",), versions["alevin-fry"])
+assert_version("h5repack", ("--version",), versions["h5repack"])
 
 with tempfile.TemporaryDirectory(prefix="liatir-native-tools-") as temporary:
     work = Path(temporary)
@@ -130,10 +143,41 @@ with tempfile.TemporaryDirectory(prefix="liatir-native-tools-") as temporary:
 
 # ── Single-cell chain: simpleaf drives piscem and alevin-fry, end to end ─────────────
 #
-# Asserted on the matrix-market matrix rather than the .h5ad, because the box carries no
-# HDF5 reader; the .h5ad is checked for the container signature that makes it an .h5ad at
-# all. Every count below is exact: the reads are built with distinct, enumerated UMIs, so
-# a UMI is never lost to a collision and the expected matrix is arithmetic, not a range.
+# Asserted on the matrix-market matrix first, then on the .h5ad Liatir actually hands on:
+# simpleaf's, rewritten by h5repack (see the Blosc section below for why). Every count is exact:
+# the reads are built with distinct, enumerated UMIs, so a UMI is never lost to a collision and
+# the expected matrix is arithmetic, not a range.
+
+# Prints every dataset of an HDF5 file as JSON. Run in a fresh interpreter that never loads
+# hdf5plugin, with no HDF5_PLUGIN_PATH, so only the filters built into HDF5 itself can decode —
+# which is all the AI Model boxes have.
+READ_WITHOUT_PLUGINS = """
+import json, sys
+import h5py
+
+contents = {}
+
+def decode(name, item):
+    if isinstance(item, h5py.Dataset):
+        value = item.asstr()[()] if h5py.check_string_dtype(item.dtype) else item[()]
+        contents[name] = value.tolist() if hasattr(value, "tolist") else value
+
+with h5py.File(sys.argv[1], "r") as handle:
+    handle.visititems(decode)
+print(json.dumps(contents))
+"""
+
+
+def read_without_plugins(path: Path) -> dict:
+    return json.loads(run("python", "-c", READ_WITHOUT_PLUGINS, str(path)).stdout)
+
+
+def repack(source: Path, target: Path) -> None:
+    """Rewrite with gzip exactly as Liatir does, failing on any warning as Liatir does."""
+    result = run("h5repack", "-f", "GZIP=4", str(source), str(target))
+    if result.stderr.strip():
+        raise RuntimeError(f"h5repack could not rewrite {source.name}:\n{result.stderr}")
+
 
 BASES = "ACGT"
 
@@ -267,4 +311,55 @@ with tempfile.TemporaryDirectory(prefix="liatir-single-cell-") as temporary:
                     f"single-cell counts for {barcode}/{gene_id}{suffix}: expected {wanted}, got {found}"
                 )
 
+    portable = work / "portable.h5ad"
+    repack(matrix_h5ad, portable)
+    h5ad = read_without_plugins(portable)
+    cells, genes = h5ad["obs/barcodes"], h5ad["var/gene_id"]
+    indptr, indices, data = h5ad["X/indptr"], h5ad["X/indices"], h5ad["X/data"]
+    if len(indptr) != len(cells) + 1:
+        raise RuntimeError("the .h5ad's X is not a cells-by-genes CSR matrix")
+    stored: dict[tuple[str, str], float] = {}
+    for cell, barcode in enumerate(cells):
+        for slot in range(indptr[cell], indptr[cell + 1]):
+            stored[(barcode, genes[indices[slot]])] = data[slot]
+    # X is spliced + unspliced + ambiguous, and these reads leave nothing ambiguous.
+    for key, spliced in expected_spliced.items():
+        wanted = float(spliced + expected_unspliced[key])
+        if stored.get(key, 0.0) != wanted:
+            raise RuntimeError(f"portable .h5ad count for {key}: expected {wanted}, got {stored.get(key)}")
+
 shutil.rmtree(SIMPLEAF_HOME, ignore_errors=True)
+
+
+# ── Blosc: what h5repack has to decode in a real sample's .h5ad ───────────────────────
+#
+# simpleaf compresses its .h5ad with Blosc, which a stock HDF5 cannot decode, so Liatir rewrites
+# it with h5repack and gzip. The anndata-rs library simpleaf writes through leaves arrays of 128
+# values or fewer uncompressed, so the small matrix above holds no Blosc at all. This fixture is
+# written the way simpleaf writes a real sample — Blosc, zstd, byte shuffle — and proven unreadable
+# without the decoder before it is repacked. h5repack exits 0 even when it cannot decode a dataset:
+# it copies it still compressed and warns. Liatir fails the step on any warning, so the last check
+# proves that warning is really printed.
+
+with tempfile.TemporaryDirectory(prefix="liatir-hdf5-") as temporary:
+    work = Path(temporary)
+    counts = [float(index % 97) for index in range(4096)]
+    blosc = work / "blosc.h5"
+    with h5py.File(blosc, "w") as handle:
+        handle.create_dataset(
+            "counts",
+            data=counts,
+            dtype="f4",
+            chunks=(1024,),
+            **hdf5plugin.Blosc(cname="zstd", clevel=5, shuffle=hdf5plugin.Blosc.SHUFFLE),
+        )
+    run("python", "-c", READ_WITHOUT_PLUGINS, str(blosc), ok=(1,))
+
+    portable = work / "portable.h5"
+    repack(blosc, portable)
+    if read_without_plugins(portable)["counts"] != counts:
+        raise RuntimeError("h5repack changed the values it rewrote")
+
+    blind = run("h5repack", "-f", "GZIP=4", str(blosc), str(work / "blind.h5"), hdf5_plugins=False)
+    if not blind.stderr.strip():
+        raise RuntimeError("h5repack without the Blosc decoder no longer warns; Liatir relies on it")

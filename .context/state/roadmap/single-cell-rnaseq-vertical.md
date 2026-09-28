@@ -159,6 +159,27 @@ specific annotation release will always need it. Mouse and later human releases
 are additions to `single-cell-indexes/recipes.json` plus signer review; they must
 not be silently substituted for the first approved identity.
 
+**The quantified `.h5ad` is rewritten with gzip (2026-09-28).** `simpleaf quant --anndata-out`
+(simpleaf 0.28.0) writes every array longer than 128 values with the Blosc HDF5 filter (ID 32001):
+anndata-rs 0.7.0, which simpleaf writes through, defaults to `Zst(5)` and maps it to `blosc_zstd`,
+with no option to change it, and simpleaf 0.30.0 still pins the same library. A stock HDF5 cannot
+decode Blosc. Reproduced with the exact reader stacks of the AI Model boxes on the demo reads: h5py
+3.11.0 + HDF5 1.14.3 + anndata 0.10.9 (Geneformer) and h5py 3.16.0 + HDF5 2.1.0 + anndata 0.12.19
+(scGPT, UCE) both fail on `X`.
+
+The quantification step now runs the bundled `h5repack -f GZIP=4` on simpleaf's file and hands on
+that copy; simpleaf's own stays in its working directory. h5repack reads Blosc through
+`hdf5plugin`'s decoder, which Liatir points it at with `HDF5_PLUGIN_PATH` (h5repack only; simpleaf
+links its own HDF5). On the demo output `h5diff` reports 0 differences and both reader stacks open
+the result. h5repack exits 0 when it cannot decode a dataset — it copies it still compressed with a
+warning — so the step fails on any stderr. The box self-test proves all of it, including that the
+warning appears without the decoder. Fixing the readers instead would have meant republishing
+three AI Model boxes.
+
+Cost: `hdf5` 2.2.0 and `hdf5plugin` 7.0.0 (with h5py and numpy) grew the macOS box from 145 MB to
+172 MB compressed; every added package is Apache-2.0, BSD, MIT or Zlib. The Linux box lock and audit
+are updated but the box itself must be rebuilt on Linux (CI) before Windows and Linux get the step.
+
 **Barcode permit lists stay local.** simpleaf's `--unfiltered-pl` downloads the
 manufacturer barcode list from a remote URL, which an offline-first app cannot
 depend on. Liatir exposes knee detection (the default, needs nothing), an explicit

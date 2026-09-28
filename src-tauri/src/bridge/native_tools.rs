@@ -38,7 +38,7 @@ include!(concat!(env!("OUT_DIR"), "/native_tools_trust.rs"));
 /// `piscem` is in the box too, as the mapping engine simpleaf drives, but it is
 /// not listed here: Liatir never launches it directly, and simpleaf finds it
 /// through the box's own PATH.
-pub(crate) const BUNDLED_TOOLS: [&str; 8] = [
+pub(crate) const BUNDLED_TOOLS: [&str; 9] = [
     "samtools",
     "bcftools",
     "seqkit",
@@ -47,6 +47,7 @@ pub(crate) const BUNDLED_TOOLS: [&str; 8] = [
     "minimap2",
     "simpleaf",
     "alevin-fry",
+    "h5repack",
 ];
 
 const RESOURCE_DIR: &str = "native-tools";
@@ -56,6 +57,15 @@ const WSL_CONSUMER: &str = "native-tools-box-consumer";
 
 const SIMPLEAF_HOME_DIR: &str = "simpleaf-home";
 const SIMPLEAF_HOME_VARIABLE: &str = "ALEVIN_FRY_HOME";
+
+/// Where hdf5plugin keeps the HDF5 filter plugins, Blosc among them, inside the box.
+///
+/// h5repack needs Blosc to read simpleaf's `.h5ad`, and a stock HDF5 looks for plugins only in
+/// its own build-time directory. Given to h5repack alone: simpleaf links its own HDF5 with Blosc
+/// built in, and handing it a second library's plugins would only invite a clash. The box's
+/// self-test repacks through this same path, so a Python upgrade that moves it fails the build.
+const HDF5_PLUGIN_DIR: &str = "venv/lib/python3.11/site-packages/hdf5plugin/plugins";
+const HDF5_PLUGIN_VARIABLE: &str = "HDF5_PLUGIN_PATH";
 
 /// Serialises preparation. Two Jobs started together on a fresh installation
 /// must not race to install the same immutable box destination.
@@ -407,10 +417,17 @@ pub(crate) fn resolve(
         if cmd == "simpleaf" {
             ensure_simpleaf_home(&root)?;
         }
+        let mut environment = native_environment(&root);
+        if cmd == "h5repack" {
+            environment.push((
+                HDF5_PLUGIN_VARIABLE.into(),
+                root.join(HDF5_PLUGIN_DIR).to_string_lossy().to_string(),
+            ));
+        }
         Ok(Some(ResolvedCommand {
             program: binary.to_string_lossy().to_string(),
             args: args.to_vec(),
-            environment: native_environment(&root),
+            environment,
         }))
     }
 
@@ -618,8 +635,15 @@ mod wsl_plan {
                 super::SIMPLEAF_HOME_VARIABLE,
                 simpleaf_home(prefix)
             ),
-            format!("{prefix}/venv/bin/{cmd}"),
         ];
+        if cmd == "h5repack" {
+            command.push(format!(
+                "{}={prefix}/{}",
+                super::HDF5_PLUGIN_VARIABLE,
+                super::HDF5_PLUGIN_DIR
+            ));
+        }
+        command.push(format!("{prefix}/venv/bin/{cmd}"));
         command.extend(args.iter().cloned());
         ResolvedCommand {
             program: "wsl.exe".into(),
@@ -764,6 +788,7 @@ mod tests {
         assert!(is_bundled_tool("bwa"));
         assert!(is_bundled_tool("simpleaf"));
         assert!(is_bundled_tool("alevin-fry"));
+        assert!(is_bundled_tool("h5repack"));
         // FastQC runs as WASM in-process and SnpEff is a Java runtime.
         assert!(!is_bundled_tool("fastqc"));
         assert!(!is_bundled_tool("snpeff"));
@@ -872,6 +897,22 @@ mod tests {
                 "/mnt/c/bio/reads.bam",
             ],
         );
+    }
+
+    #[test]
+    fn gives_h5repack_alone_the_blosc_decoder() {
+        let prefix = "/home/bio/.local/share/liatir/native-tools/abc";
+        let plugins = format!("HDF5_PLUGIN_PATH={prefix}/{HDF5_PLUGIN_DIR}");
+        let repack = wsl_plan::tool_command("Ubuntu-24.04", prefix, "h5repack", &[]);
+        let plugin_slot = repack.args.iter().position(|arg| *arg == plugins);
+        let program_slot = repack
+            .args
+            .iter()
+            .position(|arg| arg.ends_with("/venv/bin/h5repack"));
+        // `env` only reads assignments that come before the program it runs.
+        assert!(plugin_slot.is_some() && plugin_slot < program_slot);
+        let simpleaf = wsl_plan::tool_command("Ubuntu-24.04", prefix, "simpleaf", &[]);
+        assert!(!simpleaf.args.iter().any(|arg| arg.starts_with("HDF5_PLUGIN_PATH=")));
     }
 
     #[test]

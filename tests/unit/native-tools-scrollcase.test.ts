@@ -71,11 +71,21 @@ function authoringRevision(): string {
   return hash.digest('hex');
 }
 
+type BoxTool = { id: string; version: string; package?: string };
+
+/** The conda package each tool is installed from, which is its own name unless recorded. */
+function toolPackage(tool: BoxTool): string {
+  return tool.package ?? tool.id;
+}
+
+/** Declared packages that are not tools: the interpreter, and h5repack's Blosc decoder. */
+const SUPPORT_PACKAGES = ['python', 'hdf5plugin'];
+
 function manifestTools(contents: string): string[] {
   const section = contents.split(/^\[dependencies\]$/m)[1] ?? '';
   return [...section.matchAll(/^([A-Za-z0-9_.-]+) = /gm)]
     .map((match) => match[1])
-    .filter((name) => name !== 'python');
+    .filter((name) => !SUPPORT_PACKAGES.includes(name));
 }
 
 function lockedVersion(contents: string, subdir: string, tool: string): string | null {
@@ -102,10 +112,9 @@ describe('Native Tools Scrollcase box', () => {
   });
 
   it('declares exactly the process-backed tools in every scroll and in Rust', () => {
+    const packages = (metadata.tools as BoxTool[]).map(toolPackage).sort();
     for (const { targetId } of targets) {
-      expect(manifestTools(manifest(targetId)).sort()).toEqual(
-        [...NATIVE_TOOLS_BOX_TOOL_IDS].sort(),
-      );
+      expect(manifestTools(manifest(targetId)).sort()).toEqual(packages);
     }
     const declared = resolver.match(/BUNDLED_TOOLS: \[&str; \d+\]\s*=\s*\[([\s\S]*?)\];/)?.[1] ?? '';
     expect([...declared.matchAll(/"([^"]+)"/g)].map((match) => match[1]).sort()).toEqual(
@@ -120,8 +129,8 @@ describe('Native Tools Scrollcase box', () => {
     for (const { targetId, subdir } of targets) {
       const contents = lock(targetId);
       expect(contents).not.toContain('\r');
-      for (const tool of metadata.tools as { id: string; version: string }[]) {
-        const pinned = lockedVersion(contents, subdir, tool.id);
+      for (const tool of metadata.tools as BoxTool[]) {
+        const pinned = lockedVersion(contents, subdir, toolPackage(tool));
         expect(pinned, `${tool.id} on ${targetId}`).toBe(tool.version);
         expect(
           versionGte(pinned!, DEP_REQUIREMENTS[tool.id].minVersion),
@@ -177,6 +186,17 @@ describe('Native Tools Scrollcase box', () => {
     // It is not a declared tool, so only the file check can notice it going missing.
     for (const { targetId } of targets) {
       expect(scroll(targetId).selfTest.files).toContain('venv/bin/piscem');
+    }
+  });
+
+  it('points h5repack at the Blosc decoder the self-test repacks through', () => {
+    const directory = resolver.match(/HDF5_PLUGIN_DIR: &str = "([^"]+)";/)?.[1];
+    expect(directory).toBeDefined();
+    expect(selfTest).toContain(`ROOT / "${directory}"`);
+    // The directory names the interpreter's version, so it holds only while the pin does.
+    const python = directory!.match(/\/python(\d+\.\d+)\//)?.[1];
+    for (const { targetId } of targets) {
+      expect(manifest(targetId)).toContain(`python = "${python}.`);
     }
   });
 

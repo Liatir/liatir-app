@@ -313,6 +313,23 @@ export const DEP_REQUIREMENTS: Record<string, DepRequirement> = {
       { platform: 'conda', cmd: 'conda install -c bioconda alevin-fry' },
     ],
   },
+  h5repack: {
+    binary: 'h5repack',
+    label: 'h5repack',
+    description:
+      'Rewrites an HDF5 file with different compression, leaving its contents untouched.',
+    minVersion: '2.2.0',
+    category: 'bioinformatics',
+    reason:
+      'simpleaf compresses its .h5ad count matrix in a way most AnnData readers cannot open. Liatir rewrites it with standard compression, so the single-cell AI Tools and any other tool can read it.',
+    releasesUrl: 'https://github.com/HDFGroup/hdf5/releases/latest',
+    conda: 'hdf5',
+    condaChannel: 'conda-forge',
+    installCmds: [
+      // hdf5plugin carries the Blosc decoder h5repack needs to read simpleaf's output.
+      { platform: 'conda', cmd: 'conda install -c conda-forge hdf5 hdf5plugin' },
+    ],
+  },
   nextflow: {
     binary: 'nextflow',
     label: 'Nextflow',

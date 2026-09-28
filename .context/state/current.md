@@ -1,6 +1,6 @@
 # Current project status
 
-Last updated 2026-09-27. This page says where Liatir stands and what comes next. How each piece got
+Last updated 2026-09-28. This page says where Liatir stands and what comes next. How each piece got
 here is in the [status log, July to September 2026](../history/status-log-2026-07-to-2026-09.md)
 and in the plans under `history/`; the readiness of each product area, with its evidence, is in
 [Beta 1 readiness](./roadmap/beta-readiness.md).
@@ -49,7 +49,10 @@ deleted from R2 on 2026-09-27 — see [Scrollcase v3 adoption](../history/scroll
 3. **The partial product areas** in [Beta 1 readiness](./roadmap/beta-readiness.md): the Quenta
    evaluation against a real local Ollama model, useful Plugin templates, native coverage for the
    genome (JBrowse) viewer, and the structure pages' unexercised paths (the 56-atom warning, local
-   file validation, PAE/PDE output).
+   file validation, PAE/PDE output). Also: the Linux Native Tools box must be rebuilt in CI for
+   the h5repack step the single-cell quantification now runs (2026-09-28; macOS rebuilt locally) —
+   see the [single-cell vertical](./roadmap/single-cell-rnaseq-vertical.md); and on macOS a wide
+   pipeline sometimes opens unframed, so the pipeline editor's framing test is intermittent there.
 4. **Not built yet**: Protenix v2, which waits on ByteDance publishing its checkpoint
    ([decision](../decisions/protenix-ships-v1-while-v2-waits.md)); Protenix Mini Default, whose
    files are public but whose box has not been authored; and the MHCflurry

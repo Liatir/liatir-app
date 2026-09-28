@@ -19,8 +19,10 @@ import {
   type LiatirArtifactRequirement,
   type LiatirScientificArtifactMetadata,
 } from '@liatir/core';
+import { nativePipelineJobOptions, type AIRunContext } from '$lib/ai/direct-run-context';
 import { dataFiles } from '$lib/stores/dataFiles.svelte';
 import { assertArtifactCompatible, inspectAnnDataArtifact } from '$lib/scientific-artifacts';
+import { runNativeTool } from '$lib/utils/native-tool';
 
 /** 3D molecular structures. `accept` lists the formats 3Dmol.js can actually read. */
 export const structureViewerDefinition: PipelineStepDefinition = {
@@ -58,7 +60,7 @@ export const genomeViewerDefinition: PipelineStepDefinition = {
   id: 'viewer-genome-track',
   type: 'utility',
   label: 'Genome Track Viewer',
-  description: 'Create an inspectable genome-track viewer section for FASTA/GFF/BED/VCF artifacts.',
+  description: 'Create an inspectable genome-track viewer section for GFF, BED, VCF and BAM tracks on a FASTA reference. A BAM without an index is indexed first.',
   category: 'Visualization',
   inputSchema: {
     referenceFile: {
@@ -283,15 +285,82 @@ export async function runStructureViewerStep(
   };
 }
 
+async function fileExists(path: string): Promise<boolean> {
+  const api = liatir();
+  if (!api) return false;
+  try {
+    await api.invoke('lia_file_size', { path });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The index beside a track that lets JBrowse read only the region on screen.
+ *
+ * samtools names a BAM's index `reads.bam.bai` and Picard `reads.bai`; a CSI serves references
+ * too long for BAI. A bgzipped VCF carries a tabix `.tbi` or a `.csi` the same way. A plain VCF
+ * cannot be indexed and is read whole.
+ */
+async function trackIndex(path: string, kind: string): Promise<string | undefined> {
+  const candidates = kind === 'bam'
+    ? [`${path}.bai`, `${path}.csi`, path.replace(/\.bam$/i, '.bai')]
+    : kind === 'vcf' && /\.gz$/i.test(path)
+      ? [`${path}.tbi`, `${path}.csi`]
+      : [];
+  for (const candidate of candidates) {
+    if (await fileExists(candidate)) return candidate;
+  }
+  return undefined;
+}
+
+/**
+ * Index a BAM beside itself, where `samtools index` puts it and where every genome browser looks.
+ *
+ * JBrowse cannot open a BAM without its index, and a BAM from elsewhere often travels without
+ * one. Indexing reads the BAM and changes nothing in it. It needs the reads sorted by position,
+ * which is how aligned BAMs are normally delivered; samtools refuses an unsorted one.
+ */
+async function indexBam(
+  path: string,
+  onLog: (line: string) => void,
+  context?: AIRunContext,
+): Promise<string> {
+  onLog(`${basename(path)} has no index; creating ${basename(path)}.bai`);
+  const result = await runNativeTool(
+    'samtools',
+    ['index', path],
+    undefined,
+    (line) => { if (line.trim()) onLog(line); },
+    { label: `Index ${basename(path)}`, ...nativePipelineJobOptions(context) },
+  );
+  const index = `${path}.bai`;
+  if (result.ok && await fileExists(index)) return index;
+  // samtools ends with a generic "failed to create index"; the cause is in an earlier line.
+  if (result.stderr.includes('Unsorted positions')) {
+    throw new Error(
+      `${basename(path)} is not sorted by position, so it cannot be indexed or shown. Sort it by position first (samtools sort), then open it again.`,
+    );
+  }
+  const reason = result.stderr.split(/\r?\n/).filter(Boolean).pop()
+    ?? `samtools exited with code ${result.exitCode}`;
+  throw new Error(`${basename(path)} has no index and Liatir could not create one: ${reason}`);
+}
+
 export async function runGenomeViewerStep(
   inputs: Record<string, string>,
   _outputDir: string,
   onLog: (line: string) => void,
+  context?: AIRunContext,
 ): Promise<{ outputFiles: RunOutputFile[]; output: ToolOutput; values: Record<string, JsonValue> }> {
   if (!inputs.trackFile) throw new Error('Track file is required.');
   const trackKind = genomeTrackKind(inputs.trackFile);
   onLog(`viewer ${genomeViewerDefinition.id}`);
   onLog(`track ${basename(inputs.trackFile)}`);
+  const indexPath = await trackIndex(inputs.trackFile, trackKind)
+    ?? (trackKind === 'bam' ? await indexBam(inputs.trackFile, onLog, context) : undefined);
+  if (indexPath) onLog(`index ${basename(indexPath)}`);
 
   return {
     outputFiles: [],
@@ -311,6 +380,7 @@ export async function runGenomeViewerStep(
               name: basename(inputs.trackFile),
               kind: trackKind,
               path: inputs.trackFile,
+              ...(indexPath ? { indexPath } : {}),
             },
           ],
           height: 340,

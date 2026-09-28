@@ -29,6 +29,7 @@ nothing, and what runs is the build the release was tested against.
 | minimap2 | Scrollcase box | Scrollcase box | Linux Scrollcase box, through WSL2 |
 | simpleaf | Scrollcase box | Scrollcase box | Linux Scrollcase box, through WSL2 |
 | alevin-fry | Scrollcase box | Scrollcase box | Linux Scrollcase box, through WSL2 |
+| h5repack | Scrollcase box | Scrollcase box | Linux Scrollcase box, through WSL2 |
 | FastQC | In-process WASM | In-process WASM | In-process WASM |
 | SnpEff + SnpSift | Java 21 host + managed verified suite | Java 21 host + managed verified suite | Java 21 host + managed verified suite |
 

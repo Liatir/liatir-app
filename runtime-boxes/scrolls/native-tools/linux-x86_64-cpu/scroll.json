@@ -9,7 +9,7 @@
     "runtime": "native-tools"
   },
   "version": "1.0.0",
-  "sourceRevision": "bd3b4b0362ed78706c803f2b941a4000cdbd6bdd762fde2f74b969ed3e98fb34",
+  "sourceRevision": "4f3f043a5e80558a9adfc6c13f7055928a1362b0e6f2f11398bd010b33c44502",
   "target": {
     "platform": "linux",
     "arch": "x86_64",
@@ -32,12 +32,12 @@
     {
       "sourcePath": "runtime-boxes/native-tools/native-tools.json",
       "relativePath": "native-tools.json",
-      "sha256": "c4cbed624682e2dee901ad689ded1d01f551b7c62e09e23b67ecf6e130477402"
+      "sha256": "4ee5ef1ab911400af67f322c329b11224a13e3b52e98ec73b873d812ff1f92a4"
     },
     {
       "sourcePath": "runtime-boxes/native-tools/native-tools-self-test.py",
       "relativePath": "native-tools-self-test.py",
-      "sha256": "62f71a2e9da32838038017bbe162a135f3d09341b72891bc0973eb899f9abef5"
+      "sha256": "3b95b17444114bd630e79868baf1951427d3f033884383ee98f45f967434d9b7"
     }
   ],
   "prunePaths": [
@@ -57,7 +57,9 @@
       "json",
       "shutil",
       "subprocess",
-      "tempfile"
+      "tempfile",
+      "h5py",
+      "hdf5plugin"
     ],
     "files": [
       "native-tools.json",
@@ -70,6 +72,7 @@
       "venv/bin/minimap2",
       "venv/bin/simpleaf",
       "venv/bin/alevin-fry",
+      "venv/bin/h5repack",
       "venv/bin/piscem"
     ],
     "code": "exec(compile(open('native-tools-self-test.py', encoding='utf-8').read(), 'native-tools-self-test.py', 'exec'))"

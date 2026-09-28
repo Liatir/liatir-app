@@ -15,6 +15,7 @@
  * pipeline run — which is exactly why they are separate types rather than one with optional fields.
  */
 import type { JsonValue, LiatirExecutionIdentity } from '@liatir/core';
+import type { NativeRunOptions } from '$lib/utils/native-tool';
 
 export type AIDirectRunMode =
 	| 'single-cell-embedding'
@@ -123,6 +124,21 @@ export function aiRunMetadata(context: AIRunContext): Record<string, JsonValue> 
 		params: context.params,
 		startedAt: context.startedAt,
 		outputDir: context.outputDir
+	};
+}
+
+/**
+ * The job options a native process started by a pipeline step carries, so it is listed in Jobs
+ * under that step and cancelled with it. Any other caller gets none and spawns a job of its own.
+ */
+export function nativePipelineJobOptions(context?: AIRunContext): NativeRunOptions {
+	if (!context || context.runKind !== 'pipeline-step') return {};
+	return {
+		label: context.label,
+		kind: 'pipeline-step',
+		metadata: aiRunMetadata(context),
+		signal: context.signal,
+		onSpawn: context.onJobId
 	};
 }
 

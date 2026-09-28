@@ -9,6 +9,7 @@
     { "id": "bwa", "version": "0.7.19" },
     { "id": "minimap2", "version": "2.31" },
     { "id": "simpleaf", "version": "0.28.0" },
-    { "id": "alevin-fry", "version": "0.18.0" }
+    { "id": "alevin-fry", "version": "0.18.0" },
+    { "id": "h5repack", "package": "hdf5", "version": "2.2.0" }
   ]
 }

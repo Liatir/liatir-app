@@ -55,8 +55,7 @@ import {
 } from '@liatir/core';
 import { threadInputSchema, threadParam } from '$lib/utils/execution-resources';
 import type { AIRunContext } from '$lib/ai/direct-run-context';
-import { aiRunMetadata } from '$lib/ai/direct-run-context';
-import type { NativeRunOptions } from '$lib/utils/native-tool';
+import { aiRunMetadata, nativePipelineJobOptions } from '$lib/ai/direct-run-context';
 import { externalWorkflowsStore } from '$lib/stores/externalWorkflows.svelte';
 import {
   LIATIR_EXTERNAL_WORKFLOW_STEP_PREFIX,
@@ -74,17 +73,6 @@ type StepResult = {
 };
 
 function basename(p: string) { return p.split(/[\\/]/).pop() ?? p; }
-
-function nativePipelineJobOptions(context?: AIRunContext): NativeRunOptions {
-  if (!context || context.runKind !== 'pipeline-step') return {};
-  return {
-    label: context.label,
-    kind: 'pipeline-step',
-    metadata: aiRunMetadata(context),
-    signal: context.signal,
-    onSpawn: context.onJobId,
-  };
-}
 
 // ── definitions that don't live in a tool file ───────────────────────────────
 

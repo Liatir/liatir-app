@@ -27,8 +27,7 @@ import {
 } from '@liatir/output-parser';
 import { liatir } from '$lib/api';
 import type { AIRunContext } from '$lib/ai/direct-run-context';
-import { aiRunMetadata } from '$lib/ai/direct-run-context';
-import { moveRunFile } from '$lib/execution/run-storage';
+import { nativePipelineJobOptions } from '$lib/ai/direct-run-context';
 import { inspectAnnDataArtifact } from '$lib/scientific-artifacts';
 import type { PipelineStepDefinition, RunOutputFile } from '$lib/types/pipeline';
 import type { ToolOutput } from '$lib/types/tool-output';
@@ -243,15 +242,7 @@ function isGff3(path: string): boolean {
 }
 
 function pipelineHost(context?: AIRunContext): SingleCellRunHost {
-  const base: NativeRunOptions = !context || context.runKind !== 'pipeline-step'
-    ? {}
-    : {
-        label: context.label,
-        kind: 'pipeline-step',
-        metadata: aiRunMetadata(context),
-        signal: context.signal,
-        onSpawn: context.onJobId,
-      };
+  const base = nativePipelineJobOptions(context);
   return { nativeOptions: (overrides = {}) => ({ ...base, ...overrides }) };
 }
 
@@ -302,6 +293,37 @@ async function runSimpleaf(
     // simpleaf reports the failing engine on stderr; the last line is the actionable one.
     const reason = result.stderr.split(/\r?\n/).filter(Boolean).pop();
     throw new Error(reason || `simpleaf exited with code ${result.exitCode}`);
+  }
+}
+
+/**
+ * Rewrite simpleaf's `.h5ad` with gzip, the compression every HDF5 build can decode.
+ *
+ * simpleaf compresses each matrix with the Blosc HDF5 filter, which a stock HDF5 cannot read —
+ * neither the one in the single-cell AI Model boxes nor the one in most people's Python. h5repack
+ * changes the compression and nothing else: the same groups, attributes and values. It exits 0
+ * even when it cannot decode a dataset, copying it still compressed with a warning, so any
+ * warning fails the step rather than handing on a file that only looks converted.
+ */
+async function writePortableAnnData(
+  from: string,
+  to: string,
+  onLog: (line: string) => void,
+  host: SingleCellRunHost,
+): Promise<void> {
+  onLog('Rewriting the count matrix with standard compression, so every AnnData reader can open it.');
+  const result = await runNativeTool(
+    'h5repack',
+    ['-f', 'GZIP=4', from, to],
+    (line) => { if (line.trim()) onLog(line); },
+    (line) => { if (line.trim()) onLog(line); },
+    host.nativeOptions({ label: 'Single-cell count matrix compression' }),
+  );
+  const warning = result.stderr.split(/\r?\n/).filter(Boolean).pop();
+  if (!result.ok || warning) {
+    throw new Error(
+      `The count matrix could not be rewritten with standard compression: ${warning ?? `h5repack exited with code ${result.exitCode}`}`,
+    );
   }
 }
 
@@ -485,8 +507,11 @@ export async function runSimpleafQuant(
 
   const produced = `${alevin}/quants.h5ad`;
   await requireFile(produced, 'The count matrix');
+  // Written at the top of the run's output under the sample's name: `quants.h5ad` several
+  // directories deep says nothing about which sample it is. simpleaf's own copy stays where it
+  // wrote it, with the rest of its working output.
   const matrixPath = `${outputDir}/${sampleName(inputs.readsR1)}.h5ad`;
-  await moveRunFile(produced, matrixPath);
+  await writePortableAnnData(produced, matrixPath, onLog, host);
   const matrixSize = await requireFile(matrixPath, 'The count matrix');
 
   const geneIds = parseAlevinFryGeneIds(
@@ -529,6 +554,7 @@ export async function runSimpleafQuant(
             cellFilter: inputs.cellFilter || 'knee',
             referenceType: manifest.referenceType,
             index: manifest.indexDir,
+            hdf5Compression: 'gzip',
           },
         },
       },

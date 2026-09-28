@@ -36,6 +36,7 @@ export const SEQKIT_ID = 'seqkit';
 export const SNPEFF_ID = 'snpeff';
 export const SIMPLEAF_ID = 'simpleaf';
 export const ALEVIN_FRY_ID = 'alevin-fry';
+export const H5REPACK_ID = 'h5repack';
 
 // ── Built-in Native Tools Registry ───────────────────────────────────────────
 
@@ -160,6 +161,11 @@ export function isBundledNativeTool(id: string): boolean {
 // simpleaf carries piscem and alevin-fry with it; piscem is the mapping engine
 // simpleaf drives and is never launched on its own, so it is present in the box
 // without being a tool Liatir exposes.
+//
+// h5repack rewrites simpleaf's .h5ad with standard gzip compression. simpleaf
+// compresses every matrix with the Blosc HDF5 filter, which the stock HDF5 in the
+// single-cell AI Model boxes cannot decode. The decoder h5repack needs to read
+// Blosc comes from hdf5plugin, which is in the box for that alone.
 
 /** Scrollcase target IDs Liatir builds the Native Tools box for. */
 export type LiatirNativeToolsTargetId = 'macos-aarch64-cpu' | 'linux-x86_64-cpu';
@@ -174,13 +180,15 @@ export const NATIVE_TOOLS_BOX_TOOL_IDS: readonly string[] = [
   MINIMAP2_ID,
   SIMPLEAF_ID,
   ALEVIN_FRY_ID,
+  H5REPACK_ID,
 ];
 
 /** Product metadata compiled into the app and included inside every box target. */
 export interface LiatirNativeToolsBoxMetadata {
   schemaVersion: 1;
   boxId: 'native-tools';
-  tools: { id: string; version: string }[];
+  /** `package` names the conda package when it is not the tool's own name. */
+  tools: { id: string; version: string; package?: string }[];
 }
 
 /**
