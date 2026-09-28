@@ -144,14 +144,14 @@
 </script>
 
 <div
-	class={expanded ? 'fixed inset-0 h-full z-[9980] bg-white p-4' : ''}
+	class={expanded ? 'fixed inset-0 h-full z-[9980] bg-white dark:bg-black' : ''}
 	data-testid="visualization-shell"
 	data-expanded={expanded}
 >
 	<div
 		class={[
-			'rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4',
-			expanded ? 'flex h-full flex-col rounded-none border-0' : ''
+			'border border-[var(--color-border)] bg-[var(--color-surface)] p-4',
+			expanded ? 'flex h-full flex-col rounded-none border-0' : 'rounded-xl'
 		].join(' ')}
 	>
 		<div class="mb-3 flex items-start justify-between gap-3">
@@ -162,7 +162,7 @@
 				{/if}
 			</div>
 			<div class="flex shrink-0 items-center gap-1.5">
-				{#if openHref}
+				<!-- {#if openHref}
 					<button
 						type="button"
 						data-testid="viewer-open-page"
@@ -173,8 +173,8 @@
 					>
 						<Icon icon="lucide:external-link" class="h-4 w-4" />
 					</button>
-				{/if}
-				<button
+				{/if} -->
+				<!-- <button
 					type="button"
 					data-testid="viewer-capture"
 					title="Capture screenshot"
@@ -184,7 +184,7 @@
 					onclick={captureScreenshot}
 				>
 					<Icon icon={capturing ? 'lucide:loader-2' : 'lucide:camera'} class={`h-4 w-4 ${capturing ? 'animate-spin' : ''}`} />
-				</button>
+				</button> -->
 				<button
 					type="button"
 					data-testid="viewer-fullscreen"

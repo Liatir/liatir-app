@@ -456,7 +456,9 @@ export async function runSingleCellViewerStep(
         {
           type: 'single-cell-viewer',
           label: basename(inputs.inputFile),
-          description: 'Validated AnnData with a bounded embedding preview; the full matrix remains in the artifact.',
+          description: embeddingPoints.length > 0
+            ? 'Validated AnnData with a bounded embedding preview; the full matrix remains in the artifact.'
+            : 'Validated AnnData; no embedding preview is available for this file.',
           config: {
             title: basename(inputs.inputFile),
             source: inputs.inputFile,

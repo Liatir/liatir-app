@@ -92,6 +92,11 @@
   // Distinguishes "a real single-cell file we simply cannot chart" from "a file that is not one at all",
   // which lets the empty state below say something accurate rather than generic.
   const sourceIsH5ad = $derived(source.toLowerCase().endsWith('.h5ad'));
+  // A raw-counts file has no embedding to draw; one that already carries an embedding only lacks the
+  // preview CSV. The two need different next steps, so the empty state tells them apart.
+  const fileHasEmbedding = $derived(
+    Array.isArray(config.availableEmbeddingKeys) && config.availableEmbeddingKeys.length > 0,
+  );
 
   function plotX(value: number): number {
     const span = bounds.maxX - bounds.minX;
@@ -159,8 +164,12 @@
       </div>
     {:else if labelCounts.length === 0}
       <div class="flex min-h-56 items-center justify-center px-4 text-center text-xs text-zinc-400">
-        {#if sourceIsH5ad}
-          This h5ad artifact is valid for single-cell viewing, but no embedding preview CSV or label summary is available.
+        {#if sourceIsH5ad && fileHasEmbedding}
+          This file already contains a cell map (embedding), but no preview was connected. Connect the preview CSV
+          produced by the AI Model that created it to see the cells here.
+        {:else if sourceIsH5ad}
+          This file contains only raw gene counts, so there is no cell map (embedding) to draw yet. Run a
+          single-cell embedding AI Model (for example Geneformer) on it first, then connect its preview CSV here.
         {:else}
           No label distribution available in this single-cell viewer config.
         {/if}
