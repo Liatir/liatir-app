@@ -11,7 +11,7 @@ description: Terms and Conditions for Liatir
 
 </small>
 
-**Last updated:** July 4, 2026
+**Last updated:** September 29, 2026
 
 These Terms and Conditions (“**Terms**”) govern your access to and use of **https://liatir.com** (the “**Website**”), operated by **Liatir** (“**Liatir**”, “**we**”, “**us**”, or “**our**”).
 
@@ -30,9 +30,11 @@ By accessing or using the Website, you agree to these Terms. If you do not agree
 
 These Terms apply to the Website and to any publicly accessible content, pages, forms, mailing list subscription features, announcements, documentation, and other materials made available through the Website.
 
-These Terms do not automatically govern any separate application, software product, platform, paid service, beta program, or account-based service unless those services expressly incorporate these Terms or are made available through the Website without separate terms.
+The Liatir desktop application is free software licensed under the [GNU General Public License version 3 (GNU GPL v3)](https://www.gnu.org/licenses/gpl-3.0.html). You may use, study, copy, modify, and redistribute it, including commercially, subject to that license. When distributing covered copies or modified versions, you must comply with the license's requirements, including preserving legal notices, identifying changes, licensing covered works under the GNU GPL v3, and providing the corresponding source code as required by the license. The full license text governs these rights and obligations.
 
-If additional or separate terms apply to any Liatir product, application, subscription, beta access, or paid service, those separate terms will prevail for that specific service.
+These Terms govern the Website and its services, not the use, copying, modification, or distribution of the Liatir application. They do not replace the GNU GPL v3 or impose additional restrictions on rights it grants. You do not need to accept these Website Terms, subscribe to a mailing list, or consent to optional analytics to receive or run a copy of Liatir. Software or other materials made available under a separate license remain governed by that license; the applicable license prevails over any conflicting provision of these Terms.
+
+Separate terms may apply to an online service, subscription, beta program, or paid service. Such terms do not restrict rights granted under the GNU GPL v3 for covered software.
 
 ## 3. Website Purpose
 
@@ -94,9 +96,9 @@ We do not control all technical operations of third-party providers and are not 
 
 Unless otherwise stated, all rights, title, and interest in and to the Website, including its design, text, graphics, logos, branding, visual elements, documentation, code, layout, and other content, are owned by us or licensed to us.
 
-You may access and view the Website for personal or internal informational purposes only.
+Liatir software and any Website code, documentation, examples, or other materials covered by the GNU GPL v3 or another stated license may be used, copied, modified, and redistributed as permitted by their applicable license, without seeking additional permission from us.
 
-You must not copy, reproduce, modify, distribute, sell, license, publicly display, publicly perform, reverse engineer, or create derivative works from the Website or its content unless:
+For Website content not covered by such a license, you may access and view it for personal or internal informational purposes. You must not copy, reproduce, modify, distribute, sell, license, publicly display, publicly perform, reverse engineer, or create derivative works from that content unless:
 
 - we have given prior written permission;
 - the content is expressly made available under a separate license;
@@ -107,6 +109,8 @@ All trademarks, service marks, trade names, logos, and brand elements appearing 
 ## 10. Feedback
 
 If you send us suggestions, ideas, bug reports, comments, or other feedback about Liatir or the Website (“**Feedback**”), you grant us a worldwide, perpetual, irrevocable, royalty-free, sublicensable, and transferable license to use, reproduce, modify, publish, distribute, and otherwise exploit the Feedback for any purpose, without obligation to compensate you.
+
+This Feedback license does not relicense software patches, code, or other materials you submit under the GNU GPL v3 or another stated license. Those submissions remain governed by their applicable license.
 
 You should not submit Feedback that contains confidential information or third-party proprietary material.
 
@@ -141,6 +145,8 @@ To the maximum extent permitted by applicable law, the Website and all Website c
 We disclaim all warranties, whether express, implied, statutory, or otherwise, including warranties of merchantability, fitness for a particular purpose, non-infringement, accuracy, availability, reliability, and security.
 
 Some jurisdictions do not allow the exclusion of certain warranties, so some exclusions may not apply to you.
+
+Warranty and liability provisions for the Liatir application are governed by the GNU GPL v3, including sections 15–17, and applicable law. The Website disclaimers and liability limits in these Terms do not replace those provisions.
 
 ## 15. Limitation of Liability
 
@@ -183,6 +189,8 @@ We may restrict, suspend, or terminate your access to the Website if:
 - we discontinue or materially change the Website.
 
 Sections that by their nature should survive termination will continue to apply, including intellectual property, disclaimers, limitation of liability, indemnification, governing law, and dispute resolution.
+
+Restricting or terminating Website access does not revoke rights to software copies granted under the GNU GPL v3. Termination and reinstatement of those software rights are governed by the license itself.
 
 ## 19. Governing Law
 

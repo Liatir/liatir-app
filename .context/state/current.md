@@ -68,6 +68,13 @@ revocations.
 
 ## Operational facts still in force
 
+- **Public legal pages distinguish Website rules from GNU GPL v3 software rights** as of
+  2026-09-29. Both pages link to the official license; Website content restrictions,
+  feedback, warranty/liability and access termination clauses preserve the applicable
+  software license. Optional analytics and mailing list consent are not conditions for
+  exercising software rights. See [legal page conventions](../truth/conventions.md#public-legal-pages-and-software-licensing).
+  Validation: public docs build and both rendered HTML/Markdown license notices and links
+  passed; all seven `test:verify` gates passed (83 unit files / 654 tests).
 - **Public docs have generated Markdown copies and page actions** as of 2026-09-28:
   each documentation page offers Markdown Copy/View and Ask an AI; the build generates
   the copies alongside the existing AI index. Website deployment has not been verified.

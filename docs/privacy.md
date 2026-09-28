@@ -11,11 +11,13 @@ description: Privacy Policy for Liatir
 
 </small>
 
-**Last updated:** July 4, 2026
+**Last updated:** September 29, 2026
 
 This Privacy Policy explains how **Liatir** (“**Liatir**”, “**we**”, “**us**”, or “**our**”) collects, uses, stores, shares, and protects personal data when you visit or interact with **https://liatir.com** (the “**Website**”).
 
 This Privacy Policy applies only to the Website and to the limited services available through it, including analytics, cookie consent management, and mailing list subscription forms.
+
+The Liatir desktop application is free software licensed under the [GNU General Public License version 3 (GNU GPL v3)](https://www.gnu.org/licenses/gpl-3.0.html). This Privacy Policy does not replace that license or restrict the rights it grants. Consent to optional Website analytics or mailing list communications is not a condition for exercising those software rights. The software license does not replace your rights under applicable data protection law.
 
 > **Important:** Please complete the placeholders in this document before publishing it, especially the identity and contact details of the data controller.
 

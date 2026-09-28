@@ -107,6 +107,16 @@ missing docs dependency. Verify deployment dependency changes in an isolated cop
 the checkout: install only the docs lockfile with `npm ci`, then run `npm run build` from
 the docs directory, including its prebuild step.
 
+### Public legal pages and software licensing
+
+Liatir's desktop application is licensed under GNU GPL v3; the repository's `LICENSE`
+contains the license text. The public [Terms](../../docs/terms.md) and
+[Privacy Policy](../../docs/privacy.md) link to the official GNU GPL v3 text.
+Website terms, optional analytics consent and mailing list subscriptions must not
+restrict the license's software rights. Website content restrictions exclude materials
+covered by the GPL or another stated license, and the feedback clause does not relicense
+code submissions. Website access restrictions do not revoke software licenses.
+
 ## Working agreements for agents
 
 [`agents/`](./agents/index.md) holds the operating rules that apply only to
