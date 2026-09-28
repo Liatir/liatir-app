@@ -62,6 +62,19 @@ to make it look like one.
 | MSIX containment of Runtime Boxes, Python environments and WSL2 | See consequence 3 below; unproven until the package runs on a real Windows machine. |
 | A real signed Beta A to Beta B update through the configured HTTPS feed, on macOS and Linux | Depends on all of the above. |
 
+## 0.1.0 build evidence (2026-09-28, revision `4544e0e`)
+
+- **macOS arm64**, built on the maintainer's Mac with `build-desktop-release.mjs`: Native Tools box
+  code-signed by Scrollcase 1.4.0 (562 Mach-O files, self-test passed), app signed with
+  `CF1EC4A38CD20857E8C2A15DA87D06307EE4DCF2` and notarized by Tauri (`spctl`: Notarized Developer ID).
+  The disk image was not notarized by Tauri, so the script's DMG check failed; it was notarized
+  (submission `d1ff99b3-c02d-4952-80e5-d1affe123af8`, Accepted), stapled, and passed the same
+  `spctl`, `stapler validate` and `hdiutil verify` checks by hand. The script now does this itself.
+  The updater archive holds the stapled app. Launched from it with an isolated `HOME`, the app stayed
+  up, unpacked the box, and `samtools`, `bcftools`, `minimap2` and `h5repack` ran signed.
+  SHA-256: DMG `febc3559…27626`, `Liatir_0.1.0_aarch64.app.tar.gz` `a10a97c5…9813b`.
+- **Linux and the Store MSIX**, `desktop-release-build.yml` run 36449268531 at the same revision.
+
 ## The Windows decision: Microsoft Store (2026-08-20)
 
 The maintainer decided that Windows will be distributed through the Microsoft

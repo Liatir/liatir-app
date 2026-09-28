@@ -282,10 +282,27 @@ export function validateDesktopReleaseInputs(
   if (errors.length > 0) throw new Error(`Desktop release inputs are incomplete:\n- ${errors.join('\n- ')}`);
 }
 
+/**
+ * Tauri notarizes and staples the app bundle but not the disk image it is shipped in, and
+ * Gatekeeper assesses a downloaded disk image on its own before anything inside it opens.
+ */
+function notarizeDiskImage(environment) {
+  const directory = join(ROOT, 'src-tauri', 'target', 'release', 'bundle', 'dmg');
+  const dmg = readdirSync(directory).find((name) => name.endsWith('.dmg') && name.includes(environment.APP_VERSION));
+  if (!dmg) throw new Error(`No ${environment.APP_VERSION} disk image under ${directory}`);
+  const credentials = environment.APPLE_API_KEY_PATH?.trim()
+    ? ['--key', environment.APPLE_API_KEY_PATH, '--key-id', environment.APPLE_API_KEY, '--issuer', environment.APPLE_API_ISSUER]
+    : ['--apple-id', environment.APPLE_ID, '--password', environment.APPLE_PASSWORD, '--team-id', environment.APPLE_TEAM_ID];
+  run('xcrun', ['notarytool', 'submit', join(directory, dmg), ...credentials, '--wait']);
+  // Stapling fails unless Apple accepted the submission, which is what stops a rejected image here.
+  run('xcrun', ['stapler', 'staple', join(directory, dmg)]);
+}
+
 function buildDirectRelease() {
   const buildStartedAt = Date.now();
   runNpm(['run', 'build:prepare', '--prefix', 'src-tauri']);
   runTauri(['build', '--ci']);
+  if (process.platform === 'darwin') notarizeDiskImage(process.env);
   requireArtifacts(process.platform, process.env.APP_VERSION, buildStartedAt);
 }
 
