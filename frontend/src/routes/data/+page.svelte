@@ -255,12 +255,14 @@
   );
 
   // ── file preview ───────────────────────────────────────────────
-  const BINARY_EXTS = new Set(['bam', 'cram', 'bcf', 'bcf.gz', 'fastq.gz', 'fq.gz', 'fasta.gz', 'fa.gz', 'fna.gz', 'vcf.gz']);
+  const BINARY_EXTS = new Set(['bam', 'cram', 'bcf', 'bcf.gz', 'fastq.gz', 'fq.gz', 'fasta.gz', 'fa.gz', 'fna.gz', 'vcf.gz', 'h5ad']);
   const PREVIEW_LINES: Record<string, number> = {
     fastq: 40, fq: 40,
     fasta: 50, fa: 50, fna: 50, faa: 50,
     vcf: 100, sam: 60,
     bed: 50, gtf: 50, gff: 50, gff3: 50,
+    // Plain text is read, not sampled: each demo folder's instructions must show whole.
+    txt: 200,
   };
 
   let previewFileId = $state<string | null>(null);

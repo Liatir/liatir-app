@@ -1,0 +1,67 @@
+FIND CANCER NEOANTIGENS
+
+A neoantigen is a small piece of a mutated protein that only tumor cells
+carry. If a patient's immune system can "see" it, it can become the target of
+a personalized cancer vaccine or cell therapy. Whether it is seen depends on
+the patient's HLA types: the molecules that display protein pieces on the
+cell surface, different from person to person.
+
+
+THE FILES
+
+tumor_mutations_HCC1395.vcf
+  40 real mutations from HCC1395, a breast cancer cell line, already
+  annotated with their effect on proteins (by VEP) and with RNA expression.
+  The file holds both the tumor and the matching normal sample.
+
+candidate_peptides.csv
+  12 short protein pieces (peptides) to test directly: published
+  neoantigens from the KRAS G12D, KRAS G12V and TP53 R175H cancer
+  mutations, the matching normal pieces for comparison, and three virus
+  pieces known to be displayed by HLA-A*02:01 (positive controls).
+
+KRAS_normal_and_G12D_proteins.fasta
+  The whole KRAS protein, normal and with the G12D mutation, one of the most
+  common mutations in pancreatic, colon and lung cancer.
+
+
+WHAT TO TRY
+
+1. Neoantigen Prioritization (pVACseq)
+   - VCF: tumor_mutations_HCC1395.vcf
+   - Tumor sample: HCC1395_TUMOR_DNA
+   - Normal sample: HCC1395_NORMAL_DNA
+   - HLA alleles (this patient's own): HLA-A*29:02,HLA-B*45:01,HLA-B*82:02
+   Keep the other defaults. It takes about 5 to 10 minutes on a laptop and
+   ranks one candidate for each of the 40 mutations; about 20 reach the
+   best tier, "Pass".
+
+2. MHC-I Epitope Prediction (MHCflurry), peptide table
+   - File: candidate_peptides.csv, input type "Peptide table"
+   - HLA alleles: HLA-A*02:01,HLA-A*11:01,HLA-C*08:02
+   The virus controls come out on top, with the 10-letter KRAS peptides on
+   HLA-A*11:01 - the normal one too, because being displayed alone does not
+   make a peptide tumor-specific. Now look at GADGVGKSA (KRAS G12D) on
+   HLA-C*08:02: strongly displayed, while the normal GAGGVGKSA is not. That
+   difference is what makes a neoantigen.
+
+3. MHC-I Epitope Prediction, protein FASTA
+   - File: KRAS_normal_and_G12D_proteins.fasta, input type "Protein FASTA"
+   - Same alleles as above.
+   Most top peptides appear in both proteins, so they are not
+   tumor-specific. Look for those that appear only in KRAS_G12D.
+
+These are research predictions, not a validated vaccine design.
+
+
+WHERE THIS DATA COMES FROM
+
+tumor_mutations_HCC1395.vcf: 40 records chosen from the official pVACseq
+example data shipped with pVACtools 7.1.2 (Griffith Lab, BSD 3-Clause Clear
+License), across its range of candidate tiers.
+candidate_peptides.csv: peptides published in Wang et al., Cancer Immunology
+Research 2016 (KRAS on HLA-A*11:01), Tran et al., New England Journal of
+Medicine 2016 (KRAS G12D on HLA-C*08:02) and Hsiue et al., Science 2021
+(TP53 R175H), plus classic influenza, CMV and EBV epitopes.
+KRAS sequence: UniProt P01116 (CC BY 4.0), with glycine 12 changed to
+aspartate for the mutant.

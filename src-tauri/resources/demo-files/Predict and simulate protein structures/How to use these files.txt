@@ -1,0 +1,59 @@
+PREDICT AND SIMULATE PROTEIN STRUCTURES
+
+Two well-studied human proteins whose real 3D shape is known from
+experiments, so you can compare what the AI predicts with reality.
+
+- Ubiquitin: a small protein (76 amino acids) that cells use to tag other
+  proteins for recycling.
+- Carbonic anhydrase 2: an enzyme (260 amino acids) blocked by
+  acetazolamide, a drug used for glaucoma. The drug binds it very tightly
+  (about 12 nanomolar).
+
+
+THE FILES
+
+ubiquitin_sequence.fasta
+carbonic_anhydrase_2_sequence.fasta
+  The amino-acid sequence of each protein, on one line ready to copy: the
+  only input the structure AI needs.
+
+acetazolamide_drug.smi
+  The drug written as SMILES, a one-line text description of its atoms and
+  bonds: CC(=O)Nc1nnc(S(N)(=O)=O)s1
+
+ubiquitin_crystal_structure_1UBQ.pdb
+carbonic_anhydrase_2_with_acetazolamide_3HS4.pdb
+  The real structures measured by X-ray crystallography. The second one
+  shows the drug sitting in the enzyme's pocket.
+
+
+WHAT TO TRY
+
+1. 3D Structure Viewer - open either .pdb file to explore a real structure.
+
+2. Structure Prediction (Boltz-2 or Protenix) - add a protein and paste the
+   sequence from ubiquitin_sequence.fasta (the second line). When asked
+   about the alignment, accept prediction from the sequence alone, so the
+   run stays on your computer. Then compare the predicted structure with
+   ubiquitin_crystal_structure_1UBQ.pdb in the 3D Structure Viewer.
+
+3. Protein-Ligand Affinity (Boltz-2) - add a protein with the sequence from
+   carbonic_anhydrase_2_sequence.fasta and a ligand with the SMILES from
+   acetazolamide_drug.smi. A drug this strong should come out as a likely
+   binder. Compare the predicted pose with the 3HS4 structure.
+
+4. Molecular Relaxation, then Molecular Dynamics (OpenMM) - use
+   ubiquitin_crystal_structure_1UBQ.pdb. Relaxation gently removes strain
+   from the structure; dynamics simulates how it moves for a few
+   picoseconds. Keep the default settings, or add water around it.
+
+Boltz-2 and Protenix need a computer with an NVIDIA graphics card (Linux, or
+Windows through WSL2). The AI Models page shows what your computer can run.
+
+
+WHERE THIS DATA COMES FROM
+
+Structures: Protein Data Bank entries 1UBQ and 3HS4 (RCSB PDB, CC0 public
+domain), unchanged.
+Sequences: the 1UBQ entry and UniProt P00918 (CC BY 4.0).
+Drug: acetazolamide, as used in Liatir's own Boltz-2 validation.

@@ -1,0 +1,56 @@
+COUNT GENES IN SINGLE CELLS FROM READS
+
+Real single-cell sequencing of white blood cells from a healthy donor
+(10x Genomics Chromium, 3' v3). Starting from raw reads, you count how many
+RNA molecules of each gene every single cell contains. To stay small, the
+demo keeps 20 genes that tell blood cell types apart, and the 62,690 reads
+that come from them.
+
+
+THE FILES
+
+blood_cells_R1_barcodes.fastq.gz
+  Read 1 of each pair: 28 letters that are not biology but labels. The
+  first 16 say which cell (droplet) the molecule came from, the next 12
+  mark each original molecule, so copies are counted once.
+
+blood_cells_R2_cdna.fastq.gz
+  Read 2 of each pair: 91 letters of the actual RNA, which tell the gene.
+
+blood_marker_genes_reference.fasta
+  The DNA of the 20 genes from the human reference genome, each gene with
+  500 letters on both sides. The genes: T cells CD3E, CD3D, IL7R, CCR7,
+  CD8A; B cells MS4A1, CD79A; NK cells NKG7, GNLY, GZMB; monocytes CD14,
+  LYZ, S100A8, S100A9, FCGR3A, CST3; dendritic cells FCER1A; platelets PPBP;
+  present in every cell ACTB, B2M.
+
+blood_marker_genes.gtf
+  Where the parts of each gene sit, which is how reads are assigned to it.
+
+
+WHAT TO TRY
+
+1. Single-cell Reference Index - under "Build a custom reference": genome
+   blood_marker_genes_reference.fasta, annotation blood_marker_genes.gtf,
+   read length 91. It takes seconds.
+2. Single-cell Quantification - the index from step 1, R1 and R2 above,
+   chemistry "10x Genomics 3' v3", cell detection "Detect cells
+   automatically". Expect about 935 cells and 20 genes. The .h5ad file it
+   writes is the count table: one row per cell, one column per gene. In
+   it, T-cell genes and monocyte genes appear in different cells, as they
+   should.
+
+This is a 20-gene panel, too few genes for the single-cell AI models; for
+those, use the files in "Map blood cells with single-cell AI". With your own
+full data, choose the ready-made human index instead of step 1.
+
+
+WHERE THIS DATA COMES FROM
+
+Reads: "1k PBMCs from a Healthy Donor (v3 chemistry)", 10x Genomics,
+licensed under Creative Commons Attribution 4.0 (CC BY 4.0). Liatir took the
+first 3 million read pairs of lane 1 and kept the pairs whose read 2 aligns
+to the 20 genes.
+Genes: Ensembl release 115, human GRCh38. The annotation keeps the gene,
+transcript and exon lines of these genes, with positions shifted to the
+extracted sequences.

@@ -1,0 +1,63 @@
+FIND MUTATIONS IN A YEAST GENOME
+
+Real DNA sequencing of CEN.PK113-7D, a yeast strain widely used in
+biotechnology, compared with the standard reference yeast (S288C). To stay
+small, the demo covers chromosome I only: 230,218 DNA letters, about 120 genes.
+
+
+THE FILES
+
+yeast_reads_R1.fastq.gz, yeast_reads_R2.fastq.gz
+  Raw reads as they come off the sequencer. Reads come in pairs: R1 and R2
+  are the two ends of the same piece of DNA. 14,879 pairs of 150 letters,
+  so each position of the chromosome is read about 19 times.
+
+yeast_reference_chrI.fasta
+  The reference sequence of chromosome I: the "map" the reads are compared to.
+
+yeast_genes_chrI.gff3
+  Where each gene sits on chromosome I.
+
+yeast_variants.vcf
+  The 955 places where this strain differs from the reference, found from
+  these reads: 901 single-letter changes and 54 small insertions or
+  deletions. 207 are marked LowQual because the evidence for them is weak.
+
+
+WHAT TO TRY, IN ORDER
+
+1. FastQC - check the quality of one read file (R1 or R2).
+2. fastp - check and clean both read files together: it trims
+   poor-quality ends.
+3. seqkit stats - count the reads and letters.
+4. Samtools faidx - index the reference FASTA.
+5. BWA-MEM - align R1 and R2 to yeast_reference_chrI.fasta. Almost every
+   read should align. Minimap2 does the same job with one read file.
+6. Samtools flagstat - open the SAM file from step 5 to see how many
+   reads aligned.
+7. BCFtools stats - summarize yeast_variants.vcf.
+8. BCFtools filter - keep only confident variants with the "PASS only"
+   preset: 748 remain.
+9. SnpEff - predict what each variant does to the genes. Choose the
+   database "Yeast R64-1-1 (Ensembl 115)", a 6 MB download. Expect 4
+   HIGH-impact variants (a premature stop, a lost start and two frameshifts)
+   and 147 that change one amino acid in a protein.
+10. SnpSift Filter - on the file SnpEff produced, choose "High impact" to
+    keep only those 4 variants.
+11. Genome Track Viewer - reference yeast_reference_chrI.fasta, track
+    yeast_variants.vcf or yeast_genes_chrI.gff3.
+
+
+WHERE THIS DATA COMES FROM
+
+Reads: run SRR11697748 (BioProject PRJNA630580, "ORIGINAL CENPK113-7D") from
+the European Nucleotide Archive, which publishes it without restrictions. The
+file keeps the pairs, among the first 1.2 million of the run, whose two ends
+both align to chromosome I of the whole reference genome.
+
+Reference and genes: Ensembl release 115, Saccharomyces cerevisiae R64-1-1
+(sequence from the Saccharomyces Genome Database).
+
+Variants: made from these reads with bwa mem 0.7.19 and bcftools 1.24
+(mpileup, call with ploidy 1, norm). QUAL below 30 or depth below 5 is
+marked LowQual.

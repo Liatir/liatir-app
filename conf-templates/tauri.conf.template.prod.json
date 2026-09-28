@@ -21,7 +21,8 @@
     "active": true,
     "targets": ["nsis", "app", "dmg", "deb", "rpm", "appimage"],
     "resources": {
-      "resources/native-tools": "native-tools"
+      "resources/native-tools": "native-tools",
+      "resources/demo-files": "demo-files"
     },
     "icon": ["icons/icon.png", "icons/icon.icns", "icons/icon.ico"],
     "macOS": {

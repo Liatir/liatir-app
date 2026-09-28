@@ -1,0 +1,120 @@
+{
+  "schemaVersion": 1,
+  "files": [
+    {
+      "path": "Count genes in single cells from reads/How to use these files.txt",
+      "sizeBytes": 2392,
+      "sha256": "1c34a6330378ceef4d61d61fec6b36249d134d40004c5b3947bec1cef4e478d1"
+    },
+    {
+      "path": "Count genes in single cells from reads/blood_cells_R1_barcodes.fastq.gz",
+      "sizeBytes": 1221000,
+      "sha256": "c3add9f7d923c79d7a65acddeafb0a45a22a6e852e710f058326478700821465"
+    },
+    {
+      "path": "Count genes in single cells from reads/blood_cells_R2_cdna.fastq.gz",
+      "sizeBytes": 1746044,
+      "sha256": "b833f974967ed23c65087b854c8a562011cd6857d419bd5e848acb48faa244d1"
+    },
+    {
+      "path": "Count genes in single cells from reads/blood_marker_genes.gtf",
+      "sizeBytes": 487430,
+      "sha256": "cc518c98734547e11ac318db34b0c329dc1133cdf71680385089b9c169c80ed6"
+    },
+    {
+      "path": "Count genes in single cells from reads/blood_marker_genes_reference.fasta",
+      "sizeBytes": 247011,
+      "sha256": "ebeb1815158d16524f34c86e4e29cd705dbdc42bc33e05374ac9b5f089fa7039"
+    },
+    {
+      "path": "Find cancer neoantigens/How to use these files.txt",
+      "sizeBytes": 2956,
+      "sha256": "cc87d4d1a1211c9b263c0c5f13e79399696ad84f8909a5fa695612469119bec9"
+    },
+    {
+      "path": "Find cancer neoantigens/KRAS_normal_and_G12D_proteins.fasta",
+      "sizeBytes": 542,
+      "sha256": "581f79c938dd15eaf047cc7bc22f271e4b91ff76cbd368b198a2e973b1a1ae1d"
+    },
+    {
+      "path": "Find cancer neoantigens/candidate_peptides.csv",
+      "sizeBytes": 343,
+      "sha256": "6c8e3cc6b002423a03811f5c34ce1d29ab0e9e56a62d7437b0f6e298d08e223d"
+    },
+    {
+      "path": "Find cancer neoantigens/tumor_mutations_HCC1395.vcf",
+      "sizeBytes": 672446,
+      "sha256": "d5add2e8f41e60a2ae4d5a4467b1bf58337f8389d6ccf37910ae2856b70df860"
+    },
+    {
+      "path": "Find mutations in a yeast genome/How to use these files.txt",
+      "sizeBytes": 2666,
+      "sha256": "a0975364824dab9bf8e57b1f332e68b16bd5e618a23c29feae2d69c1906eddcf"
+    },
+    {
+      "path": "Find mutations in a yeast genome/yeast_genes_chrI.gff3",
+      "sizeBytes": 101562,
+      "sha256": "2aa3c03236df09b7b66342ed18877472225d354d4d192d00c69d4b9e8da19849"
+    },
+    {
+      "path": "Find mutations in a yeast genome/yeast_reads_R1.fastq.gz",
+      "sizeBytes": 1299432,
+      "sha256": "ca9a35ca20432ee4c4ef13e8be6d239db9ab0cd0165d1cd6035ea50eff7f0a59"
+    },
+    {
+      "path": "Find mutations in a yeast genome/yeast_reads_R2.fastq.gz",
+      "sizeBytes": 1350742,
+      "sha256": "08f1a5df28d1ad5d6c292d9f393a8f60bb82a8d0e45cc56b15f4019343f2511c"
+    },
+    {
+      "path": "Find mutations in a yeast genome/yeast_reference_chrI.fasta",
+      "sizeBytes": 234128,
+      "sha256": "1a62bb1fbf58fd4b39f166fc73442dd39bce7c623859d8a9b9b05e69ac319964"
+    },
+    {
+      "path": "Find mutations in a yeast genome/yeast_variants.vcf",
+      "sizeBytes": 136006,
+      "sha256": "e6f858a0b646931e9b25698f8b3d177a345a8dd592105efcf7b48f0bee05133c"
+    },
+    {
+      "path": "Map blood cells with single-cell AI/How to use these files.txt",
+      "sizeBytes": 1608,
+      "sha256": "6fe512ee6525d00dc89c8d4506f6af514a7a9d8f79d075cd054e3dcdd92e3301"
+    },
+    {
+      "path": "Map blood cells with single-cell AI/blood_cells_raw_counts.h5ad",
+      "sizeBytes": 3935206,
+      "sha256": "dd63171e324319b1240796868bd7d86a3ea82285a619d362c3ab766f333fa6fc"
+    },
+    {
+      "path": "Predict and simulate protein structures/How to use these files.txt",
+      "sizeBytes": 2378,
+      "sha256": "fc78f370f2d2b74aaec15f8c13ee0779ff8b5346597565581462db5d972fd59f"
+    },
+    {
+      "path": "Predict and simulate protein structures/acetazolamide_drug.smi",
+      "sizeBytes": 41,
+      "sha256": "203c99dd6f58e00cf99d9ff8e9ee0ea01b5d0e187ad5c7ca98757727252ce46a"
+    },
+    {
+      "path": "Predict and simulate protein structures/carbonic_anhydrase_2_sequence.fasta",
+      "sizeBytes": 345,
+      "sha256": "20d3c7ef752ef5c6e46239640be0502263893eb7e8a24f7af7ff6eec5fc404a2"
+    },
+    {
+      "path": "Predict and simulate protein structures/carbonic_anhydrase_2_with_acetazolamide_3HS4.pdb",
+      "sizeBytes": 436185,
+      "sha256": "318c38f8cac9a06b3a42f9f9b1017421668f895621300b8d20abb3cdb254b6bb"
+    },
+    {
+      "path": "Predict and simulate protein structures/ubiquitin_crystal_structure_1UBQ.pdb",
+      "sizeBytes": 78570,
+      "sha256": "d4a6812d8951cf6594e6a0763f089e35f5a80b62acb3c117b2c5565228a7b161"
+    },
+    {
+      "path": "Predict and simulate protein structures/ubiquitin_sequence.fasta",
+      "sizeBytes": 153,
+      "sha256": "eaa3b080e43f243f21641dedeaedfa27ffaf959d87785cfa930de7dc7c3a2625"
+    }
+  ]
+}

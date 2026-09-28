@@ -40,3 +40,8 @@ runtime-boxes/measurements/** text eol=lf
 # one way on a Windows checkout and another on Linux CI, so one evidence record could never be
 # reconciled with another.
 frontend/src/lib/tools/**/python-scripts/*.ts text eol=lf
+
+# The demo files ship byte for byte and `manifest.json` pins each one's SHA-256; the app replaces a
+# user's copy when that manifest changes. A CRLF checkout would rewrite the FASTA/VCF/GTF text on
+# Windows, fail the manifest check and ship scientific data that differs from every other platform.
+src-tauri/resources/demo-files/** -text

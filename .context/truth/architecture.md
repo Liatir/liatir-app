@@ -102,3 +102,5 @@ for demo cases.
   [Rust commands](./api/rust-commands.md) — the bridge surface.
 - [AI](./ai/predictive-genomics.md) — the model-family boundaries.
 - [Testing Liatir](./testing/overview.md) — the suites, profiles and gates.
+- [Demo files](./demo-files.md) — the real datasets the Sandbox ships, their
+  provenance and how the installed copy stays current.

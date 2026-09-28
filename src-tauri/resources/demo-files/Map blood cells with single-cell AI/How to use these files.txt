@@ -1,0 +1,39 @@
+MAP BLOOD CELLS WITH SINGLE-CELL AI
+
+1,192 real white blood cells from a healthy donor. For each cell, the file
+counts how many RNA molecules of each of 15,161 genes were found. A
+single-cell AI model reads these counts and places every cell on a "map"
+where cells of the same kind land close together.
+
+
+THE FILE
+
+blood_cells_raw_counts.h5ad
+  The counts, one row per cell and one column per gene, as whole numbers
+  exactly as measured (raw counts: what the AI models expect).
+  Each cell also carries the cell type experts gave it, so you can check
+  the map: CD4 T cells 350, CD14+ monocytes 200, B cells 200, CD8 T cells
+  150, NK cells 120, FCGR3A+ monocytes 120, dendritic cells 37,
+  megakaryocytes 15.
+  Genes are named both ways the models need: gene symbols such as CD3E
+  (scGPT and UCE use these) and Ensembl IDs such as ENSG00000198851
+  (Geneformer uses these).
+
+
+WHAT TO TRY
+
+1. AI Models - install scGPT, Geneformer or UCE. The page shows which ones
+   run on your computer.
+2. Run Single-cell Embedding with blood_cells_raw_counts.h5ad, species
+   Human.
+3. Open the Result: the map shows the cells grouping by type. Run a second
+   model on the same file to compare how they see the same cells.
+4. Single-cell Viewer - open the embedded .h5ad the model produced.
+
+
+WHERE THIS DATA COMES FROM
+
+"3k PBMCs from a Healthy Donor", 10x Genomics, licensed under Creative
+Commons Attribution 4.0 (CC BY 4.0). Liatir kept a sample of the cells
+annotated in the Scanpy PBMC3k tutorial, balanced across cell types, and the
+genes detected in at least one of them. The counts themselves are unchanged.

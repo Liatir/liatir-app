@@ -41,9 +41,12 @@ function detectExt(path: string): string {
 const DEMO_FOLDER_PREFIX = 'Demo Files';
 const RESULTS_FOLDER = 'Results';
 
+function isDemoFolder(path: string): boolean {
+  return path === DEMO_FOLDER_PREFIX || path.startsWith(DEMO_FOLDER_PREFIX + '/');
+}
+
 function isProtectedFolder(path: string): boolean {
-  return path === RESULTS_FOLDER || path.startsWith(RESULTS_FOLDER + '/') ||
-         path === DEMO_FOLDER_PREFIX || path.startsWith(DEMO_FOLDER_PREFIX + '/');
+  return path === RESULTS_FOLDER || path.startsWith(RESULTS_FOLDER + '/') || isDemoFolder(path);
 }
 
 function parseSaved(raw: string): StoredData {
@@ -133,7 +136,15 @@ function createDataFilesStore() {
       try {
         interface DemoEntry { path: string; folder: string; }
         const entries = await api.invoke('lia_init_demo_files') as DemoEntry[];
+        // A new release replaces the demo set on disk, so entries for files it renamed or dropped
+        // would point at nothing. The returned list is the whole current set.
+        const current = new Set(entries.map(entry => entry.path));
+        const currentFolders = new Set(entries.map(entry => entry.folder));
+        const kept = files.filter(f => !isDemoFolder(f.folder) || current.has(f.path));
+        const keptFolders = folders.filter(f => !isDemoFolder(f) || currentFolders.has(f));
         let changed = false;
+        if (kept.length !== files.length) { files = kept; changed = true; }
+        if (keptFolders.length !== folders.length) { folders = keptFolders; changed = true; }
 
         for (const entry of entries) {
           if (files.some(f => f.path === entry.path)) continue;
