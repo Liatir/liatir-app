@@ -1,6 +1,6 @@
 # Current project status
 
-Last updated 2026-09-28. This page says where Liatir stands and what comes next. How each piece got
+Last updated 2026-09-29. This page says where Liatir stands and what comes next. How each piece got
 here is in the [status log, July to September 2026](../history/status-log-2026-07-to-2026-09.md)
 and in the plans under `history/`; the readiness of each product area, with its evidence, is in
 [Beta 1 readiness](./roadmap/beta-readiness.md).
@@ -78,6 +78,9 @@ revocations.
   `syngraphe check` with 0.4.1 reports existing CTX003/AGENT006: the committed context manifest
   lacks `protocol: repository-context` and the existing VitePress/static entries are rejected.
   Internal references pass; no context schema or managed agent block was changed.
+  On 2026-09-29, the Cloudflare build of `97ee849` was reproduced in an isolated docs-only
+  installation: math rendering needed `markdown-it-mathjax3`, which was declared only at the
+  repository root. The docs manifest now declares it too, with its own lockfile updated.
 - **The repositories are `Liatir/liatir-app` and `Liatir/liatir-sdk`** since 2026-09-28 (formerly
   `liatir-stack` and `sdk`); Runtime Box signing was re-bound to the new name
   ([decision](../decisions/repository-names.md)).

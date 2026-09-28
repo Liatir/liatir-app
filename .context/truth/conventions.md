@@ -100,6 +100,13 @@ serving exposes source Markdown rather than the generated copies. The public sit
 browser-only surface, so headless browser checks cover its menus, clipboard, navigation
 and narrow viewports; native desktop UI suites cover the app instead.
 
+Cloudflare Pages installs only the independent `docs/package.json` and its lockfile.
+Every package the docs build needs belongs there, including `markdown-it-mathjax3` while
+`markdown.math` is enabled. A root build can silently find a root dependency and mask a
+missing docs dependency. Verify deployment dependency changes in an isolated copy outside
+the checkout: install only the docs lockfile with `npm ci`, then run `npm run build` from
+the docs directory, including its prebuild step.
+
 ## Working agreements for agents
 
 [`agents/`](./agents/index.md) holds the operating rules that apply only to
