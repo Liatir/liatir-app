@@ -51,9 +51,11 @@ and version in a support report.
 
 ### Update check is unavailable
 
-Development builds do not have a release feed. In an official package, confirm
-that the machine can reach the release service over HTTPS and try again. An
-offline app remains usable; only the explicit update check needs connectivity.
+Development builds do not have a release feed, and Microsoft Store copies are
+updated by the Store. In an official package, confirm that the machine can reach
+`updates.liatir.com` over HTTPS and try again. An offline app remains usable:
+the startup check stays silent when it cannot connect, and only the update check
+needs connectivity.
 
 ### Liatir will not update or restart
 

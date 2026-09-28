@@ -40,10 +40,16 @@ package name and release version instead.
 
 ## Application updates
 
-Open **Settings → Application updates** and select **Check for updates**.
-Liatir does not contact the release feed automatically. When an update is
-available, Liatir downloads it, verifies its updater signature, and asks you to
-restart after installation.
+Each time it starts, Liatir asks `updates.liatir.com` once whether a newer
+version exists. If one does, a notice offers to install it; you can close it, or
+choose **Don't show again for this version** — a later version shows it again.
+Nothing is downloaded until you choose to install. To stop the startup check,
+open **Settings → Application updates** and turn off **Check when Liatir starts**;
+**Check for updates** there works either way.
+
+When you install, Liatir downloads the update, verifies its updater signature,
+and asks you to restart. Copies installed from the Microsoft Store are updated by
+the Store instead.
 
 An update is refused while a Job is running. Finish or cancel the Job first so
 an analysis is never interrupted by application replacement.

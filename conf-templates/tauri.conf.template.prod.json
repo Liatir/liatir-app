@@ -27,6 +27,11 @@
     "icon": ["icons/icon.png", "icons/icon.icns", "icons/icon.ico"],
     "macOS": {
       "entitlements": "Entitlements.plist"
+    },
+    "linux": {
+      "rpm": {
+        "compression": { "type": "zstd", "level": 3 }
+      }
     }
   },
   "plugins": {

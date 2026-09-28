@@ -30,6 +30,24 @@ Taken 2026-09-28 by the maintainer, before the first signed release.
   (a packaged app's own registry writes are virtualized). It is left unsigned; the Store signs
   what it certifies.
 
+## Automatic update check at startup (2026-09-28)
+
+Decided by the maintainer the same day, reversing the Gate 7 rule that the app never contacts the
+release feed on its own. A non-technical user does not visit Settings to look for updates, so an
+explicit-only check would leave most installations on their first version.
+
+- Once per launch, after startup has finished, the app asks the feed whether a newer version
+  exists. It stays silent when offline, when nothing is newer, and on a build that has no feed or
+  that the Microsoft Store updates.
+- A newer version opens a notice with **Install update**, **Close** (this launch only) and
+  **Don't show again for this version**; the skipped version is persisted in
+  `liatir-settings.json`, so the next version shows the notice again. Settings still offers a
+  skipped version.
+- Nothing is downloaded until the user installs. The startup check can be turned off in Settings,
+  and the manual check works either way.
+- The notice and Settings drive one shared operation (`frontend/src/lib/stores/appUpdate.svelte.ts`),
+  because the native side installs only the update its latest check found.
+
 ## macOS entitlements (measured 2026-09-28)
 
 A tiny probe that writes code to memory and runs it — what Wasmtime does for every in-process WASM
@@ -47,6 +65,13 @@ So `src-tauri/Entitlements.plist` grants `allow-unsigned-executable-memory` and 
 the time-sensitive notification entitlement, which needs an embedded provisioning profile the app
 does not have. Ordinary notifications do not need it. Every earlier macOS package was ad-hoc
 signed, which cannot show either failure.
+
+The bundled Native Tools are signed too, inside their box, by Scrollcase's `--codesign`
+(Scrollcase 1.3.0; entitlements from 1.4.0). Liatir starts every tool with `DYLD_LIBRARY_PATH`
+pointing at the box's `venv/lib`, because the conda libraries still name their build prefix; the
+hardened runtime ignores that variable, and `samtools` then aborted at launch. So the box's
+executables carry `runtime-boxes/native-tools/codesign-entitlements.plist`, which grants
+`cs.allow-dyld-environment-variables`. The box's own self-test runs after signing and caught it.
 
 ## Rejected
 

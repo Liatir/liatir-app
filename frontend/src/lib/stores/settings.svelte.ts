@@ -7,6 +7,10 @@ export type ResolvedTheme = 'light' | 'dark';
 interface LiatirSettings {
   javaPath: string;
   theme: ThemePreference;
+  /** Ask the release feed once at startup whether a newer Liatir exists. */
+  checkUpdatesAtStartup: boolean;
+  /** The one version whose startup notice the user chose not to see again. */
+  skippedUpdateVersion: string | null;
 }
 
 const SETTINGS_FILE = 'liatir-settings.json';
@@ -29,6 +33,8 @@ function themeFromDocument(): ResolvedTheme {
 function createSettingsStore() {
   let javaPath = $state('');
   let theme = $state<ThemePreference>('system');
+  let checkUpdatesAtStartup = $state(true);
+  let skippedUpdateVersion = $state<string | null>(null);
   let resolvedTheme = $state<ResolvedTheme>(themeFromDocument());
   let loaded = $state(false);
   let dataPaths = $state<{ data: string; cache: string } | null>(null);
@@ -74,6 +80,8 @@ function createSettingsStore() {
       const raw = await api.invoke('lia_read_file_text', { path: `${p.data}/${SETTINGS_FILE}` }) as string;
       const parsed = JSON.parse(raw) as Partial<LiatirSettings>;
       javaPath = parsed.javaPath ?? '';
+      checkUpdatesAtStartup = parsed.checkUpdatesAtStartup ?? true;
+      skippedUpdateVersion = parsed.skippedUpdateVersion ?? null;
       if (isThemePreference(parsed.theme)) {
         theme = parsed.theme;
         applyTheme();
@@ -96,7 +104,7 @@ function createSettingsStore() {
   async function save() {
     const api = liatir();
     if (!api || !dataPaths) return;
-    const s: LiatirSettings = { javaPath, theme };
+    const s: LiatirSettings = { javaPath, theme, checkUpdatesAtStartup, skippedUpdateVersion };
     await api.invoke('lia_write_file_path', {
       path: `${dataPaths.data}/${SETTINGS_FILE}`,
       content: JSON.stringify(s, null, 2),
@@ -115,15 +123,29 @@ function createSettingsStore() {
     await save();
   }
 
+  async function setCheckUpdatesAtStartup(value: boolean) {
+    checkUpdatesAtStartup = value;
+    await save();
+  }
+
+  async function skipUpdateVersion(version: string) {
+    skippedUpdateVersion = version;
+    await save();
+  }
+
   return {
     get javaPath() { return javaPath; },
     get theme() { return theme; },
+    get checkUpdatesAtStartup() { return checkUpdatesAtStartup; },
+    get skippedUpdateVersion() { return skippedUpdateVersion; },
     get resolvedTheme() { return resolvedTheme; },
     get dataPaths() { return dataPaths; },
     get loaded() { return loaded; },
     init,
     setJavaPath,
     setTheme,
+    setCheckUpdatesAtStartup,
+    skipUpdateVersion,
   };
 }
 

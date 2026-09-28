@@ -2,13 +2,17 @@
 import { navigateInApp, openSandboxWorkspace } from '../support/liatir-app.mjs';
 
 export const tests = [{
-  name: 'keeps update checks explicit and refuses a restart while scientific work is active',
+  name: 'keeps a feedless startup check silent, reports a manual check, and refuses a restart while scientific work is active',
   async run({ browser, expect }) {
     await openSandboxWorkspace(browser);
     await navigateInApp(browser, '/settings');
 
     const check = await browser.$('[data-testid="app-update-check"]');
     await check.waitForDisplayed({ timeout: 20_000 });
+    // The startup check ran on launch; on a build without a feed it must have said nothing.
+    expect(await (await browser.$('[data-testid="app-update-notice"]')).isExisting()).toBe(false);
+    expect(await (await browser.$('[data-testid="app-update-status"]')).isExisting()).toBe(false);
+    expect((await (await browser.$('[data-testid="app-update-startup-toggle"]')).getText()).trim()).toBe('Turn off');
     await check.click();
 
     const status = await browser.$('[data-testid="app-update-status"]');

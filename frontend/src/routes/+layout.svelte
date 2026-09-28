@@ -7,6 +7,7 @@
 	import Toast from '$lib/components/ui/Toast.svelte';
 	import InstallBanner from '$lib/components/ui/InstallBanner.svelte';
 	import StartupCleanupBanner from '$lib/components/ui/StartupCleanupBanner.svelte';
+	import AppUpdateNotice from '$lib/components/ui/AppUpdateNotice.svelte';
 	import McpAuthorizationDialog from '$lib/components/mcp/McpAuthorizationDialog.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import { liatir } from '$lib/api';
@@ -23,6 +24,7 @@
 	import { installGlobalErrorHandler } from '$lib/diagnostics/global-error-handler';
 	import { jobsStore } from '$lib/stores/jobs.svelte';
 	import { settingsStore } from '$lib/stores/settings.svelte';
+	import { appUpdate } from '$lib/stores/appUpdate.svelte';
 	import { pipelineStore } from '$lib/stores/pipeline.svelte';
 	import { workspaceStore } from '$lib/stores/workspace.svelte';
 	import { executionRuns } from '$lib/stores/executionRuns.svelte';
@@ -126,6 +128,8 @@
 			return;
 		}
 		await initializeApplication();
+		// After startup, never before it: the check needs the network and must not delay opening.
+		void appUpdate.checkAtStartup();
 	});
 
 	const setSidebarForceExpand = (status: boolean) => {
@@ -198,6 +202,7 @@
 	<Toast />
 	<InstallBanner />
 	<StartupCleanupBanner />
+	<AppUpdateNotice />
 {/if}
 
 <ConfirmDialog />

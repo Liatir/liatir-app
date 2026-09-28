@@ -19,6 +19,7 @@ const BOX_VERSION = '1.0.0';
 const NAMESPACE = 'liatir.native-tools';
 const WSL_CONSUMER = 'native-tools-box-consumer';
 const PIXI_VERSION = '0.77.0';
+const CODESIGN_ENTITLEMENTS = path.join(REPO_ROOT, 'runtime-boxes', 'native-tools', 'codesign-entitlements.plist');
 const AUTHORING_SOURCES = [
   'runtime-boxes/native-tools/native-tools.json',
   'runtime-boxes/native-tools/native-tools-self-test.py',
@@ -226,7 +227,10 @@ function build(placement) {
     // carries a Developer ID signature; those can only be applied while the box is built. The
     // release's own identity is reused, so a build without one stays ad-hoc exactly as before.
     if (placement.targetId.startsWith('macos-') && process.env.APPLE_SIGNING_IDENTITY) {
-      arguments_.push('--codesign', process.env.APPLE_SIGNING_IDENTITY);
+      arguments_.push(
+        '--codesign', process.env.APPLE_SIGNING_IDENTITY,
+        '--codesign-entitlements', CODESIGN_ENTITLEMENTS,
+      );
     }
     if (sourceTreeIsDirty()) arguments_.push('--allow-dirty');
     scrollcase(arguments_);

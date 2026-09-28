@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 import { validateReleaseEnvironment } from '../../scripts/build-desktop-release.mjs';
 import { msixManifest, msixVersion } from '../../scripts/desktop-msix.mjs';
+import { updateManifest } from '../../scripts/desktop-update-manifest.mjs';
 
 const root = resolve(import.meta.dirname, '../..');
 
@@ -169,6 +170,41 @@ describe('Gate 7 desktop release contract', () => {
     expect(types).toContain('updates: AppUpdatesInterface');
     expect(settings).toContain('Check for updates');
     expect(settings).toContain('Your data and analyses stay local');
+  });
+
+  it('writes an updater manifest carrying each platform signature verbatim, and refuses a missing platform', () => {
+    const artifacts = {
+      'darwin-aarch64': '/out/Liatir.app.tar.gz',
+      'linux-x86_64': '/out/Liatir_0.1.0_amd64.AppImage',
+    };
+    const manifest = updateManifest({
+      version: '0.1.0',
+      downloadBase: 'https://github.com/Liatir/liatir-releases/releases/download/v0.1.0/',
+      artifacts,
+      publishedAt: '2026-09-28T00:00:00.000Z',
+      readText: (path: string) => `signature of ${path}\n`,
+    });
+    expect(manifest).toEqual({
+      version: '0.1.0',
+      notes: '',
+      pub_date: '2026-09-28T00:00:00.000Z',
+      platforms: {
+        'darwin-aarch64': {
+          signature: 'signature of /out/Liatir.app.tar.gz.sig',
+          url: 'https://github.com/Liatir/liatir-releases/releases/download/v0.1.0/Liatir.app.tar.gz',
+        },
+        'linux-x86_64': {
+          signature: 'signature of /out/Liatir_0.1.0_amd64.AppImage.sig',
+          url: 'https://github.com/Liatir/liatir-releases/releases/download/v0.1.0/Liatir_0.1.0_amd64.AppImage',
+        },
+      },
+    });
+    expect(() => updateManifest({
+      version: '0.1.0',
+      downloadBase: 'https://example.org',
+      artifacts: { 'darwin-aarch64': artifacts['darwin-aarch64'] },
+      readText: () => '',
+    })).toThrow('Missing the linux-x86_64 updater artifact');
   });
 
   it('signs macOS with entitlements a Developer ID app can actually launch with', async () => {

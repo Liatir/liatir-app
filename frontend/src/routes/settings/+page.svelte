@@ -1,11 +1,11 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import type { AppUpdateCheckResult } from '../../../../src-ts/modules/rs/app/_types';
   import PageHeader from '$lib/components/layout/PageHeader.svelte';
   import Card from '$lib/components/ui/Card.svelte';
   import Button from '$lib/components/ui/Button.svelte';
   import { liatir } from '$lib/api';
   import { settingsStore, type ThemePreference } from '$lib/stores/settings.svelte';
+  import { appUpdate } from '$lib/stores/appUpdate.svelte';
 	import { goto } from '$app/navigation';
 	import { workspaceStore } from '$lib/stores/workspace.svelte';
 	import { getLastSegmentsStringFromPath } from '$lib/utils';
@@ -25,10 +25,6 @@
 
   let apiVersion = $state<string | null>(null);
   let appVersion = $state<string | null>(null);
-  let updateState = $state<'idle' | 'checking' | 'available' | 'up-to-date' | 'installing' | 'ready' | 'error'>('idle');
-  let availableUpdate = $state<AppUpdateCheckResult | null>(null);
-  let updateMessage = $state<string | null>(null);
-  let updateProgress = $state<number | null>(null);
 
   let javaPathInput = $state('');
   let javaSaving = $state(false);
@@ -58,7 +54,6 @@
 
   onMount(() => {
     let disposed = false;
-    let stopUpdateEvents: (() => void) | undefined;
     let stopMcpEvents: (() => void) | undefined;
 
     void (async () => {
@@ -77,31 +72,10 @@
       stopMcpEvents = await api.desktop.events.on('mcp:state-changed', () => {
         if (!disposed) void refreshMcp();
       });
-
-      stopUpdateEvents = await api.desktop.events.on('app:update-progress', (payload: {
-        phase?: string;
-        downloadedBytes?: number;
-        totalBytes?: number | null;
-      }) => {
-        if (disposed || updateState !== 'installing') return;
-        if (payload.phase === 'downloading') {
-          updateMessage = 'Downloading the signed update…';
-          updateProgress = payload.totalBytes
-            ? Math.min(100, Math.round(((payload.downloadedBytes ?? 0) / payload.totalBytes) * 100))
-            : null;
-        } else if (payload.phase === 'verifying') {
-          updateMessage = 'Verifying the update signature…';
-          updateProgress = null;
-        } else if (payload.phase === 'installing') {
-          updateMessage = 'Installing the verified update…';
-          updateProgress = null;
-        }
-      });
     })();
 
     return () => {
       disposed = true;
-      stopUpdateEvents?.();
       stopMcpEvents?.();
     };
   });
@@ -110,56 +84,6 @@
     if (error instanceof Error) return error.message;
     if (typeof error === 'string') return error;
     return 'The operation could not be completed.';
-  }
-
-  async function checkForUpdate() {
-    const api = liatir();
-    if (!api) return;
-    updateState = 'checking';
-    availableUpdate = null;
-    updateMessage = 'Contacting the signed release feed…';
-    updateProgress = null;
-    try {
-      const result = await api.desktop.app.updates.check();
-      availableUpdate = result;
-      if (result.available) {
-        updateState = 'available';
-        updateMessage = `Liatir ${result.version} is ready to install.`;
-      } else {
-        updateState = 'up-to-date';
-        updateMessage = `Liatir ${result.currentVersion} is up to date.`;
-      }
-    } catch (error) {
-      updateState = 'error';
-      updateMessage = readableError(error);
-    }
-  }
-
-  async function installUpdate() {
-    const api = liatir();
-    if (!api) return;
-    updateState = 'installing';
-    updateMessage = 'Preparing the signed update…';
-    updateProgress = null;
-    try {
-      const result = await api.desktop.app.updates.install();
-      updateState = 'ready';
-      updateMessage = `Liatir ${result.version} is installed. Restart when you are ready.`;
-    } catch (error) {
-      updateState = 'error';
-      updateMessage = readableError(error);
-    }
-  }
-
-  async function restartAfterUpdate() {
-    const api = liatir();
-    if (!api) return;
-    try {
-      await api.desktop.app.updates.restart();
-    } catch (error) {
-      updateState = 'error';
-      updateMessage = readableError(error);
-    }
   }
 
   async function saveJavaPath() {
@@ -420,57 +344,72 @@
           <div class="space-y-1">
             <p class="text-sm text-text-secondary">Keep Liatir current</p>
             <p class="text-[11px] text-text-subtle">
-              Liatir checks for updates only when you ask. Your data and analyses stay local and continue to work offline.
+              Nothing is downloaded until you choose to install. Your data and analyses stay local and continue to work offline.
             </p>
           </div>
-          {#if updateState === 'available'}
+          {#if appUpdate.state === 'available'}
             <Button
               variant="primary"
               size="sm"
               testId="app-update-install"
-              onclick={installUpdate}
+              onclick={appUpdate.install}
             >Install update</Button>
-          {:else if updateState === 'ready'}
+          {:else if appUpdate.state === 'ready'}
             <Button
               variant="primary"
               size="sm"
               testId="app-update-restart"
-              onclick={restartAfterUpdate}
+              onclick={appUpdate.restart}
             >Restart Liatir</Button>
           {:else}
             <Button
               variant="secondary"
               size="sm"
               testId="app-update-check"
-              loading={updateState === 'checking' || updateState === 'installing'}
-              onclick={checkForUpdate}
+              loading={appUpdate.state === 'checking' || appUpdate.state === 'installing'}
+              onclick={() => appUpdate.check()}
             >Check for updates</Button>
           {/if}
         </div>
 
-        {#if updateMessage}
+        {#if appUpdate.message}
           <div
-            class="rounded-lg border px-3 py-2 text-xs {updateState === 'error'
+            class="rounded-lg border px-3 py-2 text-xs {appUpdate.state === 'error'
               ? 'border-red-500/30 bg-red-500/10 text-red-400'
-              : updateState === 'ready' || updateState === 'up-to-date'
+              : appUpdate.state === 'ready' || appUpdate.state === 'up-to-date'
                 ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-500'
                 : 'border-border bg-surface-2 text-text-secondary'}"
             data-testid="app-update-status"
-            role={updateState === 'error' ? 'alert' : 'status'}
+            role={appUpdate.state === 'error' ? 'alert' : 'status'}
           >
-            {updateMessage}
-            {#if updateProgress !== null}
-              <span class="ml-1 font-mono">{updateProgress}%</span>
+            {appUpdate.message}
+            {#if appUpdate.progress !== null}
+              <span class="ml-1 font-mono">{appUpdate.progress}%</span>
             {/if}
           </div>
         {/if}
 
-        {#if updateState === 'available' && availableUpdate?.notes}
+        {#if appUpdate.state === 'available' && appUpdate.update?.notes}
           <div class="rounded-lg border border-border bg-surface-2 p-3">
             <p class="mb-1 text-[11px] font-medium text-text-muted">What changed</p>
-            <p class="whitespace-pre-wrap text-xs text-text-secondary" data-testid="app-update-notes">{availableUpdate.notes}</p>
+            <p class="whitespace-pre-wrap text-xs text-text-secondary" data-testid="app-update-notes">{appUpdate.update.notes}</p>
           </div>
         {/if}
+
+        <div class="flex items-start justify-between gap-4 border-t border-border pt-3">
+          <div class="space-y-1">
+            <p class="text-sm text-text-secondary">Check when Liatir starts</p>
+            <p class="text-[11px] text-text-subtle">
+              Liatir asks updates.liatir.com once per launch whether a newer version exists, and tells you if one does. Turn this off to check only when you press the button above.
+            </p>
+          </div>
+          <Button
+            variant="secondary"
+            size="sm"
+            testId="app-update-startup-toggle"
+            onclick={() => void settingsStore.setCheckUpdatesAtStartup(!settingsStore.checkUpdatesAtStartup)}
+          >{settingsStore.checkUpdatesAtStartup ? 'Turn off' : 'Turn on'}</Button>
+        </div>
       </Card>
     </section>
 
