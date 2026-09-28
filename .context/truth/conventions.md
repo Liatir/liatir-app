@@ -56,6 +56,8 @@ open, and keep the durable proof (hashes, run IDs, measured figures) in the sent
 - **"AI Models"** means locally installable and manageable model assets.
 - **"AI Tools"** means AI capabilities exposed in pipelines.
 - Cloud AI stays out of the core unless the product direction changes.
+- **AI Models are listed, installed, updated and removed only on the AI Models page.** No other
+  screen (Dependencies included) duplicates that list or its actions; another screen may link there.
 
 ## Language
 
