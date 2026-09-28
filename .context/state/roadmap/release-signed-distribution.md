@@ -1,6 +1,6 @@
 # Release gate — signed public distribution
 
-Status: **Open, in progress since 2026-09-28.** The distribution channel is
+Status: **Open — 0.1.0 published for macOS and Linux on 2026-09-29; Store submission pending.** The distribution channel is
 decided ([decision](../../decisions/desktop-distribution-channel.md)) and the
 build paths for all three platforms are implemented; no signed release has been
 built yet.
@@ -74,6 +74,14 @@ to make it look like one.
   up, unpacked the box, and `samtools`, `bcftools`, `minimap2` and `h5repack` ran signed.
   SHA-256: DMG `febc3559…27626`, `Liatir_0.1.0_aarch64.app.tar.gz` `a10a97c5…9813b`.
 - **Linux and the Store MSIX**, `desktop-release-build.yml` run 36449268531 at the same revision.
+  Both updater signatures were verified against the public key before publishing.
+- **Published 2026-09-29:** GitHub release `v0.1.0` in `Liatir/liatir-releases` (DMG, updater
+  archive and signature, AppImage and signature, `.deb`, `.rpm`; GitHub's SHA-256 digests match the
+  built files), and `https://updates.liatir.com/desktop/latest.json` (`Cache-Control: no-cache`)
+  naming 0.1.0 for `darwin-aarch64` and `linux-x86_64`. Right after publishing, GitHub served a
+  cached 500 for the DMG URL while the other assets downloaded; it cleared on its own.
+- **Not done:** the Store submission (the maintainer uploads the MSIX in Partner Center), a
+  clean-machine install, and a real A-to-B update, which needs 0.1.1.
 
 ## The Windows decision: Microsoft Store (2026-08-20)
 
