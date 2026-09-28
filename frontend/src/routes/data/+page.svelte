@@ -418,7 +418,7 @@
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="shrink-0">
                   <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
                 </svg>
-                <span class="flex-1 text-left truncate">{f.name}</span>
+                <span class="flex-1 text-left truncate" title={f.name}>{f.name}</span>
               </button>
               <!-- Count (recursive, hidden on hover for non-protected) -->
               <span class="pr-3 text-[10px] text-text-subtle {isProtected ? '' : 'group-hover:hidden'}">{countInFolder(f.path)}</span>
@@ -486,6 +486,12 @@
 
     <!-- Main content -->
     <div class="flex-1 overflow-y-auto p-6 {previewFileId ? 'border-r border-border' : ''}">
+
+      {#if dataFiles.files.length > 0}
+        <h2 class="mb-4 text-sm font-semibold text-text wrap-break-word">
+          {selectedFolder === null ? 'All files' : selectedFolder.split('/').pop()}
+        </h2>
+      {/if}
 
       {#if dataFiles.files.length === 0}
         <!-- Global empty state -->

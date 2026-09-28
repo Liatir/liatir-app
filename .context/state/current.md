@@ -49,8 +49,9 @@ deleted from R2 on 2026-09-27 — see [Scrollcase v3 adoption](../history/scroll
 3. **The partial product areas** in [Beta 1 readiness](./roadmap/beta-readiness.md): the Quenta
    evaluation against a real local Ollama model, useful Plugin templates, native coverage for the
    genome (JBrowse) viewer, and the structure pages' unexercised paths (the 56-atom warning, local
-   file validation, PAE/PDE output). Also: the Linux Native Tools box must be rebuilt in CI for
-   the h5repack step the single-cell quantification now runs (2026-09-28; macOS rebuilt locally) —
+   file validation, PAE/PDE output). Also: the Native Tools boxes with the h5repack step single-cell
+   quantification now runs were built, self-tested and signed in CI on 2026-09-28 (run
+   36422000331, both targets); a Linux or Windows package must take the Linux box from that run —
    see the [single-cell vertical](./roadmap/single-cell-rnaseq-vertical.md); and on macOS a wide
    pipeline sometimes opens unframed, so the pipeline editor's framing test is intermittent there.
 4. **Not built yet**: Protenix v2, which waits on ByteDance publishing its checkpoint

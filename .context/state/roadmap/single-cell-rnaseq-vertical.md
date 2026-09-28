@@ -177,8 +177,9 @@ warning appears without the decoder. Fixing the readers instead would have meant
 three AI Model boxes.
 
 Cost: `hdf5` 2.2.0 and `hdf5plugin` 7.0.0 (with h5py and numpy) grew the macOS box from 145 MB to
-172 MB compressed; every added package is Apache-2.0, BSD, MIT or Zlib. The Linux box lock and audit
-are updated but the box itself must be rebuilt on Linux (CI) before Windows and Linux get the step.
+172 MB compressed; every added package is Apache-2.0, BSD, MIT or Zlib. Both targets were built,
+self-tested and signed by the "Native Tools Scrollcase box" workflow (run 36422000331, 2026-09-28);
+Linux and Windows get the step once their package takes the Linux box from that run.
 
 **Barcode permit lists stay local.** simpleaf's `--unfiltered-pl` downloads the
 manufacturer barcode list from a remote URL, which an offline-first app cannot
