@@ -120,16 +120,14 @@ describe('documentation HTTP representations', () => {
     expect(result.headers.get('Vary')).toContain('Accept')
   })
 
-  it('leaves the waitlist POST and API GET requests untouched', async () => {
-    for (const method of ['GET', 'POST']) {
-      const requestContext = context('/api/subscribe', { method, accept: 'text/markdown', pageType: 'application/json' })
-      const result = await onRequest(requestContext)
-      expect(requestContext.calls.assetCalls).toBe(0)
-      expect(requestContext.calls.nextCalls).toBe(1)
-      expect(result.headers.get('Content-Type')).toBe('application/json')
-      expect(result.headers.get('Link')).toBeNull()
-      expect(result.headers.get('Vary')).toBe('Origin')
-    }
+  it('leaves requests that do not read a page untouched', async () => {
+    const requestContext = context('/tools/overview', { method: 'POST', accept: 'text/markdown', pageType: 'application/json' })
+    const result = await onRequest(requestContext)
+    expect(requestContext.calls.assetCalls).toBe(0)
+    expect(requestContext.calls.nextCalls).toBe(1)
+    expect(result.headers.get('Content-Type')).toBe('application/json')
+    expect(result.headers.get('Link')).toBeNull()
+    expect(result.headers.get('Vary')).toBe('Origin')
   })
 
   it('leaves static assets and directly requested Markdown HTML fallbacks untouched', async () => {

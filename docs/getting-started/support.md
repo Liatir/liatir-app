@@ -8,10 +8,7 @@ Liatir remains in control of authorization, Jobs and Results.
 
 ## Current limits
 
-- Public signed desktop packages are not considered ready until the installer
-  gate is complete on that platform.
-- macOS scientific and local packaging evidence currently covers Apple silicon,
-  not Intel Macs.
+- macOS packages are built for Apple silicon only; Intel Macs are not supported.
 - Windows Nextflow runs through WSL2 Linux x86_64. Native Windows Nextflow,
   WSL1 and WSL ARM64 are not supported.
 - The bundled Native Tools — samtools, bcftools, seqkit, fastp, bwa, minimap2 —
@@ -38,16 +35,16 @@ Liatir remains in control of authorization, Jobs and Results.
 
 ### macOS says the developer cannot be verified
 
-Do not bypass the warning for a Beta package. Delete that app bundle and obtain
-the signed, notarized package from the official release page. Include the
+Do not bypass the warning. The official app is signed and notarized by Apple,
+so this means the copy did not come from the [Download page](/download): delete
+it and download it again from there. If the warning persists, include the
 package filename and version in a support report.
 
-### Windows SmartScreen does not recognise the installer
+### Windows asks whether to run an unknown installer
 
-Do not choose **Run anyway** for a Beta package. An official Windows installer is
-Authenticode-signed; an unrecognised one is a development build. Delete it and
-obtain the signed installer from the official release page, quoting the filename
-and version in a support report.
+Liatir for Windows comes only from the Microsoft Store and has no separate
+installer. Do not run a file claiming to be one: install Liatir from the
+[Download page](/download) instead.
 
 ### Update check is unavailable
 

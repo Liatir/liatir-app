@@ -5,38 +5,33 @@ your workspace index and your analysis history stay available without a
 network connection. Optional AI Models and external tools are installed only
 when you choose to use them.
 
-::: warning Beta packages
-Use only a package linked from the official Liatir website or GitHub
-organization. Platform packages will be published only after their signing and
-clean-machine release checks pass. An unsigned development build is not an
-official Beta package.
-:::
+Get Liatir from the [Download page](/download). Use only packages linked from
+there: the macOS app is signed and notarized by Apple, the Windows app is
+distributed by the Microsoft Store, and every update is verified against
+Liatir's signature before it is installed.
 
-## Platform status
+## Platforms
 
-| Platform | Scientific workflows | Beta installer status |
+| Platform | Package | Updates |
 | --- | --- | --- |
-| macOS arm64 | Single-cell and native Nextflow paths verified | Local packaging verified; Developer ID signing and Apple notarization still required for public distribution |
-| Windows 11 x86_64 | Single-cell Runtime Box support and Nextflow through WSL2 verified | Local NSIS installer verified, including a real silent install and uninstall; Authenticode code signing still required for public distribution |
-| Linux x86_64 | Runtime Box support and native Nextflow verified | Local `.deb`, `.rpm` and AppImage packaging verified; a signed, distributable package and its update feed are still required |
+| macOS, Apple silicon (M1 or newer) | `.dmg`, signed and notarized | From inside Liatir |
+| Windows 10 or 11, x86_64 | Microsoft Store | Through the Microsoft Store |
+| Linux x86_64 | AppImage, `.deb` or `.rpm` | AppImage from inside Liatir; `.deb` and `.rpm` through your package manager |
 
-These rows describe tested paths, not every computer that may happen to run
-Liatir. See [Beta support and troubleshooting](/getting-started/support) before
-starting a long analysis.
+Intel Macs are not supported. See [Beta support and troubleshooting](/getting-started/support)
+before starting a long analysis.
 
 ## macOS
 
-An official macOS Beta is distributed as a signed and notarized `.dmg`:
-
-1. Download the macOS arm64 disk image from the official release page.
-2. Open the disk image and drag **Liatir** into **Applications**.
-3. Start Liatir from **Applications** and confirm that macOS identifies the
-   expected Liatir developer.
+1. Download the disk image for Mac from the [Download page](/download).
+2. Open it and drag **Liatir** into **Applications**.
+3. Start Liatir from **Applications**. macOS shows that the app was downloaded
+   from the internet and checked by Apple; confirm to open it.
 4. Create or select a workspace. Your scientific files are referenced in their
    existing locations; Liatir does not upload them.
 
-Do not bypass a macOS warning for an unsigned or unidentified build. Report the
-package name and release version instead.
+If macOS says the developer cannot be verified, the file did not come from the
+Download page: delete it and download it again from there.
 
 ## Application updates
 
@@ -70,34 +65,28 @@ If the app does not reopen correctly after an update:
 
 ## Windows
 
-An official Windows Beta is distributed as a code-signed `.exe` installer built
-with NSIS:
+1. Open the [Download page](/download) and choose **Get it from Microsoft Store**,
+   or search for **Liatir** in the Microsoft Store app.
+2. Select **Get** or **Install**. No administrator account is needed.
+3. Start Liatir from the Start menu and create or select a workspace.
 
-1. Download the Windows x86_64 installer from the official release page.
-2. Run it and confirm that Windows identifies the expected Liatir publisher.
-3. Liatir installs for the current user, so no administrator account is needed.
-4. Start Liatir from the Start menu and create or select a workspace.
-
-Windows SmartScreen warns about an installer it does not recognise. Do not
-choose **Run anyway** for a Beta package: report the filename and version
-instead.
-
-To run Nextflow workflows from Liatir on Windows, install Nextflow and a
-compatible Java inside an x86_64 WSL2 distribution. Liatir drives that
-distribution; there is no native Windows Nextflow.
+The bundled Native Tools and Nextflow run inside WSL2 on Windows, because they
+have no Windows build. Install WSL2 once with `wsl --install` in an
+administrator terminal and restart; nothing has to be installed inside it for
+the Native Tools. To run Nextflow workflows, also install Nextflow and a
+compatible Java inside an x86_64 WSL2 distribution.
 
 ## Linux
 
-An official Linux Beta is distributed as a `.deb`, an `.rpm` or an AppImage for
-x86_64:
-
-1. Download the package that matches your distribution.
-2. Install it with your package manager, or make the AppImage executable and
-   run it directly.
+1. Download the package for your distribution from the [Download page](/download):
+   the AppImage runs on any distribution, the `.deb` suits Debian and Ubuntu, and
+   the `.rpm` suits Fedora and openSUSE.
+2. Install the `.deb` or `.rpm` with your package manager, or make the AppImage
+   executable (`chmod +x Liatir_*.AppImage`) and run it directly.
 3. Start Liatir and create or select a workspace.
 
 Liatir needs a WebKitGTK-based webview, which the `.deb` and `.rpm` packages
-declare as a dependency.
+declare as a dependency. Only the AppImage updates itself from inside Liatir.
 
 ## Uninstall on macOS
 
@@ -112,16 +101,13 @@ kept elsewhere on disk are not owned or deleted by Liatir.
 
 ## Uninstall on Windows
 
-Close Liatir, then remove **Liatir** from **Settings → Apps → Installed apps**,
-or run the `uninstall.exe` that sits in the installation directory. This removes
-the application, its Start menu entry and its uninstall registration.
+Close Liatir, then remove it from **Settings → Apps → Installed apps**, or
+right-click it in the Start menu and choose **Uninstall**.
 
-It does not remove your source datasets, Results, installed AI Models or
-workspace metadata. To remove all Liatir-managed state as well, back up any
-Results you need first, then remove `%APPDATA%pp.liatir.app`. Managed Python
-environments for Plugins are rebuildable and live separately under
-`%LOCALAPPDATA%pp.liatir.app`; removing them only means Liatir recreates them
-the next time a Plugin runs.
+Windows deletes a Store app's own storage together with the app, and that
+includes Liatir's workspace index, installed AI Models and the Results stored
+inside Liatir. Before uninstalling, copy any Results you need to a normal folder.
+Source datasets you keep elsewhere on disk are never owned or deleted by Liatir.
 
 ## Uninstall on Linux
 

@@ -2,6 +2,7 @@ import DefaultTheme from 'vitepress/theme'
 import { h } from 'vue'
 import ShareThis from './ShareThis.vue'
 import HomePage from './HomePage.vue'
+import DownloadPage from './DownloadPage.vue'
 import CookieBanner from './CookieBanner.vue'
 import PatreonButton from './PatreonButton.vue'
 import Tabs from './tabs-component/Tabs.vue'
@@ -22,6 +23,7 @@ export default {
   },
   enhanceApp({ app }) {
     app.component('HomePage', HomePage),
+    app.component('DownloadPage', DownloadPage),
     app.component('PatreonButton', PatreonButton),
     app.component('Tabs', Tabs),
     app.component('Tab', Tab)

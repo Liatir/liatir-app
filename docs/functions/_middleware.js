@@ -20,8 +20,8 @@ function variesOnAccept(response) {
 
 export async function onRequest({ request, next, env }) {
   const url = new URL(request.url)
-  // The waitlist API and non-reading requests must keep their own behavior.
-  if (!['GET', 'HEAD'].includes(request.method) || /^\/api(?:\/|$)/.test(url.pathname)) return next()
+  // Only reading requests can be answered with Markdown.
+  if (!['GET', 'HEAD'].includes(request.method)) return next()
 
   if (url.pathname.endsWith('.md')) {
     const asset = await next()

@@ -43,7 +43,9 @@ deleted from R2 on 2026-09-27 — see [Scrollcase v3 adoption](../history/scroll
    `Liatir/liatir-releases` repository, Windows only through the Microsoft Store. The app checks for
    a newer version at startup and offers it in a notice. The bundled Native Tools are signed and
    notarized inside their box with Scrollcase 1.4.0. **0.1.0 is published** for macOS
-   and Linux (release `v0.1.0`, feed live). Open: the Store submission, proof that Runtime Boxes
+   and Linux (release `v0.1.0`, feed live). The public site (`docs/`) has a Download page (`/download`)
+   that reads the latest release from GitHub; the waiting list was removed on 2026-09-29, and the
+   `liatir-mailing-list` D1 database, still holding its subscribers, was left untouched. Open: the Store submission, proof that Runtime Boxes
    work inside the MSIX container, and a real A-to-B update with 0.1.1.
 2. **OpenMM publication.** Both Linux targets are `native-lifecycle-validated` and the macOS CPU
    target is still `planned`; none is published. See

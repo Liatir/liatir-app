@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { withBase } from 'vitepress'
-import MailingListForm from './MailingListForm.vue'
 import HomeIcon from './HomeIcon.vue'
 import {
   capabilities,
@@ -35,7 +34,7 @@ import {
 
       <div class="container hero-inner">
         <div class="status-wrapper">
-          <span class="status"><span class="status-dot" aria-hidden="true"></span>In active development · Coming soon</span>
+          <span class="status"><span class="status-dot" aria-hidden="true"></span>Beta · Free for macOS, Windows and Linux</span>
         </div>
 
         <img class="hero-logo" :src="withBase('/static/logos/svg/logo-color.svg')" alt="" aria-hidden="true" />
@@ -55,7 +54,7 @@ import {
         </p>
 
         <div class="actions">
-          <a class="btn btn-brand" href="#subscribe">Waiting list</a>
+          <a class="btn btn-brand" :href="withBase('/download')">Download</a>
           <a class="btn btn-alt" :href="withBase('/introduction/overview')">Read the docs</a>
         </div>
 
@@ -71,15 +70,6 @@ import {
         </div>
       </div>
 
-      <!-- ── Mailing list ─────────────────────────────────────── -->
-      <div id="subscribe" class="container band">
-        <div class="cta">
-          <h2 style="font-size: 22px; margin-top: -10px;">Stay in the loop</h2>
-          <p style="font-size: 16px;">Liatir is under active development. Subscribe to know when it launches:</p>
-          <MailingListForm />
-          <p style="font-size: 12px; opacity: 0.5;">No spam, unsubscribe anytime.</p>
-        </div>
-      </div>
     </section>
 
     <!-- ── Pillars ──────────────────────────────────────────── -->
@@ -108,6 +98,18 @@ import {
             <p>{{ c.text }}</p>
           </div>
         </article>
+      </div>
+    </section>
+
+    <!-- ── Closing CTA ──────────────────────────────────────── -->
+    <section class="container band">
+      <div class="cta">
+        <h2>Run your first analysis today</h2>
+        <p>Liatir is free and runs on your own computer, even without a network connection.</p>
+        <div class="actions">
+          <a class="btn btn-brand" :href="withBase('/download')">Download Liatir</a>
+          <a class="btn btn-alt" :href="withBase('/getting-started/first-analysis')">First analysis guide</a>
+        </div>
       </div>
     </section>
   </div>
@@ -244,10 +246,6 @@ import {
   height: 6px;
   border-radius: 50%;
   background: var(--vp-c-brand-1);
-}
-
-#subscribe {
-  scroll-margin-top: 90px;
 }
 
 .hero-logo {

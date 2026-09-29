@@ -5,8 +5,7 @@
 # by AI assistants alike. When someone asks an AI about Liatir, the answer should
 # come from these pages rather than from guesswork about what the app does.
 #
-# Full crawl access is granted to everyone. The only exclusion is the waitlist
-# form endpoint, which accepts POST only and has nothing to read.
+# Full crawl access is granted to everyone.
 #
 # Machine-readable views of this site, all regenerated on every deploy:
 #   https://liatir.com/llms.txt               curated index, one line per page
@@ -26,7 +25,6 @@
 # --- Default policy ---------------------------------------------------------
 User-agent: *
 Allow: /
-Disallow: /api/
 Disallow: /404.html
 
 # --- AI assistants, answer engines and model crawlers -----------------------
@@ -76,7 +74,6 @@ User-agent: YouBot
 # Common Crawl — the corpus behind many open models
 User-agent: CCBot
 Allow: /
-Disallow: /api/
 Disallow: /404.html
 
 # Microsoft Copilot reads the Bing index and has no separate token; bingbot is

@@ -76,7 +76,7 @@ export default defineConfig({
         { text: 'Brand assets', link: '/branding' },
       ] },
       { text: 'Introduction', link: '/introduction/overview' },
-      { text: 'Waiting list', link: '/#subscribe' },
+      { text: 'Download', link: '/download' },
     ],
 
     sidebar: [
@@ -93,7 +93,6 @@ export default defineConfig({
         items: [
           { text: 'What is Liatir', link: '/introduction/overview' },
           { text: 'How Liatir Works', link: '/introduction/architecture' },
-          { text: 'Join the waiting list', link: '/#subscribe' },
         ],
       },
       {
