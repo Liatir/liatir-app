@@ -23,7 +23,7 @@ export const heroHeadline = [
 ];
 
 export const heroTagline = [
-  'A desktop app that runs bioinformatics tools, AI models and pipelines on your own computer.',
+  'An open-source desktop app that runs bioinformatics tools, AI models and pipelines on your own computer.',
   'The models install in one click instead of a day of conda, Docker and CUDA versions — and nothing you open ever leaves the machine.',
 ];
 
