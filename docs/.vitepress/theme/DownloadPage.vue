@@ -233,12 +233,13 @@ onMounted(async () => {
 }
 
 .btn-brand {
-  background: var(--vp-c-brand-3);
-  color: var(--vp-c-white);
+  background: var(--vp-c-brand-1);
+  color: #fff;
 }
 
+/* The lighter brand tones are too pale for white text, so hover darkens the brand colour instead. */
 .btn-brand:hover {
-  background: var(--vp-c-brand-2);
+  background: color-mix(in srgb, var(--vp-c-brand-1) 85%, #000);
 }
 
 .btn-alt {
@@ -282,6 +283,14 @@ onMounted(async () => {
   margin: 48px 0 0;
   text-align: center;
   color: var(--vp-c-text-2);
+}
+
+.next a,
+.notice a {
+  color: var(--vp-c-brand-1);
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 @media (max-width: 860px) {
