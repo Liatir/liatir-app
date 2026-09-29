@@ -318,9 +318,9 @@ because new releases use the KMS key.
 - `runtime-boxes/catalog.json`: live target, runner, cost, recipe, and
   publication authority.
 - `runtime-boxes/evidence/`: reviewed compact production evidence.
-- `runtime-boxes/compatibility-matrix.md`: user-facing support boundary for
-  maintainers. Deleted on 2026-09-28 once it had fallen behind; the AI Model
-  ledger in `.context/state/roadmap/ai-batches.md` replaced it.
+- [AI Model ledger](../state/roadmap/ai-batches.md): the current support boundary for
+  maintainers. It replaced the former Runtime Box compatibility matrix, deleted on
+  2026-09-28 once it had fallen behind.
 - `services/runtime-box-signer/policy.json`: signable model/target/origin
   allowlist.
 - `scripts/configure-runtime-box-ci.sh`: protected identity and environment

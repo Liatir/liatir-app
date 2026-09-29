@@ -8,6 +8,7 @@ This repository maintains shared project context in `.context/`.
 Before substantial work, read `.context/index.md` and the relevant context documents.
 Keep that context accurate: when a change makes it out of date, update it in the same change.
 If Syngraphe is available, run `syngraphe check` before completing substantial work.
+If `AGENT-POLICY.md` is present, read it before planning multi-step or expensive work.
 <!-- syngraphe:end -->
 
 Operational instructions for AI coding agents working in this repository. Read this before implementing anything.
@@ -66,8 +67,9 @@ Markdown and stays complete without it. Place a new document by lifecycle, not b
 Run **`syngraphe check`** before completing substantial work. It is deterministic and
 offline: it fails when a context document points at a path that does not exist, and warns
 when `state/current.md` has gone stale behind the repository. `syngraphe status` summarizes
-the context. Never run `syngraphe init` in a repository that already has `.context/`
-content — it is idempotent, but there is nothing to initialize.
+the context. On an existing context, use `syngraphe init` only to refresh an outdated managed
+agent block after inspecting `syngraphe init --dry-run`. The plan must leave existing context
+documents unchanged; never use initialization to replace project knowledge.
 
 ## Naming (canonical terms — use exactly these)
 

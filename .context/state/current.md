@@ -68,6 +68,15 @@ revocations.
 
 ## Operational facts still in force
 
+- **Repository context passes Syngraphe 0.4.1's strict check** as of 2026-09-29.
+  The manifest now declares `protocol: repository-context`, and the outdated managed
+  `AGENTS.md` block was refreshed by the CLI after a dry-run plan showed only that patch.
+  Two archived references were corrected to the current AI Model ledger and state path.
+  `syngraphe check --strict` reports no errors or warnings; a second initialization dry run
+  has no operations. Existing context documents and VitePress/static assets were preserved.
+  Public legal links in the internal site now use their public URLs, with repository source
+  paths retained separately. The internal docs build and all seven `test:verify` gates passed
+  (83 unit files / 654 tests).
 - **Public legal pages distinguish Website rules from GNU GPL v3 software rights** as of
   2026-09-29. Both pages link to the official license; Website content restrictions,
   feedback, warranty/liability and access termination clauses preserve the applicable
@@ -82,9 +91,6 @@ revocations.
   Validation: 65 published pages and their copies checked; ten Markdown generation/HTTP tests;
   headless browser checks for copy, View, AI prompt URLs, navigation and mobile width; docs build,
   Pages Functions compilation, and `test:verify` passed (83 unit files / 654 tests, seven gates).
-  `syngraphe check` with 0.4.1 reports existing CTX003/AGENT006: the committed context manifest
-  lacks `protocol: repository-context` and the existing VitePress/static entries are rejected.
-  Internal references pass; no context schema or managed agent block was changed.
   On 2026-09-29, the Cloudflare build of `97ee849` was reproduced in an isolated docs-only
   installation: math rendering needed `markdown-it-mathjax3`, which was declared only at the
   repository root. The docs manifest now declares it too, with its own lockfile updated.

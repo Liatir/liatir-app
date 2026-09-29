@@ -35,6 +35,11 @@ context is initialized, structurally complete, that every path referenced from a
 context document exists, and that the state document has not gone stale behind
 the repository. See [syngraphe.dev](https://syngraphe.dev) for the finding codes.
 
+The context manifest explicitly declares `"protocol": "repository-context"`, so Syngraphe
+recognizes the context alongside its VitePress configuration and static assets. An outdated
+managed agent block can be refreshed with `syngraphe init` after reviewing its `--dry-run`
+plan: only the managed block may change, and existing context documents must remain untouched.
+
 **Never anchor a test on a multi-line source snippet with a bare `\n`.** Only the paths listed in
 `.gitattributes` carry `eol=lf`; everything else follows `* text=auto`, so a Windows checkout
 (`core.autocrlf=true`) holds CRLF and a `\n` in an expected string stops matching without saying
@@ -110,8 +115,9 @@ the docs directory, including its prebuild step.
 ### Public legal pages and software licensing
 
 Liatir's desktop application is licensed under GNU GPL v3; the repository's `LICENSE`
-contains the license text. The public [Terms](../../docs/terms.md) and
-[Privacy Policy](../../docs/privacy.md) link to the official GNU GPL v3 text.
+contains the license text. The public [Terms](https://liatir.com/terms) and
+[Privacy Policy](https://liatir.com/privacy) link to the official GNU GPL v3 text;
+their sources are `docs/terms.md` and `docs/privacy.md` in this repository.
 Website terms, optional analytics consent and mailing list subscriptions must not
 restrict the license's software rights. Website content restrictions exclude materials
 covered by the GPL or another stated license, and the feedback clause does not relicense
