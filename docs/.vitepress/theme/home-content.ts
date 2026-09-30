@@ -9,12 +9,15 @@
  * yet validated end to end does not belong here, however good it would look.
  */
 
+
+
 export interface HomeCard {
   /** An icon name defined in `HomeIcon.vue`. */
   icon: string;
   title: string;
   text: string;
 }
+
 
 /** Rendered as separate lines, so the break is copy rather than markup. */
 export const heroHeadline = [
