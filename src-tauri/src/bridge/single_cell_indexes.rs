@@ -350,10 +350,17 @@ fn validate_catalog(catalog: &IndexCatalog) -> Result<(), String> {
 }
 
 fn decode_catalog(bytes: &[u8]) -> Result<IndexCatalog, String> {
+    // The verifier names envelope versions and signing keys. All a user can do about any of them
+    // is update Liatir or wait for a corrected list, so that is what they are told; the detail
+    // stays in the log.
     let (catalog, _) = verify_signed_control_payload_with_digest::<IndexCatalog>(
         bytes,
         "single-cell index catalog",
-    )?;
+    )
+    .map_err(|error| {
+        eprintln!("[single-cell-indexes] catalog rejected: {error}");
+        "The list of ready-made references could not be verified, so nothing was downloaded. Update Liatir, or try again later.".to_string()
+    })?;
     validate_catalog(&catalog)?;
     Ok(catalog)
 }

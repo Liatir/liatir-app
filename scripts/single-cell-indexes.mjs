@@ -326,18 +326,63 @@ async function uploadArchive(archivePath, entry, flags) {
   }
 }
 
+/**
+ * Reads and verifies the published catalog, in the current envelope format.
+ *
+ * Scrollcase v3 changed only the envelope's version number: the signature covers the payload bytes,
+ * not the envelope. A catalog signed before the v3 cutover therefore verifies unchanged once
+ * relabelled, and `relabelled` says it still has to be republished in that form.
+ */
 async function currentCatalog(registry, publicKeyPath) {
   const response = await fetch(`${registry}/v1/reference-indexes/catalog`, {
     headers: { 'cache-control': 'no-cache' },
   });
-  if (response.status === 404) return [];
+  if (response.status === 404) return null;
   if (!response.ok) fail(`Cannot read current reference-index catalog (${response.status}).`);
-  const document = JSON.parse(await response.text());
+  const published = JSON.parse(await response.text());
+  const relabelled = published?.schemaVersion === 2;
+  const document = relabelled ? { ...published, schemaVersion: 3 } : published;
   const payload = await verifySignedDocument(document, publicKeyPath);
   if (payload.kind !== 'liatir.single-cell-index.catalog' || !Array.isArray(payload.indexes)) {
     fail('Registry returned the wrong signed document for the reference-index catalog.');
   }
-  return payload.indexes;
+  return { document, indexes: payload.indexes, relabelled };
+}
+
+/** Promotes a signed catalog, then reads it back and requires the exact bytes that were signed. */
+async function promoteCatalog(registry, publicKeyPath, signed, flags) {
+  const token = await registryAdminToken(flags);
+  await registryAdminRequest(`${registry}/v1/admin/reference-indexes/catalog`, token, {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json; charset=utf-8' },
+    body: `${JSON.stringify(signed, null, 2)}\n`,
+  });
+  const published = await fetch(`${registry}/v1/reference-indexes/catalog`, {
+    headers: { 'cache-control': 'no-cache' },
+  });
+  if (!published.ok) fail(`Published catalog read-back failed (${published.status}).`);
+  const publishedDocument = JSON.parse(await published.text());
+  if (publishedDocument.schemaVersion !== signed.schemaVersion) fail('Published catalog has the wrong envelope version.');
+  await verifySignedDocument(publishedDocument, publicKeyPath);
+  if (publishedDocument.payloadSha256 !== signed.payloadSha256) fail('Published catalog differs from the signed catalog.');
+}
+
+function catalogPublicKeyPath(flags) {
+  return resolve(String(flags.get('public-key') || join(ROOT, 'runtime-boxes/trust/production-public.json')));
+}
+
+/** Republishes a catalog signed before the v3 envelope cutover, without changing or re-signing it. */
+async function migrateCatalog(flags) {
+  const registry = registryBaseUrl(flags);
+  const publicKeyPath = catalogPublicKeyPath(flags);
+  const current = await currentCatalog(registry, publicKeyPath);
+  if (!current) fail('There is no published reference-index catalog to migrate.');
+  if (!current.relabelled) {
+    console.log('The published catalog already uses the current envelope format.');
+    return;
+  }
+  await promoteCatalog(registry, publicKeyPath, current.document, flags);
+  console.log(`Republished the catalog (${current.indexes.length} indexes, payload ${current.document.payloadSha256}) in the current envelope format.`);
 }
 
 async function publish(entryPath, flags) {
@@ -353,8 +398,8 @@ async function publish(entryPath, flags) {
   );
 
   const registry = registryBaseUrl(flags);
-  const publicKeyPath = resolve(String(flags.get('public-key') || join(ROOT, 'runtime-boxes/trust/production-public.json')));
-  const carried = await currentCatalog(registry, publicKeyPath);
+  const publicKeyPath = catalogPublicKeyPath(flags);
+  const carried = (await currentCatalog(registry, publicKeyPath))?.indexes ?? [];
   const existing = carried.find((candidate) => candidate.id === entry.id && candidate.version === entry.version);
   if (existing && existing.archive.sha256 !== entry.archive.sha256) {
     fail(`${entry.id} ${entry.version} is already published with different bytes; bump its version.`);
@@ -373,19 +418,7 @@ async function publish(entryPath, flags) {
   await verifySignedDocument(signed, publicKeyPath);
   const signedPath = join(dirname(resolve(entryPath)), 'catalog.signed.json');
   await writeJson(signedPath, signed);
-  const token = await registryAdminToken(flags);
-  await registryAdminRequest(`${registry}/v1/admin/reference-indexes/catalog`, token, {
-    method: 'PUT',
-    headers: { 'content-type': 'application/json; charset=utf-8' },
-    body: await readFile(signedPath),
-  });
-  const published = await fetch(`${registry}/v1/reference-indexes/catalog`, {
-    headers: { 'cache-control': 'no-cache' },
-  });
-  if (!published.ok) fail(`Published catalog read-back failed (${published.status}).`);
-  const publishedDocument = JSON.parse(await published.text());
-  await verifySignedDocument(publishedDocument, publicKeyPath);
-  if (publishedDocument.payloadSha256 !== signed.payloadSha256) fail('Published catalog differs from the signed catalog.');
+  await promoteCatalog(registry, publicKeyPath, signed, flags);
   await writeJson(join(dirname(resolve(entryPath)), 'publish-receipt.json'), {
     schemaVersion: 1,
     kind: 'liatir.single-cell-index.publish-receipt',
@@ -420,9 +453,11 @@ Commands:
   validate  Validate a tracked recipe and print its signing-policy fingerprint
   build     Download pinned sources, build with the Native Tools pixi lock, and package deterministically
   publish   Upload the immutable archive, verify public bytes, sign and promote the merged catalog
+  migrate-catalog  Republish a catalog signed before the v3 envelope cutover, unchanged and not re-signed
 
 Publishing requires --entry <entry.json>, LIATIR_RUNTIME_BOX_ADMIN_TOKEN, and the same
---signer / --signer-audience / --public-key inputs used by Runtime Box production signing.`);
+--signer / --signer-audience / --public-key inputs used by Runtime Box production signing.
+migrate-catalog needs only LIATIR_RUNTIME_BOX_ADMIN_TOKEN (or --token-file).`);
 }
 
 async function main() {
@@ -432,6 +467,7 @@ async function main() {
   if (command === 'validate') return validate(String(flags.get('id') || fail('validate requires --id.')), flags);
   if (command === 'build') return build(String(flags.get('id') || fail('build requires --id.')), flags);
   if (command === 'publish') return publish(String(flags.get('entry') || fail('publish requires --entry.')), flags);
+  if (command === 'migrate-catalog') return migrateCatalog(flags);
   fail(`Unknown command: ${command}`);
 }
 
