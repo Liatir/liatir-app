@@ -47,12 +47,23 @@ deleted from R2 on 2026-09-27 — see [Scrollcase v3 adoption](../history/scroll
    that reads the latest release from GitHub; the waiting list was removed on 2026-09-29, and the
    `liatir-mailing-list` D1 database, still holding its subscribers, was left untouched. Open: the Store submission, proof that Runtime Boxes
    work inside the MSIX container, and a real A-to-B update with 0.1.1.
+   **0.1.0 has these defects, all fixed in the repository on 2026-09-30, so 0.1.1 carries them to
+   users.** First, the 3D Structure and trajectory viewers are blank under the production security
+   policy, and the JBrowse genome viewer never started anywhere, because it could reach neither Web
+   Storage nor local files from its sandbox
+   ([decision](../decisions/viewers-run-in-a-static-sandbox-host-page.md)). The genome viewer now has
+   native coverage with the real JBrowse (`tests/e2e/specs/genome-viewer.e2e.mjs`, network needed for
+   the install). Second, the
+   Single-cell Reference Index shows "unsupported signed single-cell index catalog document". The
+   published catalog still has the v2 envelope, which `2ea19a7` stopped reading. Its signature
+   covers only the payload, so `npm run single-cell-index -- migrate-catalog` republishes it
+   unchanged in the v3 envelope. That needs `LIATIR_RUNTIME_BOX_ADMIN_TOKEN` and has **not been
+   run yet**. It fixes the catalog for 0.1.0 as well, with no app update.
 2. **OpenMM publication.** Both Linux targets are `native-lifecycle-validated` and the macOS CPU
    target is still `planned`; none is published. See
    [Phase 3 implementation status](./roadmap/phase3-implementation-status.md).
 3. **The partial product areas** in [Beta 1 readiness](./roadmap/beta-readiness.md): the Quenta
-   evaluation against a real local Ollama model, useful Plugin templates, native coverage for the
-   genome (JBrowse) viewer, and the structure pages' unexercised paths (the 56-atom warning, local
+   evaluation against a real local Ollama model, useful Plugin templates, and the structure pages' unexercised paths (the 56-atom warning, local
    file validation, PAE/PDE output). Also: the Native Tools boxes with the h5repack step single-cell
    quantification now runs were built, self-tested and signed in CI on 2026-09-28 (run
    36422000331, both targets); a Linux or Windows package must take the Linux box from that run —

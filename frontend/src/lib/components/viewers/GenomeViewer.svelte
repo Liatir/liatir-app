@@ -18,7 +18,8 @@
   import VisualizationShell from '$lib/components/viewers/VisualizationShell.svelte';
   import { liatir } from '$lib/api';
   import { JBROWSE_RUNTIME_ID } from '$lib/viewers/runtime-registry';
-  import { localFileSrc, readViewerRuntimeScript } from '$lib/viewers/runtime-loader';
+  import { readViewerRuntimeScript } from '$lib/viewers/runtime-loader';
+  import { sandboxDocument, sandboxFileUrl } from '$lib/viewers/sandbox-frame';
   import { isViewerProxyCompatibilityError, viewerRuntimeFailureMessage } from '$lib/viewers/runtime-errors';
   import { sanitizeLocalPathsForDisplay } from '$lib/utils';
   import { settingsStore } from '$lib/stores/settings.svelte';
@@ -38,7 +39,10 @@
   let loading = $state(true);
   let error = $state<string | null>(null);
   let jbrowseError = $state<string | null>(null);
-  let jbrowseFrameUrl = $state('');
+  let jbrowseFrameHtml = $state('');
+  // What JBrowse reported about its tracks once they settled: whether each one drew or failed.
+  let jbrowseTracks = $state<'loading' | 'ready' | 'error'>('loading');
+  let jbrowseTrackErrors = $state<string[]>([]);
   let features = $state<Feature[]>([]);
   const viewerId = crypto.randomUUID();
 
@@ -177,14 +181,28 @@
     return source.replace(/<\/script/gi, '<\\/script');
   }
 
-  /** A remote URL is used as-is; a local path must go through Tauri's asset protocol to be fetchable. */
+  // The local files the current JBrowse frame may read, by token. Replaced, never reused, with every
+  // config, and filled before the frame that reads it is mounted.
+  let frameFiles = $state.raw<Record<string, string>>({});
+
+  /**
+   * A remote URL is used as-is. A local path is served to the sandboxed frame by token; the token ends
+   * with the file name, so extension checks on the URI (`.csi` below) still see it.
+   */
   function fileUri(path?: string, url?: string): string {
     if (url) return url;
-    return path ? localFileSrc(path) : '';
+    if (!path) return '';
+    const token = `${Object.keys(frameFiles).length}-${path.split(/[\\/]/).pop()}`;
+    frameFiles[token] = path;
+    return sandboxFileUrl(token);
   }
 
   /**
    * Builds the JBrowse adapter for a track — its declaration of how to read the file.
+   *
+   * Every file goes in its adapter's explicit location field. With the `uri` shorthand JBrowse derives
+   * the index path from the file's own name and ignores the index given, which breaks every index not
+   * named exactly `<file>.bai` (a Picard `reads.bai`, a `.csi`) and every file served by token.
    *
    * The VCF branch is the one with substance: given an index, the *tabix* adapter is used, which lets
    * JBrowse seek into the region on screen instead of loading the whole file. Without an index it falls
@@ -194,23 +212,52 @@
   function buildTrackAdapter(track: GenomeViewerSection['tracks'][number]) {
     const uri = fileUri(track.path, track.url);
     if (!uri) throw new Error(`Track "${track.name}" has no readable file path or URL.`);
-    if (track.kind === 'gff') return { type: 'Gff3Adapter', uri };
-    if (track.kind === 'bed') return { type: 'BedAdapter', uri };
+    const location = { uri, locationType: 'UriLocation' };
+    if (track.kind === 'gff') return { type: 'Gff3Adapter', gffLocation: location };
+    if (track.kind === 'bed') return { type: 'BedAdapter', bedLocation: location };
     if (track.kind === 'vcf') {
       const indexUri = fileUri(track.indexPath, track.indexUrl);
       return indexUri
-        ? { type: 'VcfTabixAdapter', uri, index: { location: { uri: indexUri }, indexType: indexUri.endsWith('.csi') ? 'CSI' : 'TBI' } }
-        : { type: 'VcfAdapter', uri };
+        ? { type: 'VcfTabixAdapter', vcfGzLocation: location, index: { location: { uri: indexUri, locationType: 'UriLocation' }, indexType: indexUri.endsWith('.csi') ? 'CSI' : 'TBI' } }
+        : { type: 'VcfAdapter', vcfLocation: location };
     }
     if (track.kind === 'bam') {
       const indexUri = fileUri(track.indexPath, track.indexUrl);
       if (!indexUri) throw new Error(`BAM track "${track.name}" requires a BAI or CSI index for full JBrowse rendering.`);
-      return { type: 'BamAdapter', uri, index: { location: { uri: indexUri }, indexType: indexUri.endsWith('.csi') ? 'CSI' : 'BAI' } };
+      return { type: 'BamAdapter', bamLocation: location, index: { location: { uri: indexUri, locationType: 'UriLocation' }, indexType: indexUri.endsWith('.csi') ? 'CSI' : 'BAI' } };
     }
     throw new Error(`Track "${track.name}" uses an unsupported full-browser format: ${track.kind}.`);
   }
 
-  function buildJBrowseConfig() {
+  // JBrowse needs a region to open on: without one it shows an empty region picker. When the section
+  // names none, it opens on the first 20 kb of the data, close enough for features to be drawn one by
+  // one rather than as a density summary.
+  const JBROWSE_DEFAULT_WINDOW_BP = 20_000;
+
+  async function jbrowseLocation(): Promise<string | undefined> {
+    const { refName: named, start, end } = section.assembly;
+    if (named) {
+      return start != null && end != null
+        ? `${named}:${Math.max(1, Math.round(start))}..${Math.max(1, Math.round(end))}`
+        : named;
+    }
+    const first = features[0];
+    if (first) {
+      const from = Math.max(1, Math.round(first.start));
+      const lastEnd = Math.max(...features.filter((feature) => feature.refName === first.refName).map((feature) => feature.end));
+      return `${first.refName}:${from}..${Math.max(from + 1, Math.min(from + JBROWSE_DEFAULT_WINDOW_BP, Math.round(lastEnd)))}`;
+    }
+    // A BAM has no text preview: its region comes from the reference's first sequence name, read from
+    // the first bytes of the FASTA rather than the whole file.
+    const api = liatir();
+    if (!section.assembly.fastaPath || !api) return undefined;
+    const head = await api.desktop.files.readRange(section.assembly.fastaPath, 0, 4096);
+    const firstSequence = /^>(\S+)/.exec(atob(head.dataBase64))?.[1];
+    return firstSequence ? `${firstSequence}:1..${JBROWSE_DEFAULT_WINDOW_BP}` : undefined;
+  }
+
+  async function buildJBrowseConfig() {
+    frameFiles = {};
     const assemblyName = section.assembly.name || 'local assembly';
     const fastaUri = fileUri(section.assembly.fastaPath, section.assembly.fastaUrl);
     const assembly: Record<string, unknown> = { name: assemblyName };
@@ -218,7 +265,7 @@
       assembly.sequence = {
         type: 'ReferenceSequenceTrack',
         trackId: `${assemblyName}-reference`,
-        adapter: { type: 'UnindexedFastaAdapter', uri: fastaUri },
+        adapter: { type: 'UnindexedFastaAdapter', fastaLocation: { uri: fastaUri, locationType: 'UriLocation' } },
       };
     }
 
@@ -236,11 +283,7 @@
       throw new Error('No supported tracks are available for full JBrowse rendering.');
     }
 
-    const loc = section.assembly.refName
-      ? section.assembly.start != null && section.assembly.end != null
-        ? `${section.assembly.refName}:${Math.max(1, Math.round(section.assembly.start))}..${Math.max(1, Math.round(section.assembly.end))}`
-        : section.assembly.refName
-      : undefined;
+    const loc = await jbrowseLocation();
 
     return {
       assembly,
@@ -255,7 +298,7 @@
 
   function createJBrowseFrame(scriptSource: string, config: unknown): string {
     const payload = escapeScriptJson({ viewerId, config });
-    // The frame is a separate blob document, so it cannot inherit the app's CSS
+    // The frame is a separate sandboxed document, so it cannot inherit the app's CSS
     // variables: the host chrome around JBrowse takes literal colours matching
     // the theme JBrowse itself was configured with.
     const dark = settingsStore.resolvedTheme === 'dark';
@@ -291,7 +334,7 @@
   <script>
     (function () {
       const message = document.getElementById('message');
-      let payload = { viewerId: '${viewerId}' };
+      let payload = { viewerId: ${JSON.stringify(viewerId)} };
       function fail(error) {
         const text = error && error.message ? error.message : String(error || 'JBrowse viewer failed.');
         message.textContent = text;
@@ -305,10 +348,47 @@
           throw new Error('JBrowse 2 did not expose the embedded linear genome view runtime.');
         }
         const state = lib.createViewState(payload.config);
-        const root = lib.createRoot(document.getElementById('jbrowse'));
+        // Configured tracks are only offered; each is shown so the user sees their data straight away.
+        payload.config.tracks.forEach(function (track) { state.session.view.showTrack(track.trackId); });
+        const container = document.getElementById('jbrowse');
+        const root = lib.createRoot(container);
         root.render(lib.React.createElement(lib.JBrowseLinearGenomeView, { viewState: state }));
         message.remove();
+        // JBrowse measures its own width, and in the app's sandboxed frame that measurement was seen
+        // never to arrive, leaving the view on "Loading" for good. The frame's width is handed to it
+        // directly, now and on every resize; JBrowse's own measurement still applies when it comes.
+        function syncWidth() {
+          if (container.clientWidth > 0) state.session.view.setWidth(container.clientWidth);
+        }
+        syncWidth();
+        window.addEventListener('resize', syncWidth);
         window.parent.postMessage({ type: 'liatir-jbrowse-viewer-ready', viewerId: payload.viewerId }, '*');
+
+        // A file JBrowse cannot read fails inside it, where the app cannot see it. Once the reference
+        // and every track have drawn or failed, the outcome is reported, with each failure named. An
+        // alignments track draws through two displays, pileup and coverage, which hold the blocks; the
+        // alignments display around them draws none, so only its own error is read.
+        const trackNames = new Map(payload.config.tracks.map(function (track) { return [track.trackId, track.name]; }));
+        const settle = setInterval(function () {
+          const errors = [];
+          let pending = false;
+          const assembly = state.assemblyManager.get(payload.config.assembly.name);
+          if (assembly && assembly.error) errors.push('Reference ' + payload.config.assembly.name + ': ' + (assembly.error.message || String(assembly.error)));
+          state.session.view.tracks.forEach(function (track) {
+            const display = track.displays[0];
+            if (display.error) errors.push(trackNames.get(track.configuration.trackId) + ': ' + (display.error.message || String(display.error)));
+            const parts = display.PileupDisplay ? [display.PileupDisplay, display.SNPCoverageDisplay].filter(Boolean) : [display];
+            parts.forEach(function (part) {
+              const blocks = part.blockState ? Array.from(part.blockState.values()) : [];
+              const error = part.error || blocks.map(function (block) { return block.error; }).find(Boolean);
+              if (error) errors.push(trackNames.get(track.configuration.trackId) + ': ' + (error.message || String(error)));
+              else if (!part.regionTooLarge && (!blocks.length || blocks.some(function (block) { return !block.filled; }))) pending = true;
+            });
+          });
+          if (pending && !errors.length) return;
+          clearInterval(settle);
+          window.parent.postMessage({ type: 'liatir-jbrowse-tracks', viewerId: payload.viewerId, errors: Array.from(new Set(errors)) }, '*');
+        }, 500);
       } catch (error) {
         fail(error);
       }
@@ -318,18 +398,9 @@
 </html>`;
   }
 
-  // The live blob URL. Held here (not in onMount) because the frame is rebuilt
-  // on theme change, and every replaced URL must be revoked or it leaks.
-  let frameObjectUrl = '';
-
-  function setFrameUrl(url: string) {
-    if (frameObjectUrl) URL.revokeObjectURL(frameObjectUrl);
-    frameObjectUrl = url;
-    jbrowseFrameUrl = url;
-  }
-
-  function createFrameUrl(html: string): string {
-    return URL.createObjectURL(new Blob([html], { type: 'text/html' }));
+  function stopJBrowse(message: string) {
+    setJBrowseError(message);
+    jbrowseFrameHtml = '';
   }
 
   function setJBrowseError(message: string) {
@@ -343,11 +414,13 @@
   async function initJBrowseFrame() {
     try {
       jbrowseError = null;
+      jbrowseTracks = 'loading';
+      jbrowseTrackErrors = [];
       const { source } = await readViewerRuntimeScript(JBROWSE_RUNTIME_ID);
-      const config = buildJBrowseConfig();
-      setFrameUrl(createFrameUrl(createJBrowseFrame(source, config)));
+      const config = await buildJBrowseConfig();
+      jbrowseFrameHtml = createJBrowseFrame(source, config);
     } catch (err) {
-      setFrameUrl('');
+      jbrowseFrameHtml = '';
       setJBrowseError(err instanceof Error ? err.message : String(err));
     }
   }
@@ -357,8 +430,11 @@
       const data = event.data as { type?: string; viewerId?: string; message?: string } | null;
       if (!data || data.viewerId !== viewerId) return;
       if (data.type === 'liatir-jbrowse-viewer-error') {
-        setJBrowseError(data.message ?? 'JBrowse viewer failed.');
-        setFrameUrl('');
+        stopJBrowse(data.message ?? 'JBrowse viewer failed.');
+      } else if (data.type === 'liatir-jbrowse-tracks') {
+        const errors = (data as { errors?: string[] }).errors ?? [];
+        jbrowseTrackErrors = errors;
+        jbrowseTracks = errors.length ? 'error' : 'ready';
       }
     }
     window.addEventListener('message', onMessage);
@@ -388,10 +464,7 @@
     }
 
     void loadTracks();
-    return () => {
-      if (frameObjectUrl) URL.revokeObjectURL(frameObjectUrl);
-      window.removeEventListener('message', onMessage);
-    };
+    return () => window.removeEventListener('message', onMessage);
   });
 
   /**
@@ -405,7 +478,7 @@
     const theme = settingsStore.resolvedTheme;
     if (theme === lastFrameTheme) return;
     lastFrameTheme = theme;
-    if (!frameObjectUrl) return;
+    if (!jbrowseFrameHtml) return;
     void initJBrowseFrame();
   });
 </script>
@@ -417,14 +490,21 @@
   height={section.height ?? 420}
   openHref={section.tracks[0]?.path ? `/tools/visualization/genome?track=${encodeURIComponent(section.tracks[0].path)}${section.assembly.fastaPath ? `&reference=${encodeURIComponent(section.assembly.fastaPath)}` : ''}` : undefined}
 >
-  <div class="h-full overflow-auto bg-surface">
-    {#if jbrowseFrameUrl}
-      <iframe
-        title={section.label}
-        src={jbrowseFrameUrl}
-        sandbox="allow-scripts"
-        class="h-full min-h-[320px] w-full border-0"
-      ></iframe>
+  <div class="h-full overflow-auto bg-surface" data-testid="genome-viewer" data-jbrowse={jbrowseFrameHtml ? jbrowseTracks : 'off'}>
+    {#if jbrowseTrackErrors.length}
+      <ul class="m-3 space-y-1 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700" data-testid="genome-viewer-track-errors">
+        {#each jbrowseTrackErrors as trackError}<li>{sanitizeLocalPathsForDisplay(trackError, 2)}</li>{/each}
+      </ul>
+    {/if}
+    {#if jbrowseFrameHtml}
+      {#key jbrowseFrameHtml}
+        <iframe
+          title={section.label}
+          use:sandboxDocument={{ html: jbrowseFrameHtml, files: frameFiles, onStalled: () => stopJBrowse('JBrowse 2 did not start.') }}
+          sandbox="allow-scripts"
+          class="h-full min-h-[320px] w-full border-0"
+        ></iframe>
+      {/key}
     {:else if jbrowseError && !loading && !error}
       <div class="m-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
         {#if jbrowseError.includes('not installed')}

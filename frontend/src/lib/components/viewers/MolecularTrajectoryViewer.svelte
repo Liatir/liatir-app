@@ -7,6 +7,7 @@
   import { sanitizeLocalPathsForDisplay } from '$lib/utils';
   import { THREEDMOL_RUNTIME_ID } from '$lib/viewers/runtime-registry';
   import { readViewerRuntimeScript } from '$lib/viewers/runtime-loader';
+  import { sandboxDocument } from '$lib/viewers/sandbox-frame';
   import type { MolecularTrajectoryViewerSection, StructureViewerSection } from '$lib/types/tool-output';
   import type { ParsedDcdTrajectory } from '$lib/viewers/dcd';
 
@@ -19,10 +20,9 @@
   let currentFrame = $state(0);
   let playing = $state(false);
   let viewerReady = $state(false);
-  let frameUrl = $state('');
+  let frameHtml = $state('');
   let frameContent = $state('');
   let timer: ReturnType<typeof setInterval> | null = null;
-  let objectUrl = '';
   let frameAsPdb: ((topology: string, coordinates: Float32Array) => string) | null = null;
 
   const viewerId = crypto.randomUUID();
@@ -84,11 +84,15 @@ html,body,#viewer{height:100%;margin:0;overflow:hidden;background:#fff}
 })();<\/script></body></html>`;
   }
 
-  function replaceFrameUrl(html: string) {
-    if (objectUrl) URL.revokeObjectURL(objectUrl);
-    objectUrl = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
-    frameUrl = objectUrl;
+  function replaceFrame(html: string) {
+    frameHtml = html;
     viewerReady = false;
+  }
+
+  function stopRuntime(message: string) {
+    stop();
+    runtimeWarning = message;
+    frameHtml = '';
   }
 
   function sendFrame(index: number) {
@@ -133,7 +137,7 @@ html,body,#viewer{height:100%;margin:0;overflow:hidden;background:#fff}
           readViewerRuntimeScript(THREEDMOL_RUNTIME_ID),
           Promise.resolve(parser.dcdTrajectoryAsMultiModelPdb(topology, trajectory.frames)),
         ]);
-        replaceFrameUrl(createTrajectoryFrame(source, multiModel));
+        replaceFrame(createTrajectoryFrame(source, multiModel));
       } catch (cause) {
         runtimeWarning = cause instanceof Error ? cause.message : String(cause);
       }
@@ -170,19 +174,14 @@ html,body,#viewer{height:100%;margin:0;overflow:hidden;background:#fff}
         viewerReady = true;
         sendFrame(currentFrame);
       } else if (data.type === 'liatir-trajectory-viewer-error') {
-        stop();
-        runtimeWarning = data.message ?? 'Trajectory viewer failed.';
-        frameUrl = '';
+        stopRuntime(data.message ?? 'Trajectory viewer failed.');
       }
     }
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
   });
 
-  onDestroy(() => {
-    stop();
-    if (objectUrl) URL.revokeObjectURL(objectUrl);
-  });
+  onDestroy(stop);
 
   const fallbackSection = $derived<StructureViewerSection>({
     type: 'structure-viewer',
@@ -210,16 +209,18 @@ html,body,#viewer{height:100%;margin:0;overflow:hidden;background:#fff}
   </Card>
 {:else}
   <div class="space-y-2">
-    {#if frameUrl}
+    {#if frameHtml}
       <div style={`height: ${section.height ?? 420}px`}>
         <Card class="relative h-full overflow-hidden p-0">
-          <iframe
-            title={section.label}
-            src={frameUrl}
-            sandbox="allow-scripts"
-            data-trajectory-viewer={viewerId}
-            class="absolute inset-0 h-full w-full border-0"
-          ></iframe>
+          {#key frameHtml}
+            <iframe
+              title={section.label}
+              use:sandboxDocument={{ html: frameHtml, onStalled: () => stopRuntime('The 3D viewer did not start.') }}
+              sandbox="allow-scripts"
+              data-trajectory-viewer={viewerId}
+              class="absolute inset-0 h-full w-full border-0"
+            ></iframe>
+          {/key}
         </Card>
       </div>
     {:else}

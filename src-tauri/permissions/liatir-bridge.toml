@@ -233,6 +233,7 @@ commands.allow = [
   "lia_file_size",
   "lia_read_file_text",
   "lia_file_read_base64",
+  "lia_file_read_range",
   "lia_write_file_path",
   "lia_preview_file",
 

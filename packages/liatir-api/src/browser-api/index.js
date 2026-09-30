@@ -802,7 +802,8 @@ function buildFiles(core) {
     openWithBytes: (options) => core.invoke("lia_file_open_with_bytes", { multi: options?.multi ?? false, allowedExtensions: options?.allowed, maxBytes: options?.maxBytes }),
     save: (defaultName) => core.invoke("lia_file_save", { defaultName: defaultName ?? null }),
     identity: (path) => core.invoke("lia_file_identity", { path }),
-    readBase64: (path, maxBytes) => core.invoke("lia_file_read_base64", { path, maxBytes })
+    readBase64: (path, maxBytes) => core.invoke("lia_file_read_base64", { path, maxBytes }),
+    readRange: (path, offset, length) => core.invoke("lia_file_read_range", { path, offset, length: length ?? null })
   };
 }
 

@@ -369,7 +369,7 @@ export async function runGenomeViewerStep(
         {
           type: 'genome-viewer',
           label: basename(inputs.trackFile),
-          description: 'Lightweight local preview. Full JBrowse 2 rendering is a modular viewer runtime.',
+          description: 'Drawn by JBrowse 2 once it is installed from Dependencies; until then, a simple preview of the track.',
           assembly: {
             name: inputs.referenceFile ? basename(inputs.referenceFile) : 'local assembly',
             fastaPath: inputs.referenceFile || undefined,

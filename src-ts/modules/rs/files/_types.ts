@@ -16,6 +16,7 @@ export type FileIdentity = {
   prefixHex: string;
 };
 export type FileBase64 = { sizeBytes: U64; dataBase64: string };
+export type FileRangeBase64 = { totalBytes: U64; dataBase64: string };
 
 
 export interface FilesInterface {
@@ -34,4 +35,6 @@ export interface FilesInterface {
     identity: (path: string) => Promise<FileIdentity>;
     /** Read a bounded local binary only after the user requests an interactive viewer. */
     readBase64: (path: string, maxBytes: number) => Promise<FileBase64>;
+    /** Read one byte range (the rest of the file without `length`), for a viewer seeking into an indexed file. */
+    readRange: (path: string, offset: number, length?: number) => Promise<FileRangeBase64>;
   };

@@ -19,6 +19,7 @@
   import Button from '$lib/components/ui/Button.svelte';
   import Select from '$lib/components/ui/Select.svelte';
   import FilePickerPopup from '$lib/components/ui/FilePickerPopup.svelte';
+  import { FIELD_INPUT_CLASS } from '$lib/components/ui/field-styles';
   import ToolResultView from '$lib/components/ui/ToolResultView.svelte';
   import { sanitizeLocalPathsForDisplay } from '$lib/utils';
   import { dataFiles } from '$lib/stores/dataFiles.svelte';
@@ -228,7 +229,7 @@
                 bind:value={refName}
                 disabled={running}
                 placeholder="chr1"
-                class="h-9 rounded-lg border border-border bg-white px-3 text-sm text-zinc-800 outline-none placeholder:text-zinc-400 focus:border-brand"
+                class={FIELD_INPUT_CLASS}
               />
             </label>
           {:else}
@@ -260,7 +261,7 @@
                 bind:value={singleCellEmbeddingKey}
                 disabled={running}
                 placeholder="X_geneformer"
-                class="h-9 rounded-lg border border-border bg-white px-3 text-sm text-zinc-800 outline-none placeholder:text-zinc-400 focus:border-brand"
+                class={FIELD_INPUT_CLASS}
               />
             </label>
           {/if}

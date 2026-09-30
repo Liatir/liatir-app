@@ -5,7 +5,7 @@
  * small files the webview wants to read immediately. For a large one, prefer `open` and read it through `fs`
  * — `maxBytes` is the guard that stops a multi-gigabyte file being pulled into memory by accident.
  */
-import { FileBase64, FileIdentity, LiatirAPI, FilesInterface, OpenResultWithBytes } from "../../../types";
+import { FileBase64, FileIdentity, FileRangeBase64, LiatirAPI, FilesInterface, OpenResultWithBytes } from "../../../types";
 import { OpenResult } from "../../../types";
 import { U64 } from "../../../utils";
 
@@ -21,5 +21,7 @@ export function buildFiles(core: { invoke: LiatirAPI["invoke"] }): FilesInterfac
       core.invoke<FileIdentity>("lia_file_identity", { path }),
     readBase64: (path: string, maxBytes: number) =>
       core.invoke<FileBase64>("lia_file_read_base64", { path, maxBytes }),
+    readRange: (path: string, offset: number, length?: number) =>
+      core.invoke<FileRangeBase64>("lia_file_read_range", { path, offset, length: length ?? null }),
   };
 }

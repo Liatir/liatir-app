@@ -2,7 +2,7 @@ use tauri::AppHandle;
 use tauri_plugin_dialog::{DialogExt, FilePath};
 use serde::Serialize;
 use sha2::{Digest, Sha256};
-use std::{fs, io::Read, path::{Path, PathBuf}};
+use std::{fs, io::{Read, Seek, SeekFrom}, path::{Path, PathBuf}};
 use base64::{engine::general_purpose, Engine as _};
 
 const MAX_WEBVIEW_BINARY_READ_BYTES: u64 = 268_435_456;
@@ -50,6 +50,33 @@ fn read_file_base64(path: &str, max_bytes: u64) -> Result<FileBase64, String> {
   })
 }
 
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FileRangeBase64 {
+  /// The whole file's size: a byte-range answer has to state it.
+  pub total_bytes: u64,
+  pub data_base64: String,
+}
+
+/// Reads `length` bytes from `offset`, or the rest of the file when `length` is absent. Viewers that
+/// seek into an indexed file (BAM, tabix VCF) read only the region on screen through this; a read
+/// past the end is empty rather than an error, as an HTTP server would answer it.
+fn read_file_range_base64(path: &str, offset: u64, length: Option<u64>) -> Result<FileRangeBase64, String> {
+  let mut file = fs::File::open(path).map_err(|error| error.to_string())?;
+  let total_bytes = file.metadata().map_err(|error| error.to_string())?.len();
+  let start = offset.min(total_bytes);
+  let wanted = length.unwrap_or(total_bytes - start).min(total_bytes - start);
+  if wanted > MAX_WEBVIEW_BINARY_READ_BYTES {
+    return Err(format!(
+      "This read is too large for the viewer ({wanted} bytes; limit {MAX_WEBVIEW_BINARY_READ_BYTES}). Index the file so only the region on screen is read."
+    ));
+  }
+  file.seek(SeekFrom::Start(start)).map_err(|error| error.to_string())?;
+  let mut bytes = Vec::with_capacity(wanted as usize);
+  file.take(wanted).read_to_end(&mut bytes).map_err(|error| error.to_string())?;
+  Ok(FileRangeBase64 { total_bytes, data_base64: general_purpose::STANDARD.encode(bytes) })
+}
+
 fn inspect_file_identity(path: &str) -> Result<FileIdentity, String> {
   let mut file = fs::File::open(path).map_err(|e| format!("Could not open file for inspection: {e}"))?;
   let mut hasher = Sha256::new();
@@ -92,6 +119,19 @@ pub async fn lia_file_read_base64(
   max_bytes: u64,
 ) -> Result<FileBase64, String> {
   tauri::async_runtime::spawn_blocking(move || read_file_base64(&path, max_bytes))
+  .await
+  .map_err(|error| error.to_string())?
+}
+
+/// Bounded byte-range read for a sandboxed viewer, which cannot fetch local files itself.
+#[tauri::command]
+pub async fn lia_file_read_range(
+  _app: AppHandle,
+  path: String,
+  offset: u64,
+  length: Option<u64>,
+) -> Result<FileRangeBase64, String> {
+  tauri::async_runtime::spawn_blocking(move || read_file_range_base64(&path, offset, length))
   .await
   .map_err(|error| error.to_string())?
 }
@@ -288,7 +328,7 @@ pub async fn lia_file_save(app: AppHandle, default_name: Option<String>) -> Resu
 
 #[cfg(test)]
 mod tests {
-  use super::{inspect_file_identity, read_file_base64};
+  use super::{inspect_file_identity, read_file_base64, read_file_range_base64};
   use std::{fs, path::PathBuf};
 
   #[test]
@@ -317,6 +357,20 @@ mod tests {
     let path = path.to_str().expect("utf8 path");
     assert_eq!(read_file_base64(path, 4).expect("read fixture").data_base64, "AAEC/w==");
     assert!(read_file_base64(path, 3).unwrap_err().contains("too large"));
+    let _ = fs::remove_file(path);
+  }
+
+  #[test]
+  fn range_read_returns_the_slice_and_the_whole_size() {
+    let mut path = PathBuf::from(std::env::temp_dir());
+    path.push(format!("liatir-range-read-{}.bam", std::process::id()));
+    fs::write(&path, [0_u8, 1, 2, 255]).expect("write fixture");
+    let path = path.to_str().expect("utf8 path");
+    let middle = read_file_range_base64(path, 1, Some(2)).expect("read middle");
+    assert_eq!((middle.total_bytes, middle.data_base64.as_str()), (4, "AQI="));
+    assert_eq!(read_file_range_base64(path, 2, None).expect("read tail").data_base64, "Av8=");
+    assert_eq!(read_file_range_base64(path, 3, Some(10)).expect("read clipped").data_base64, "/w==");
+    assert_eq!(read_file_range_base64(path, 9, Some(1)).expect("read past end").data_base64, "");
     let _ = fs::remove_file(path);
   }
 }

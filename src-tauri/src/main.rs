@@ -306,6 +306,7 @@ fn main() {
       lia_file_open_with_bytes,
       lia_file_identity,
       lia_file_read_base64,
+      lia_file_read_range,
       lia_native_tools_environment,
       lia_external_workflow_runtime_info,
       lia_external_workflow_prepare_run,

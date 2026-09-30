@@ -4,13 +4,13 @@
 	Two design decisions dominate this file.
 
 	**It runs inside an iframe, not in the page.** The 3Dmol.js source is read as *text* and inlined
-	into a self-contained HTML document served from a blob URL. That sandboxes a large third-party
+	into a self-contained HTML document, which the shared sandbox frame runs. That sandboxes a large third-party
 	library away from the app: it cannot reach Liatir's DOM, its stores, or the Tauri bridge. The price
 	is that everything it needs — the library, the structure, the display options — must be serialised
 	into that document, which is what the escaping helpers below exist for, and errors have to come back
 	across the boundary via postMessage.
 
-	**There is a real fallback.** If 3Dmol.js cannot run in this webview, the component parses the PDB
+	**There is a real fallback.** If 3Dmol.js cannot run in this webview, or never answers, the component parses the PDB
 	itself and draws a flat SVG projection of the atoms. It is not a pretty picture, but it is an honest
 	one: the coordinates are the file's own, so the user sees their actual structure rather than an
 	error where their result should be.
@@ -23,6 +23,7 @@
   import { liatir } from '$lib/api';
   import { THREEDMOL_RUNTIME_ID } from '$lib/viewers/runtime-registry';
   import { readViewerRuntimeScript } from '$lib/viewers/runtime-loader';
+  import { sandboxDocument } from '$lib/viewers/sandbox-frame';
   import { isViewerProxyCompatibilityError, viewerRuntimeFailureMessage } from '$lib/viewers/runtime-errors';
   import { sanitizeLocalPathsForDisplay } from '$lib/utils';
   import type { StructureViewerSection } from '$lib/types/tool-output';
@@ -32,7 +33,7 @@
   let loading = $state(true);
   let error = $state<string | null>(null);
   let runtimeWarning = $state<string | null>(null);
-  let frameUrl = $state('');
+  let frameHtml = $state('');
   let fallbackContent = $state('');
   /** The iframe reported that 3Dmol actually drew the structure, not merely that the frame exists. */
   let ready = $state(false);
@@ -178,11 +179,6 @@
     };
   }
 
-  /** The iframe is fed from a blob URL, so its document has an opaque origin and no access to ours. */
-  function createFrameUrl(html: string): string {
-    return URL.createObjectURL(new Blob([html], { type: 'text/html' }));
-  }
-
   /**
    * Surfaces a runtime failure — but stays quiet when the fallback has already rendered something.
    *
@@ -208,7 +204,7 @@
   const viewerState = $derived(
     loading ? 'loading'
       : error ? 'error'
-        : frameUrl ? (ready ? 'runtime-ready' : 'runtime-loading')
+        : frameHtml ? (ready ? 'runtime-ready' : 'runtime-loading')
           : fallbackAtoms.length > 0 ? 'fallback'
             : 'empty',
   );
@@ -254,7 +250,7 @@
   <script>
     (function () {
       const message = document.getElementById('message');
-      let payload = { viewerId: '${viewerId}' };
+      let payload = { viewerId: ${JSON.stringify(viewerId)} };
       function fail(error) {
         const text = error && error.message ? error.message : String(error || 'Structure viewer failed.');
         message.textContent = text;
@@ -298,9 +294,14 @@
     return await api.invoke('lia_read_file_text', { path: section.path }) as string;
   }
 
+  function stopRuntime(message: string) {
+    setRuntimeWarning(message);
+    frameHtml = '';
+    ready = false;
+  }
+
   onMount(() => {
     let disposed = false;
-    let objectUrl = '';
 
     function onMessage(event: MessageEvent) {
       const data = event.data as { type?: string; viewerId?: string; message?: string } | null;
@@ -309,11 +310,7 @@
         ready = true;
         return;
       }
-      if (data.type === 'liatir-structure-viewer-error') {
-        setRuntimeWarning(data.message ?? 'Structure viewer failed.');
-        frameUrl = '';
-        ready = false;
-      }
+      if (data.type === 'liatir-structure-viewer-error') stopRuntime(data.message ?? 'Structure viewer failed.');
     }
 
     async function render() {
@@ -327,8 +324,7 @@
         validateStructureContent(content, section.format);
         const { source } = await readViewerRuntimeScript(THREEDMOL_RUNTIME_ID);
         if (disposed) return;
-        objectUrl = createFrameUrl(createStructureFrame(source, content));
-        frameUrl = objectUrl;
+        frameHtml = createStructureFrame(source, content);
       } catch (err) {
         error = err instanceof Error ? err.message : String(err);
       } finally {
@@ -341,7 +337,6 @@
 
     return () => {
       disposed = true;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
       window.removeEventListener('message', onMessage);
     };
   });
@@ -368,14 +363,16 @@
           </Button>
         {/if}
       </div>
-    {:else if frameUrl}
-      <iframe
-        title={section.label}
-        src={frameUrl}
-        sandbox="allow-scripts"
-        class="absolute inset-0 h-full w-full border-0"
-        data-testid="structure-viewer-frame"
-      ></iframe>
+    {:else if frameHtml}
+      {#key frameHtml}
+        <iframe
+          title={section.label}
+          use:sandboxDocument={{ html: frameHtml, onStalled: () => stopRuntime('The 3D viewer did not start.') }}
+          sandbox="allow-scripts"
+          class="absolute inset-0 h-full w-full border-0"
+          data-testid="structure-viewer-frame"
+        ></iframe>
+      {/key}
     {:else if fallbackAtoms.length > 0}
       <div class="absolute inset-0">
         <svg viewBox="0 0 100 100" class="h-full w-full bg-white" data-testid="structure-fallback">
@@ -401,6 +398,11 @@
             3Dmol.js runtime failed, showing lightweight PDB preview. {sanitizeLocalPathsForDisplay(runtimeWarning, 2)}
           </div>
         {/if}
+      </div>
+    {:else if runtimeWarning}
+      <!-- mmCIF, SDF and the rest have no drawn fallback: the failure itself is what the user sees. -->
+      <div class="absolute inset-0 flex items-center justify-center px-4 text-center text-xs text-amber-700" data-testid="structure-viewer-runtime-warning">
+        {sanitizeLocalPathsForDisplay(runtimeWarning, 2)}
       </div>
     {/if}
 

@@ -1,0 +1,113 @@
+<!doctype html>
+<!--
+	The one document every sandboxed viewer runs in (see `$lib/viewers/sandbox-frame.ts`).
+
+	It exists because of the production Content Security Policy. A document built from a blob: URL
+	inherits the app's policy, so its inline scripts are refused and the viewer stays blank. This page
+	is a real app file instead: Tauri hashes its inline script into the policy it serves with it, so
+	the script below runs. It then runs the posted viewer's scripts as blob: scripts that this frame
+	creates itself, which `script-src blob:` allows. A blob created by the parent would not do: the
+	frame's origin is opaque, and WebKit refuses to load another origin's blob.
+
+	The opaque origin also means no Web Storage and no local files, and both are provided here, before
+	any viewer script runs, because libraries capture them while loading.
+
+	Keep it free of inline styles and external scripts: Tauri hashes inline scripts only, and the
+	frame's opaque origin matches no 'self' source.
+-->
+<html>
+<head>
+	<meta charset="utf-8" />
+	<script>
+		(function () {
+			var parentWindow = window.parent;
+
+			// WebKit throws a SecurityError on the first touch of localStorage or sessionStorage in an
+			// opaque origin, even from `typeof`. JBrowse probes sessionStorage while loading, so each
+			// store is replaced by one in memory that lasts as long as the frame.
+			function memoryStorage() {
+				var items = new Map();
+				return {
+					get length() { return items.size; },
+					key: function (index) { var keys = Array.from(items.keys()); return index < keys.length ? keys[index] : null; },
+					getItem: function (key) { key = String(key); return items.has(key) ? items.get(key) : null; },
+					setItem: function (key, value) { items.set(String(key), String(value)); },
+					removeItem: function (key) { items.delete(String(key)); },
+					clear: function () { items.clear(); },
+				};
+			}
+			['localStorage', 'sessionStorage'].forEach(function (name) {
+				Object.defineProperty(window, name, { value: memoryStorage(), configurable: true });
+			});
+
+			// The frame cannot read local files: the asset protocol answers the app's origin only. A
+			// fetch of a file URL the viewer was given is answered by the parent instead, which reads
+			// the bytes natively and serves only the files it handed to this viewer.
+			var FILE_URL_PREFIX = 'https://sandbox-file.liatir.invalid/';
+			var nativeFetch = window.fetch.bind(window);
+			var pendingReads = new Map();
+			var nextReadId = 0;
+			window.fetch = function (input, init) {
+				var url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+				if (url.indexOf(FILE_URL_PREFIX) !== 0) return nativeFetch(input, init);
+				var headers = new Headers(init && init.headers ? init.headers : input instanceof Request ? input.headers : undefined);
+				var id = ++nextReadId;
+				return new Promise(function (resolve, reject) {
+					pendingReads.set(id, { resolve: resolve, reject: reject });
+					parentWindow.postMessage({
+						type: 'liatir-sandbox-file-read',
+						id: id,
+						token: url.slice(FILE_URL_PREFIX.length),
+						range: headers.get('range'),
+					}, '*');
+				});
+			};
+
+			var rendered = false;
+			function render(html) {
+				var doc = new DOMParser().parseFromString(String(html), 'text/html');
+				document.head.replaceChildren.apply(document.head, Array.from(doc.head.childNodes, function (node) {
+					return document.importNode(node, true);
+				}));
+				document.body.replaceChildren();
+				var nodes = Array.from(doc.body.childNodes);
+				// One node at a time, each script awaited before the next, so the library has defined its
+				// globals before the bootstrap that uses them runs, as in an ordinary document.
+				(function next() {
+					var node = nodes.shift();
+					if (!node) return;
+					var executable = node.nodeName === 'SCRIPT' && (!node.type || node.type === 'text/javascript');
+					if (!executable) {
+						document.body.appendChild(document.importNode(node, true));
+						next();
+						return;
+					}
+					var script = document.createElement('script');
+					script.src = URL.createObjectURL(new Blob([node.textContent], { type: 'text/javascript' }));
+					script.onload = script.onerror = function () {
+						URL.revokeObjectURL(script.src);
+						next();
+					};
+					document.body.appendChild(script);
+				})();
+			}
+
+			window.addEventListener('message', function (event) {
+				var data = event.data;
+				if (event.source !== parentWindow || !data) return;
+				if (data.type === 'liatir-sandbox-render' && !rendered) {
+					rendered = true;
+					render(data.html);
+				} else if (data.type === 'liatir-sandbox-file-data' && pendingReads.has(data.id)) {
+					var read = pendingReads.get(data.id);
+					pendingReads.delete(data.id);
+					if (data.error) read.reject(new TypeError(data.error));
+					else read.resolve(new Response(data.body, { status: data.status, headers: data.headers }));
+				}
+			});
+			parentWindow.postMessage({ type: 'liatir-sandbox-ready' }, '*');
+		})();
+	</script>
+</head>
+<body></body>
+</html>

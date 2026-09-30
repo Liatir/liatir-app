@@ -26,6 +26,7 @@ export const LIATIR_API: Record<string, ApiNode> = {
           save: { type: "method", detail: "(defaultName?: string): Promise<string>" },
           identity: { type: "method", detail: "(path: string): Promise<FileIdentity>", info: "Stream a local file to compute its content identity without loading it into the webview." },
           readBase64: { type: "method", detail: "(path: string, maxBytes: number): Promise<FileBase64>", info: "Read a bounded local binary only after the user requests an interactive viewer." },
+          readRange: { type: "method", detail: "(path: string, offset: number, length?: number): Promise<FileRangeBase64>", info: "Read one byte range (the rest of the file without `length`), for a viewer seeking into an indexed file." },
       } },
       app: { type: "property", detail: "AppInterface", children: {
           info: { type: "method", detail: "(): Promise<AppInfo>" },
