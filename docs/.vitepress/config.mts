@@ -245,7 +245,7 @@ export default defineConfig({
     socialLinks: [
       {
         icon:"github",
-        link: "https://github.com/Liatir/liatir-sdk"
+        link: "https://github.com/Liatir/liatir-app"
       },
       {
       icon: "patreon",

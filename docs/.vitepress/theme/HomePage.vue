@@ -36,7 +36,7 @@ import pkgJson from "../../../package.json";
 
       <div class="container hero-inner">
         <div class="status-wrapper">
-          <span class="status"><span class="status-dot" aria-hidden="true"></span><span><span style="text-transform: lowercase;">v</span>{{pkgJson.version}}</span> · <span>Open Source</span> · <a href="https://www.gnu.org/licenses/gpl-3.0" class="hover-underline" target="_blank">GNU GPL v3</a></span>
+          <span class="status"><span class="status-dot" aria-hidden="true"></span><span><span style="text-transform: lowercase;">v</span>{{pkgJson.version}}</span> · <span>Open Source</span> · <a href="https://www.gnu.org/licenses/gpl-3.0" class="hover-underline" target="_blank">GNU GPL v3</a> · <a href="https://github.com/Liatir/liatir-app" class="hover-underline" target="_blank">GitHub</a></span>
         </div>
 
         <img class="hero-logo" :src="withBase('/static/logos/svg/logo-color.svg')" alt="" aria-hidden="true" />
