@@ -65,7 +65,6 @@ export default defineConfig({
     search: { provider: 'local' },
 
     nav: [
-      { text: 'Get started', link: '/getting-started/install' },
       { text: 'Resources', items: [
         { text: 'Tools', link: '/tools/overview' },
         { text: 'AI Models', link: '/ai/guide' },
@@ -75,6 +74,7 @@ export default defineConfig({
         { text: 'Donate', link: '/donate' },
         { text: 'Brand assets', link: '/branding' },
       ] },
+      { text: 'Get started', link: '/getting-started/install' },
       { text: 'Introduction', link: '/introduction/overview' },
       { text: 'Download', link: '/download' },
     ],
