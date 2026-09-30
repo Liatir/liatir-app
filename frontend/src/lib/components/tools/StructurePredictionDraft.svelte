@@ -6,6 +6,7 @@
     adaptBoltz2Input,
     adaptProtenixInput,
     createLiatirRootExecutionIdentity,
+    isLiatirStructureModelId,
     parseLiatirComplexSpecDraftJson,
     validateProteinLigandAffinityComplex,
     type LiatirAIModelRecord,
@@ -13,8 +14,11 @@
     type LiatirStructurePredictionRequest,
     type LiatirStructureToolDraft,
   } from '@liatir/core';
+  import Icon from '@iconify/svelte';
   import ComplexInputEditor from './ComplexInputEditor.svelte';
   import Button from '$lib/components/ui/Button.svelte';
+  import Select from '$lib/components/ui/Select.svelte';
+  import { FIELD_INPUT_CLASS, FIELD_LABEL_CLASS } from '$lib/components/ui/field-styles';
   import type { AIDirectRunContext } from '$lib/ai/direct-run-context';
   import { ensureRunOutputDir } from '$lib/execution/run-storage';
   import { finalizeExecutionResult } from '$lib/execution/finalization';
@@ -65,6 +69,9 @@
     ...(affinity ? validateProteinLigandAffinityComplex(spec) : []),
   ]);
   const model = $derived(models.find((item) => item.id === draft.modelId));
+  const modelOptions = $derived(models
+    .filter((item) => !affinity || item.id === BOLTZ_2_MODEL_ID)
+    .map((item) => ({ value: item.id, label: item.name, description: item.description })));
   const linkedRun = $derived(draft.executionRunId
     ? analysisRuns.runs.find((run) => run.id === draft.executionRunId) ?? null
     : null);
@@ -193,47 +200,47 @@
 
 <section class="space-y-5" data-testid="structure-prediction-draft" data-draft-id={draft.id}>
   <fieldset disabled={locked} class="space-y-4 disabled:opacity-70">
-    <label class="block text-sm">Analysis name
-      <input data-testid="structure-draft-label" bind:value={draft.label} class="mt-1 block w-full rounded border border-border bg-surface p-2" />
-    </label>
-    <label class="block text-sm">AI Model
-      <select data-testid="structure-model" bind:value={draft.modelId} class="mt-1 block w-full rounded border border-border bg-surface p-2">
-        {#each models.filter((item) => !affinity || item.id === BOLTZ_2_MODEL_ID) as item}
-          <option value={item.id}>{item.name}</option>
-        {/each}
-      </select>
-    </label>
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <label class="block"><span class={FIELD_LABEL_CLASS}>Analysis name</span>
+        <input data-testid="structure-draft-label" bind:value={draft.label} class={FIELD_INPUT_CLASS} />
+      </label>
+      <div data-testid="structure-model">
+        <span class={FIELD_LABEL_CLASS}>AI Model</span>
+        <Select value={draft.modelId} options={modelOptions} textSize="sm" buttonClass="py-2" disabled={locked}
+          onchange={(value) => { if (isLiatirStructureModelId(value)) draft.modelId = value; }} />
+      </div>
+    </div>
     <ComplexInputEditor bind:spec bind:msa={draft.msa} bind:valid={editorValid}
       bind:advanced={draft.advanced} bind:json={draft.advancedJson} {files} disabled={locked} />
     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-      <label class="block text-sm">Seed (a number used to repeat a prediction)
-        <input data-testid="structure-seed" inputmode="numeric" bind:value={draft.seed} class="mt-1 block w-full rounded border border-border bg-surface p-2" />
+      <label class="block"><span class={FIELD_LABEL_CLASS}>Seed (a number used to repeat a prediction)</span>
+        <input data-testid="structure-seed" inputmode="numeric" bind:value={draft.seed} class={FIELD_INPUT_CLASS} />
       </label>
-      <label class="block text-sm">Number of predicted structures
-        <input data-testid="structure-model-count" inputmode="numeric" bind:value={draft.modelCount} class="mt-1 block w-full rounded border border-border bg-surface p-2" />
+      <label class="block"><span class={FIELD_LABEL_CLASS}>Number of predicted structures</span>
+        <input data-testid="structure-model-count" inputmode="numeric" bind:value={draft.modelCount} class={FIELD_INPUT_CLASS} />
       </label>
     </div>
   </fieldset>
   {#if errors.length}
-    <ul data-testid="structure-input-errors" class="list-disc space-y-1 pl-5 text-sm text-red-600" aria-live="polite">
+    <ul data-testid="structure-input-errors" class="list-disc space-y-1 rounded-lg border border-red-200 bg-red-50 py-2 pl-7 pr-3 text-xs text-red-700" aria-live="polite">
       {#each errors as error}<li>{error}</li>{/each}
     </ul>
   {:else if editorValid}
-    <p data-testid="structure-input-valid" class="text-sm text-green-700">Molecule descriptions are valid. Local file contents and hardware limits must also pass before prediction.</p>
+    <p data-testid="structure-input-valid" class="flex items-center gap-1.5 text-xs text-emerald-600"><Icon icon="lucide:check" width="14" />Molecule descriptions are valid. Local file contents and hardware limits must also pass before prediction.</p>
   {/if}
-  {#each adapter.warnings as warning}<p class="text-sm text-amber-700">{warning}</p>{/each}
+  {#each adapter.warnings as warning}<p class="text-xs text-amber-600">{warning}</p>{/each}
   {#if affinity}
-    <p class="text-sm text-text-muted">Binding probability estimates how likely the molecules are to bind. Log10(IC50) is a separate strength estimate, using micromolar units; lower values predict stronger binding. Neither result proves an experimental effect.</p>
-    <p class="text-sm text-text-muted">Check run counts the molecule's atoms the way the installed model does: more than 56 raises a warning; more than 128 stops prediction.</p>
+    <p class="text-xs text-text-muted">Binding probability estimates how likely the molecules are to bind. Log10(IC50) is a separate strength estimate, using micromolar units; lower values predict stronger binding. Neither result proves an experimental effect.</p>
+    <p class="text-xs text-text-muted">Check run counts the molecule's atoms the way the installed model does: more than 56 raises a warning; more than 128 stops prediction.</p>
   {/if}
   {#if model?.status !== 'installed'}
-    <div class="rounded border border-border p-3 text-sm"><strong>Install required</strong><p>Install this AI Model in Dependencies to check local files and run a prediction.</p></div>
+    <div class="rounded-lg border border-border bg-surface-2 p-3"><p class="text-sm font-semibold text-text">Install required</p><p class="mt-1 text-xs text-text-muted">Install this AI Model in Dependencies to check local files and run a prediction.</p></div>
   {:else if !locked}
     <div class="flex flex-wrap gap-2">
       <Button variant="secondary" testId="structure-preflight" disabled={!canCheck} loading={checking} onclick={checkRun}>Check run</Button>
       <Button variant="primary" testId="structure-run" disabled={!canRun} loading={running} onclick={runPrediction}>Run</Button>
     </div>
-    {#if gpuBusy}<p class="text-sm text-text-muted">Another prediction with this AI Model is using the GPU. This one can start when it finishes.</p>{/if}
+    {#if gpuBusy}<p class="text-xs text-text-muted">Another prediction with this AI Model is using the GPU. This one can start when it finishes.</p>{/if}
     {#if preflight}
       <div class="rounded-lg border border-border bg-surface-2 p-3" data-testid="structure-estimate">
         <p class="mb-2 text-xs font-medium text-text-secondary">

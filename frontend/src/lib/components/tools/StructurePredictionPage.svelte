@@ -103,29 +103,29 @@
 <div class="flex h-full flex-col overflow-hidden">
   <PageHeader title={affinity ? 'Protein–Ligand Affinity' : 'Biomolecular Structure Prediction'}
     description={affinity ? 'Estimate how a protein and a small molecule may bind.' : 'Predict how proteins and other molecules fit together.'}>
-    {#snippet actions()}<Button variant="ghost" size="sm" onclick={() => goto('/tools')}>Back</Button>{/snippet}
+    {#snippet actions()}<Button variant="ghost" size="sm" onclick={() => goto('/tools')}><Icon icon="lucide:arrow-left" width="14" />Back</Button>{/snippet}
   </PageHeader>
   <PageContent>
     <div class="flex-1 overflow-y-auto p-6">
-      {#if error}<p role="alert" class="mb-4 text-sm text-red-600">{error}</p>{/if}
-      {#if !loaded && !error}<p>Loading saved predictions…</p>
+      {#if error}<div role="alert" class="mx-auto mb-4 max-w-4xl rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>{/if}
+      {#if !loaded && !error}<div class="flex justify-center py-12"><Icon icon="svg-spinners:ring-resize" width="22" /></div>
       {:else if loaded && !models.length}
-        <Card class="p-5"><p class="font-semibold">Runtime not published</p><p class="mt-1 text-sm text-text-muted">Structure prediction becomes available after the model passes scientific, hardware and app validation.</p></Card>
+        <Card class="mx-auto max-w-4xl p-5"><p class="text-sm font-semibold text-text">Runtime not published</p><p class="mt-1 text-xs text-text-muted">Structure prediction becomes available after the model passes scientific, hardware and app validation.</p></Card>
       {:else if loaded}
         <div class="mx-auto max-w-4xl space-y-5">
-          <div class="flex flex-wrap items-center gap-3">
-            <Button variant="secondary" testId="structure-new-draft" onclick={newDraft}>New prediction</Button>
-            <span role="status" data-testid="structure-save-status" class="text-xs text-text-muted">{saveStatus}</span>
+          <div class="flex flex-wrap items-center gap-2">
+            <Button variant="secondary" size="sm" testId="structure-new-draft" onclick={newDraft}><Icon icon="lucide:plus" width="14" />New prediction</Button>
+            {#if drafts.length}
+              <nav aria-label="Saved predictions" class="flex flex-wrap gap-2">
+                {#each drafts as draft (draft.id)}
+                  <button data-testid="structure-saved-draft" data-draft-id={draft.id} aria-current={selected?.id === draft.id ? 'true' : undefined}
+                    class="rounded-lg border border-border px-3 py-1.5 text-xs text-text-secondary transition hover:bg-surface-2 aria-[current=true]:border-brand aria-[current=true]:text-text"
+                    onclick={() => selectDraft(draft)}>{draft.label || 'Untitled prediction'}</button>
+                {/each}
+              </nav>
+            {/if}
+            <span role="status" data-testid="structure-save-status" class="ml-auto text-xs text-text-muted">{saveStatus}</span>
           </div>
-          {#if drafts.length}
-            <nav aria-label="Saved predictions" class="flex flex-wrap gap-2">
-              {#each drafts as draft (draft.id)}
-                <button data-testid="structure-saved-draft" data-draft-id={draft.id} aria-current={selected?.id === draft.id ? 'true' : undefined}
-                  class="rounded border border-border px-3 py-2 text-sm hover:bg-surface-2 aria-[current=true]:border-brand"
-                  onclick={() => selectDraft(draft)}>{draft.label || 'Untitled prediction'}</button>
-              {/each}
-            </nav>
-          {/if}
           {#if selected}
             {#key selected.id}
               <Card class="p-5"><StructurePredictionDraft initial={selected} {models} files={dataFiles.files} {host} onchange={saveDraft} /></Card>

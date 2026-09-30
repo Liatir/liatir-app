@@ -229,6 +229,24 @@ export async function setAppInputValue(browser, selector, value) {
   }, selector, value);
 }
 
+/**
+ * Picks an option of the shared Select inside `container` by its value, through the component's own
+ * buttons. An option that is not offered is an error, for the same reason as above.
+ */
+export async function chooseAppSelectOption(browser, container, value) {
+  await browser.execute((target) => {
+    const trigger = document.querySelector(target)?.querySelector('button[aria-haspopup="listbox"]');
+    if (!trigger) throw new Error(`Select not found: ${target}`);
+    if (trigger.getAttribute('aria-expanded') !== 'true') trigger.click();
+  }, container);
+  // The menu exists only after Svelte has rendered the open state.
+  await browser.waitUntil(() => browser.execute((target, next) => {
+    const option = document.querySelector(target)?.querySelector(`[role="option"][data-value="${CSS.escape(next)}"]`);
+    option?.click();
+    return Boolean(option);
+  }, container, value), { timeout: 5_000, timeoutMsg: `${container} does not offer ${value}` });
+}
+
 /** Finds one section of a persisted Result output document. */
 export function outputSection(output, type, label = null) {
   return output.sections.find((item) => item.type === type && (label === null || item.label === label));

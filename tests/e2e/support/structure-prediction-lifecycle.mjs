@@ -23,7 +23,7 @@ import {
   startRuntimeBoxInstall,
   waitForRuntimeBoxInstall,
 } from './runtime-box.mjs';
-import { navigateInApp, readDataJson, reloadLiatirApp, setAppInputValue } from './liatir-app.mjs';
+import { chooseAppSelectOption, navigateInApp, readDataJson, reloadLiatirApp, setAppInputValue } from './liatir-app.mjs';
 
 const UBIQUITIN = 'MQIFVKTLTGKTITLEVEPSDTIENVKAKIQDKEGIPPDQQRLIFAGKQLEDGRTLSDYNIQKESTLHLVLRLRGG';
 const TOOL_ID = 'biomolecular-structure-prediction';
@@ -271,7 +271,7 @@ export function structurePredictionLifecycleTest(component) {
       const label = await browser.$('[data-testid="structure-draft-label"]');
       await label.waitForDisplayed({ timeout: 20_000 });
       await label.setValue('Ubiquitin');
-      await setAppInputValue(browser, '[data-testid="structure-model"]', component.modelId);
+      await chooseAppSelectOption(browser, '[data-testid="structure-model"]', component.modelId);
       await (await browser.$('[data-testid="complex-sequence"]')).setValue(UBIQUITIN);
       await acceptSingleSequence(browser);
       await (await checkMeasuredRun(browser, expect, component.modelLabel)).click();

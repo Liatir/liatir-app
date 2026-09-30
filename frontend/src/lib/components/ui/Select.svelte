@@ -256,6 +256,7 @@
 								option.disabled ? 'cursor-not-allowed opacity-45 hover:bg-transparent' : ''
 							].join(' ')}
 							role="option"
+							data-value={option.value}
 							aria-selected={option.value === value}
 							disabled={option.disabled}
 							onclick={() => choose(option)}
