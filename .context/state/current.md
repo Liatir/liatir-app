@@ -47,8 +47,8 @@ deleted from R2 on 2026-09-27 — see [Scrollcase v3 adoption](../history/scroll
    that reads the latest release from GitHub; the waiting list was removed on 2026-09-29, and the
    `liatir-mailing-list` D1 database, still holding its subscribers, was left untouched. Open: the Store submission, proof that Runtime Boxes
    work inside the MSIX container, and a real A-to-B update with 0.1.1.
-   **0.1.0 has these defects, all fixed in the repository on 2026-09-30, so 0.1.1 carries them to
-   users.** First, the 3D Structure and trajectory viewers are blank under the production security
+   **0.1.1, published for macOS and Linux on 2026-10-01, fixes these 0.1.0 defects** (all three
+   platforms now build on GitHub Actions, macOS signed and notarized there). First, the 3D Structure and trajectory viewers are blank under the production security
    policy, and the JBrowse genome viewer never started anywhere, because it could reach neither Web
    Storage nor local files from its sandbox
    ([decision](../decisions/viewers-run-in-a-static-sandbox-host-page.md)). The genome viewer now has

@@ -1,6 +1,6 @@
 # Release gate — signed public distribution
 
-Status: **Open — 0.1.0 published for macOS and Linux on 2026-09-29; Store submission pending.** The distribution channel is
+Status: **Open — 0.1.1 published for macOS and Linux on 2026-10-01 (0.1.0 on 2026-09-29); Store submission pending.** The distribution channel is
 decided ([decision](../../decisions/desktop-distribution-channel.md)) and the
 build paths for all three platforms are implemented; no signed release has been
 built yet.
@@ -99,11 +99,23 @@ policy, and JBrowse never started ([decision](../../decisions/viewers-run-in-a-s
   `targets=linux-and-store`, all three jobs successful. Artifacts `liatir-0.1.1-linux` and
   `liatir-0.1.1-microsoft-store`, kept until 2026-10-14.
 - **macOS arm64**: not built in that run, which had no macOS job yet. The job was added on
-  2026-10-01, and 0.1.1 is rebuilt for every platform from one revision so the release is
+  2026-10-01, and 0.1.1 was rebuilt for every platform from one revision so the release is
   consistent.
-- **Not published.** Publishing (the `v0.1.1` release in `Liatir/liatir-releases` and
-  `desktop/latest.json`) waits for the macOS build and an explicit go-ahead; the updater signatures
-  are verified against the public key first, as for 0.1.0.
+- **The published build is run 36856377156** at revision `270f1d3` (`targets=all`): the macOS job
+  signed the Native Tools box and the app with the Developer ID certificate and notarized the app
+  and the disk image on GitHub, on its first run. Before publishing, on the maintainer's Mac: both
+  updater signatures verified against `TAURI_SIGNING_PUBLIC_KEY` (minisign, file and trusted
+  comment; a one-byte change to a copy was rejected); the DMG passed `spctl` (Notarized Developer
+  ID), `stapler validate` and `hdiutil verify`; the app in the updater archive passed `codesign
+  --verify --deep --strict`, `spctl` and `stapler validate`, version 0.1.1, team `UC22LVU6ZY`.
+- **Published 2026-10-01:** GitHub release `v0.1.1` in `Liatir/liatir-releases`, marked latest,
+  with the DMG, updater archive and signature, AppImage and signature, `.deb` and `.rpm`; GitHub's
+  SHA-256 digests match all seven verified files. Then `desktop/latest.json` in R2 bucket
+  `liatir-updates`, naming 0.1.1 for `darwin-aarch64` and `linux-x86_64`, uploaded with
+  `wrangler r2 object put` (`application/json`, `no-cache`) only after both updater URLs answered
+  200 with the right size; the file served at `updates.liatir.com` is byte-identical to the
+  generated one. This is the first update a 0.1.0 installation is offered.
+- **Store:** the 0.1.1 MSIX from the same run was handed to the maintainer for Partner Center.
 
 ## The Windows decision: Microsoft Store (2026-08-20)
 
