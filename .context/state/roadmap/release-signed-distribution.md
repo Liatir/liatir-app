@@ -48,6 +48,13 @@ to make it look like one.
   Store package**: built without the updater crate and assembled by
   `scripts/desktop-msix.mjs`. `.github/workflows/desktop-release-build.yml`
   runs both on GitHub-hosted runners, dispatched by hand, and never publishes.
+- Since 2026-10-01 the same workflow also builds **macOS** on an Apple-silicon runner
+  (`macos-15`): the Developer ID certificate is imported into a keychain of that job only,
+  the Native Tools box and the app are signed with it, and the app and the disk image are
+  notarized. The credentials are repository secrets (`APPLE_CERTIFICATE`,
+  `APPLE_CERTIFICATE_PASSWORD`, `APPLE_ID`, `APPLE_PASSWORD`) and variables
+  (`APPLE_SIGNING_IDENTITY`, `APPLE_TEAM_ID`), set from the maintainer's signing folder.
+  `targets: all` builds every platform from one revision.
 
 ## What is missing
 
@@ -82,6 +89,21 @@ to make it look like one.
   cached 500 for the DMG URL while the other assets downloaded; it cleared on its own.
 - **Not done:** the Store submission (the maintainer uploads the MSIX in Partner Center), a
   clean-machine install, and a real A-to-B update, which needs 0.1.1.
+
+## 0.1.1 build evidence (2026-09-30, revision `9cb6a9d`)
+
+0.1.1 carries the viewer fixes found in 0.1.0: the 3D viewers were blank under the production
+policy, and JBrowse never started ([decision](../../decisions/viewers-run-in-a-static-sandbox-host-page.md)).
+
+- **Linux and the Store MSIX**, `desktop-release-build.yml` run 36747975085, `app_version=0.1.1`,
+  `targets=linux-and-store`, all three jobs successful. Artifacts `liatir-0.1.1-linux` and
+  `liatir-0.1.1-microsoft-store`, kept until 2026-10-14.
+- **macOS arm64**: not built in that run, which had no macOS job yet. The job was added on
+  2026-10-01, and 0.1.1 is rebuilt for every platform from one revision so the release is
+  consistent.
+- **Not published.** Publishing (the `v0.1.1` release in `Liatir/liatir-releases` and
+  `desktop/latest.json`) waits for the macOS build and an explicit go-ahead; the updater signatures
+  are verified against the public key first, as for 0.1.0.
 
 ## The Windows decision: Microsoft Store (2026-08-20)
 

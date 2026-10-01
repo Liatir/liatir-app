@@ -1,12 +1,16 @@
 name: Desktop release build
 
-# Builds, but never publishes, the Linux packages and the Microsoft Store MSIX
-# from the dispatched revision. The macOS release is built and notarized on the
-# maintainer's Mac with the same script. Publishing is a separate, explicit step.
+# Builds, but never publishes, the signed and notarized macOS release, the Linux
+# packages and the Microsoft Store MSIX from the dispatched revision. Publishing is
+# a separate, explicit step.
 #
-# Linux needs the updater key pair:
+# macOS and Linux need the updater key pair:
 #   secrets   TAURI_SIGNING_PRIVATE_KEY, TAURI_SIGNING_PRIVATE_KEY_PASSWORD
 #   variable  TAURI_SIGNING_PUBLIC_KEY
+# macOS also needs the Developer ID certificate and the notarization account:
+#   secrets   APPLE_CERTIFICATE (the .p12, base64), APPLE_CERTIFICATE_PASSWORD,
+#             APPLE_ID, APPLE_PASSWORD (an app-specific password)
+#   variables APPLE_SIGNING_IDENTITY (the certificate's SHA-1), APPLE_TEAM_ID
 # The Store package needs the identity reserved in Partner Center (not secret):
 #   variables MSIX_IDENTITY_NAME, MSIX_IDENTITY_PUBLISHER, MSIX_PUBLISHER_DISPLAY_NAME
 # The script refuses to start when its inputs are incomplete.
@@ -21,8 +25,8 @@ on:
       targets:
         description: "What to build"
         type: choice
-        options: [linux-and-store, linux, store]
-        default: linux-and-store
+        options: [all, macos, linux-and-store, linux, store]
+        default: all
 
 permissions:
   contents: read
@@ -38,6 +42,7 @@ env:
 jobs:
   native-tools:
     name: Native Tools box (Linux)
+    if: inputs.targets != 'macos'
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -59,7 +64,7 @@ jobs:
   linux:
     name: Linux packages
     needs: native-tools
-    if: inputs.targets != 'store'
+    if: contains(fromJSON('["all", "linux-and-store", "linux"]'), inputs.targets)
     # The oldest supported runner: an AppImage runs on systems at least as new as the one it was
     # built on.
     runs-on: ubuntu-22.04
@@ -108,7 +113,7 @@ jobs:
   store:
     name: Microsoft Store package
     needs: native-tools
-    if: inputs.targets != 'linux'
+    if: contains(fromJSON('["all", "linux-and-store", "store"]'), inputs.targets)
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -143,3 +148,72 @@ jobs:
           path: src-tauri/target/release/bundle/msix/*.msix
           if-no-files-found: error
           retention-days: 14
+
+  macos:
+    name: macOS package (signed and notarized)
+    if: contains(fromJSON('["all", "macos"]'), inputs.targets)
+    # Apple silicon, the only macOS architecture Liatir ships.
+    runs-on: macos-15
+    env:
+      APPLE_SIGNING_IDENTITY: ${{ vars.APPLE_SIGNING_IDENTITY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # The certificate lives in a keychain of this job only. The Native Tools box is signed with
+      # it before Tauri signs the app, and both find it by APPLE_SIGNING_IDENTITY.
+      - name: Install the Developer ID certificate
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          keychain="$RUNNER_TEMP/liatir-signing.keychain-db"
+          password="$(openssl rand -hex 24)"
+          security create-keychain -p "$password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$password" "$keychain"
+          printf '%s' "$APPLE_CERTIFICATE" | base64 --decode > "$RUNNER_TEMP/certificate.p12"
+          security import "$RUNNER_TEMP/certificate.p12" -k "$keychain" -f pkcs12 -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          rm "$RUNNER_TEMP/certificate.p12"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$password" "$keychain" > /dev/null
+          security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
+          if ! security find-identity -v -p codesigning "$keychain" | grep -q "$APPLE_SIGNING_IDENTITY"; then
+            echo "::error::The certificate does not hold a valid identity $APPLE_SIGNING_IDENTITY"
+            exit 1
+          fi
+      - uses: ./.github/actions/native-tools-box
+        with:
+          target-id: macos-aarch64-cpu
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: npm ci --prefix packages/liatir-cli
+      - run: npm ci --prefix packages/liatir-api
+      - run: npm ci --prefix frontend
+      - name: Build, notarize and verify the signed release
+        env:
+          APP_VERSION: ${{ inputs.app_version }}
+          RELEASE_REVISION: ${{ github.sha }}
+          TAURI_SIGNING_PUBLIC_KEY: ${{ vars.TAURI_SIGNING_PUBLIC_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+        run: node scripts/build-desktop-release.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: liatir-${{ inputs.app_version }}-macos
+          path: |
+            src-tauri/target/release/bundle/dmg/*.dmg
+            src-tauri/target/release/bundle/macos/*.app.tar.gz
+            src-tauri/target/release/bundle/macos/*.app.tar.gz.sig
+          if-no-files-found: error
+          retention-days: 14
+      - name: Remove the signing keychain
+        if: always()
+        run: security delete-keychain "$RUNNER_TEMP/liatir-signing.keychain-db" || true
