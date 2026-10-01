@@ -16,6 +16,7 @@
 import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { resolve, win32 } from 'node:path';
+import { packageAppVersion } from './app-version.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..');
 
@@ -58,7 +59,7 @@ if (invokedDirectly) {
   const invocation = confShellInvocation(script);
   const result = spawnSync(invocation.command, invocation.args, {
     cwd: ROOT,
-    env: process.env,
+    env: { ...process.env, APP_VERSION: packageAppVersion() },
     shell: false,
     stdio: 'inherit',
   });

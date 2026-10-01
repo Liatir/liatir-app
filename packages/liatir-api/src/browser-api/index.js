@@ -444,7 +444,7 @@ var Liatir = new Proxy({}, {
 // src-ts/bridge.constants.json
 var bridge_constants_default = {
   appUrl: "",
-  apiVersion: "0.2.1"
+  apiVersion: "0.1.1"
 };
 
 // src-ts/constants.ts

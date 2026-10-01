@@ -14,6 +14,7 @@ import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { localNodeCliInvocation, npmInvocation } from './node-cli.mjs';
+import { APP_VERSION } from './app-version.mjs';
 import { confShellInvocation } from './run-conf.mjs';
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -24,7 +25,6 @@ const CONFIG_FILES = [
   'src-tauri/window.env',
   'src-ts/bridge.constants.json',
 ];
-const APP_VERSION = '0.2.1';
 const BUNDLES = ['deb', 'rpm', 'appimage'];
 
 function run(command, args, environment = process.env) {

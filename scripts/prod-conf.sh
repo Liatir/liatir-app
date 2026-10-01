@@ -4,7 +4,7 @@ set -euo pipefail
 # -----------------------------
 # Read inputs with safe defaults
 # -----------------------------
-: "${APP_VERSION:=0.1.0}"
+: "${APP_VERSION:?is set from package.json by scripts/run-conf.mjs}"
 : "${CARGO_PACKAGE_NAME:=liatir}"
 : "${CARGO_PACKAGE_VERSION:=$APP_VERSION}"
 : "${APP_IDENTIFIER:=app.liatir.app}"

@@ -1,8 +1,8 @@
 # scripts/local-dev-conf.sh
 set -euo pipefail
 
-APP_VERSION="0.2.1"
-CARGO_PACKAGE_VERSION="0.2.1"
+: "${APP_VERSION:?is set from package.json by scripts/run-conf.mjs}"
+CARGO_PACKAGE_VERSION="$APP_VERSION"
 CARGO_PACKAGE_NAME="liatir"
 
 sed -e "s/%%CARGO_PACKAGE_NAME%%/${CARGO_PACKAGE_NAME}/g" \
@@ -13,7 +13,8 @@ sed -e "s|%%APP_URL%%||g" \
     -e "s|%%APP_VERSION%%|${APP_VERSION}|g" \
   conf-templates/bridge.constants.template.json > src-ts/bridge.constants.json
 
-cp conf-templates/tauri.conf.template.local.dev.json src-tauri/tauri.conf.json
+sed -e "s|%%APP_VERSION%%|${APP_VERSION}|g" \
+  conf-templates/tauri.conf.template.local.dev.json > src-tauri/tauri.conf.json
 
 # local capability — for local webview content (build:local → tauri://localhost)
 cp conf-templates/capability.local.json src-tauri/capabilities/local.json

@@ -16,6 +16,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { packageAppVersion } from './app-version.mjs';
 import { assembleMsix } from './desktop-msix.mjs';
 import { localNodeCliInvocation, npmInvocation } from './node-cli.mjs';
 
@@ -267,6 +268,8 @@ function requireArtifacts(platform, version, buildStartedAt) {
 function assertReleaseCheckout(environment) {
   const status = execFileSync('git', ['status', '--porcelain'], { cwd: ROOT, encoding: 'utf8' });
   if (status.trim()) throw new Error('Desktop releases must start from a clean worktree');
+  // A release describes its checkout: the revision it names and the version package.json holds.
+  packageAppVersion(environment);
   const revision = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).trim();
   if (revision !== environment.RELEASE_REVISION) {
     throw new Error(`RELEASE_REVISION does not match HEAD (${revision})`);

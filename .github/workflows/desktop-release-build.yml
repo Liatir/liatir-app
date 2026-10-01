@@ -1,8 +1,9 @@
 name: Desktop release build
 
 # Builds, but never publishes, the signed and notarized macOS release, the Linux
-# packages and the Microsoft Store MSIX from the dispatched revision. Publishing is
-# a separate, explicit step.
+# packages and the Microsoft Store MSIX from the dispatched revision. The version is
+# the one in package.json at that revision: to release, change it there first.
+# Publishing is a separate, explicit step.
 #
 # macOS and Linux need the updater key pair:
 #   secrets   TAURI_SIGNING_PRIVATE_KEY, TAURI_SIGNING_PRIVATE_KEY_PASSWORD
@@ -18,10 +19,6 @@ name: Desktop release build
 on:
   workflow_dispatch:
     inputs:
-      app_version:
-        description: "App version (X.Y.Z)"
-        type: string
-        required: true
       targets:
         description: "What to build"
         type: choice
@@ -40,6 +37,16 @@ env:
   UPDATE_ENDPOINT: https://updates.liatir.com/desktop/latest.json
 
 jobs:
+  version:
+    name: Version from package.json
+    runs-on: ubuntu-22.04
+    outputs:
+      app_version: ${{ steps.read.outputs.app_version }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: read
+        run: echo "app_version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
   native-tools:
     name: Native Tools box (Linux)
     if: inputs.targets != 'macos'
@@ -63,7 +70,7 @@ jobs:
 
   linux:
     name: Linux packages
-    needs: native-tools
+    needs: [version, native-tools]
     if: contains(fromJSON('["all", "linux-and-store", "linux"]'), inputs.targets)
     # The oldest supported runner: an AppImage runs on systems at least as new as the one it was
     # built on.
@@ -93,7 +100,7 @@ jobs:
           path: src-tauri/resources/native-tools/
       - name: Build and verify the signed release
         env:
-          APP_VERSION: ${{ inputs.app_version }}
+          APP_VERSION: ${{ needs.version.outputs.app_version }}
           RELEASE_REVISION: ${{ github.sha }}
           TAURI_SIGNING_PUBLIC_KEY: ${{ vars.TAURI_SIGNING_PUBLIC_KEY }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
@@ -101,7 +108,7 @@ jobs:
         run: node scripts/build-desktop-release.mjs
       - uses: actions/upload-artifact@v4
         with:
-          name: liatir-${{ inputs.app_version }}-linux
+          name: liatir-${{ needs.version.outputs.app_version }}-linux
           path: |
             src-tauri/target/release/bundle/appimage/*.AppImage
             src-tauri/target/release/bundle/appimage/*.AppImage.sig
@@ -112,7 +119,7 @@ jobs:
 
   store:
     name: Microsoft Store package
-    needs: native-tools
+    needs: [version, native-tools]
     if: contains(fromJSON('["all", "linux-and-store", "store"]'), inputs.targets)
     runs-on: windows-latest
     steps:
@@ -136,7 +143,7 @@ jobs:
           path: src-tauri/resources/native-tools/
       - name: Build the Store package
         env:
-          APP_VERSION: ${{ inputs.app_version }}
+          APP_VERSION: ${{ needs.version.outputs.app_version }}
           RELEASE_REVISION: ${{ github.sha }}
           MSIX_IDENTITY_NAME: ${{ vars.MSIX_IDENTITY_NAME }}
           MSIX_IDENTITY_PUBLISHER: ${{ vars.MSIX_IDENTITY_PUBLISHER }}
@@ -144,13 +151,14 @@ jobs:
         run: node scripts/build-desktop-release.mjs --msix
       - uses: actions/upload-artifact@v4
         with:
-          name: liatir-${{ inputs.app_version }}-microsoft-store
+          name: liatir-${{ needs.version.outputs.app_version }}-microsoft-store
           path: src-tauri/target/release/bundle/msix/*.msix
           if-no-files-found: error
           retention-days: 14
 
   macos:
     name: macOS package (signed and notarized)
+    needs: version
     if: contains(fromJSON('["all", "macos"]'), inputs.targets)
     # Apple silicon, the only macOS architecture Liatir ships.
     runs-on: macos-15
@@ -196,7 +204,7 @@ jobs:
       - run: npm ci --prefix frontend
       - name: Build, notarize and verify the signed release
         env:
-          APP_VERSION: ${{ inputs.app_version }}
+          APP_VERSION: ${{ needs.version.outputs.app_version }}
           RELEASE_REVISION: ${{ github.sha }}
           TAURI_SIGNING_PUBLIC_KEY: ${{ vars.TAURI_SIGNING_PUBLIC_KEY }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
@@ -207,7 +215,7 @@ jobs:
         run: node scripts/build-desktop-release.mjs
       - uses: actions/upload-artifact@v4
         with:
-          name: liatir-${{ inputs.app_version }}-macos
+          name: liatir-${{ needs.version.outputs.app_version }}-macos
           path: |
             src-tauri/target/release/bundle/dmg/*.dmg
             src-tauri/target/release/bundle/macos/*.app.tar.gz

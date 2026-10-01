@@ -20,6 +20,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { localNodeCliInvocation, npmInvocation } from './node-cli.mjs';
+import { APP_VERSION } from './app-version.mjs';
 import { confShellInvocation } from './run-conf.mjs';
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -30,7 +31,6 @@ const CONFIG_FILES = [
   'src-tauri/window.env',
   'src-ts/bridge.constants.json',
 ];
-const APP_VERSION = '0.2.1';
 /** The NSIS first-header magic; present uncompressed in every Nullsoft installer. */
 const NSIS_MAGIC = 'NullsoftInst';
 

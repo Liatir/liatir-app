@@ -144,6 +144,10 @@ These are the current commands. If one no longer exists, read the `scripts` sect
   package, which carries no in-app updater. It refuses to start without every release input and
   never publishes. All three — macOS (signed and notarized), Linux and the Store package — are
   normally built by the hand-dispatched `desktop-release-build.yml` workflow (`targets: all`).
+- **The app version lives only in the root `package.json`.** Releasing a version means changing it
+  there first (`npm version X.Y.Z --no-git-tag-version`). `scripts/app-version.mjs` hands it to the
+  conf scripts (tauri.conf.json, Cargo.toml, bridge constants), the release workflow and the
+  release script refuse any other, and the public site's homepage reads the same file.
 - `npm run desktop-beta:package:<macos|windows|linux>` and
   `npm run desktop-beta:test:<macos|windows|linux>` — the per-platform Gate 7 desktop package and
   install-lifecycle gates. Each refuses to run off its own platform, and every artifact they build

@@ -12,6 +12,7 @@ import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { APP_VERSION } from './app-version.mjs';
 import { confShellInvocation } from './run-conf.mjs';
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -55,8 +56,8 @@ try {
   const prodConf = confShellInvocation('prod-conf.sh');
   run(prodConf.command, prodConf.args, {
     ...process.env,
-    APP_VERSION: '0.2.1',
-    CARGO_PACKAGE_VERSION: '0.2.1',
+    APP_VERSION,
+    CARGO_PACKAGE_VERSION: APP_VERSION,
     UPDATE_ENDPOINT: 'https://updates.invalid/{{target}}/{{arch}}/{{current_version}}',
     ED25519_PUBKEY: 'local-package-gate-placeholder',
     MAIN_WINDOW_URL: '',

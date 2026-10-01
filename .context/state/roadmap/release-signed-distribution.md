@@ -90,6 +90,15 @@ to make it look like one.
 - **Not done:** the Store submission (the maintainer uploads the MSIX in Partner Center), a
   clean-machine install, and a real A-to-B update, which needs 0.1.1.
 
+## The version comes from package.json (2026-10-01)
+
+0.1.1 was built with its version typed into the workflow while `package.json` still said 0.1.0,
+so the site's homepage, which reads `package.json`, kept showing 0.1.0. The root `package.json` is
+now the only source of the app version: `scripts/app-version.mjs` reads it for the conf scripts
+and the local package gates, the release workflow takes it from the dispatched revision instead
+of an input, and the release script refuses an `APP_VERSION` that differs. To release, bump
+`package.json` (`npm version X.Y.Z --no-git-tag-version`), push, then dispatch the workflow.
+
 ## 0.1.1 build evidence (2026-09-30, revision `9cb6a9d`)
 
 0.1.1 carries the viewer fixes found in 0.1.0: the 3D viewers were blank under the production

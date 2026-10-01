@@ -3,8 +3,8 @@ set -euo pipefail
 
 # remote.json -> blank.html
 APP_URL="http://blank.html"
-APP_VERSION="0.2.1"
-CARGO_PACKAGE_VERSION="0.2.1"
+: "${APP_VERSION:?is set from package.json by scripts/run-conf.mjs}"
+CARGO_PACKAGE_VERSION="$APP_VERSION"
 CARGO_PACKAGE_NAME="liatir"
 
 APP_URL_ORIGIN="$(printf '%s' "$APP_URL" | sed -E 's#^(https?://[^/]+).*$#\1#')"
@@ -25,7 +25,8 @@ sed -e "s|%%APP_URL%%|${APP_URL_ORIGIN}|g" \
   conf-templates/bridge.constants.template.json > src-ts/bridge.constants.json
 
 
-cp conf-templates/tauri.conf.template.dev.json src-tauri/tauri.conf.json
+sed -e "s|%%APP_VERSION%%|${APP_VERSION}|g" \
+  conf-templates/tauri.conf.template.dev.json > src-tauri/tauri.conf.json
 
 cp conf-templates/menu.config.dev.json src-tauri/resources/menu/menu.config.json
 

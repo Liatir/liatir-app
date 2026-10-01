@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
+import { APP_VERSION, packageAppVersion } from '../../scripts/app-version.mjs';
 import { validateReleaseEnvironment } from '../../scripts/build-desktop-release.mjs';
 import { msixManifest, msixVersion } from '../../scripts/desktop-msix.mjs';
 import { updateManifest } from '../../scripts/desktop-update-manifest.mjs';
@@ -272,5 +273,25 @@ describe('Gate 7 desktop release contract', () => {
     expect(workspaces).toContain('initStarted = false');
     expect(layout).toContain('data-testid="startup-recovery"');
     expect(layout).toContain('testId="startup-retry"');
+  });
+
+  it('takes the app version from package.json alone', async () => {
+    // A release built at a revision carries that revision's package.json version, and the public
+    // site reads the same file, so the two cannot disagree.
+    const pkg = JSON.parse(await readFile(resolve(root, 'package.json'), 'utf8'));
+    expect(APP_VERSION).toBe(pkg.version);
+    expect(packageAppVersion({})).toBe(pkg.version);
+    expect(packageAppVersion({ APP_VERSION: pkg.version })).toBe(pkg.version);
+    expect(() => packageAppVersion({ APP_VERSION: '9.9.9' })).toThrow('does not match package.json');
+
+    const sources = await Promise.all([
+      ...['prod', 'dev', 'local.dev'].map((name) => readFile(resolve(root, `conf-templates/tauri.conf.template.${name}.json`), 'utf8')),
+      ...['prod', 'dev', 'local-dev'].map((name) => readFile(resolve(root, `scripts/${name}-conf.sh`), 'utf8')),
+      readFile(resolve(root, '.github/workflows/desktop-release-build.yml'), 'utf8'),
+    ]);
+    for (const template of sources.slice(0, 3)) expect(JSON.parse(template).version).toBe('%%APP_VERSION%%');
+    for (const script of sources.slice(3, 6)) expect(script).not.toMatch(/APP_VERSION[:=]+"?\d/);
+    expect(sources[6]).toContain("require('./package.json').version");
+    expect(sources[6]).not.toContain('inputs.app_version');
   });
 });
