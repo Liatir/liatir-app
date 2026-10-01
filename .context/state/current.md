@@ -57,8 +57,9 @@ deleted from R2 on 2026-09-27 — see [Scrollcase v3 adoption](../history/scroll
    Single-cell Reference Index shows "unsupported signed single-cell index catalog document". The
    published catalog still has the v2 envelope, which `2ea19a7` stopped reading. Its signature
    covers only the payload, so `npm run single-cell-index -- migrate-catalog` republishes it
-   unchanged in the v3 envelope. That needs `LIATIR_RUNTIME_BOX_ADMIN_TOKEN` and has **not been
-   run yet**. It fixes the catalog for 0.1.0 as well, with no app update.
+   unchanged in the v3 envelope. The admin token exists only in the `runtime-box-production`
+   GitHub environment, so it runs there through `single-cell-index-catalog-migrate.yml`. It fixes
+   the catalog for 0.1.0 as well, with no app update.
 2. **OpenMM publication.** Both Linux targets are `native-lifecycle-validated` and the macOS CPU
    target is still `planned`; none is published. See
    [Phase 3 implementation status](./roadmap/phase3-implementation-status.md).

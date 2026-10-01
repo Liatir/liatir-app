@@ -1,0 +1,46 @@
+name: Single-cell reference index catalog migration
+
+# Republishes a reference-index catalog signed before the Scrollcase v3 envelope cutover, in the
+# v3 envelope the app reads, unchanged and not re-signed: the signature covers the payload, not the
+# envelope. A catalog already in the current envelope is left alone, so a rerun is harmless.
+# The registry admin token exists only in the runtime-box-production environment.
+
+on:
+  workflow_dispatch:
+
+# Shared with the index release, so a migration never races a publish of the same catalog.
+concurrency:
+  group: single-cell-reference-index-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  migrate:
+    name: Republish the catalog in the current envelope
+    environment: runtime-box-production
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Require the exact main ref
+        run: test "${{ github.ref }}" = "refs/heads/main"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Migrate and read back the catalog
+        env:
+          LIATIR_RUNTIME_BOX_ADMIN_TOKEN: ${{ secrets.LIATIR_RUNTIME_BOX_ADMIN_TOKEN }}
+        run: >-
+          npm run single-cell-index -- migrate-catalog
+          --registry "${{ vars.LIATIR_RUNTIME_BOX_REGISTRY }}"
+          --public-key runtime-boxes/trust/production-public.json
