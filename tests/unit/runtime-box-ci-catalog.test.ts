@@ -3,6 +3,7 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import catalogJson from '../../runtime-boxes/catalog.json';
+import { APP_VERSION } from '../../scripts/app-version.mjs';
 import {
   LIATIR_TOOL_RUNTIME_CATALOG,
   RUNTIME_BOX_AI_MODEL_REGISTRY,
@@ -111,6 +112,24 @@ describe('Runtime Box CI catalog', () => {
         'utf8',
       ));
       expect(scroll.compatibility.hostEnvironments).toEqual(['native', 'windows-wsl2']);
+    }
+  });
+
+  // The app refuses a box whose signed Liatir range excludes it. Every box was once published for
+  // 0.2.1 while the released app called itself 0.1.1, so no AI Model could be installed at all.
+  it('publishes no target that this version of Liatir would refuse', () => {
+    for (const component of catalog.components) {
+      for (const target of component.targets.filter((entry) => entry.status === 'published')) {
+        const entry = `${component.componentId}/${target.targetId}`;
+        const { compatibility } = JSON.parse(readFileSync(
+          new URL(`../../runtime-boxes/scrolls/${component.boxId}/${target.targetId}/scroll.json`, import.meta.url),
+          'utf8',
+        ));
+        expect(numericVersionAtLeast(APP_VERSION, compatibility.minLiatirVersion), entry).toBe(true);
+        if (compatibility.maxLiatirVersionExclusive) {
+          expect(numericVersionAtLeast(APP_VERSION, compatibility.maxLiatirVersionExclusive), entry).toBe(false);
+        }
+      }
     }
   });
 

@@ -294,4 +294,20 @@ describe('Gate 7 desktop release contract', () => {
     expect(sources[6]).toContain("require('./package.json').version");
     expect(sources[6]).not.toContain('inputs.app_version');
   });
+
+  it('keeps every tracked copy of the app version equal to package.json', async () => {
+    // Each copy is written from package.json — by the conf scripts, `sdk:build` and
+    // `browser-api:build` — and a stale one is invisible until it disagrees with something signed.
+    // On a mismatch, run `npm run localdevconf`, `npm run sdk:syncVersion` and `npm run gen:sdk-types`.
+    const read = (file: string) => readFile(resolve(root, file), 'utf8');
+    const copies = {
+      'src-tauri/Cargo.toml': (await read('src-tauri/Cargo.toml')).match(/^version = "([^"]+)"/m)?.[1],
+      'src-tauri/tauri.conf.json': JSON.parse(await read('src-tauri/tauri.conf.json')).version,
+      'src-ts/bridge.constants.json': JSON.parse(await read('src-ts/bridge.constants.json')).apiVersion,
+      'sdk/package.json': JSON.parse(await read('sdk/package.json')).version,
+      'packages/liatir-api/src/browser-api/index.js':
+        (await read('packages/liatir-api/src/browser-api/index.js')).match(/apiVersion: "([^"]+)"/)?.[1],
+    };
+    for (const [file, version] of Object.entries(copies)) expect(version, file).toBe(APP_VERSION);
+  });
 });

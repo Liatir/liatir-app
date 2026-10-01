@@ -106,6 +106,23 @@ homepage kept 0.1.0. `package.json` must be in the project's included build watc
 dashboard setting the CLI cannot change; asked of the maintainer on 2026-10-01). The Download page
 is unaffected: it reads the latest GitHub release at visit time.
 
+## Every Runtime Box requires Liatir 0.2.1, so the app moved to 0.2.1 (2026-10-01)
+
+Until `1ad4fb0`, dev builds called themselves 0.2.1 through a hand-written version in
+`Cargo.toml`, and every published Runtime Box — AI Models and Tool Runtimes alike — was signed with
+`minLiatirVersion` 0.2.1. The released 0.1.0 and 0.1.1 therefore refuse every box install ("This
+Runtime Box requires Liatir 0.2.1 or newer"), and dev builds did too once `1ad4fb0` made them 0.1.1.
+The 0.1.1 MSIX handed over for the Store has the same defect.
+
+The app version moved to **0.2.1**, so the next release installs every published box. Lowering the
+minimum instead was rejected: it is inside each signed release, so every box, GPU targets included,
+would have to be rebuilt and republished. Two tests now keep this from recurring:
+`tests/unit/runtime-box-ci-catalog.test.ts` fails when a published target requires a newer Liatir
+than `package.json`, and `tests/unit/desktop-release-contract.test.ts` fails when a tracked copy of
+the version (`Cargo.toml`, `tauri.conf.json`, the bridge constants, the `liatir` SDK, the browser
+API bundle) differs from it. The SDK version script and the SDK type generator now read
+`package.json` directly.
+
 ## 0.1.1 build evidence (2026-09-30, revision `9cb6a9d`)
 
 0.1.1 carries the viewer fixes found in 0.1.0: the 3D viewers were blank under the production

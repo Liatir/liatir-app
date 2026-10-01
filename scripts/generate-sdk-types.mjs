@@ -9,6 +9,7 @@ import fs   from 'fs';
 import path from 'path';
 import ts   from 'typescript';
 import { fileURLToPath } from 'url';
+import { APP_VERSION } from './app-version.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT    = path.resolve(__dirname, '..');
@@ -81,9 +82,9 @@ declare global {
 export {};
 `;
 
-const sdkVersion = JSON.parse(
-  fs.readFileSync(path.join(ROOT, 'sdk', 'package.json'), 'utf-8')
-).version ?? 'unknown';
+// The `liatir` SDK is versioned with the app, so the header names the app version itself rather
+// than sdk/package.json, which is only a copy refreshed by `sdk:build`.
+const sdkVersion = APP_VERSION;
 
 fs.writeFileSync(
   path.join(OUT_DIR, 'liatir-sdk-types.ts'),

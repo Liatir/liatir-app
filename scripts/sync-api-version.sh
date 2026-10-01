@@ -2,18 +2,16 @@
 
 set -eu
 
-SOURCE_FILE="../src-ts/bridge.constants.json"
+# The `liatir` SDK is versioned with the app, and the root package.json is the app version's only
+# source (see scripts/app-version.mjs). Read it there rather than from a generated copy.
+SOURCE_FILE="../package.json"
 PACKAGE_JSON_FILE="./package.json"
 PACKAGE_LOCK_JSON_FILE="./package-lock.json"
 
-SOURCE_KEY="apiVersion"
-
-API_VERSION=$(jq -r --arg key "$SOURCE_KEY" '
-  if has($key) then .[$key] else empty end
-' "$SOURCE_FILE")
+API_VERSION=$(jq -r '.version // empty' "$SOURCE_FILE")
 
 if [ -z "$API_VERSION" ]; then
-  echo "Key \"$SOURCE_KEY\" not found in $SOURCE_FILE" >&2
+  echo "\"version\" not found in $SOURCE_FILE" >&2
   exit 1
 fi
 
@@ -32,6 +30,6 @@ jq --arg value "$API_VERSION" '
 mv "$tmp_package" "$PACKAGE_JSON_FILE"
 mv "$tmp_package_lock" "$PACKAGE_LOCK_JSON_FILE"
 
-echo "Copied \"$SOURCE_KEY\" from $SOURCE_FILE to \"version\" in $PACKAGE_JSON_FILE"
-echo "Copied \"$SOURCE_KEY\" from $SOURCE_FILE to \"version\" in $PACKAGE_LOCK_JSON_FILE"
-echo "Copied \"$SOURCE_KEY\" from $SOURCE_FILE to \"packages[\"\"].version\" in $PACKAGE_LOCK_JSON_FILE"
+echo "Copied \"version\" from $SOURCE_FILE to \"version\" in $PACKAGE_JSON_FILE"
+echo "Copied \"version\" from $SOURCE_FILE to \"version\" in $PACKAGE_LOCK_JSON_FILE"
+echo "Copied \"version\" from $SOURCE_FILE to \"packages[\"\"].version\" in $PACKAGE_LOCK_JSON_FILE"

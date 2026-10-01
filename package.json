@@ -1,6 +1,6 @@
 {
   "name": "liatir-app",
-  "version": "0.1.1",
+  "version": "0.2.1",
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260711.1",
     "@eslint/js": "^9.39.4",
