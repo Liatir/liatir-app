@@ -1,6 +1,6 @@
 # Current project status
 
-Last updated 2026-09-29. This page says where Liatir stands and what comes next. How each piece got
+Last updated 2026-10-01. This page says where Liatir stands and what comes next. How each piece got
 here is in the [status log, July to September 2026](../history/status-log-2026-07-to-2026-09.md)
 and in the plans under `history/`; the readiness of each product area, with its evidence, is in
 [Beta 1 readiness](./roadmap/beta-readiness.md).
@@ -62,6 +62,11 @@ deleted from R2 on 2026-09-27 — see [Scrollcase v3 adoption](../history/scroll
    2026-10-01** (run 36863963482): the catalog at `models.liatir.com` now has the v3 envelope, the
    same payload (`cb8e66ca…2022d64`) and verifies against the production key, which fixes the page
    for 0.1.0 installations too.
+   **Neither 0.1.0 nor 0.1.1 can install any Runtime Box**: every published box requires Liatir
+   0.2.1. The app version is now 0.2.1, so the next release fixes it
+   ([details](./roadmap/release-signed-distribution.md)). The same release lets the AI Models page
+   offer a Linux CUDA box through WSL2 on Windows: Geneformer showed as unavailable there because
+   the page considered only CPU boxes for WSL2, although the installer already routed CUDA ones.
 2. **OpenMM publication.** Both Linux targets are `native-lifecycle-validated` and the macOS CPU
    target is still `planned`; none is published. See
    [Phase 3 implementation status](./roadmap/phase3-implementation-status.md).

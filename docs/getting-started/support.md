@@ -20,10 +20,9 @@ Liatir remains in control of authorization, Jobs and Results.
   are Java programs, so Java 21 or newer must still be installed on your machine.
 - Liatir does not yet install Nextflow/Java or configure HPC and cloud
   executors.
-- Windows CUDA support is limited to the exact published CUDA 12.8 Geneformer
-  and scGPT targets. The hosted Windows GPU runner cannot validate them, so
-  support comes from their recorded native product evidence and is not a claim
-  about other drivers or CUDA versions.
+- On Windows, GPU AI Models run their Linux CUDA Runtime Box through WSL2. The
+  NVIDIA GPU must be visible inside WSL2; if it is not, run `wsl --update` and
+  restart WSL2.
 - AI Model availability is target-specific. The model selector shows only
   compatible installed assets.
 - Liatir pipelines orchestrate tools but do not replace Nextflow scheduling,

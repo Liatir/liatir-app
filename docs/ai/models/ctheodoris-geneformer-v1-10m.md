@@ -35,9 +35,10 @@ runtime.
 ## Hardware and installation
 
 Measured CPU throughput was not viable for the current product target. The
-published native targets are macOS arm64 Metal, Linux x86_64 CUDA 12.9 and
-Windows x86_64 CUDA 12.8. Liatir does not substitute a CPU or different CUDA
-target when one of these exact environments is unavailable.
+published targets are macOS arm64 Metal and Linux x86_64 CUDA 12.9; Windows
+x86_64 runs the Linux CUDA target through WSL2, which needs an NVIDIA GPU
+visible inside WSL2. Liatir does not substitute a CPU or different CUDA target
+when one of these exact environments is unavailable.
 
 The input matrix is normalized per cell to 10,000 counts, scaled by the official
 Genecorpus-30M gene medians, converted to the V1 rank-value encoding, and capped

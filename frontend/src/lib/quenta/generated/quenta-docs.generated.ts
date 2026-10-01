@@ -3,7 +3,7 @@
 
 import type { LiatirQuentaContextDocument } from '@liatir/core';
 
-export const QUENTA_DOCS_SEED_HASH = "8e6fbae4a9acad12bb3c2fe695f8761b92408e660622f132785a8d40cd0a5deb";
+export const QUENTA_DOCS_SEED_HASH = "1673b43dfcfccb2a409b7d2d6002f710a9dd01d02e5f5688ed8d0adf03b1b1dc";
 
 export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
   {
@@ -83,8 +83,8 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "scGPT Whole-human — Current status in Liatir",
     "locator": "Docs / Ai / Models / Bowang Scgpt Whole Human / Current status in Liatir",
-    "excerpt": "Current status in Liatir scGPT is published as signed Runtime Boxes for macOS arm64 Metal, Linux/Windows x86_64 CPU, Linux x86_64 CUDA 12.9 and Windows x86_64 CUDA 12.8. Liatir installs the complete target-specific environment and records the exact box releas…",
-    "content": "Current status in Liatir\nscGPT is published as signed Runtime Boxes for macOS arm64 Metal,\nLinux/Windows x86_64 CPU, Linux x86_64 CUDA 12.9 and Windows x86_64 CUDA 12.8.\nLiatir installs the complete target-specific environment and records the exact\nbox release in Results provenance."
+    "excerpt": "Current status in Liatir scGPT is published as signed Runtime Boxes for macOS arm64 Metal, Linux x86_64 CPU and Linux x86_64 CUDA 12.9. Windows x86_64 runs both Linux boxes through WSL2. Liatir installs the complete target-specific environment and records the…",
+    "content": "Current status in Liatir\nscGPT is published as signed Runtime Boxes for macOS arm64 Metal, Linux x86_64\nCPU and Linux x86_64 CUDA 12.9. Windows x86_64 runs both Linux boxes through\nWSL2.\nLiatir installs the complete target-specific environment and records the exact\nbox release in Results provenance."
   },
   {
     "id": "docs:ai/models/bowang-scgpt-whole-human#expected-inputs",
@@ -107,8 +107,8 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "scGPT Whole-human — Hardware and installation",
     "locator": "Docs / Ai / Models / Bowang Scgpt Whole Human / Hardware and installation",
-    "excerpt": "Hardware and installation Use only the exact published target compatible with the host. Windows CUDA is CUDA 12.8 and Linux CUDA is CUDA 12.9; support for those targets does not imply other CUDA or driver combinations. The model and its dependencies live insi…",
-    "content": "Hardware and installation\nUse only the exact published target compatible with the host. Windows CUDA is\nCUDA 12.8 and Linux CUDA is CUDA 12.9; support for those targets does not imply\nother CUDA or driver combinations. The model and its dependencies live inside\nthe Runtime Box and are never added to the base app or system Python."
+    "excerpt": "Hardware and installation Use only the exact published target compatible with the host. The CUDA target is CUDA 12.9, on Linux or on Windows through WSL2; support for it does not imply other CUDA or driver combinations. The model and its dependencies live ins…",
+    "content": "Hardware and installation\nUse only the exact published target compatible with the host. The CUDA target\nis CUDA 12.9, on Linux or on Windows through WSL2; support for it does not imply\nother CUDA or driver combinations. The model and its dependencies live inside\nthe Runtime Box and are never added to the base app or system Python."
   },
   {
     "id": "docs:ai/models/bowang-scgpt-whole-human#official-source",
@@ -227,8 +227,8 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "Geneformer V1 10M — Hardware and installation",
     "locator": "Docs / Ai / Models / Ctheodoris Geneformer V1 10m / Hardware and installation",
-    "excerpt": "Hardware and installation Measured CPU throughput was not viable for the current product target. The published native targets are macOS arm64 Metal, Linux x86_64 CUDA 12.9 and Windows x86_64 CUDA 12.8. Liatir does not substitute a CPU or different CUDA target…",
-    "content": "Hardware and installation\nMeasured CPU throughput was not viable for the current product target. The\npublished native targets are macOS arm64 Metal, Linux x86_64 CUDA 12.9 and\nWindows x86_64 CUDA 12.8. Liatir does not substitute a CPU or different CUDA\ntarget when one of these exact environments is unavailable.\n\nThe input matrix is normalized per cell to 10,000 counts, scaled by the official\nGenecorpus-30M gene medians, converted to the V1 rank-value encoding, and capped\nat 2,048 gene tokens. Cell embeddings are mean-pooled from the second-to-last\nhidden layer. The original input file is never modified."
+    "excerpt": "Hardware and installation Measured CPU throughput was not viable for the current product target. The published targets are macOS arm64 Metal and Linux x86_64 CUDA 12.9; Windows x86_64 runs the Linux CUDA target through WSL2, which needs an NVIDIA GPU visible…",
+    "content": "Hardware and installation\nMeasured CPU throughput was not viable for the current product target. The\npublished targets are macOS arm64 Metal and Linux x86_64 CUDA 12.9; Windows\nx86_64 runs the Linux CUDA target through WSL2, which needs an NVIDIA GPU\nvisible inside WSL2. Liatir does not substitute a CPU or different CUDA target\nwhen one of these exact environments is unavailable.\n\nThe input matrix is normalized per cell to 10,000 counts, scaled by the official\nGenecorpus-30M gene medians, converted to the V1 rank-value encoding, and capped\nat 2,048 gene tokens. Cell embeddings are mean-pooled from the second-to-last\nhidden layer. The original input file is never modified."
   },
   {
     "id": "docs:ai/models/ctheodoris-geneformer-v1-10m#official-source",
@@ -732,7 +732,7 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "title": "Beta support and troubleshooting — Current limits",
     "locator": "Docs / Getting Started / Support / Current limits",
     "excerpt": "Current limits - macOS packages are built for Apple silicon only; Intel Macs are not supported. - Windows Nextflow runs through WSL2 Linux x86_64. Native Windows Nextflow, WSL1 and WSL ARM64 are not supported. - The bundled Native Tools — samtools, bcftools,…",
-    "content": "Current limits\n- macOS packages are built for Apple silicon only; Intel Macs are not supported.\n- Windows Nextflow runs through WSL2 Linux x86_64. Native Windows Nextflow,\n  WSL1 and WSL ARM64 are not supported.\n- The bundled Native Tools — samtools, bcftools, seqkit, fastp, bwa, minimap2 —\n  also run through WSL2 on Windows, for the same reason: they have no Windows\n  build. WSL2 must be installed; nothing has to be installed inside it. Files on\n  a network location (`\\\\server\\share\\…`) cannot be reached from WSL2 and are\n  refused with an explanation; copy them to a drive on the computer first.\n- SnpEff and SnpSift are installed together on demand rather than bundled. They\n  are Java programs, so Java 21 or newer must still be installed on your machine.\n- Liatir does not yet install Nextflow/Java or configure HPC and cloud\n  executors.\n- Windows CUDA support is limited to the exact published CUDA 12.8 Geneformer\n  and scGPT targets. The hosted Windows GPU runner cannot validate them, so\n  support comes from their recorded native product evidence and is not a claim\n  about other drivers or CUDA versions.\n- AI Model availability is target-specific. The model selector shows only\n  compatible installed assets.\n- Liatir pipelines orchestrate tools but do not replace Nextflow scheduling,\n  cache, resume or DSL semantics.\n- Liatir is research software. Outputs require scientific review and are not a\n  medical diagnosis."
+    "content": "Current limits\n- macOS packages are built for Apple silicon only; Intel Macs are not supported.\n- Windows Nextflow runs through WSL2 Linux x86_64. Native Windows Nextflow,\n  WSL1 and WSL ARM64 are not supported.\n- The bundled Native Tools — samtools, bcftools, seqkit, fastp, bwa, minimap2 —\n  also run through WSL2 on Windows, for the same reason: they have no Windows\n  build. WSL2 must be installed; nothing has to be installed inside it. Files on\n  a network location (`\\\\server\\share\\…`) cannot be reached from WSL2 and are\n  refused with an explanation; copy them to a drive on the computer first.\n- SnpEff and SnpSift are installed together on demand rather than bundled. They\n  are Java programs, so Java 21 or newer must still be installed on your machine.\n- Liatir does not yet install Nextflow/Java or configure HPC and cloud\n  executors.\n- On Windows, GPU AI Models run their Linux CUDA Runtime Box through WSL2. The\n  NVIDIA GPU must be visible inside WSL2; if it is not, run `wsl --update` and\n  restart WSL2.\n- AI Model availability is target-specific. The model selector shows only\n  compatible installed assets.\n- Liatir pipelines orchestrate tools but do not replace Nextflow scheduling,\n  cache, resume or DSL semantics.\n- Liatir is research software. Outputs require scientific review and are not a\n  medical diagnosis."
   },
   {
     "id": "docs:getting-started/support#common-problems",

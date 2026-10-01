@@ -52,6 +52,7 @@ function hardware(
     appleMetal: os === 'macos',
     cudaAvailable: nvidiaDriverVersion ? true : null,
     nvidiaDriverVersion: nvidiaDriverVersion ?? null,
+    wslNvidiaDriverVersion: null,
     wsl2Available: false,
     wslDistribution: null,
     wslError: null,
@@ -197,6 +198,32 @@ describe('Runtime Box native target selection', () => {
     expect(modelInstallBlock(MHCFLURRY_CLASS1_PRESENTATION_METADATA, windows)).toBeNull();
     expect(toolRuntimeInstallBlock(PVACTOOLS_TOOL_RUNTIME_METADATA, linux)).toBeNull();
     expect(toolRuntimeInstallBlock(PVACTOOLS_TOOL_RUNTIME_METADATA, windows)).toBeNull();
+  });
+
+  describe('Geneformer on Windows, whose only x86_64 box is Linux CUDA', () => {
+    function windowsWithWsl2(hostDriver?: string, wslDriver?: string): AIHardwareInfo {
+      const windows = hardware('windows', 'x86_64', hostDriver);
+      windows.wsl2Available = true;
+      windows.wslDistribution = 'Ubuntu-24.04';
+      windows.wslNvidiaDriverVersion = wslDriver ?? null;
+      return windows;
+    }
+
+    it('installs through WSL2 when the GPU is visible there', () => {
+      expect(modelInstallBlock(baseModel, windowsWithWsl2('590.48.01', '590.48.01'))).toBeNull();
+    });
+
+    it('names WSL2 when Windows sees the GPU but the distribution does not', () => {
+      const block = modelInstallBlock(baseModel, windowsWithWsl2('590.48.01'));
+      expect(block?.kind).toBe('cuda');
+      expect(block?.reason).toContain('no NVIDIA GPU is visible inside your WSL2 installation');
+    });
+
+    it('asks for an NVIDIA GPU, not for another operating system, without one', () => {
+      const block = modelInstallBlock(baseModel, windowsWithWsl2());
+      expect(block?.kind).toBe('cuda');
+      expect(block?.reason).toContain('needs an NVIDIA GPU');
+    });
   });
 
   it('explains that WSL2 must be ready before a Windows install', () => {

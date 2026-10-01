@@ -74,7 +74,13 @@ function detectedHostLabel(hardware: AIHardwareInfo): string {
   return `${osLabel(hardware.os)} ${hardware.arch}${accelerators.length ? ` with ${accelerators.join(' and ')}` : ''}`;
 }
 
-/** Selects whether one ordered published Runtime Box target can run natively on this host. */
+/**
+ * Selects whether one ordered published Runtime Box target can run on this host.
+ *
+ * Mirrors the installer's selection: native targets first, then — on Windows x86_64 — a Linux
+ * x86_64 CPU or CUDA box validated for WSL2. A CUDA box routed through WSL2 is checked against
+ * the driver seen inside the distribution, not the one Windows reports.
+ */
 function runtimeBoxInstallBlock(
   runtimeBox: LiatirRuntimeBoxInstall,
   hardware: AIHardwareInfo,
@@ -102,7 +108,7 @@ function runtimeBoxInstallBlock(
       && hardware.arch === 'x86_64'
       && candidate.target.platform === 'linux'
       && candidate.target.arch === 'x86_64'
-      && candidate.target.accelerator === 'cpu'
+      && (candidate.target.accelerator === 'cpu' || candidate.target.accelerator === 'cuda')
       && candidate.hostEnvironments.includes('windows-wsl2'),
   );
   if (nativeCandidates.length === 0 && wslCandidates.length > 0 && !hardware.wsl2Available) {
@@ -116,8 +122,8 @@ function runtimeBoxInstallBlock(
     };
   }
   const runnableCandidates = [
-    ...nativeCandidates,
-    ...(hardware.wsl2Available ? wslCandidates : []),
+    ...nativeCandidates.map((candidate) => ({ candidate, viaWsl2: false })),
+    ...(hardware.wsl2Available ? wslCandidates.map((candidate) => ({ candidate, viaWsl2: true })) : []),
   ];
   if (runnableCandidates.length === 0) {
     const platformCandidates = candidates.filter(
@@ -171,7 +177,10 @@ function runtimeBoxInstallBlock(
   const memoryBytes = hardware.totalMemoryBytes;
   let minimumMemoryGb: number | null = null;
   let minimumDriver: string | null = null;
-  for (const candidate of runnableCandidates) {
+  // Set when a CUDA box was rejected only because Windows sees the GPU and WSL2 does not, so the
+  // message names that instead of a driver which is in fact current.
+  let wslGpuUnreachable = false;
+  for (const { candidate, viaWsl2 } of runnableCandidates) {
     if (
       candidate.minRamGb &&
       memoryBytes !== null &&
@@ -186,10 +195,29 @@ function runtimeBoxInstallBlock(
       const required = candidate.minNvidiaDriverVersion;
       if (!required) continue;
       minimumDriver = required;
-      const installed = parseVersion(hardware.nvidiaDriverVersion);
+      const available = viaWsl2 ? hardware.wslNvidiaDriverVersion : hardware.nvidiaDriverVersion;
+      if (!available) {
+        wslGpuUnreachable ||= viaWsl2 && Boolean(hardware.nvidiaDriverVersion);
+        continue;
+      }
+      const installed = parseVersion(available);
       const minimum = parseVersion(required);
       if (installed && minimum && compareVersions(installed, minimum) >= 0) return null;
     }
+  }
+
+  if (minimumDriver && wslGpuUnreachable) {
+    return {
+      kind: 'cuda',
+      summary: 'The GPU is not visible inside WSL2',
+      required: 'An NVIDIA GPU reachable from WSL2',
+      detected: `NVIDIA driver ${hardware.nvidiaDriverVersion} on Windows, no GPU inside WSL2`,
+      reason: `This ${componentLabel} runs on the GPU through WSL2, but no NVIDIA GPU is visible inside your WSL2 installation. Run \`wsl --update\` in a terminal, restart WSL2, then try again.`,
+      details: [
+        `Detected: ${detectedHostLabel(hardware)}`,
+        'Windows reports the NVIDIA driver, but WSL2 cannot reach the GPU.',
+      ],
+    };
   }
 
   if (minimumDriver) {

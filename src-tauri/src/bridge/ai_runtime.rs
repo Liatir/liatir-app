@@ -13,7 +13,8 @@ use super::python_env::env_dir;
 use super::python_env::{run_in_env, spawn_in_env, status_env, PythonEnvPackage, PythonRunResult};
 use super::runtime_boxes::{
     runtime_box_activation_metadata_for_component, runtime_component_update_status,
-    RuntimeComponentKind, RuntimeComponentUpdateRequest, RuntimeComponentUpdateStatus,
+    wsl_nvidia_driver_version, RuntimeComponentKind, RuntimeComponentUpdateRequest,
+    RuntimeComponentUpdateStatus,
 };
 #[cfg(target_os = "windows")]
 use super::runtime_boxes::{runtime_box_host_environment, RuntimeBoxHostEnvironment};
@@ -38,6 +39,9 @@ pub struct AiHardwareInfo {
     pub cuda_available: Option<bool>,
     /// Exact NVIDIA driver reported by the same probe used by Runtime Box selection.
     pub nvidia_driver_version: Option<String>,
+    /// The NVIDIA driver as seen inside WSL2, which a Linux CUDA box routed there is checked
+    /// against. `None` when the GPU is not reachable from WSL2, even if Windows reports one.
+    pub wsl_nvidia_driver_version: Option<String>,
     pub wsl2_available: bool,
     pub wsl_distribution: Option<String>,
     pub wsl_error: Option<String>,
@@ -94,6 +98,11 @@ pub fn lia_ai_hardware_info() -> Result<AiHardwareInfo, String> {
         // Every Mac Liatir supports has Metal, so this is a build-time fact, not a probe.
         apple_metal: cfg!(target_os = "macos"),
         cuda_available: nvidia.as_ref().map(|_| true),
+        // As in Runtime Box selection, only a host whose Windows side reports an NVIDIA driver
+        // pays for the round trip into WSL2 — and here only once that distribution is ready.
+        wsl_nvidia_driver_version: (nvidia.is_some() && wsl.is_ok())
+            .then(wsl_nvidia_driver_version)
+            .flatten(),
         nvidia_driver_version: nvidia.map(|capability| capability.driver_version),
         wsl2_available: cfg!(target_os = "windows") && wsl.is_ok(),
         wsl_distribution: cfg!(target_os = "windows")

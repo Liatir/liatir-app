@@ -12,8 +12,9 @@ reference mapping, batch correction, and perturbation hypotheses.
 
 ## Current status in Liatir
 
-scGPT is published as signed Runtime Boxes for macOS arm64 Metal,
-Linux/Windows x86_64 CPU, Linux x86_64 CUDA 12.9 and Windows x86_64 CUDA 12.8.
+scGPT is published as signed Runtime Boxes for macOS arm64 Metal, Linux x86_64
+CPU and Linux x86_64 CUDA 12.9. Windows x86_64 runs both Linux boxes through
+WSL2.
 Liatir installs the complete target-specific environment and records the exact
 box release in Results provenance.
 
@@ -31,8 +32,8 @@ box release in Results provenance.
 
 ## Hardware and installation
 
-Use only the exact published target compatible with the host. Windows CUDA is
-CUDA 12.8 and Linux CUDA is CUDA 12.9; support for those targets does not imply
+Use only the exact published target compatible with the host. The CUDA target
+is CUDA 12.9, on Linux or on Windows through WSL2; support for it does not imply
 other CUDA or driver combinations. The model and its dependencies live inside
 the Runtime Box and are never added to the base app or system Python.
 

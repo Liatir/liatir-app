@@ -932,7 +932,7 @@ async fn fetch_control_document(url: &str) -> Result<Option<Vec<u8>>, String> {
 /// reachable from there. Only ever called on Windows, and only when Windows itself reports a
 /// driver, so a machine with no NVIDIA hardware never pays for a WSL2 round trip.
 #[cfg(target_os = "windows")]
-fn wsl_nvidia_driver_version() -> Option<String> {
+pub(crate) fn wsl_nvidia_driver_version() -> Option<String> {
     // Through a shell, not as a bare program: WSL2 keeps `nvidia-smi` in `/usr/lib/wsl/lib`, which
     // `wsl.exe --exec` does not search, so naming it directly fails with "No such file or
     // directory" on a machine whose GPU works perfectly. That reads exactly like an absent GPU.
@@ -953,7 +953,7 @@ fn wsl_nvidia_driver_version() -> Option<String> {
 }
 
 #[cfg(not(target_os = "windows"))]
-fn wsl_nvidia_driver_version() -> Option<String> {
+pub(crate) fn wsl_nvidia_driver_version() -> Option<String> {
     None
 }
 

@@ -37,6 +37,8 @@ export interface AIHardwareInfo {
   appleMetal: boolean;
   cudaAvailable: boolean | null;
   nvidiaDriverVersion?: string | null;
+  /** The driver as seen inside WSL2; null when the GPU is not reachable from there. */
+  wslNvidiaDriverVersion?: string | null;
   wsl2Available: boolean;
   wslDistribution?: string | null;
   wslError?: string | null;
