@@ -58,8 +58,10 @@ deleted from R2 on 2026-09-27 — see [Scrollcase v3 adoption](../history/scroll
    published catalog still has the v2 envelope, which `2ea19a7` stopped reading. Its signature
    covers only the payload, so `npm run single-cell-index -- migrate-catalog` republishes it
    unchanged in the v3 envelope. The admin token exists only in the `runtime-box-production`
-   GitHub environment, so it runs there through `single-cell-index-catalog-migrate.yml`. It fixes
-   the catalog for 0.1.0 as well, with no app update.
+   GitHub environment, so it runs there through `single-cell-index-catalog-migrate.yml`. **Done
+   2026-10-01** (run 36863963482): the catalog at `models.liatir.com` now has the v3 envelope, the
+   same payload (`cb8e66ca…2022d64`) and verifies against the production key, which fixes the page
+   for 0.1.0 installations too.
 2. **OpenMM publication.** Both Linux targets are `native-lifecycle-validated` and the macOS CPU
    target is still `planned`; none is published. See
    [Phase 3 implementation status](./roadmap/phase3-implementation-status.md).
