@@ -1,6 +1,6 @@
 # Release gate — signed public distribution
 
-Status: **Open — 0.1.1 published for macOS and Linux on 2026-10-01 (0.1.0 on 2026-09-29); Store submission pending.** The distribution channel is
+Status: **Open — 0.2.1 published for macOS and Linux on 2026-10-01 (0.1.1 earlier that day, 0.1.0 on 2026-09-29); Store submission pending.** The distribution channel is
 decided ([decision](../../decisions/desktop-distribution-channel.md)) and the
 build paths for all three platforms are implemented; no signed release has been
 built yet.
@@ -122,6 +122,30 @@ than `package.json`, and `tests/unit/desktop-release-contract.test.ts` fails whe
 the version (`Cargo.toml`, `tauri.conf.json`, the bridge constants, the `liatir` SDK, the browser
 API bundle) differs from it. The SDK version script and the SDK type generator now read
 `package.json` directly.
+
+## 0.2.1 build evidence (2026-10-01, revision `7cfc948`)
+
+0.2.1 makes Runtime Boxes installable (above) and lets Windows install Linux CUDA boxes through
+WSL2 from the AI Models page.
+
+- **Build:** `desktop-release-build.yml` run 36879407525, `targets=all`, head `7cfc948`, all five
+  jobs successful. Artifacts `liatir-0.2.1-macos`, `liatir-0.2.1-linux` and
+  `liatir-0.2.1-microsoft-store`, kept until 2026-10-15.
+- **Verified on the maintainer's Mac before publishing:** both updater signatures against
+  `TAURI_SIGNING_PUBLIC_KEY` (file and trusted comment, prehashed Ed25519, checked with Node's
+  crypto because `minisign` is not installed there; a copy with one byte flipped was rejected).
+  The DMG passed `spctl` (Notarized Developer ID), `stapler validate` and `hdiutil verify`; the app
+  in the updater archive passed `codesign --verify --deep --strict`, `spctl` and `stapler
+  validate`, version 0.2.1, team `UC22LVU6ZY`. The MSIX declares `Desktopr.Liatir`, the reserved
+  publisher and version `0.2.1.0`, and contains no updater (SHA-256 `f5ad7d1b…2663`).
+- **Published 2026-10-01:** GitHub release `v0.2.1` in `Liatir/liatir-releases`, marked latest,
+  same seven files and naming as 0.1.1; GitHub's SHA-256 digests match all seven verified files.
+  Then `desktop/latest.json` in `liatir-updates`, naming 0.2.1 for `darwin-aarch64` and
+  `linux-x86_64`, uploaded with `wrangler r2 object put` (`application/json`, `no-cache`) only
+  after both updater URLs answered with the right size; the file served at `updates.liatir.com`
+  is byte-identical to the generated one. The public homepage shows 0.2.1.
+- **Store:** the 0.2.1 MSIX from run 36879407525 was handed to the maintainer for Partner Center,
+  in place of the 0.1.1 one, which cannot install any Runtime Box.
 
 ## 0.1.1 build evidence (2026-09-30, revision `9cb6a9d`)
 

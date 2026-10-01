@@ -63,10 +63,11 @@ deleted from R2 on 2026-09-27 — see [Scrollcase v3 adoption](../history/scroll
    same payload (`cb8e66ca…2022d64`) and verifies against the production key, which fixes the page
    for 0.1.0 installations too.
    **Neither 0.1.0 nor 0.1.1 can install any Runtime Box**: every published box requires Liatir
-   0.2.1. The app version is now 0.2.1, so the next release fixes it
-   ([details](./roadmap/release-signed-distribution.md)). The same release lets the AI Models page
-   offer a Linux CUDA box through WSL2 on Windows: Geneformer showed as unavailable there because
-   the page considered only CPU boxes for WSL2, although the installer already routed CUDA ones.
+   0.2.1. **0.2.1, published for macOS and Linux on 2026-10-01**, fixes it and is offered as an
+   update to both ([details](./roadmap/release-signed-distribution.md)). It also lets the AI
+   Models page offer a Linux CUDA box through WSL2 on Windows: Geneformer showed as unavailable
+   there because the page considered only CPU boxes for WSL2, although the installer already
+   routed CUDA ones. Its MSIX, not the 0.1.1 one, is the one to submit to the Store.
 2. **OpenMM publication.** Both Linux targets are `native-lifecycle-validated` and the macOS CPU
    target is still `planned`; none is published. See
    [Phase 3 implementation status](./roadmap/phase3-implementation-status.md).
