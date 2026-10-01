@@ -99,6 +99,13 @@ and the local package gates, the release workflow takes it from the dispatched r
 of an input, and the release script refuses an `APP_VERSION` that differs. To release, bump
 `package.json` (`npm version X.Y.Z --no-git-tag-version`), push, then dispatch the workflow.
 
+The homepage of the public site (Cloudflare Pages project `liatir-docs`) reads the same
+`package.json`, but the project rebuilds only for commits that change its build watch paths, which
+covered `docs/` alone: the six commits from `9cb6a9d` to `1ad4fb0` were all skipped and the
+homepage kept 0.1.0. `package.json` must be in the project's included build watch paths (a
+dashboard setting the CLI cannot change; asked of the maintainer on 2026-10-01). The Download page
+is unaffected: it reads the latest GitHub release at visit time.
+
 ## 0.1.1 build evidence (2026-09-30, revision `9cb6a9d`)
 
 0.1.1 carries the viewer fixes found in 0.1.0: the 3D viewers were blank under the production
