@@ -26,9 +26,12 @@ database; fixture interruption, corruption, changed identity and concurrent-writ
 checks pass. The detached driver survives its launcher exiting. The real signed
 Linux model interruption check passed: 16 resumed cells matched the frozen runner
 exactly, and a changed seed was rejected. Full native pancreas continuation is now
-running on Windows/WSL2, reusing its four completed Mac representations. An independent
-detached continuation waits for its successful export before running reproduction,
-source-count checks and repository gates. Final study completion remains pending.
+continuing on Windows/WSL2, reusing its four completed Mac representations. Its
+first attempt stopped at the approved swap-growth limit; 1,181 committed cells
+were retained. A Windows-owned WSL session passed a 95-second launcher-exit check
+and now protects the continuation with a separate zero-swap workload group.
+Reproduction, source-count checks and repository gates require its successful
+native export. Final study completion remains pending.
 All nine completed representations were imported and checked on Windows/WSL2;
 their original Mac inputs, costs and provenance remain attached. See the
 [Windows/WSL2 handoff](../../.context/state/single-cell-showcase-wsl2-handoff.md).
@@ -60,6 +63,16 @@ choose that file using **Import saved study** in Liatir. Import verifies origina
 input, split, code and embedding identities before reusing completed work. It
 creates fresh workspace/run/Job records and keeps the original source separately.
 It never turns the lost Mac progress log into a reusable scGPT result.
+
+On Windows, a detached Linux process alone does not guarantee that WSL stays
+alive after the launching shell closes. Use `scripts/run-single-cell-wsl2.mjs`
+from Windows with the distribution, Linux user, absolute Linux checkout and
+the foreground continuation entry under its showcase `transfer` directory.
+This Windows supervisor holds a WSL session until that entry actually exits.
+Its unique systemd workload group refuses swapping; the original independent
+RSS, available-memory, disk and host-wide swap-growth guards remain active.
+It does not modify global WSL configuration. The recorded request and actual
+exit live under `transfer/windows-executions`.
 
 Full native run identities and sources are retained in
 `validation/native-study-runs.json`. Original count inputs and large embeddings

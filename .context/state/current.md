@@ -69,12 +69,18 @@ through the normal native API. Real interruption/resume passed with exact
 16-cell equality against the frozen original runner and changed-seed rejection.
 Native PBMC import/Results/export passed with all Mac scores and costs preserved;
 only prepare/report Jobs ran. Its corrected detached driver exited cleanly.
-Full pancreas continuation is active on the PC, parent
-`2eb280d5-6af6-46da-a78b-be3278fdbc65`: four Mac embeddings are reused and
-only scGPT inference is new, with committed batches under the original guard.
-A separate detached finisher waits for its exact successful exit before
-assembly, independent metric reproduction, source-count checks and full
-scientific regressions. None of those final checks is claimed complete yet.
+The first full PC pancreas attempt, parent
+`2eb280d5-6af6-46da-a78b-be3278fdbc65`, reused four Mac embeddings but was
+stopped by the unchanged swap-growth guard. Its 1,181 committed scGPT cells
+remain intact. A Windows-owned foreground WSL supervisor now passed a real
+95-second launcher-exit/idle-lifetime check; its unique workload cgroup refuses
+swap without changing global WSL settings or raising scientific limits.
+The corrected native continuation is active, parent
+`22c037dc-6d1b-4b3a-9234-5246b8258f25`. It reused all 1,181 batches exactly
+and marked the stopped attempt separately; its worker and cgroup report zero
+swap. The new seven-suite verify gate passed before launch. Assembly,
+independent metric reproduction, source-count checks and full scientific
+regressions remain pending, with their finisher dependent on actual native success.
 Follow the
 [Windows/WSL2 execution checklist](./single-cell-showcase-wsl2-execution.md).
 Combined results and independent reproduction remain open. The earlier Mac used

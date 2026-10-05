@@ -1,0 +1,20 @@
+{
+  "status": "passed",
+  "native_run_id": "22c037dc-6d1b-4b3a-9234-5246b8258f25",
+  "previous_native_run_id": "2eb280d5-6af6-46da-a78b-be3278fdbc65",
+  "preserved_batches": 1181,
+  "batch_identities_identical": true,
+  "attempts": [
+    {
+      "id": "9978f9ac-c09f-483d-9622-c7508d7ed6ce",
+      "status": "interrupted",
+      "elapsed_seconds": 2826.4706871440003
+    },
+    {
+      "id": "77767e5b-4982-469c-b009-0b4a1935e833",
+      "status": "running",
+      "elapsed_seconds": 188.98355243799998
+    }
+  ],
+  "scope": "The active native continuation reused every one of the 1181 committed batches; no final-study completion claim."
+}

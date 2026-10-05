@@ -1,0 +1,49 @@
+{
+  "status": "failed",
+  "native_execution": {
+    "id": "0a11a75b-cce3-4897-88c6-2e027a6d3fad",
+    "pid": 17701,
+    "execution": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/showcases/single-cell-foundation-benchmark/transfer/executions/0a11a75b-cce3-4897-88c6-2e027a6d3fad"
+  },
+  "native_run_id": "2eb280d5-6af6-46da-a78b-be3278fdbc65",
+  "reason": "Independent guard stopped the model after host swap grew 281591808 bytes, above the unchanged 268435456 limit, despite 22865940480 available bytes and a peak RSS of 1609723904.",
+  "checkpoint_committed_cells": 1181,
+  "checkpoint_total_cells": 16382,
+  "checkpoint_sha256": "50a172bac713bccb57fa8580084db7b1e3111ebfaba448c4c04a3436b62fe1fd",
+  "monitor": {
+    "pid": 17992,
+    "limits": {
+      "maxRssBytes": 2147483648,
+      "maxSwapGrowthBytes": 268435456,
+      "minAvailableBytes": 2147483648,
+      "minDiskBytes": 4294967296
+    },
+    "status": "stopped",
+    "peak_rss_bytes": 1609723904,
+    "initial_swap_bytes": 638976,
+    "started_at": 1791205994.732831,
+    "last_sample": {
+      "rss_bytes": 1294598144,
+      "tracked_pids": [
+        17992,
+        17998,
+        40952
+      ],
+      "process_rss_bytes": {
+        "17992": 1279995904,
+        "17998": 10448896,
+        "40952": 4153344
+      },
+      "available_bytes": 22865940480,
+      "swap_used_bytes": 282230784,
+      "disk_free_bytes": 822312304640
+    },
+    "updated_at": 1791208823.3119206,
+    "stopped_process_names": {
+      "17992": "python",
+      "17998": "python"
+    },
+    "reason": "Resource limit: swap grew by 281591808 bytes"
+  },
+  "followup": "Preserve this failed attempt. Diagnose kernel swap/reclamation, add a Windows-owned WSL foreground lease, verify it outlives launching shells and WSL idle shutdown, and resume the exact checkpoint without changing scientific parameters."
+}

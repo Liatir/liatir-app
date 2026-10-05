@@ -1,0 +1,20 @@
+{
+  "status": "running",
+  "startedAt": "2026-10-05T14:20:01.944Z",
+  "pid": 470,
+  "cgroup": "/system.slice/liatir-single-cell-d85b16d1-814a-45cd-b2a7-b3d724463993.service",
+  "swapMax": "0",
+  "boot": "8ab745be-c05b-434e-9e2e-e875c696fbbe",
+  "originalNativeRun": "2eb280d5-6af6-46da-a78b-be3278fdbc65",
+  "native": {
+    "id": "15ddb224-6bee-4a50-8f9e-350f2f113c77",
+    "pid": 3201,
+    "execution": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/showcases/single-cell-foundation-benchmark/transfer/executions/15ddb224-6bee-4a50-8f9e-350f2f113c77"
+  },
+  "finishing": {
+    "id": "e4a013e1-5908-4c02-b48e-67d99a3da6a1",
+    "pid": 3438,
+    "execution": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/showcases/single-cell-foundation-benchmark/transfer/executions/e4a013e1-5908-4c02-b48e-67d99a3da6a1"
+  },
+  "nativeRunId": "22c037dc-6d1b-4b3a-9234-5246b8258f25"
+}

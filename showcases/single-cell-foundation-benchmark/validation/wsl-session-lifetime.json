@@ -1,0 +1,12 @@
+{
+  "startedAt": "2026-10-05T14:11:54.265Z",
+  "pid": 579,
+  "boot": "7b659077-d609-41a2-a6e2-bb6ecbcfc5f4",
+  "cgroup": "/system.slice/liatir-single-cell-0d1867f5-8fdf-484a-933a-22614b47c2a8.service",
+  "swapMax": "0",
+  "status": "passed",
+  "finishedAt": "2026-10-05T14:13:29.371Z",
+  "sameBoot": true,
+  "swapBytes": "0",
+  "scope": "Windows-owned detached foreground WSL command survived the launching shell closing, without other WSL calls for 95 seconds; its unique cgroup refused swap."
+}

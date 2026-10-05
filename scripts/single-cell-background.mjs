@@ -11,12 +11,12 @@ function writeRecord(file, value) {
   fs.renameSync(temporary, file);
 }
 
-export function launchBackground({ directory, args, cwd, environment = {} }) {
+export function launchBackground({ directory, command = process.execPath, args, cwd, environment = {} }) {
   fs.mkdirSync(directory, { recursive: true });
   const id = randomUUID();
   const execution = path.join(directory, id);
   fs.mkdirSync(execution);
-  const request = { id, command: process.execPath, args, cwd, environment, startedAt: new Date().toISOString() };
+  const request = { id, command, args, cwd, environment, startedAt: new Date().toISOString() };
   const requestFile = path.join(execution, 'request.json');
   writeRecord(requestFile, request);
   const log = fs.openSync(path.join(execution, 'driver.log'), 'a');

@@ -377,3 +377,54 @@ plots retain readable Mac labels, and PCA cell-type/batch maps have readable axe
 and legends outside the points. `validation/visual-review-pbmc-wsl2.json` records
 their hashes and this limited scope. Final assembled and pancreas visual review
 remain pending; no final-study completion is inferred from the PBMC inspection.
+
+The first full PC attempt stopped at 1,181 committed scGPT cells. Its independent
+guard correctly refused 281,591,808 bytes of host swap growth above the unchanged
+268,435,456-byte ceiling, despite 22,865,940,480 bytes available and peak RSS
+1,609,723,904 bytes. Both the native driver and dependent finisher failed; retain
+their actual exits, the complete saved database and the generated four-method
+evaluation separately. The mechanism initiating guest swapping is not yet proven.
+Do not relax the guard or recalculate these committed batches.
+
+A second durability boundary is now observed: after the foreground completion
+observer exited, the WSL distribution shut down and restarted on later commands.
+Orphaned Linux processes alone do not provide a Windows-owned WSL session.
+[Microsoft documents this distinction](https://learn.microsoft.com/en-us/windows/wsl/systemd).
+Before a long retry, add a Windows background supervisor holding a foreground WSL
+command until the entire pipeline exits. Verify survival beyond the WSL idle
+shutdown interval without other WSL commands. Place only that execution's process
+tree in a unique systemd unit with MemorySwapMax=0; confirm its actual cgroup
+identity and setting. This strengthens the swap constraint without raising any
+scientific limit or changing the global WSL configuration. Retain host-wide swap,
+RSS, available-memory and disk guards unchanged. One bounded native retry after
+these checks, importing the finalized failed PC run to resume its 1,181 cells.
+
+The Windows-owned session check passed in a real unique systemd unit: 95 seconds
+after its launching PowerShell/Node processes had exited, without intervening
+WSL commands, the fixture retained the same boot identity and zero swap. Its
+Windows supervisor then recorded actual exit 0. Both cross-platform background
+driver tests passed, including a configured external command's real exit 9.
+The full continuation is Windows execution `60e824c9-e828-43e8-8bbd-3fe665d04f4d`,
+unit `liatir-single-cell-d85b16d1-814a-45cd-b2a7-b3d724463993`. Readback confirmed
+that exact cgroup, MemorySwapMax=0 and source PC parent 2eb280d5. It first runs
+the seven-gate verify profile under 2 GiB; only success launches the resumed
+native study and its dependent finisher in that same persistent WSL session.
+No global swap, reclaim, RAM or WSL idle configuration was changed.
+
+That prerequisite verify gate passed all seven suites (87 unit files, 676 tests)
+before any new science, peak process-family RSS 1,811,415,040 bytes, zero swap.
+The corrected native parent is `22c037dc-6d1b-4b3a-9234-5246b8258f25`, Linux
+execution `15ddb224-6bee-4a50-8f9e-350f2f113c77`; its waiting finisher is
+`e4a013e1-5908-4c02-b48e-67d99a3da6a1`. The runner reported reusing 1,181
+committed cells. Independent readback matched every prior batch boundary/hash,
+with the old attempt marked interrupted and a new running attempt. At 1,255
+saved cells, process-family peak RSS was 1,614,045,184 bytes; both cgroup and
+host swap were zero. This is progress and correct reuse, not final completion.
+
+Final curation must also carry the full source lineage: this ordinary PC resume
+retains its prior PC parent's frozen-code path and original Mac environment.
+Preserve the prior PC export's verified imported-source/import-origin attachments
+and parent records in the assembled bundle, checking their bytes against the
+original transfer manifest, without rewriting any method's scientific records.
+Keep unknown scGPT runtime null with its verified lower bound and reason; explain
+its omission from any plot requiring an exact runtime. Do not invent a duration.

@@ -1,0 +1,41 @@
+{
+  "pid": 679,
+  "limits": {
+    "maxRssBytes": 2147483648,
+    "minAvailableBytes": 2147483648,
+    "minDiskBytes": 4294967296,
+    "maxSwapGrowthBytes": 268435456
+  },
+  "status": "stopped",
+  "peak_rss_bytes": 798502912,
+  "initial_swap_bytes": 0,
+  "started_at": 1791203593.8411317,
+  "last_sample": {
+    "rss_bytes": 287379456,
+    "tracked_pids": [
+      679,
+      681,
+      683,
+      694,
+      40275
+    ],
+    "process_rss_bytes": {
+      "679": 5939200,
+      "681": 9220096,
+      "683": 248385536,
+      "694": 19648512,
+      "40275": 4186112
+    },
+    "available_bytes": 22575554560,
+    "swap_used_bytes": 268812288,
+    "disk_free_bytes": 822312562688
+  },
+  "updated_at": 1791208673.3418858,
+  "stopped_process_names": {
+    "679": "python3",
+    "681": "python3",
+    "683": "node",
+    "694": "esbuild"
+  },
+  "reason": "Resource limit: swap grew by 268812288 bytes"
+}
