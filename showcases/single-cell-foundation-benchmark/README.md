@@ -6,7 +6,8 @@ plan. [protocol.md](protocol.md) specifies the fixed scientific parameters.
 
 ## Run in Liatir
 
-1. Install Geneformer V1 10M, scGPT whole-human and UCE through **AI Models**.
+1. Install the available selected models through **AI Models**. Signed targets differ
+   by platform; an unsupported model stays visible as a blocked configuration.
 2. Open **Tools → Single-cell study**. Choose PBMC or Pancreas and the methods.
 3. Disable **Small stability check** for the complete dataset. Launch the study.
 4. Follow it in **Jobs**. Its **Results** entry contains the individual measurements,
@@ -23,7 +24,11 @@ The Mac scGPT worker saved only at the end, so its interrupted partial work
 was lost. The updated worker commits each completed batch to a checked local
 database; fixture interruption, corruption, changed identity and concurrent-writer
 checks pass. The detached driver survives its launcher exiting. The real signed
-Linux model interruption check remains required before another long model attempt.
+Linux model interruption check passed: 16 resumed cells matched the frozen runner
+exactly, and a changed seed was rejected. Full native pancreas continuation is now
+running on Windows/WSL2, reusing its four completed Mac representations. An independent
+detached continuation waits for its successful export before running reproduction,
+source-count checks and repository gates. Final study completion remains pending.
 All nine completed representations were imported and checked on Windows/WSL2;
 their original Mac inputs, costs and provenance remain attached. See the
 [Windows/WSL2 handoff](../../.context/state/single-cell-showcase-wsl2-handoff.md).
