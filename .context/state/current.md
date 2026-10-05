@@ -84,8 +84,9 @@ regressions remain pending, with their finisher dependent on actual native succe
 Follow the
 [Windows/WSL2 execution checklist](./single-cell-showcase-wsl2-execution.md).
 Combined results and independent reproduction remain open. The earlier Mac used
-its existing verified Rust bridge; no matching Linux binary has been substituted
-for the current revision.
+its existing verified Rust bridge. The PC uses the newly built Linux native
+bridge with the current development frontend; this is WSL2 native verification,
+not a Windows desktop release/package gate.
 Do not repeat the old Metal configuration or relax the resource limits automatically.
 
 1. **Signed distribution** — [the release gate](./roadmap/release-signed-distribution.md), in
