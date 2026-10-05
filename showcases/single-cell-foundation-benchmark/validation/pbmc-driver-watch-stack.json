@@ -1,0 +1,65 @@
+[
+  {
+    "function": "normalizeString",
+    "url": "",
+    "location": {
+      "scriptId": "35",
+      "lineNumber": 83,
+      "columnNumber": 2
+    }
+  },
+  {
+    "function": "normalize",
+    "url": "",
+    "location": {
+      "scriptId": "35",
+      "lineNumber": 1233,
+      "columnNumber": 11
+    }
+  },
+  {
+    "function": "join",
+    "url": "",
+    "location": {
+      "scriptId": "35",
+      "lineNumber": 1276,
+      "columnNumber": 17
+    }
+  },
+  {
+    "function": "#watchFolder",
+    "url": "",
+    "location": {
+      "scriptId": "89",
+      "lineNumber": 119,
+      "columnNumber": 18
+    }
+  },
+  {
+    "function": "",
+    "url": "",
+    "location": {
+      "scriptId": "89",
+      "lineNumber": 190,
+      "columnNumber": 25
+    }
+  },
+  {
+    "function": "emit",
+    "url": "",
+    "location": {
+      "scriptId": "22",
+      "lineNumber": 517,
+      "columnNumber": 27
+    }
+  },
+  {
+    "function": "FSWatcher._handle.onchange",
+    "url": "",
+    "location": {
+      "scriptId": "88",
+      "lineNumber": 214,
+      "columnNumber": 11
+    }
+  }
+]

@@ -61,10 +61,21 @@ native import have been implemented; lightweight interruption/identity tests and
 the WSL launcher-exit test pass. Semantic checks passed for both matrices/splits
 and all nine saved embeddings. Canonical public sources were retrieved from
 their recorded URLs and passed original size/hash checks. All seven verify gates
-pass (675 unit tests). The new Linux native compiler exceeds the unchanged
-2 GiB process-family cap even after separated compilation; a user question is
-pending for 4 GiB for app compilation alone. Real signed-model interruption/resume
-and native validation are still required before full inference. Follow the
+pass (675 unit tests). After an explicit user-approved 4 GiB ceiling for app
+compilation alone, the new Linux native build passed in 29 seconds, with
+2,333,007,872-byte peak process-family RSS and no swap growth. Scientific work
+retains the original 2 GiB ceiling. The signed Linux CPU scGPT box activated
+through the normal native API. Real interruption/resume passed with exact
+16-cell equality against the frozen original runner and changed-seed rejection.
+Native PBMC import/Results/export passed with all Mac scores and costs preserved;
+only prepare/report Jobs ran. Its corrected detached driver exited cleanly.
+Full pancreas continuation is active on the PC, parent
+`2eb280d5-6af6-46da-a78b-be3278fdbc65`: four Mac embeddings are reused and
+only scGPT inference is new, with committed batches under the original guard.
+A separate detached finisher waits for its exact successful exit before
+assembly, independent metric reproduction, source-count checks and full
+scientific regressions. None of those final checks is claimed complete yet.
+Follow the
 [Windows/WSL2 execution checklist](./single-cell-showcase-wsl2-execution.md).
 Combined results and independent reproduction remain open. The earlier Mac used
 its existing verified Rust bridge; no matching Linux binary has been substituted

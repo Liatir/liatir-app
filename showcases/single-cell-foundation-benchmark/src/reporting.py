@@ -155,7 +155,25 @@ def report(root):
     report_text += ["", "## Interpretation boundary", "", host_boundary, "", "These are dataset-specific measurements from one seeded execution. scVI was trained on the evaluation data; the three pretrained models were not fine-tuned. The study does not establish statistical superiority, generalization to unseen studies, or absence of pretraining overlap."]
     (report_dir / "results.md").write_text("\n".join(report_text) + "\n")
     (report_dir / "limitations.md").write_text("# Limitations\n\n- One seed; no confidence intervals. Saved Mac representations and new Windows/WSL2 representations retain their own host identities. Costs across these hosts do not establish a same-host speed ranking.\n- Random stratified classification split, not leave-one-batch-out prediction. Unsupervised representation fitting uses all cells.\n- The PBMC loader supplies a historically selected 3,346-gene subset, not a whole-transcriptome input.\n- The canonical pancreas count layer contains fractional quantification values; these are preserved without rounding. Integer count-distribution assumptions are imperfect for this source.\n- scVI learns on the evaluation data and must be interpreted separately from zero-shot models.\n- Public benchmark data may overlap pretrained corpora; zero-shot does not prove unseen-data generalization.\n- Raw cell-type silhouette and ASW-batch have known geometry and batch-composition limitations. Inspect all metrics.\n- Peak RAM is the OS process high-water mark; it excludes other processes. Apple unified memory means it is not additive with device memory. Reliable Metal peak memory is unavailable and is null.\n- Representation time includes imports, model loading, preprocessing and writing embeddings; common evaluation and UMAP are separate. Downloads and installation are not included. Interrupted executions report only verified timing lower bounds when their unsaved tail cannot be measured.\n- Pretrained inputs use each model's required vocabulary and formatting. Exclusions and the common evaluation cell set are exported.\n")
-    (report_dir / "reproduction.md").write_text("# Reproduction\n\nIn Liatir open Tools → Single-cell study. Install the three AI Models through AI Models, choose the recorded dataset and methods, and run. The Plugin and public data are downloaded only when absent; installed runtimes work locally.\n\nThe repository showcase contains the pinned Python requirements, protocol, runner and native execution driver. Each run exports config.json, environment.json, telemetry.json and provenance.json. Dataset manifests contain upstream URLs and SHA-256 identities. Compare a new run's source checksums before comparing scores. Re-evaluate retained embeddings with the same Plugin's evaluate and report stages; embedding identities and the saved split are verified first.\n\nSee repository reproduction instructions for tested commands and exact validation evidence.\n")
+    (report_dir / "reproduction.md").write_text(
+        "# Reproduction\n\n"
+        "In Liatir open Tools → Single-cell study, choose the recorded dataset and methods, and run. "
+        "Install available selected AI Models through AI Models. Unsupported signed targets remain explicit blockers. "
+        "To continue a saved study, use Import saved study and choose its liatir-run.json. "
+        "Completed results retain their original inputs, code, measurements and computer. "
+        "The Plugin and public data are downloaded only when absent; installed runtimes work locally.\n\n"
+        "This export retains Mac representations and the Windows/WSL2 continuation separately. "
+        "It does not imply that every model has a CPU target on both computers.\n\n"
+        "To reproduce all biological and batch scores, use Python 3.11 with the exact requirements.txt packages. "
+        "From the repository root, run:\n\n"
+        "```sh\npython showcases/single-cell-foundation-benchmark/reproduce.py <export-directory> "
+        "--output <new-verification-directory>\n```\n\n"
+        "This command verifies frozen evaluation code, package versions, count/split/embedding identities "
+        "and recomputes every score with absolute tolerance 1e-9 and relative tolerance 1e-8. "
+        "Missing values and their reasons must agree exactly. It does not repeat inference or scVI training.\n\n"
+        "verify_counts.py compares every prepared source value and retained cell/gene identity with the "
+        "checksummed canonical downloads; validate_artifacts.py checks all twelve configurations and ZIP integrity. "
+        "See report/reproduction-validation.md and validation/ for tested commands and exact outcomes.\n")
     # The scientific bundle includes source counts, compact embeddings, metrics, plots and all logs.
     # Model-produced copies of the count matrix are referenced by provenance, avoiding duplicate matrices.
     bundle = root / "single-cell-study.zip"

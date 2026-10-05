@@ -40,6 +40,10 @@ for (const name of runtimeNames) {
   } else fs.symlinkSync(source, target, 'dir');
 }
 const report = path.join(root, `showcases/single-cell-foundation-benchmark/validation/native-${dataset}-${Date.now()}.json`);
+// Installed environments contain large trees and directory links. Only this
+// workspace's run outputs belong to the progress observer.
+const runsRoot = path.join(app, '.liatir/.main/data/workspaces/__test__/runs');
+fs.mkdirSync(runsRoot, { recursive: true });
 const child = spawn(process.execPath, ['tests/e2e/run-tauri-e2e.mjs', '--heavy', '--report', report,
   'tests/e2e/specs/heavy.single-cell-study.e2e.mjs'], {
   cwd: root, stdio: 'inherit', env: { ...process.env,
@@ -53,15 +57,20 @@ const child = spawn(process.execPath, ['tests/e2e/run-tauri-e2e.mjs', '--heavy',
 // Keep the host awake only for the lifetime of this explicitly requested study.
 if (process.platform === 'darwin') spawn('/usr/bin/caffeinate', ['-i', '-w', String(child.pid)], { stdio: 'ignore' });
 const seen = new Set();
-const watcher = fs.watch(app, { recursive: true }, (_event, file) => {
+let watcher;
+child.once('exit', (code) => { watcher?.close(); process.exitCode = code ?? 1; });
+watcher = fs.watch(runsRoot, { recursive: true }, (_event, file) => {
   const normalized = file?.replaceAll('\\', '/');
+  if (!/^[a-f0-9-]{36}\/output\/(datasets|runs|stages)\//i.test(normalized ?? '')) return;
   // Some macOS filesystem events arrive only when an open log is closed.
   // Atomic monitor records also signal a chance to consume newly flushed logs.
-  const progressLog = normalized?.endsWith('/logs/stderr.log') ? path.join(app, file)
+  const progressLog = normalized?.endsWith('/logs/stderr.log') ? path.join(runsRoot, file)
     : /\/(geneformer|scgpt)\/resource-monitor\.json$/.test(normalized ?? '')
-      ? path.join(app, path.dirname(file), 'logs/stderr.log') : null;
+      ? path.join(runsRoot, path.dirname(file), 'logs/stderr.log') : null;
   if (progressLog) {
     try {
+      const monitor = JSON.parse(fs.readFileSync(path.join(path.dirname(path.dirname(progressLog)), 'resource-monitor.json'), 'utf8'));
+      if (monitor.status !== 'monitoring') return;
       for (const line of fs.readFileSync(progressLog, 'utf8').split('\n')) {
         if (/^(Geneformer|scGPT): \d+\/\d+ cells$/.test(line) && !seen.has(`${progressLog}:${line}`)) {
           seen.add(`${progressLog}:${line}`);
@@ -71,11 +80,10 @@ const watcher = fs.watch(app, { recursive: true }, (_event, file) => {
     } catch { /* Another event retries an incomplete log write. */ }
   }
   if (!file || !/\/(provenance|metrics|telemetry|manifest)\.json$/.test(file) || seen.has(file)) return;
-  const full = path.join(app, file);
+  const full = path.join(runsRoot, file);
   try {
     const record = JSON.parse(fs.readFileSync(full, 'utf8'));
     seen.add(file);
     console.log(`Artifact ready: ${file} (${record.status ?? record.dataset ?? 'measured'})`);
   } catch { /* The write may not be complete; its next filesystem event will retry. */ }
 });
-child.once('exit', (code) => { watcher.close(); process.exitCode = code ?? 1; });

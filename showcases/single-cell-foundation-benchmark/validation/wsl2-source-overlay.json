@@ -1,0 +1,205 @@
+{
+  "status": "passed",
+  "base": "e0654c89be309783b473dd3ab6c677270559fde6",
+  "scope": "All tracked implementation/context changes on the exact handoff; preserves the user root gitignore and immutable transfer",
+  "files": [
+    {
+      "file": ".context/decisions/single-cell-checkpoints-and-historical-import.md",
+      "previous_sha256": "b75a9f451a9ef78141f23c52192aa54196a65344a083f58842b29c4b6177c156",
+      "current_sha256": "b75a9f451a9ef78141f23c52192aa54196a65344a083f58842b29c4b6177c156",
+      "changed": false
+    },
+    {
+      "file": ".context/state/current.md",
+      "previous_sha256": "a924c72dfa144a1891288aa3ca3b7fabb8a52ffcfda606ddcfbdb5b06962b1c5",
+      "current_sha256": "a924c72dfa144a1891288aa3ca3b7fabb8a52ffcfda606ddcfbdb5b06962b1c5",
+      "changed": false
+    },
+    {
+      "file": ".context/state/single-cell-showcase-wsl2-execution.md",
+      "previous_sha256": "4b3160f8ccfe497df0ec831cb5eacb27d9084ad03f50685d4557c2bec389292f",
+      "current_sha256": "d2291dfb97a99620c0aa5d4e222ef9e3a779cb0976dda85a2e0fb7b890ffff00",
+      "changed": true
+    },
+    {
+      "file": "frontend/src/lib/ai/runtime.ts",
+      "previous_sha256": "bdccdb245d8f1394c020159d29be7b9e4f0164ceb8a01a6b4ed2829842a4fc4e",
+      "current_sha256": "d3f2d2c76c761c4d43096b9386e8227e82a39109cc782944f5a9c9fb8aac1741",
+      "changed": true
+    },
+    {
+      "file": "frontend/src/lib/showcases/single-cell-study.ts",
+      "previous_sha256": "044aea0fc5ba11a3777137dfadea7b225c9b09edc9de0ff15033afa977650a5b",
+      "current_sha256": "b298613b722ec8138e607e6c3863d4726d831d4c12cd6c08a440e0aa43b30cfe",
+      "changed": true
+    },
+    {
+      "file": "frontend/src/lib/tools/ai/python-scripts/index.ts",
+      "previous_sha256": "d4373dc061e275e45d2ecb9eec1fbfcec1065a62a6bba4a4d2766b478b799d23",
+      "current_sha256": "d4373dc061e275e45d2ecb9eec1fbfcec1065a62a6bba4a4d2766b478b799d23",
+      "changed": false
+    },
+    {
+      "file": "frontend/src/lib/tools/ai/python-scripts/scgpt-checkpoints.ts",
+      "previous_sha256": "2f2a40d562ef334d78d4e4f9ac9147f113db27eac8cca7cd2ebfd57a681c66af",
+      "current_sha256": "2f2a40d562ef334d78d4e4f9ac9147f113db27eac8cca7cd2ebfd57a681c66af",
+      "changed": false
+    },
+    {
+      "file": "frontend/src/lib/tools/ai/python-scripts/scgpt-embedding.ts",
+      "previous_sha256": "8cd599d9489d2723f2ea3a4659670aabaf968efa3d42f92f3ba838ff5157445a",
+      "current_sha256": "8cd599d9489d2723f2ea3a4659670aabaf968efa3d42f92f3ba838ff5157445a",
+      "changed": false
+    },
+    {
+      "file": "frontend/src/routes/tools/single-cell/benchmark/+page.svelte",
+      "previous_sha256": "f1c36b720f367a186f253332d097b6aa8809e2330c47ec195820ee19f2ab5274",
+      "current_sha256": "7370eb7228d6cb466054606776d4d291fb94a71fa08d63db2cf720ee8f9e4205",
+      "changed": true
+    },
+    {
+      "file": "packages/liatir-core/src/single-cell-showcase.ts",
+      "previous_sha256": "3337352c670d251f5dd0b3ef35c19190a022f9d05441ebb9ce360ce32fb82e5c",
+      "current_sha256": "778f2f8efd03f8e5e74c504faf5656ea13fd7b0e936bc58c35cf47ff37f417e5",
+      "changed": true
+    },
+    {
+      "file": "scripts/run-single-cell-showcase.mjs",
+      "previous_sha256": "734d096ddab4a48cfc48999f8d478233c4af6d2ad5a4dac0a653a14b6c73c660",
+      "current_sha256": "734d096ddab4a48cfc48999f8d478233c4af6d2ad5a4dac0a653a14b6c73c660",
+      "changed": false
+    },
+    {
+      "file": "scripts/runtime-box/product-script.mjs",
+      "previous_sha256": "eed6af0b1de9fdef3bcaa7c11e727facff05361740c88fda9a5a552b14a7ce36",
+      "current_sha256": "eed6af0b1de9fdef3bcaa7c11e727facff05361740c88fda9a5a552b14a7ce36",
+      "changed": false
+    },
+    {
+      "file": "scripts/single-cell-background.mjs",
+      "previous_sha256": "5e750f1ca061528bc4e6d19f3d509ed9f29a9a87bc0c67e0f2df81e799d0fc68",
+      "current_sha256": "5e750f1ca061528bc4e6d19f3d509ed9f29a9a87bc0c67e0f2df81e799d0fc68",
+      "changed": false
+    },
+    {
+      "file": "scripts/validate-geneformer-parity.mjs",
+      "previous_sha256": "961bb0cf739ada46fcc64aee9254e10f10174abad7be9830a4203d1326714553",
+      "current_sha256": "961bb0cf739ada46fcc64aee9254e10f10174abad7be9830a4203d1326714553",
+      "changed": false
+    },
+    {
+      "file": "scripts/validate-scgpt-runtime.mjs",
+      "previous_sha256": "833b8d1e148614bc48bc609c1ea1408d5ae27ffb1f9b7ae9ef70934201d7d512",
+      "current_sha256": "833b8d1e148614bc48bc609c1ea1408d5ae27ffb1f9b7ae9ef70934201d7d512",
+      "changed": false
+    },
+    {
+      "file": "showcases/single-cell-foundation-benchmark/.gitignore",
+      "previous_sha256": "66456b0fed8d118e77313cc1b13c7327eddef86a7c83de69538f16d31481b35f",
+      "current_sha256": "e6beb6f294923361db3f13c7e3ed4e5d3e93c909720c9d587d57b1c605bfa643",
+      "changed": true
+    },
+    {
+      "file": "showcases/single-cell-foundation-benchmark/README.md",
+      "previous_sha256": "d18c0ff4762dcf4e0c3f1c6415af3a7bdd0f09ed4563a80f729260f6d5c110b0",
+      "current_sha256": "3a7eab267b85a4f13d20a89fe744c6737d8891b47fec0d0eaea6d4046e623007",
+      "changed": true
+    },
+    {
+      "file": "showcases/single-cell-foundation-benchmark/assemble.py",
+      "previous_sha256": "592c01d31319ed18e582617d7734aa9f17aacd384c11b2ec9cfe65e6750fa2c4",
+      "current_sha256": "ea9af263d6d873e10582deb5542d88543b0a7afd8c680754e4524aaa8ba134db",
+      "changed": true
+    },
+    {
+      "file": "showcases/single-cell-foundation-benchmark/finish_study.py",
+      "previous_sha256": "b7fecd82ac25453945bcc5493c0e007ba4e658887b5d2e8084c1480fb0bb9061",
+      "current_sha256": "b7fecd82ac25453945bcc5493c0e007ba4e658887b5d2e8084c1480fb0bb9061",
+      "changed": false
+    },
+    {
+      "file": "showcases/single-cell-foundation-benchmark/import_transfer.py",
+      "previous_sha256": "681d29d2abb95345ad9580870088c87b0e4ad2596fb8141068a8587089b1b382",
+      "current_sha256": "681d29d2abb95345ad9580870088c87b0e4ad2596fb8141068a8587089b1b382",
+      "changed": false
+    },
+    {
+      "file": "showcases/single-cell-foundation-benchmark/src/checkpoints.py",
+      "previous_sha256": "3ff3f42a52cbc84bc1c62e86a45ebf74f3666f349b9bf5ef7e3d2c493170f362",
+      "current_sha256": "ea9afee1dfaa4833418fac142e8f0d51b6991761cf881970efee788d8cdef72b",
+      "changed": true
+    },
+    {
+      "file": "showcases/single-cell-foundation-benchmark/src/main.py",
+      "previous_sha256": "deb3fe98345418e1970f459368f810e82c161be6cbbef1d22877860e7ca36c3e",
+      "current_sha256": "57ded2d30ef35680603b247abda2d66d95e3be91a2e4e65be73820134468ae23",
+      "changed": true
+    },
+    {
+      "file": "showcases/single-cell-foundation-benchmark/src/model_monitor.py",
+      "previous_sha256": "3d5904973c2ca8b046cb6a032eced73e8b4d4797dfeab808292228e4e421dccd",
+      "current_sha256": "fab58ab01b7cfb7660cab97cce17e420a605f0bbde160bb57efaa4f40fecc026",
+      "changed": true
+    },
+    {
+      "file": "showcases/single-cell-foundation-benchmark/src/reporting.py",
+      "previous_sha256": "a9914c2adc884d96b90500e29dd367f533a72594b3f6f9a767974bd488cedda3",
+      "current_sha256": "a9914c2adc884d96b90500e29dd367f533a72594b3f6f9a767974bd488cedda3",
+      "changed": false
+    },
+    {
+      "file": "showcases/single-cell-foundation-benchmark/src/resource_guard.py",
+      "previous_sha256": "9470f83682e68bcb585e1449623ff3cb5aac41af98cf4c516fddbb1990517ed4",
+      "current_sha256": "04bb963093c98806cc916888719cc4c6229ed22da3bf27417c082841f9afb6a0",
+      "changed": true
+    },
+    {
+      "file": "showcases/single-cell-foundation-benchmark/src/study_data.py",
+      "previous_sha256": "3346576635112f6470ba1c579844512adc31af791a6ad92513850a61728e4381",
+      "current_sha256": "639510f40486c2ae410e22e587bc123b094354ba2fd74a353aad802768ae5265",
+      "changed": true
+    },
+    {
+      "file": "showcases/single-cell-foundation-benchmark/tests/test_scgpt_checkpoints.py",
+      "previous_sha256": "cab6a42b0cfad7e3cdd656ce5890c07289c5380a4eeaf29a9a9e8a11f1c9bc26",
+      "current_sha256": "cab6a42b0cfad7e3cdd656ce5890c07289c5380a4eeaf29a9a9e8a11f1c9bc26",
+      "changed": false
+    },
+    {
+      "file": "showcases/single-cell-foundation-benchmark/tests/test_transfer.py",
+      "previous_sha256": "8255d116079342bda2ee9d8e32ba4f7f6ce2f27848f5ff27c003b668ca76f7ce",
+      "current_sha256": "8255d116079342bda2ee9d8e32ba4f7f6ce2f27848f5ff27c003b668ca76f7ce",
+      "changed": false
+    },
+    {
+      "file": "showcases/single-cell-foundation-benchmark/validate_artifacts.py",
+      "previous_sha256": "5737aaefcdba5f7e267fc8a4a328601232b52eeb71819a0f845c662ff2d06cc4",
+      "current_sha256": "61b9437bc65ae89f6baf8fb07577ea1f8aadf887b2548342cc23560e21d5bebe",
+      "changed": true
+    },
+    {
+      "file": "tests/e2e/specs/heavy.single-cell-durability.e2e.mjs",
+      "previous_sha256": "a38e3aab173119b6adf4b1e6389cdee1d39f98986e33b4e021d8ac83d35ef9aa",
+      "current_sha256": "a38e3aab173119b6adf4b1e6389cdee1d39f98986e33b4e021d8ac83d35ef9aa",
+      "changed": false
+    },
+    {
+      "file": "tests/e2e/specs/heavy.single-cell-study.e2e.mjs",
+      "previous_sha256": "5a94322aea6df40d13f7832a64a378d0ace13694cea5a840fd172866752b09c6",
+      "current_sha256": "5a94322aea6df40d13f7832a64a378d0ace13694cea5a840fd172866752b09c6",
+      "changed": false
+    },
+    {
+      "file": "tests/unit/product-python-fragments.test.ts",
+      "previous_sha256": "76c18e21558b4fa78f751be6356e60d2ac464e91b501fc81733492fbd6dc3809",
+      "current_sha256": "76c18e21558b4fa78f751be6356e60d2ac464e91b501fc81733492fbd6dc3809",
+      "changed": false
+    },
+    {
+      "file": "tests/unit/single-cell-background.test.ts",
+      "previous_sha256": "090678d90f8b4a6406deeb03431efcbbe5c752413f1cbd04e4e6cf8ff6973e87",
+      "current_sha256": "090678d90f8b4a6406deeb03431efcbbe5c752413f1cbd04e4e6cf8ff6973e87",
+      "changed": false
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "appLogPath": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/tests/.artifacts/tauri-logs/tauri-2026-10-05T12-54-59-964Z.log",
+  "artifactsDir": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/tests/.artifacts",
+  "heavy": true,
+  "specs": [
+    "tests/e2e/specs/heavy.single-cell-study.e2e.mjs"
+  ],
+  "startedAt": "2026-10-05T12:54:59.972Z",
+  "finishedAt": "2026-10-05T12:55:02.247Z",
+  "summary": {
+    "durationMs": 2275,
+    "failed": 1,
+    "passed": 0,
+    "skipped": 0,
+    "total": 1
+  },
+  "tests": [
+    {
+      "durationMs": 1160,
+      "error": "Error: null is not an object (evaluating 'input.value = file')\n    at NativeWebDriverClient.request (file:///home/lorenzo/liatir-single-cell-wsl2-2026-10-05/tests/e2e/run-tauri-e2e.mjs:362:21)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async Object.run (file:///home/lorenzo/liatir-single-cell-wsl2-2026-10-05/tests/e2e/specs/heavy.single-cell-study.e2e.mjs:34:7)\n    at async run (file:///home/lorenzo/liatir-single-cell-wsl2-2026-10-05/tests/e2e/run-tauri-e2e.mjs:627:11)",
+      "failureScreenshot": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/tests/.artifacts/screenshots/failure-runs-the-single-cell-study-through-the-no-code-native-ui-and-exports-actual-results.png",
+      "heavy": true,
+      "name": "runs the single-cell study through the no-code native UI and exports actual Results",
+      "specPath": "tests/e2e/specs/heavy.single-cell-study.e2e.mjs",
+      "status": "failed"
+    }
+  ],
+  "visual": false
+}

@@ -1,0 +1,29 @@
+{
+  "appLogPath": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/tests/.artifacts/tauri-logs/tauri-2026-10-05T12-36-28-309Z.log",
+  "artifactsDir": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/tests/.artifacts",
+  "heavy": true,
+  "specs": [
+    "tests/e2e/specs/heavy.single-cell-durability.e2e.mjs"
+  ],
+  "startedAt": "2026-10-05T12:36:28.313Z",
+  "finishedAt": "2026-10-05T12:40:19.175Z",
+  "summary": {
+    "durationMs": 230862,
+    "failed": 1,
+    "passed": 0,
+    "skipped": 0,
+    "total": 1
+  },
+  "tests": [
+    {
+      "durationMs": 229685,
+      "error": "Error: No durable model batch was observed\n    at Timeout._onTimeout (file:///home/lorenzo/liatir-single-cell-wsl2-2026-10-05/tests/e2e/specs/heavy.single-cell-durability.e2e.mjs:78:70)\n    at listOnTimeout (node:internal/timers:594:17)\n    at process.processTimers (node:internal/timers:529:7)",
+      "failureScreenshot": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/tests/.artifacts/screenshots/failure-signed-scgpt-survives-interruption-with-exact-embeddings-and-strict-checkpoint-identity.png",
+      "heavy": true,
+      "name": "signed scGPT survives interruption with exact embeddings and strict checkpoint identity",
+      "specPath": "tests/e2e/specs/heavy.single-cell-durability.e2e.mjs",
+      "status": "failed"
+    }
+  ],
+  "visual": false
+}

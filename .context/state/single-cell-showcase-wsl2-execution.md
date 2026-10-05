@@ -19,8 +19,8 @@ The persistence and import rules are recorded in
   and 256 MiB maximum swap growth. No paid compute or publication.
 - [x] Verify the archive SHA-256 and all 185 files into a fresh showcase
   transfer directory. Preserve original roots, code, measurements and run identities.
-  Windows and Linux imports both passed all 185 exact file hashes; semantic
-  matrix/split/embedding alignment remains a separate pending check.
+  Windows and Linux imports both passed all 185 exact file hashes; the separate
+  semantic matrix/split/embedding alignment check also passed below.
 - [x] Verify both matrices/splits and nine completed embeddings semantically,
   including shape, finite values, unique cells and exact split cell order.
   [Linux evidence](../../showcases/single-cell-foundation-benchmark/validation/imported-matrices-wsl2.json)
@@ -30,11 +30,11 @@ The persistence and import rules are recorded in
 - [ ] Create a fresh pinned Linux checkout under the Linux home directory;
   recreate only the required pinned Linux environments and verify signed
   target availability through normal app activation. Never reuse Mac binaries.
-- [ ] Repair scGPT atomic batch persistence, strict input/model/code/seed/
+- [x] Repair scGPT atomic batch persistence, strict input/model/code/seed/
   environment/host identity and accounting across attempts. Exercise actual
   interruption/resume on a tiny fixture; observe changed-identity rejection
-  and equal resumed/uninterrupted results. One focused repair cycle before
-  reassessing; no full inference until this passes.
+  and equal resumed/uninterrupted results. Real signed-model evidence below
+  confirms exact 16-cell equality after abrupt native Job termination.
 - [x] Detach the native driver from the chat process. Verify a launcher exit
   leaves its child alive, with durable per-execution identity, logs and exit
   record. No hidden scientific rerun during the durability test. Actual WSL
@@ -196,3 +196,177 @@ is `tests/e2e/specs/heavy.single-cell-durability.e2e.mjs`; use the persistent
 activation can subsequently serve the imported study. No full inference may
 start before that spec passes. The 4 GiB compilation-only question remains
 pending; elapsed waiting does not authorize a changed limit.
+
+## Approved compilation exception — 2026-10-05
+
+The user explicitly approved the requested 4 GiB ceiling for application
+compilation alone: "Si certo autorizzo, su questo pc hai molto piu hardware
+che sul mac credo". The scientific process-family ceiling remains 2 GiB;
+CPU-only execution, one numerical thread, batch size one, seed 23, minimum
+available memory/disk and maximum swap growth are unchanged. The PC has
+34,280,267,776 bytes of host RAM, compared with the Mac's 16 GiB.
+
+Next: execute the already captured corrected rustc command once under the
+4,294,967,296-byte compilation guard. Restore temporary WebDriver capability
+bytes regardless of outcome. Accept only an actual successful compiler exit
+and newly recorded binary/bridge hashes. Then run the real signed-model
+interruption/resume diagnostic before full pancreas inference.
+
+The approved direct compilation succeeded in 29 seconds. Peak monitored
+process-family RSS was 2,333,007,872 bytes, with zero swap growth. All temporary
+capability bytes were restored. The newly compiled binary SHA-256 is
+`e2b164637da607377c25a29aef62aecf42725f2ffa5bb46c4b039703868e4ccb`;
+the current bridge SHA-256 is
+`4b520fd7e2fbf8c42ab0e2f8fe7bd134be48f1cd3eac46be6261a5d8a52f9cf9`.
+Evidence: [native build](../../showcases/single-cell-foundation-benchmark/validation/wsl2-native-build.json).
+This is the current native development binary with authorized localhost UI
+and existing WebDriver support, not a release package.
+
+The first real diagnostic installed and activated scGPT Linux CPU
+`0.2.5-beta.2` through the normal native API, then failed before inference:
+the new spec passed an unsupported second message argument to Jest's `expect`.
+This is a test defect, not a model failure. Retain its native report, replace
+the four assertions with supported object assertions that expose stderr on
+failure, and rerun the same 16-cell diagnostic once. No full inference starts
+until exact resumed/reference values and changed-seed rejection pass.
+
+The corrected diagnostic timed out before its first SQLite batch (180 seconds).
+The monitored model process used about 342 MB and one full CPU thread, with no
+swap growth; only startup stdout was present. This is an unresolved startup
+boundary, not a checkpoint or scientific success. Native cleanup terminated
+the fixture worker. Retain attempt 2. Before another full spec attempt, run a
+guarded import-only probe with a timed Python stack dump in this exact activated
+box to identify the occupied import/function. No model inference, box mutation
+or resource-limit change is authorized by this diagnosis. Reassess from that
+stack before retrying the same native diagnostic.
+
+The import-only probe passed Torch startup in 1.1 seconds. The exact 16-cell
+runner probe's timed traceback identified the real delay: the pinned
+`GeneVocab.from_dict` calls `BuiltinVocab.insert_token` for every vocabulary
+entry, rebuilding the entire index each time. The stack was inside that
+dictionary reconstruction; no embedding had begun.
+
+Use the pinned public `BuiltinVocab`/`GeneVocab` constructors once in the
+recorded integer-index order and verify the complete token-to-ID dictionary
+against the original JSON. Reject nonconsecutive or noninteger IDs. Do not
+modify the signed box or model weights. The real diagnostic compares all
+resumed output values with the unchanged frozen runner, including overlength
+gene sampling; allow that reference alone 1,200 seconds for its known loader.
+Keep the current first-batch deadline and all resource/scientific settings.
+One diagnostic retry after this specific diagnosis. Mac timings include its
+original loader; the new runner SHA and host distinction must stay visible.
+
+The real signed-model diagnostic passed. Job `job_1` was killed after one
+committed cell; seed 24 was refused, seed 23 resumed and completed all 16 cells.
+All 512-dimensional values and cell identities matched the unchanged frozen
+Mac runner exactly on the same signed Linux CPU runtime. Value SHA-256:
+`ff3e2d9a0b2acd8fa3bea7be1dfa2b44ea1db68d3376dbdd1bc0a5c1ed3e965b`.
+The checkpoint recorded interrupted/completed attempts; peak worker RSS was
+744,640,512 bytes. Evidence:
+[signed-model durability](../../showcases/single-cell-foundation-benchmark/validation/scgpt-durability-wsl2.json).
+
+Next native imports: PBMC source `7afd5cd1-2911-45c7-be7f-28cb212734ca`
+reuses all five successful methods and its finalized UCE refusal, without
+repeating evaluation. Pancreas source `6071da5e-c592-4ee3-8544-7bbe5b12be8f`
+reuses four methods and runs only scGPT, then the shared evaluation/report.
+Use the existing driver with `--detach`, the normally activated CPU runtime,
+the unchanged scientific guard and fresh native parent/child Job identities.
+Inspect any failure before a bounded retry; preserve the immutable originals.
+
+A direct Xvfb automatic-display probe failed because WSLg's shared socket
+directory could not provide its filesystem listener; no study was launched.
+Keep its diagnostic log and use the already proven `xvfb-run -a` path instead.
+The same detached Node supervisor used by `--detach` now owns the display
+wrapper and native PBMC driver. Its request records the selected source,
+activated-model root and task settings; no global display permission changes.
+
+PBMC import attempt `5d662ebc-7e81-4a96-a738-1dc9facdd63c` failed before
+launching a study: the Linux overlay still had the handoff's old benchmark
+page, so the new import control was absent. No scientific stage ran. Audit
+and synchronize every tracked implementation/context change against e0654c8,
+excluding the user's unrelated root gitignore and generated validation data;
+verify source hashes and rerun the complete verify gate on that overlay.
+The unchanged Rust bridge remains the newly compiled handoff binary. One
+native import retry after this source-alignment correction.
+
+The complete synchronized-source verify gate passed all seven suites in
+84 seconds, peak process-family RSS 1,749,975,040 bytes and zero swap growth.
+The first invocation used an unsupported report option and exited before any
+suite; the declared `--report-dir` invocation passed. The reviewed page also
+clears its original import selection when resuming its new workspace run,
+preventing mutually exclusive import/resume inputs from being sent together.
+Current PBMC execution is detached instance
+`77c270da-550e-4272-8f68-d827e99fe39e`; no historical inference is requested.
+
+Native PBMC import `11b0a26c-3ac5-44da-93e8-491b946eeb0a` passed its UI,
+Results and export checks. Its only new Jobs are prepare/report, both done;
+all original scores, costs and embedding hashes matched exactly, including
+the retained UCE refusal. The pinned study Plugin environment activated normally.
+
+New driver defect: the native E2E child finished, but the outer driver's
+recursive watcher of the entire app profile occupied one CPU thread and left
+that child unreaped. This profile now includes both complete Python/runtime
+trees. Retain the successful native evidence separately from the driver's
+failed finalization. Inspect the occupied Node stack and terminate only the
+verified task-owned log driver after confirming no science remains active.
+Restrict watching to task workspace run outputs, and print only live guarded
+model progress, excluding historical imports. Verify a clean actual driver
+exit with another import-only PBMC UI check (copy/report; no inference or
+evaluation) before any full pancreas work. One retry after this correction.
+
+The Node stack confirmed recursive `#watchFolder`/path normalization occupied
+the log driver. Only that verified driver was terminated; its supervisor
+truthfully recorded exit 143. The corrected observer watches workspace run
+outputs and ignores completed/historical model progress.
+
+The follow-up import-only native check passed and its detached driver exited
+naturally with code 0: execution `d4e02d95-8f5c-4fdf-a5ba-1587b970f46d`,
+PBMC parent `c8dcfc55-cb26-4074-a877-5ec423b62817`. Only prepare/report Jobs
+ran; completed inference and evaluation were reused. Results/charts/export
+passed with the original UCE refusal displayed, not concealed. Use this fresh
+PBMC export for the final assembly. The original earlier successful import
+and its driver failure remain retained as separate evidence.
+
+Full native pancreas continuation is now detached execution
+`0a11a75b-cce3-4897-88c6-2e027a6d3fad`, parent
+`2eb280d5-6af6-46da-a78b-be3278fdbc65`. Its verified source is the original
+Mac pancreas export; four completed representations are reused. Only scGPT
+inference is new. Native evaluation/report follow in the same app lifetime.
+Do not edit frontend/raw study sources or run expensive checks during this
+execution; a development reload could lose its in-flight orchestration.
+
+An independent detached finisher waits on that exact driver's real exit file.
+It refuses failed execution, mismatched parent/scope or any non-UCE incomplete
+method. On success it uses the actual native Plugin Python from the PBMC
+activation to run finish_study.py on these two exports, a fresh
+`transfer/completed-study-wsl2-2026-10-05` directory and the verified public
+cache, then the full scientific unittest suite under the unchanged 2 GiB guard.
+Inputs and exact commands are recorded in `transfer/final-study-inputs.json`
+and the finishing execution request. No inference/training is repeated by the
+finisher. Its existence is not completion evidence. Broader native UI checks,
+visual review, curated artifact copying and final context closure remain.
+
+The full scGPT worker has real committed batches and a live independent guard:
+143 cells at the first semantic checkpoint inspection, peak process-family RSS
+1,607,135,232 bytes, below the unchanged 2 GiB cap. The Mac's four embeddings
+have been restored without new inference. The finisher's first generated
+launcher had a newline-escaping syntax error and exited before waiting or
+running any calculation. Preserve that failed execution, repair the local
+launcher, pass `node --check`, and relaunch only the waiting finisher. The native
+scientific execution is unaffected and must not be restarted.
+
+Measured early throughput is about 24 cells/minute (500 committed cells,
+1,265 seconds recorded attempt time, one CPU thread at 99.4%). More RAM does
+not establish faster execution under this frozen single-thread protocol.
+Keep the approved settings and 24-hour native job deadline; do not restart
+or change the running model merely to improve speed.
+
+Before it began calculations, the waiting finisher was replaced with an
+expanded, syntax-checked continuation. After scientific validation it also
+runs the complete seven-suite verify profile and the relevant native UI
+matrix: tauri-e2e, single-cell-index-e2e, pipeline-settlement-restart-e2e.
+The already verified current native binary serves those suites; unrelated
+desktop packaging/release gates are outside this study. These checks run
+sequentially, under 2 GiB guards, only after native pancreas completion.
+No source/frontend rebuild occurs during the live study. Final visual review,
+curated copying and context closure still require actual successful evidence.

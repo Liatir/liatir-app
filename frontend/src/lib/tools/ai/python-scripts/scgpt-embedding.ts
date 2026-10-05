@@ -67,11 +67,21 @@ for package_name, package_path in (
     sys.modules[package_name] = package
 
 TransformerModel = importlib.import_module("scgpt.model.model").TransformerModel
-GeneVocab = importlib.import_module("scgpt.tokenizer.gene_tokenizer").GeneVocab
+gene_tokenizer = importlib.import_module("scgpt.tokenizer.gene_tokenizer")
+GeneVocab = gene_tokenizer.GeneVocab
 
 with required_paths["model configuration"].open("r", encoding="utf-8") as source:
     model_config = json.load(source)
-vocab = GeneVocab.from_file(required_paths["gene vocabulary"])
+# The pinned JSON loader rebuilds its index after every insertion. Construct the
+# same public vocabulary in order once, then verify every original token ID.
+with required_paths["gene vocabulary"].open("r", encoding="utf-8") as source:
+    recorded_vocabulary = json.load(source)
+ordered_vocabulary = sorted(recorded_vocabulary.items(), key=lambda item: item[1])
+if any(type(index) is not int or index != position for position, (_, index) in enumerate(ordered_vocabulary)):
+    raise SystemExit("scGPT vocabulary requires consecutive integer token IDs.")
+vocab = GeneVocab(gene_tokenizer.BuiltinVocab([token for token, _ in ordered_vocabulary]))
+if vocab.get_stoi() != recorded_vocabulary:
+    raise SystemExit("scGPT vocabulary token identity changed during loading.")
 for token in ("<pad>", "<cls>", "<eoc>"):
     if token not in vocab:
         vocab.append_token(token)

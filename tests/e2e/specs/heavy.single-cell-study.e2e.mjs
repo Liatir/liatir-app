@@ -69,7 +69,13 @@ export const tests = [{
     const evidence = await browser.execute(async (runId) => {
       const { data } = await window.Liatir.invoke('lia_fs_paths');
       const raw = await window.Liatir.invoke('lia_app_read_text', { rel: 'workspaces/__test__/analysis-runs/index.json' });
-      return { run: JSON.parse(raw).find((run) => run.id === runId), outputDir: `${data}/workspaces/__test__/runs/${runId}/output` };
+      const pluginRuntime = await window.Liatir.invoke('lia_liatir_python_runtime_status', {
+        path: `${data}/showcases/single-cell-foundation-benchmark/${runId}.lia`,
+      });
+      const jobs = await window.Liatir.invoke('lia_jobs_list', { workspaceId: '__test__' });
+      return { run: JSON.parse(raw).find((run) => run.id === runId),
+        outputDir: `${data}/workspaces/__test__/runs/${runId}/output`, pluginRuntime,
+        jobs: jobs.filter((job) => job.metadata?.execution?.runId === runId) };
     }, id);
     const destination = path.join(rootDir, 'showcases/single-cell-foundation-benchmark/validation');
     fs.mkdirSync(destination, { recursive: true });

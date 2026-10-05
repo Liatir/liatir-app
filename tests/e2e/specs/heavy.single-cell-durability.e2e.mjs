@@ -58,7 +58,7 @@ export const tests = [{
     const fixture = await browser.execute((input) => window.Liatir.invoke('lia_ai_python_run', input), {
       runtimeId, script: fixtureScript, args: [], inputJson: { runtimeDir: installed.runtimeDir, outputDir: directory }, timeoutSeconds: 120,
     });
-    expect(fixture.ok, fixture.stderr).toBe(true);
+    expect(fixture).toMatchObject({ ok: true });
     const inputFile = JSON.parse(fixture.stdout.trim()).inputFile;
     const current = await loadProductPythonScript(path.join(rootDir, 'frontend/src/lib/tools/ai/python-scripts/scgpt-embedding.ts'), 'SCGPT_EMBEDDING_SCRIPT');
     const base = path.join(rootDir, 'showcases/single-cell-foundation-benchmark');
@@ -99,18 +99,19 @@ export const tests = [{
     await browser.execute((id) => window.Liatir.invoke('lia_jobs_kill', { jobId: id }), jobId);
     const interrupted = await firstJobFinished;
     expect(interrupted.status.type).not.toBe('done');
-    const run = (inputJson) => browser.execute((input) => window.Liatir.invoke('lia_ai_python_run', input), {
-      runtimeId, script: monitor, args: [], inputJson, timeoutSeconds: 180,
+    const run = (inputJson, timeoutSeconds = 180) => browser.execute((input) => window.Liatir.invoke('lia_ai_python_run', input), {
+      runtimeId, script: monitor, args: [], inputJson, timeoutSeconds,
     });
     const rejected = await run(payload(current, resumed, 24));
     expect(rejected.ok).toBe(false);
     expect(rejected.stderr).toContain('identity changed');
     const finished = await run(payload(current, resumed));
-    expect(finished.ok, finished.stderr).toBe(true);
+    expect(finished).toMatchObject({ ok: true });
     const referenceDirectory = path.join(directory, 'reference');
     const original = fs.readFileSync(path.join(base, 'transfer/mac-handoff-2026-10-05/runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/code/scgpt-inference.py'), 'utf8');
-    const reference = await run(payload(original, referenceDirectory));
-    expect(reference.ok, reference.stderr).toBe(true);
+    // The frozen runner's quadratic vocabulary loader is retained exactly.
+    const reference = await run(payload(original, referenceDirectory), 1200);
+    expect(reference).toMatchObject({ ok: true });
     const comparisonScript = String.raw`
 import json, sys, hashlib
 from pathlib import Path
@@ -125,7 +126,7 @@ print(json.dumps({'status':'passed','cells':a.n_obs,'dimensions':a.obsm['X_scGPT
     const compared = await browser.execute((input) => window.Liatir.invoke('lia_ai_python_run', input), {
       runtimeId, script: comparisonScript, args: [], inputJson: { resumed, reference: referenceDirectory }, timeoutSeconds: 120,
     });
-    expect(compared.ok, compared.stderr).toBe(true);
+    expect(compared).toMatchObject({ ok: true });
     const accounting = JSON.parse(fs.readFileSync(path.join(resumed, 'scgpt-checkpoint-accounting.json'), 'utf8'));
     expect(accounting.attempts.map((a) => a.status)).toEqual(['interrupted', 'completed']);
     const evidence = {

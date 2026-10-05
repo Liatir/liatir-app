@@ -1,0 +1,27 @@
+{
+  "appLogPath": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/tests/.artifacts/tauri-logs/tauri-2026-10-05T12-45-37-381Z.log",
+  "artifactsDir": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/tests/.artifacts",
+  "heavy": true,
+  "specs": [
+    "tests/e2e/specs/heavy.single-cell-durability.e2e.mjs"
+  ],
+  "startedAt": "2026-10-05T12:45:37.392Z",
+  "finishedAt": "2026-10-05T12:51:05.037Z",
+  "summary": {
+    "durationMs": 327645,
+    "failed": 0,
+    "passed": 1,
+    "skipped": 0,
+    "total": 1
+  },
+  "tests": [
+    {
+      "durationMs": 326005,
+      "heavy": true,
+      "name": "signed scGPT survives interruption with exact embeddings and strict checkpoint identity",
+      "specPath": "tests/e2e/specs/heavy.single-cell-durability.e2e.mjs",
+      "status": "passed"
+    }
+  ],
+  "visual": false
+}

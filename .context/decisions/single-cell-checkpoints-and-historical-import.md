@@ -33,5 +33,13 @@ Per-method host identity belongs to the representation producer. Regenerating
 a report on Linux must not relabel a Mac measurement. Mixed-host cost plots
 cannot establish a same-host performance ranking.
 
+The pinned scGPT JSON vocabulary loader repeatedly rebuilds the token index.
+The PC runner instead uses the pinned public vocabulary constructors once in
+the recorded index order and verifies every token-to-ID entry against the
+original JSON. Nonconsecutive/noninteger IDs are rejected. Signed payloads
+and model weights are unchanged; exact resumed embeddings are checked against
+the unchanged frozen Mac runner on the same signed Linux CPU box. Original Mac
+times include the old loader, so implementation as well as host differs.
+
 Implementation and validation evidence live in the
 [continuation checklist](../state/single-cell-showcase-wsl2-execution.md).

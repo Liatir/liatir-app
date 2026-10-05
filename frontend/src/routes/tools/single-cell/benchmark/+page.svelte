@@ -58,7 +58,7 @@
       <label class="flex items-center gap-2 text-sm"><input type="checkbox" data-testid="study-stability" bind:checked={stabilityCheck} />Check stability on a small sample first</label>
       <p class="text-xs text-text-muted">A stability check is a diagnostic, not the complete study. First use downloads public data and study software.</p>
       <div class="space-y-2">
-        <Button onclick={chooseSavedStudy}>Choose saved study</Button>
+        <Button onclick={chooseSavedStudy}>Import saved study</Button>
         <input type="hidden" data-testid="study-import-file" bind:value={importStudyFile} />
         {#if importStudyFile}
           <p class="text-xs text-text-muted">Saved study selected. Its original files and completed measurements are verified before reuse. This creates a new run.</p>
@@ -74,7 +74,7 @@
         <p class="py-2 text-xs text-text-muted">{sanitizeLocalPathsForDisplay(run.logs.at(-1)?.message ?? 'Preparing study', 2)}</p>
         <Button onclick={() => goto(`/jobs`)}>Jobs</Button>
         {#if run.finalizedAt}<Button testId="study-open-result" onclick={() => goto(`/results?run=${run.identity.runId}`)}>View results and export</Button>
-          <Button disabled={launching} onclick={() => launch({ ...(run.params as unknown as LiatirSingleCellStudyRequest), resumeFromRunId: run.identity.runId })}>Resume using saved stages</Button>
+          <Button disabled={launching} onclick={() => launch({ ...(run.params as unknown as LiatirSingleCellStudyRequest), importStudyFile: undefined, resumeFromRunId: run.identity.runId })}>Resume using saved stages</Button>
         {:else}<Button onclick={() => executionRuns.cancel(run.identity.runId)}>Cancel this study</Button>{/if}
       </div>
     {/each}
