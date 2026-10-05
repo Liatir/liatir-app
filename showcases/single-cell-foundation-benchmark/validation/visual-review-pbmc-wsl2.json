@@ -1,0 +1,38 @@
+{
+  "status": "passed",
+  "scope": "Manual visual inspection of the successful imported PBMC native Results screenshot and four exported figures only; final assembled and pancreas figures remain pending.",
+  "native_run_id": "c8dcfc55-cb26-4074-a877-5ec423b62817",
+  "reviewed_at": "2026-10-05T13:56:14.370129+00:00",
+  "observations": [
+    "Native Results exposes the original UCE refusal and actual ZIP, CSV, JSON and report outputs; computer-provenance notice is visible.",
+    "Both performance/cost plots show all five completed methods with readable labels and explicit Mac host identities. The runtime axis is logarithmic and labeled.",
+    "PCA cell-type and batch maps have readable titles, axes and legends; legends remain outside the points."
+  ],
+  "files": [
+    {
+      "file": "biological-performance-vs-peak_rss_bytes.png",
+      "sha256": "4bd988b7935761e5a17a90a0d10f3a5e299d5e44d93818d17b85baf0577b2092",
+      "bytes": 47879
+    },
+    {
+      "file": "biological-performance-vs-wall_seconds.png",
+      "sha256": "0b889bb22a75a9324ffac49cd414414f4279a822138de8b8d981f77e9bb2a324",
+      "bytes": 49668
+    },
+    {
+      "file": "native-results.png",
+      "sha256": "b69995080ef4794f2b9ae3b71ff4255f3b6b73e8379f4474b0fd943d2b3e1251",
+      "bytes": 103584
+    },
+    {
+      "file": "pbmc-pca-batch.png",
+      "sha256": "13e4a75b71ccf43000835bf5d7c66fa11d5e25c0596a67343b97ed0313acec43",
+      "bytes": 287567
+    },
+    {
+      "file": "pbmc-pca-cell_type.png",
+      "sha256": "01988ff5bf09b449e984309ad7abc0a48f4b810b08233344cb280cf36a309aab",
+      "bytes": 219335
+    }
+  ]
+}

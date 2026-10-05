@@ -370,3 +370,10 @@ desktop packaging/release gates are outside this study. These checks run
 sequentially, under 2 GiB guards, only after native pancreas completion.
 No source/frontend rebuild occurs during the live study. Final visual review,
 curated copying and context closure still require actual successful evidence.
+
+Manual visual inspection of the successful imported PBMC native Results screenshot
+and four figures passed: the actual UCE refusal and exports are visible, both cost
+plots retain readable Mac labels, and PCA cell-type/batch maps have readable axes
+and legends outside the points. `validation/visual-review-pbmc-wsl2.json` records
+their hashes and this limited scope. Final assembled and pancreas visual review
+remain pending; no final-study completion is inferred from the PBMC inspection.
