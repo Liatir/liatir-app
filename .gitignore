@@ -187,3 +187,9 @@ gha-creds-*.json
 # Built Native Tools Scrollcase resources (produced by scripts/build-native-tools-box.mjs)
 src-tauri/resources/native-tools/
 tools/native-tools-box-consumer/target/
+
+# Generated first-party showcase Plugin
+frontend/static/showcases/*.lia
+
+# Scientific transfer bundles and imported run matrices remain outside Git.
+showcases/single-cell-foundation-benchmark/transfer/

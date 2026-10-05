@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onDestroy } from 'svelte';
-  import Plotly from 'plotly.js-dist-min';
+  import { loadPlotly } from '$lib/utils/plotly-runtime';
   import { settingsStore } from '$lib/stores/settings.svelte';
 
   let { data, layout = {} }: { data: object[]; layout?: object } = $props();
@@ -58,6 +58,8 @@
 
   let truncated = $state(false);
   let originalCount = $state(0);
+  let chartError = $state('');
+  let plotly: Awaited<ReturnType<typeof loadPlotly>>;
 
   $effect(() => {
     if (!el) return;
@@ -73,20 +75,32 @@
     const { traces, truncated: tr, originalCount: oc } = prepareTraces(data);
     truncated = tr;
     originalCount = oc;
-    Plotly.newPlot(el, traces as any, merged as any, {
-      responsive: true,
-      displayModeBar: false,
-      displaylogo: false,
-      modeBarButtons: [['zoom2d', 'pan2d', 'resetScale2d']] as any,
+    let disposed = false;
+    chartError = '';
+    void loadPlotly().then(async (runtime) => {
+      if (disposed) return;
+      plotly = runtime;
+      await runtime.newPlot(el, traces as any, merged as any, {
+        responsive: true,
+        displayModeBar: false,
+        displaylogo: false,
+        modeBarButtons: [['zoom2d', 'pan2d', 'resetScale2d']] as any,
+      });
+    }).catch((error) => {
+      if (!disposed) chartError = String(error);
     });
+    return () => { disposed = true; };
   });
 
   onDestroy(() => {
-    if (el) Plotly.purge(el);
+    if (el && plotly) plotly.purge(el);
   });
 </script>
 
 <div bind:this={el} class="w-full h-52"></div>
+{#if chartError}
+  <p role="alert" class="text-sm text-error">{chartError}</p>
+{/if}
 {#if truncated}
   <p class="text-[10px] text-text-subtle mt-1">
     Showing {(10_000).toLocaleString()} of {originalCount.toLocaleString()} points (downsampled for performance)

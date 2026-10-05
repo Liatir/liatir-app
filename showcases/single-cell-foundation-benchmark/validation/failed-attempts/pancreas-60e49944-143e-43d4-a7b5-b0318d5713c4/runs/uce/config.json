@@ -1,0 +1,15 @@
+{
+  "accelerator": "cpu",
+  "batchSize": 1,
+  "method": "uce",
+  "modelId": "snap-stanford-uce-4layer",
+  "resource_limits": {
+    "maxRssBytes": 2147483648,
+    "maxSwapGrowthBytes": 268435456,
+    "minAvailableBytes": 2147483648,
+    "minDiskBytes": 4294967296
+  },
+  "seed": 23,
+  "threads": 1,
+  "zero_shot": true
+}

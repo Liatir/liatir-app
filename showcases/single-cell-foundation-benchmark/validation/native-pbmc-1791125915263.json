@@ -1,0 +1,27 @@
+{
+  "appLogPath": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/tauri-logs/tauri-2026-10-04T14-58-35-343Z.log",
+  "artifactsDir": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts",
+  "heavy": true,
+  "specs": [
+    "tests/e2e/specs/heavy.single-cell-study.e2e.mjs"
+  ],
+  "startedAt": "2026-10-04T14:58:35.347Z",
+  "finishedAt": "2026-10-04T15:03:41.385Z",
+  "summary": {
+    "durationMs": 306038,
+    "failed": 0,
+    "passed": 1,
+    "skipped": 0,
+    "total": 1
+  },
+  "tests": [
+    {
+      "durationMs": 303959,
+      "heavy": true,
+      "name": "runs the single-cell study through the no-code native UI and exports actual Results",
+      "specPath": "tests/e2e/specs/heavy.single-cell-study.e2e.mjs",
+      "status": "passed"
+    }
+  ],
+  "visual": false
+}

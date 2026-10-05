@@ -1,3 +1,5 @@
+import { SOURCE_COUNT_VALIDATION_SCRIPT } from './source-count-validation';
+
 export const GENEFORMER_EMBEDDING_SCRIPT = String.raw`
 import csv
 import json
@@ -98,11 +100,8 @@ else:
     matrix = matrix.tocsr()
 if matrix.data.size and (not np.all(np.isfinite(matrix.data)) or np.min(matrix.data) < 0):
     raise SystemExit("Geneformer requires finite, non-negative raw expression counts in AnnData .X.")
-count_sample = matrix.data[: min(matrix.data.size, 100_000)]
-if count_sample.size and np.mean(np.abs(count_sample - np.rint(count_sample)) > 1e-4) > 0.01:
-    raise SystemExit(
-        "Geneformer requires raw counts, but AnnData .X appears normalized or log-transformed."
-    )
+${SOURCE_COUNT_VALIDATION_SCRIPT}
+validate_source_counts(matrix, input_file, payload, summary_warnings, "Geneformer")
 
 selected_ids = canonical_ids[supported_indices]
 unique_ids, inverse = np.unique(selected_ids, return_inverse=True)
@@ -161,6 +160,10 @@ if excluded_cells:
 if not tokenized_cells:
     raise SystemExit("Geneformer found no cells with usable human Ensembl gene counts.")
 
+# Token ranks now contain the required values; release the unused expression copy
+# before loading weights and later serializing a second AnnData matrix.
+del expression, projection, total_counts
+
 force_cpu = os.environ.get("LIATIR_AI_FORCE_CPU") == "1"
 if not force_cpu and torch.cuda.is_available():
     device = torch.device("cuda")
@@ -201,11 +204,21 @@ with torch.no_grad():
             attention_mask[row_index, :length] = 1
         input_ids = input_ids.to(device)
         attention_mask = attention_mask.to(device)
-        outputs = model(input_ids=input_ids, attention_mask=attention_mask, output_hidden_states=True)
+        # Embeddings need encoder states only. The language-model head creates a
+        # cells x sequence x vocabulary tensor that is never used by this tool.
+        outputs = model.base_model(input_ids=input_ids, attention_mask=attention_mask, output_hidden_states=True)
         hidden = outputs.hidden_states[-2]
+        if start == 0 and payload.get("verifyEncoderParity"):
+            reference = model(input_ids=input_ids, attention_mask=attention_mask, output_hidden_states=True)
+            if not torch.equal(hidden, reference.hidden_states[-2]):
+                raise RuntimeError("Encoder-only states differ from the original masked-language-model path.")
+            del reference
+            print("Encoder parity verified: hidden states are bit-for-bit identical.", file=sys.stderr, flush=True)
         mask = attention_mask.unsqueeze(-1).to(hidden.dtype)
         pooled = (hidden * mask).sum(dim=1) / mask.sum(dim=1).clamp(min=1)
         embedding_batches.append(pooled.detach().cpu().numpy().astype(np.float32))
+        if (start + batch_size) % 128 == 0:
+            print(f"Geneformer: {min(start + batch_size, len(tokenized_cells))}/{len(tokenized_cells)} cells", file=sys.stderr, flush=True)
 
 peak_vram_bytes = None
 if device.type == "cuda":
@@ -220,6 +233,7 @@ result_adata.uns["liatir_geneformer"] = {
     "upstream_revision": "04c2b2e84da7c0f385c3f9ad8f3ec24bab6650e5",
     "gene_id_source": gene_id_source,
     "count_source": count_source,
+    "source_count_provenance": payload.get("sourceCountProvenance", {}),
     "normalization": "total-count 10000, Geneformer Genecorpus-30M median scaling, rank encoding",
     "embedding_layer": "second-to-last hidden layer, mean pooled",
 }

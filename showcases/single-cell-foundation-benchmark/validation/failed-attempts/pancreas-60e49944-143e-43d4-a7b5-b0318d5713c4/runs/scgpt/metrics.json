@@ -1,0 +1,4 @@
+{
+  "status": "blocked",
+  "reason": "Traceback (most recent call last):\n  File \"/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/ai-runtimes/single-cell-foundation-scgpt-whole-human/runs/7dbe3232-5a0a-46ca-9439-ee3a8d6edc62/script.py\", line 101, in <module>\n    exec(compile(script, \"liatir-production-embedding.py\", \"exec\"), {\"__name__\": \"__main__\"})\n  File \"liatir-production-embedding.py\", line 106, in <module>\nSystemExit: scGPT requires counts, but AnnData .X appears normalized or log-transformed.\nscGPT requires counts, but AnnData .X appears normalized or log-transformed."
+}

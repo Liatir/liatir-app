@@ -1,0 +1,50 @@
+{
+  "run_id": "6071da5e-c592-4ee3-8544-7bbe5b12be8f",
+  "status": "interrupted",
+  "study_completed": false,
+  "observed_at_utc": "2026-10-05T09:45:14Z",
+  "completed_methods": [
+    "pca",
+    "geneformer",
+    "harmony",
+    "scvi"
+  ],
+  "scgpt": {
+    "last_completed_cells_logged": 10752,
+    "total_cells": 16382,
+    "saved_partial_embedding": false,
+    "final_telemetry": false,
+    "final_provenance": false,
+    "requires_full_restart": true
+  },
+  "cause": "Session interruption coincided with disappearance of task processes; exact termination mechanism unproven.",
+  "fresh_host_panic_report_check": false,
+  "durable_partial_checkpoint_fix_implemented": false,
+  "detached_driver_fix_implemented": false,
+  "final_evaluation_figures_and_summary": false,
+  "resource_monitor": {
+    "pid": 15069,
+    "limits": {
+      "maxRssBytes": 2147483648,
+      "maxSwapGrowthBytes": 268435456,
+      "minAvailableBytes": 2147483648,
+      "minDiskBytes": 4294967296
+    },
+    "status": "monitoring",
+    "peak_rss_bytes": 2031140864,
+    "initial_swap_bytes": 0,
+    "started_at": 1791173932.5539908,
+    "last_sample": {
+      "rss_bytes": 1705394176,
+      "tracked_pids": [
+        15069,
+        15078,
+        48544
+      ],
+      "available_bytes": 5593153536,
+      "swap_used_bytes": 0,
+      "disk_free_bytes": 4920979456
+    },
+    "updated_at": 1791193477.862703
+  }
+}

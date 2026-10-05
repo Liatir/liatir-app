@@ -779,3 +779,4 @@ export interface LiatirJobEntry {
 // Read-only Quenta contracts. Quenta may explain app/scientific state
 // and generate cited reports, but it is intentionally not a runnable entity.
 export * from "./quenta.js";
+export * from "./single-cell-showcase.js";

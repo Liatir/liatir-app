@@ -1,0 +1,11 @@
+{
+  "wall_seconds": 2.8128976249990956,
+  "peak_rss_bytes": 854228992,
+  "rss_measurement": "OS root-process high-water mark; excludes child processes",
+  "peak_accelerator_bytes": null,
+  "peak_accelerator_reason": "CPU-only execution; no accelerator used.",
+  "execution_target": "CPU",
+  "model_runtime_bytes": 2255303564,
+  "disk_scope": "signed installed box including model and runtime, excluding run scratch directories",
+  "status": "failed"
+}

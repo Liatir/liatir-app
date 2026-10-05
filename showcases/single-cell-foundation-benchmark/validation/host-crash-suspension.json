@@ -1,0 +1,47 @@
+{
+  "status": "suspended_after_host_crashes",
+  "study_complete": false,
+  "cause_confirmed": false,
+  "observed_correlation": "Both macOS watchdog panics occurred during Geneformer model Jobs. No model completion artifact exists. This is not proof of a unique cause.",
+  "processes_on_resume": "No showcase driver, test Liatir app, or study Python process remained.",
+  "system_reports": [
+    {
+      "source_file": "panic-full-2026-10-03-211159.0002.panic",
+      "timestamp": "2026-10-03 21:11:59.00 +0200",
+      "reason": "watchdog timeout: no checkins from watchdogd in 94 seconds (1023 total checkins since monitoring last enabled)",
+      "memory_excerpt": "Compressor Info: 25% of compressed pages limit (OK) and 42% of segments limit (OK) with 8 swapfiles and LOW swap space"
+    },
+    {
+      "source_file": "panic-full-2026-10-04-040358.0002.panic",
+      "timestamp": "2026-10-04 04:03:58.00 +0200",
+      "reason": "watchdog timeout: no checkins from watchdogd in 94 seconds (122 total checkins since monitoring last enabled)",
+      "memory_excerpt": "Compressor Info: 23% of compressed pages limit (OK) and 41% of segments limit (OK) with 7 swapfiles and LOW swap space"
+    }
+  ],
+  "second_run": {
+    "run_id": "e8a2f3a1-5ee2-4779-a4e6-9c6fa3931e09",
+    "persisted_status": "running",
+    "last_update_epoch_ms": 1791079059171,
+    "job_ids": [
+      "job_1",
+      "job_2",
+      "job_3"
+    ],
+    "last_message": "Running Geneformer V1 10M. Follow the model Job for details.",
+    "pca_telemetry": {
+      "wall_seconds": 9.100895917003072,
+      "peak_rss_bytes": 1325498368,
+      "rss_measurement": "OS process high-water mark, includes imports and serialization",
+      "peak_accelerator_bytes": null,
+      "peak_accelerator_reason": "No reliable Metal peak allocator counter; CPU runs do not use accelerator memory.",
+      "execution_target": "CPU",
+      "embedding_dimensions": 50,
+      "embedding_bytes": 2335972,
+      "model_runtime_bytes": 1291997139,
+      "disk_scope": "isolated shared baseline/evaluation Plugin environment; repeated per baseline, not additive"
+    },
+    "geneformer_stdout": "Starting signed model inference; logs are saved continuously.\n",
+    "geneformer_stderr": ""
+  },
+  "next_step": "No additional heavy work. Diagnose host stability and a resource-bounded execution strategy before any resumed study."
+}

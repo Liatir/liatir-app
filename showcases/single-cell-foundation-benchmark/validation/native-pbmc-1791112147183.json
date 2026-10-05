@@ -1,0 +1,29 @@
+{
+  "appLogPath": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/tauri-logs/tauri-2026-10-04T11-09-07-250Z.log",
+  "artifactsDir": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts",
+  "heavy": true,
+  "specs": [
+    "tests/e2e/specs/heavy.single-cell-study.e2e.mjs"
+  ],
+  "startedAt": "2026-10-04T11:09:07.253Z",
+  "finishedAt": "2026-10-04T11:09:28.478Z",
+  "summary": {
+    "durationMs": 21225,
+    "failed": 1,
+    "passed": 0,
+    "skipped": 0,
+    "total": 1
+  },
+  "tests": [
+    {
+      "durationMs": 20179,
+      "error": "Error: Liatir did not finish navigating to /tools/single-cell/benchmark\n    at NativeWebDriverClient.waitUntil (file:///Users/lorenzo/Documents/GitHub/liatir-stack/tests/e2e/run-tauri-e2e.mjs:426:11)\n    at async navigateInApp (file:///Users/lorenzo/Documents/GitHub/liatir-stack/tests/e2e/support/liatir-app.mjs:99:3)\n    at async Object.run (file:///Users/lorenzo/Documents/GitHub/liatir-stack/tests/e2e/specs/heavy.single-cell-study.e2e.mjs:17:5)\n    at async run (file:///Users/lorenzo/Documents/GitHub/liatir-stack/tests/e2e/run-tauri-e2e.mjs:627:11)",
+      "failureScreenshot": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/screenshots/failure-runs-the-single-cell-study-through-the-no-code-native-ui-and-exports-actual-results.png",
+      "heavy": true,
+      "name": "runs the single-cell study through the no-code native UI and exports actual Results",
+      "specPath": "tests/e2e/specs/heavy.single-cell-study.e2e.mjs",
+      "status": "failed"
+    }
+  ],
+  "visual": false
+}

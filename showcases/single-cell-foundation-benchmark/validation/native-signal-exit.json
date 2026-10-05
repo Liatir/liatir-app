@@ -1,0 +1,27 @@
+{
+  "appLogPath": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/tauri-logs/tauri-2026-10-04T15-54-31-114Z.log",
+  "artifactsDir": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts",
+  "heavy": false,
+  "specs": [
+    "tests/e2e/specs/job-signal-exit.e2e.mjs"
+  ],
+  "startedAt": "2026-10-04T15:54:31.143Z",
+  "finishedAt": "2026-10-04T15:54:33.571Z",
+  "summary": {
+    "durationMs": 2428,
+    "failed": 0,
+    "passed": 1,
+    "skipped": 0,
+    "total": 1
+  },
+  "tests": [
+    {
+      "durationMs": 835,
+      "heavy": false,
+      "name": "records a process terminated by a signal as failed while preserving successful exits",
+      "specPath": "tests/e2e/specs/job-signal-exit.e2e.mjs",
+      "status": "passed"
+    }
+  ],
+  "visual": false
+}

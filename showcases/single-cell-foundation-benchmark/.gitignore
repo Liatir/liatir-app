@@ -1,0 +1,12 @@
+.lia-dev/
+data/
+*.zip
+**/*.h5ad
+**/*.npy
+**/*.npz
+**/*.pt
+**/*.torch
+**/*.pkl
+**/*.pickle
+**/logs/*.log
+!**/logs/*.log

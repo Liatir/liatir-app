@@ -1,0 +1,6 @@
+{
+  "checkpoint": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/ai-runtimes/single-cell-foundation-uce/model-cache/uce/model_files/4layer_model.torch",
+  "tensor_storage_bytes": 3403469828,
+  "max_process_rss_bytes": 2147483648,
+  "basis": "Pinned UCE evaluate.py: torch.load(args.model_loc, map_location='cpu') without mmap"
+}

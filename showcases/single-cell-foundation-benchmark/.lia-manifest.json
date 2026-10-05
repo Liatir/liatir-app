@@ -1,0 +1,17 @@
+{
+  "name": "Single-cell Foundation Benchmark",
+  "version": "1.0.0",
+  "description": "Reproducible PBMC and pancreas study, launched by the Liatir showcase.",
+  "runtime": "python",
+  "category": "Showcases",
+  "tags": ["single-cell", "benchmark"],
+  "inputSchema": {
+    "action": {"type": "string", "label": "Study stage", "required": true},
+    "outputDir": {"type": "string", "label": "Run directory", "required": true}
+  },
+  "outputSchema": {"result": {"type": "json", "label": "Study result"}},
+  "python": {
+    "entry": "src/main.py",
+    "pythonRequirement": {"minVersion": "3.11", "maxVersionExclusive": "3.12", "label": "Python 3.11"}
+  }
+}

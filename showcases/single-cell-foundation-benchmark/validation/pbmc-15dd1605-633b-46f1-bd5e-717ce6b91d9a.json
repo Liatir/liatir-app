@@ -1,0 +1,116 @@
+{
+  "outputDir": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/workspaces/__test__/runs/15dd1605-633b-46f1-bd5e-717ce6b91d9a/output",
+  "run": {
+    "durationMs": 200566,
+    "endedAt": 1791124811104,
+    "error": "Error: Traceback (most recent call last):\n  File \"/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/plugin-runtimes/plugin-single-cell-fo-1-0-0-b28876365baa/runs/05a491bd-d28d-45f3-9cbd-785962515f87/script.py\", line 25, in <module>\n    result = handler(payload)\n             ^^^^^^^^^^^^^^^^\n  File \"/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/plugin-runtimes/plugin-single-cell-fo-1-0-0-b28876365baa/plugin-source/6dacb1b826f6/python/main.py\", line 83, in main\n    return logged_stage(inputs)\n           ^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/plugin-runtimes/plugin-single-cell-fo-1-0-0-b28876365baa/plugin-source/6dacb1b826f6/python/main.py\", line 89, in logged_stage\n    return run_stage(inputs)\n           ^^^^^^^^^^^^^^^^^\n  File \"/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/plugin-runtimes/plugin-single-cell-fo-1-0-0-b28876365baa/plugin-source/6dacb1b826f6/python/main.py\", line 47, in run_stage\n    return collect(root, dataset, method, inputs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/plugin-runtimes/plugin-single-cell-fo-1-0-0-b28876365baa/plugin-source/6dacb1b826f6/python/representations.py\", line 114, in collect\n    raise ValueError(\"Successful model Job returned no embedding artifact identity.\")\nValueError: Successful model Job returned no embedding artifact identity.",
+    "execution": {
+      "entityId": "single-cell-foundation-benchmark",
+      "rootRunId": "15dd1605-633b-46f1-bd5e-717ce6b91d9a",
+      "runId": "15dd1605-633b-46f1-bd5e-717ce6b91d9a",
+      "runKind": "native-tool",
+      "schemaVersion": 1,
+      "workspaceId": "__test__"
+    },
+    "id": "15dd1605-633b-46f1-bd5e-717ce6b91d9a",
+    "inputs": [],
+    "jobIds": [
+      "job_1",
+      "job_2",
+      "job_3",
+      "job_4",
+      "job_5",
+      "job_6",
+      "job_7"
+    ],
+    "label": "Single-cell stability check · PBMC 12k",
+    "outputFiles": [
+      {
+        "createdAt": 1791124811104,
+        "ext": "txt",
+        "label": "requirements.txt",
+        "parentRun": {
+          "analysisRunId": "15dd1605-633b-46f1-bd5e-717ce6b91d9a",
+          "runId": "15dd1605-633b-46f1-bd5e-717ce6b91d9a",
+          "runKind": "native-tool"
+        },
+        "path": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/workspaces/__test__/runs/15dd1605-633b-46f1-bd5e-717ce6b91d9a/output/requirements.txt",
+        "producer": {
+          "id": "single-cell-foundation-benchmark",
+          "kind": "native-tool",
+          "label": "Single-cell stability check · PBMC 12k"
+        },
+        "role": "intermediate",
+        "size": 9082
+      },
+      {
+        "createdAt": 1791124811104,
+        "ext": "json",
+        "label": "liatir-run.json",
+        "parentRun": {
+          "analysisRunId": "15dd1605-633b-46f1-bd5e-717ce6b91d9a",
+          "runId": "15dd1605-633b-46f1-bd5e-717ce6b91d9a",
+          "runKind": "native-tool"
+        },
+        "path": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/workspaces/__test__/runs/15dd1605-633b-46f1-bd5e-717ce6b91d9a/output/liatir-run.json",
+        "producer": {
+          "id": "single-cell-foundation-benchmark",
+          "kind": "native-tool",
+          "label": "Single-cell stability check · PBMC 12k"
+        },
+        "role": "intermediate",
+        "size": 267
+      },
+      {
+        "createdAt": 1791124811104,
+        "ext": "json",
+        "label": "study-environment.json",
+        "parentRun": {
+          "analysisRunId": "15dd1605-633b-46f1-bd5e-717ce6b91d9a",
+          "runId": "15dd1605-633b-46f1-bd5e-717ce6b91d9a",
+          "runKind": "native-tool"
+        },
+        "path": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/workspaces/__test__/runs/15dd1605-633b-46f1-bd5e-717ce6b91d9a/output/study-environment.json",
+        "producer": {
+          "id": "single-cell-foundation-benchmark",
+          "kind": "native-tool",
+          "label": "Single-cell stability check · PBMC 12k"
+        },
+        "role": "intermediate",
+        "size": 3370
+      },
+      {
+        "createdAt": 1791124811104,
+        "ext": "md",
+        "label": "protocol.md",
+        "parentRun": {
+          "analysisRunId": "15dd1605-633b-46f1-bd5e-717ce6b91d9a",
+          "runId": "15dd1605-633b-46f1-bd5e-717ce6b91d9a",
+          "runKind": "native-tool"
+        },
+        "path": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/workspaces/__test__/runs/15dd1605-633b-46f1-bd5e-717ce6b91d9a/output/protocol.md",
+        "producer": {
+          "id": "single-cell-foundation-benchmark",
+          "kind": "native-tool",
+          "label": "Single-cell stability check · PBMC 12k"
+        },
+        "role": "intermediate",
+        "size": 6985
+      }
+    ],
+    "params": {
+      "dataset": "pbmc",
+      "methods": [
+        "harmony",
+        "scvi",
+        "scgpt",
+        "uce"
+      ],
+      "stabilityCheck": true
+    },
+    "startedAt": 1791124610538,
+    "status": "error",
+    "tool": "single-cell-foundation-benchmark"
+  },
+  "frontendMode": "local development UI in the compiled native app"
+}

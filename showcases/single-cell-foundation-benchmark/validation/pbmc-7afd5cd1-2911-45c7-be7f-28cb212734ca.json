@@ -1,0 +1,195 @@
+{
+  "outputDir": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/workspaces/__test__/runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output",
+  "run": {
+    "durationMs": 6205073,
+    "endedAt": 1791135533584,
+    "error": "1 requested method(s) could not complete. See the exported diagnostics.",
+    "execution": {
+      "entityId": "single-cell-foundation-benchmark",
+      "rootRunId": "7afd5cd1-2911-45c7-be7f-28cb212734ca",
+      "runId": "7afd5cd1-2911-45c7-be7f-28cb212734ca",
+      "runKind": "native-tool",
+      "schemaVersion": 1,
+      "workspaceId": "__test__"
+    },
+    "id": "7afd5cd1-2911-45c7-be7f-28cb212734ca",
+    "inputs": [],
+    "jobIds": [
+      "job_1",
+      "job_2",
+      "job_3",
+      "job_4",
+      "job_5",
+      "job_6",
+      "job_7",
+      "job_8",
+      "job_9",
+      "job_a",
+      "job_b",
+      "job_c"
+    ],
+    "label": "Single-cell study · PBMC 12k",
+    "outputFiles": [
+      {
+        "createdAt": 1791135533584,
+        "ext": "zip",
+        "label": "single-cell-study.zip",
+        "parentRun": {
+          "analysisRunId": "7afd5cd1-2911-45c7-be7f-28cb212734ca",
+          "runId": "7afd5cd1-2911-45c7-be7f-28cb212734ca",
+          "runKind": "native-tool"
+        },
+        "path": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/workspaces/__test__/runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/single-cell-study.zip",
+        "producer": {
+          "id": "single-cell-foundation-benchmark",
+          "kind": "native-tool",
+          "label": "Single-cell study · PBMC 12k"
+        },
+        "role": "final",
+        "size": 58019906
+      },
+      {
+        "createdAt": 1791135533584,
+        "ext": "csv",
+        "label": "summary.csv",
+        "parentRun": {
+          "analysisRunId": "7afd5cd1-2911-45c7-be7f-28cb212734ca",
+          "runId": "7afd5cd1-2911-45c7-be7f-28cb212734ca",
+          "runKind": "native-tool"
+        },
+        "path": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/workspaces/__test__/runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/results/summary.csv",
+        "producer": {
+          "id": "single-cell-foundation-benchmark",
+          "kind": "native-tool",
+          "label": "Single-cell study · PBMC 12k"
+        },
+        "role": "final",
+        "size": 6676
+      },
+      {
+        "createdAt": 1791135533584,
+        "ext": "json",
+        "label": "summary.json",
+        "parentRun": {
+          "analysisRunId": "7afd5cd1-2911-45c7-be7f-28cb212734ca",
+          "runId": "7afd5cd1-2911-45c7-be7f-28cb212734ca",
+          "runKind": "native-tool"
+        },
+        "path": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/workspaces/__test__/runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/results/summary.json",
+        "producer": {
+          "id": "single-cell-foundation-benchmark",
+          "kind": "native-tool",
+          "label": "Single-cell study · PBMC 12k"
+        },
+        "role": "final",
+        "size": 27928
+      },
+      {
+        "createdAt": 1791135533584,
+        "ext": "md",
+        "label": "results.md",
+        "parentRun": {
+          "analysisRunId": "7afd5cd1-2911-45c7-be7f-28cb212734ca",
+          "runId": "7afd5cd1-2911-45c7-be7f-28cb212734ca",
+          "runKind": "native-tool"
+        },
+        "path": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/workspaces/__test__/runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/report/results.md",
+        "producer": {
+          "id": "single-cell-foundation-benchmark",
+          "kind": "native-tool",
+          "label": "Single-cell study · PBMC 12k"
+        },
+        "role": "final",
+        "size": 3384
+      },
+      {
+        "createdAt": 1791135533584,
+        "ext": "txt",
+        "label": "requirements.txt",
+        "parentRun": {
+          "analysisRunId": "7afd5cd1-2911-45c7-be7f-28cb212734ca",
+          "runId": "7afd5cd1-2911-45c7-be7f-28cb212734ca",
+          "runKind": "native-tool"
+        },
+        "path": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/workspaces/__test__/runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/requirements.txt",
+        "producer": {
+          "id": "single-cell-foundation-benchmark",
+          "kind": "native-tool",
+          "label": "Single-cell study · PBMC 12k"
+        },
+        "role": "intermediate",
+        "size": 9082
+      },
+      {
+        "createdAt": 1791135533584,
+        "ext": "json",
+        "label": "liatir-run.json",
+        "parentRun": {
+          "analysisRunId": "7afd5cd1-2911-45c7-be7f-28cb212734ca",
+          "runId": "7afd5cd1-2911-45c7-be7f-28cb212734ca",
+          "runKind": "native-tool"
+        },
+        "path": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/workspaces/__test__/runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/liatir-run.json",
+        "producer": {
+          "id": "single-cell-foundation-benchmark",
+          "kind": "native-tool",
+          "label": "Single-cell study · PBMC 12k"
+        },
+        "role": "intermediate",
+        "size": 268
+      },
+      {
+        "createdAt": 1791135533584,
+        "ext": "json",
+        "label": "study-environment.json",
+        "parentRun": {
+          "analysisRunId": "7afd5cd1-2911-45c7-be7f-28cb212734ca",
+          "runId": "7afd5cd1-2911-45c7-be7f-28cb212734ca",
+          "runKind": "native-tool"
+        },
+        "path": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/workspaces/__test__/runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/study-environment.json",
+        "producer": {
+          "id": "single-cell-foundation-benchmark",
+          "kind": "native-tool",
+          "label": "Single-cell study · PBMC 12k"
+        },
+        "role": "intermediate",
+        "size": 3370
+      },
+      {
+        "createdAt": 1791135533584,
+        "ext": "md",
+        "label": "protocol.md",
+        "parentRun": {
+          "analysisRunId": "7afd5cd1-2911-45c7-be7f-28cb212734ca",
+          "runId": "7afd5cd1-2911-45c7-be7f-28cb212734ca",
+          "runKind": "native-tool"
+        },
+        "path": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/workspaces/__test__/runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/protocol.md",
+        "producer": {
+          "id": "single-cell-foundation-benchmark",
+          "kind": "native-tool",
+          "label": "Single-cell study · PBMC 12k"
+        },
+        "role": "intermediate",
+        "size": 7234
+      }
+    ],
+    "params": {
+      "dataset": "pbmc",
+      "methods": [
+        "pca",
+        "geneformer",
+        "harmony",
+        "scvi",
+        "scgpt",
+        "uce"
+      ],
+      "stabilityCheck": false
+    },
+    "startedAt": 1791129328511,
+    "status": "error",
+    "tool": "single-cell-foundation-benchmark"
+  },
+  "frontendMode": "bundled"
+}

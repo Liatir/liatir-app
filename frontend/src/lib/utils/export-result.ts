@@ -1,6 +1,7 @@
 import type { ToolOutput, ToolSection } from '$lib/types/tool-output';
 import type { AnalysisRunMeta } from '$lib/stores/analysisRuns.svelte';
 import { fmtDuration, fmtBytes } from '$lib/utils';
+import { loadPlotlySource } from '$lib/utils/plotly-runtime';
 
 const TOOL_LABELS: Record<string, string> = {
   pipeline: 'Pipeline',
@@ -40,12 +41,11 @@ function escScript(s: string): string {
  * The export used to pull Plotly from a CDN, which left every chart blank when the report was opened
  * offline — unacceptable for a local-first app whose reports must stay readable years later. Inlining
  * the bundled library instead makes each report fully self-contained, and uses the *same* Plotly
- * version as the in-app charts. Loaded lazily (dynamic import) and only when a chart exists, so the
- * ~4 MB library never enters the main app bundle nor bloats a chart-free report.
+ * version as the in-app charts. Read on demand from that same local asset only
+ * when a chart exists, avoiding a second escaped JavaScript copy in the app bundle.
  */
 async function inlinePlotlyRuntime(): Promise<string> {
-  const plotly = await import('plotly.js-dist-min/plotly.min.js?raw');
-  return `<script>${escScript(plotly.default)}</script>`;
+  return `<script>${escScript(await loadPlotlySource())}</script>`;
 }
 
 function colorClass(color?: string): string {

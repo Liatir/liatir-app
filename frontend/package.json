@@ -5,9 +5,9 @@
 	"type": "module",
 	"scripts": {
 		"generate:quenta": "node ../scripts/build-quenta-docs.mjs knowledge --out frontend/src/lib/quenta/generated/quenta-knowledge.generated.ts && node ../scripts/build-quenta-docs.mjs docs --out frontend/src/lib/quenta/generated/quenta-docs.generated.ts",
-		"predev": "npm run generate:quenta",
+		"predev": "npm run generate:quenta && node ../scripts/build-single-cell-showcase.mjs",
 		"dev": "vite dev",
-		"prebuild": "npm run generate:quenta",
+		"prebuild": "npm run generate:quenta && node ../scripts/build-single-cell-showcase.mjs",
 		"build": "vite build",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",

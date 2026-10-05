@@ -1,0 +1,93 @@
+{
+  "runtime_box_activation": {
+    "hostEnvironment": "native",
+    "release": {
+      "archive": {
+        "format": "zip",
+        "sha256": "6aeafe5f6d0d29004517eeabaf80072406feeca3581d46a45e682959094f2cb4",
+        "sizeBytes": 9899283975,
+        "url": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/uce-4layer/1.0.0-beta.2/macos-aarch64-metal/6aeafe5f6d0d29004517eeabaf80072406feeca3581d46a45e682959094f2cb4.zip"
+      },
+      "boxId": "uce-4layer",
+      "cacheSubdir": "model-cache/uce",
+      "compatibility": {
+        "minLiatirVersion": "0.2.1",
+        "minMacosVersion": "13.0",
+        "minRamGb": 16
+      },
+      "installedSizeBytes": 11169027258,
+      "kind": "liatir.runtime-box.release",
+      "labels": {
+        "model": "snap-stanford-uce-4layer",
+        "runtime": "single-cell-foundation-uce"
+      },
+      "payloadDigest": {
+        "format": "sha256-path-list-v1",
+        "sha256": "da7602151c10c771494063f007f23d4819d01444a540cff1226ff8adb9cd73b3"
+      },
+      "provenance": {
+        "builderRevision": "edc55a3221110eafb3ae574e5ee80cf492536015",
+        "builtAt": "2026-09-26T15:49:41+02:00",
+        "dependencyLockSha256": "a539412003c6ac355da2ce1dca05b7aa76ef3274a71150839c0b3396ae824a98",
+        "pixiVersion": "0.73.0",
+        "runtimeVersion": "3.11.15",
+        "scrollId": "uce-4layer-macos-arm64-metal",
+        "scrollVersion": "1.0.0",
+        "sourceRevision": "8ead6e07af0c80f75653598138bb704e865b45c8",
+        "sourceTreeDirty": false
+      },
+      "runtime": {
+        "entryPoint": "venv/bin/python",
+        "id": "python",
+        "version": "3.11.15"
+      },
+      "schemaVersion": 3,
+      "selfTest": {
+        "probe": {
+          "imports": [
+            "torch",
+            "scanpy",
+            "accelerate",
+            "anndata",
+            "numpy",
+            "scipy",
+            "pandas",
+            "h5py",
+            "tqdm"
+          ]
+        },
+        "timeoutSeconds": 180
+      },
+      "target": {
+        "accelerator": "metal",
+        "arch": "aarch64",
+        "platform": "macos"
+      },
+      "version": "1.0.0-beta.2"
+    },
+    "schemaVersion": 3,
+    "selectedTarget": {
+      "accelerator": "metal",
+      "arch": "aarch64",
+      "platform": "macos"
+    },
+    "signedRelease": {
+      "payloadBase64": "ewogICJzY2hlbWFWZXJzaW9uIjogMywKICAia2luZCI6ICJsaWF0aXIucnVudGltZS1ib3gucmVsZWFzZSIsCiAgImJveElkIjogInVjZS00bGF5ZXIiLAogICJsYWJlbHMiOiB7CiAgICAibW9kZWwiOiAic25hcC1zdGFuZm9yZC11Y2UtNGxheWVyIiwKICAgICJydW50aW1lIjogInNpbmdsZS1jZWxsLWZvdW5kYXRpb24tdWNlIgogIH0sCiAgInZlcnNpb24iOiAiMS4wLjAtYmV0YS4yIiwKICAidGFyZ2V0IjogewogICAgInBsYXRmb3JtIjogIm1hY29zIiwKICAgICJhcmNoIjogImFhcmNoNjQiLAogICAgImFjY2VsZXJhdG9yIjogIm1ldGFsIgogIH0sCiAgImNvbXBhdGliaWxpdHkiOiB7CiAgICAibWluTGlhdGlyVmVyc2lvbiI6ICIwLjIuMSIsCiAgICAibWluTWFjb3NWZXJzaW9uIjogIjEzLjAiLAogICAgIm1pblJhbUdiIjogMTYKICB9LAogICJhcmNoaXZlIjogewogICAgImZvcm1hdCI6ICJ6aXAiLAogICAgInVybCI6ICJodHRwczovL2Fzc2V0cy5tb2RlbHMubGlhdGlyLmNvbS9haS1ydW50aW1lLWJveGVzL2JveGVzL3VjZS00bGF5ZXIvMS4wLjAtYmV0YS4yL21hY29zLWFhcmNoNjQtbWV0YWwvNmFlYWZlNWY2ZDBkMjkwMDQ1MTdlZWFiYWY4MDA3MjQwNmZlZWNhMzU4MWQ0NmE0NWU2ODI5NTkwOTRmMmNiNC56aXAiLAogICAgInNoYTI1NiI6ICI2YWVhZmU1ZjZkMGQyOTAwNDUxN2VlYWJhZjgwMDcyNDA2ZmVlY2EzNTgxZDQ2YTQ1ZTY4Mjk1OTA5NGYyY2I0IiwKICAgICJzaXplQnl0ZXMiOiA5ODk5MjgzOTc1CiAgfSwKICAiaW5zdGFsbGVkU2l6ZUJ5dGVzIjogMTExNjkwMjcyNTgsCiAgInBheWxvYWREaWdlc3QiOiB7CiAgICAiZm9ybWF0IjogInNoYTI1Ni1wYXRoLWxpc3QtdjEiLAogICAgInNoYTI1NiI6ICJkYTc2MDIxNTFjMTBjNzcxNDk0MDYzZjAwN2YyM2Q0ODE5ZDAxNDQ0YTU0MGNmZjEyMjZmZjhhZGI5Y2Q3M2IzIgogIH0sCiAgInJ1bnRpbWUiOiB7CiAgICAiaWQiOiAicHl0aG9uIiwKICAgICJ2ZXJzaW9uIjogIjMuMTEuMTUiLAogICAgImVudHJ5UG9pbnQiOiAidmVudi9iaW4vcHl0aG9uIgogIH0sCiAgImNhY2hlU3ViZGlyIjogIm1vZGVsLWNhY2hlL3VjZSIsCiAgInNlbGZUZXN0IjogewogICAgInByb2JlIjogewogICAgICAiaW1wb3J0cyI6IFsKICAgICAgICAidG9yY2giLAogICAgICAgICJzY2FucHkiLAogICAgICAgICJhY2NlbGVyYXRlIiwKICAgICAgICAiYW5uZGF0YSIsCiAgICAgICAgIm51bXB5IiwKICAgICAgICAic2NpcHkiLAogICAgICAgICJwYW5kYXMiLAogICAgICAgICJoNXB5IiwKICAgICAgICAidHFkbSIKICAgICAgXQogICAgfSwKICAgICJ0aW1lb3V0U2Vjb25kcyI6IDE4MAogIH0sCiAgInByb3ZlbmFuY2UiOiB7CiAgICAic2Nyb2xsSWQiOiAidWNlLTRsYXllci1tYWNvcy1hcm02NC1tZXRhbCIsCiAgICAic2Nyb2xsVmVyc2lvbiI6ICIxLjAuMCIsCiAgICAiYnVpbGRlclJldmlzaW9uIjogImVkYzU1YTMyMjExMTBlYWZiM2FlNTc0ZTVlZTgwY2Y0OTI1MzYwMTUiLAogICAgInNvdXJjZVRyZWVEaXJ0eSI6IGZhbHNlLAogICAgInNvdXJjZVJldmlzaW9uIjogIjhlYWQ2ZTA3YWYwYzgwZjc1NjUzNTk4MTM4YmI3MDRlODY1YjQ1YzgiLAogICAgInJ1bnRpbWVWZXJzaW9uIjogIjMuMTEuMTUiLAogICAgInBpeGlWZXJzaW9uIjogIjAuNzMuMCIsCiAgICAiZGVwZW5kZW5jeUxvY2tTaGEyNTYiOiAiYTUzOTQxMjAwM2M2YWMzNTVkYTJjZTFkY2EwNWI3YWE3NmVmMzI3NGE3MTE1MDgzOWMwYjMzOTZhZTgyNGE5OCIsCiAgICAiYnVpbHRBdCI6ICIyMDI2LTA5LTI2VDE1OjQ5OjQxKzAyOjAwIgogIH0KfQo=",
+      "payloadEncoding": "base64-json-utf8",
+      "payloadSha256": "5d7a3704cf9f1ba1f84dc3f4d1428bc455b5228c53f1a98b75cce07e5f3d39ec",
+      "schemaVersion": 3,
+      "signatures": [
+        {
+          "algorithm": "ed25519",
+          "keyId": "liatir-runtime-box-kms-2026",
+          "signatureBase64": "AGmmTmqoi607u3sx94entsWRqlC9eycxwWnrH5/G0ggH61DYMBhTKrllBZ7BhlBgcL7IzTA59H6tfZfr9NfHBg=="
+        }
+      ]
+    }
+  },
+  "input_sha256": "aeb6f9a2de14b881a81420018963d2d35e33d705f01ecc73c11a78f012001368",
+  "runner_sha256": "b15b01f967c4a7466c7f0855ee54bcfaec0edcda0f2682acc9bc54c38b04ab34",
+  "job_id": "job_c",
+  "status": "blocked",
+  "error": "Traceback (most recent call last):\n  File \"/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/ai-runtimes/single-cell-foundation-uce/runs/b6a5c02f-4dfb-4011-8b70-c1c2aab5fde5/script.py\", line 88, in <module>\n    raise RuntimeError(f\"UCE checkpoint requires at least {storage_bytes} resident tensor bytes; \"\nRuntimeError: UCE checkpoint requires at least 3403469828 resident tensor bytes; the approved process memory limit is 2147483648 bytes.\nTraceback (most recent call last):\n  File \"/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/ai-runtimes/single-cell-foundation-uce/runs/b6a5c02f-4dfb-4011-8b70-c1c2aab5fde5/_liatir_python_job_runner.py\", line 18, in <module>\n    main()\n  File \"/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/ai-runtimes/single-cell-foundation-uce/runs/b6a5c02f-4dfb-4011-8b70-c1c2aab5fde5/_liatir_python_job_runner.py\", line 15, in main\n    runpy.run_path(str(script_path), run_name=\"__main__\")\n  File \"<frozen runpy>\", line 291, in run_path\n  File \"<frozen runpy>\", line 98, in _run_module_code\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/ai-runtimes/single-cell-foundation-uce/runs/b6a5c02f-4dfb-4011-8b70-c1c2aab5fde5/script.py\", line 88, in <module>\n    raise RuntimeError(f\"UCE checkpoint requires at least {storage_bytes} resident tensor bytes; \"\nRuntimeError: UCE checkpoint requires at least 3403469828 resident tensor bytes; the approved process memory limit is 2147483648 bytes."
+}

@@ -1,0 +1,11 @@
+{
+  "run_id": "60e49944-143e-43d4-a7b5-b0318d5713c4",
+  "dataset": "pancreas",
+  "stability_check": false,
+  "resource_limits": {
+    "maxRssBytes": 2147483648,
+    "maxSwapGrowthBytes": 268435456,
+    "minAvailableBytes": 2147483648,
+    "minDiskBytes": 4294967296
+  }
+}

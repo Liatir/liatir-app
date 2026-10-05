@@ -1,0 +1,9 @@
+{
+  "status": "stopped",
+  "cause": "Archive creation reached the unchanged 4 GiB free-disk minimum while adding the full source cache.",
+  "partial_archive_bytes": 569883961,
+  "disk_free_before_cleanup": 4306350080,
+  "scientific_originals_modified": false,
+  "retry": "One compact archive retaining prepared inputs, splits, complete compact embeddings, native records, figures and logs; public upstream source cache is referenced by exact recorded URLs and hashes instead of duplicated.",
+  "disk_free_after_cleanup": 4876414976
+}

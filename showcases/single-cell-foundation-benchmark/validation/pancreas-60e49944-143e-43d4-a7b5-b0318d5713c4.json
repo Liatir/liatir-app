@@ -1,0 +1,125 @@
+{
+  "outputDir": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/workspaces/__test__/runs/60e49944-143e-43d4-a7b5-b0318d5713c4/output",
+  "run": {
+    "durationMs": 198566,
+    "endedAt": 1791135786241,
+    "error": "Error: Traceback (most recent call last):\n  File \"/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/plugin-runtimes/plugin-single-cell-fo-1-0-0-b28876365baa/runs/34d0a5a8-d640-4eca-a96f-da32738d9ea2/script.py\", line 25, in <module>\n    result = handler(payload)\n             ^^^^^^^^^^^^^^^^\n  File \"/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/plugin-runtimes/plugin-single-cell-fo-1-0-0-b28876365baa/plugin-source/3b60e5c8000e/python/main.py\", line 83, in main\n    return logged_stage(inputs)\n           ^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/plugin-runtimes/plugin-single-cell-fo-1-0-0-b28876365baa/plugin-source/3b60e5c8000e/python/main.py\", line 89, in logged_stage\n    return run_stage(inputs)\n           ^^^^^^^^^^^^^^^^^\n  File \"/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/plugin-runtimes/plugin-single-cell-fo-1-0-0-b28876365baa/plugin-source/3b60e5c8000e/python/main.py\", line 50, in run_stage\n    return evaluate(root, dataset, inputs[\"methods\"])\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/plugin-runtimes/plugin-single-cell-fo-1-0-0-b28876365baa/plugin-source/3b60e5c8000e/python/evaluation.py\", line 115, in evaluate\n    obs, arrays = align_embeddings(root, dataset, methods)\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/plugin-runtimes/plugin-single-cell-fo-1-0-0-b28876365baa/plugin-source/3b60e5c8000e/python/evaluation.py\", line 29, in align_embeddings\n    raise ValueError(\"No sufficiently large common valid cell set.\")\nValueError: No sufficiently large common valid cell set.",
+    "execution": {
+      "entityId": "single-cell-foundation-benchmark",
+      "rootRunId": "60e49944-143e-43d4-a7b5-b0318d5713c4",
+      "runId": "60e49944-143e-43d4-a7b5-b0318d5713c4",
+      "runKind": "native-tool",
+      "schemaVersion": 1,
+      "workspaceId": "__test__"
+    },
+    "id": "60e49944-143e-43d4-a7b5-b0318d5713c4",
+    "inputs": [],
+    "jobIds": [
+      "job_1",
+      "job_2",
+      "job_3",
+      "job_4",
+      "job_5",
+      "job_6",
+      "job_7",
+      "job_8",
+      "job_9",
+      "job_a",
+      "job_b",
+      "job_c",
+      "job_d",
+      "job_e"
+    ],
+    "label": "Single-cell study · Pancreas",
+    "outputFiles": [
+      {
+        "createdAt": 1791135786241,
+        "ext": "txt",
+        "label": "requirements.txt",
+        "parentRun": {
+          "analysisRunId": "60e49944-143e-43d4-a7b5-b0318d5713c4",
+          "runId": "60e49944-143e-43d4-a7b5-b0318d5713c4",
+          "runKind": "native-tool"
+        },
+        "path": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/workspaces/__test__/runs/60e49944-143e-43d4-a7b5-b0318d5713c4/output/requirements.txt",
+        "producer": {
+          "id": "single-cell-foundation-benchmark",
+          "kind": "native-tool",
+          "label": "Single-cell study · Pancreas"
+        },
+        "role": "intermediate",
+        "size": 9082
+      },
+      {
+        "createdAt": 1791135786241,
+        "ext": "json",
+        "label": "liatir-run.json",
+        "parentRun": {
+          "analysisRunId": "60e49944-143e-43d4-a7b5-b0318d5713c4",
+          "runId": "60e49944-143e-43d4-a7b5-b0318d5713c4",
+          "runKind": "native-tool"
+        },
+        "path": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/workspaces/__test__/runs/60e49944-143e-43d4-a7b5-b0318d5713c4/output/liatir-run.json",
+        "producer": {
+          "id": "single-cell-foundation-benchmark",
+          "kind": "native-tool",
+          "label": "Single-cell study · Pancreas"
+        },
+        "role": "intermediate",
+        "size": 272
+      },
+      {
+        "createdAt": 1791135786241,
+        "ext": "json",
+        "label": "study-environment.json",
+        "parentRun": {
+          "analysisRunId": "60e49944-143e-43d4-a7b5-b0318d5713c4",
+          "runId": "60e49944-143e-43d4-a7b5-b0318d5713c4",
+          "runKind": "native-tool"
+        },
+        "path": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/workspaces/__test__/runs/60e49944-143e-43d4-a7b5-b0318d5713c4/output/study-environment.json",
+        "producer": {
+          "id": "single-cell-foundation-benchmark",
+          "kind": "native-tool",
+          "label": "Single-cell study · Pancreas"
+        },
+        "role": "intermediate",
+        "size": 3370
+      },
+      {
+        "createdAt": 1791135786241,
+        "ext": "md",
+        "label": "protocol.md",
+        "parentRun": {
+          "analysisRunId": "60e49944-143e-43d4-a7b5-b0318d5713c4",
+          "runId": "60e49944-143e-43d4-a7b5-b0318d5713c4",
+          "runKind": "native-tool"
+        },
+        "path": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/workspaces/__test__/runs/60e49944-143e-43d4-a7b5-b0318d5713c4/output/protocol.md",
+        "producer": {
+          "id": "single-cell-foundation-benchmark",
+          "kind": "native-tool",
+          "label": "Single-cell study · Pancreas"
+        },
+        "role": "intermediate",
+        "size": 7234
+      }
+    ],
+    "params": {
+      "dataset": "pancreas",
+      "methods": [
+        "pca",
+        "geneformer",
+        "harmony",
+        "scvi",
+        "scgpt",
+        "uce"
+      ],
+      "stabilityCheck": false
+    },
+    "startedAt": 1791135587675,
+    "status": "error",
+    "tool": "single-cell-foundation-benchmark"
+  },
+  "frontendMode": "bundled"
+}

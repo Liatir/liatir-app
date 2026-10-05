@@ -37,6 +37,12 @@ fn now_ms() -> u64 {
         .as_millis() as u64
 }
 
+fn process_completed_successfully(exit_code: Option<i32>, signal: Option<i32>) -> bool {
+    // Some shell backends omit a normal exit code. A termination signal, however,
+    // proves the process did not complete, including stops by a resource monitor.
+    signal.is_none() && exit_code.map(|code| code == 0).unwrap_or(true)
+}
+
 // ---------------------------------
 // Types
 // ---------------------------------
@@ -459,10 +465,7 @@ async fn spawn_job(
                 }
                 CommandEvent::Terminated(payload) => {
                     let exit_code = payload.code;
-                    // Some Tauri shell backends report a normal completion with
-                    // a missing exit code. Treat that as success unless the job
-                    // was explicitly marked killed.
-                    let ok = exit_code.map(|c| c == 0).unwrap_or(true);
+                    let ok = process_completed_successfully(exit_code, payload.signal);
                     let mut status = if ok {
                         JobStatus::Done { exit_code }
                     } else {
@@ -851,7 +854,16 @@ pub fn lia_jobs_get_output(
 
 #[cfg(test)]
 mod tests {
-    use super::{is_safe_job_id, JobStatus};
+    use super::{is_safe_job_id, process_completed_successfully, JobStatus};
+
+    #[test]
+    fn a_termination_signal_is_never_a_successful_completion() {
+        assert!(process_completed_successfully(Some(0), None));
+        assert!(process_completed_successfully(None, None));
+        assert!(!process_completed_successfully(Some(1), None));
+        assert!(!process_completed_successfully(None, Some(15)));
+        assert!(!process_completed_successfully(Some(0), Some(9)));
+    }
 
     #[test]
     fn caller_allocated_job_ids_are_path_safe() {

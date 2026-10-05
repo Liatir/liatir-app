@@ -1,6 +1,6 @@
 # Current project status
 
-Last updated 2026-10-01. This page says where Liatir stands and what comes next. How each piece got
+Last updated 2026-10-05. This page says where Liatir stands and what comes next. How each piece got
 here is in the [status log, July to September 2026](../history/status-log-2026-07-to-2026-09.md)
 and in the plans under `history/`; the readiness of each product area, with its evidence, is in
 [Beta 1 readiness](./roadmap/beta-readiness.md).
@@ -36,6 +36,29 @@ was republished as v3 (2026-09-24 to 2026-09-26), and the 127 stale v2 objects, 
 deleted from R2 on 2026-09-27 — see [Scrollcase v3 adoption](../history/scrollcase-v3-adoption.md).
 
 ## What is open, in order
+
+The requested [single-cell foundation-model showcase](./liatir_single_cell_showcase_codex_plan.md)
+resumed with the user's approval for CPU-only execution and strict resource limits,
+after two macOS failures during the earlier attempts. Its
+[execution checklist](./single-cell-showcase-execution.md) records the crashes,
+the tested independent process monitor and a successful native 72-cell diagnostic
+for five methods. UCE's checkpoint exceeds the approved memory cap and is refused
+before allocation. The bounded native rebuild passed. The full 11,990-cell PBMC
+run completed with real measurements and exported figures for PCA, Geneformer,
+Harmony, scVI and scGPT; native Results/chart validation passed. Full pancreas
+execution initially stopped on diagnosed memory overhead and fractional-input
+rejection. Those fixes passed scientific regressions and full source-preservation
+checks. Full native run `6071da5e-c592-4ee3-8544-7bbe5b12be8f` stopped when the
+session was interrupted on 2026-10-05. PCA, Geneformer, Harmony and scVI saved
+their complete embeddings and telemetry. scGPT reached 10,752 of 16,382 cells
+but saved no partial embedding; that inference must restart. No study process
+remained at the subsequent check. The user requested a Windows/WSL2 handoff;
+see [the continuation instructions](./single-cell-showcase-wsl2-handoff.md).
+Do not relaunch on this Mac. Durable partial checkpoints and a driver independent
+of the chat session are prerequisites for another long run; neither fix exists yet.
+Combined results and independent reproduction remain open. Updated native packaging
+was safely stopped at the memory cap; the existing verified Rust bridge is reused.
+Do not repeat the old Metal configuration or relax the resource limits automatically.
 
 1. **Signed distribution** — [the release gate](./roadmap/release-signed-distribution.md), in
    progress for `0.1.0` ([decision](../decisions/desktop-distribution-channel.md)): updates from

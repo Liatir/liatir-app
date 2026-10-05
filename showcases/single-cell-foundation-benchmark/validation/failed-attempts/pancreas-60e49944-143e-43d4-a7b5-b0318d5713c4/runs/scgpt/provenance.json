@@ -1,0 +1,91 @@
+{
+  "runtime_box_activation": {
+    "hostEnvironment": "native",
+    "release": {
+      "archive": {
+        "format": "zip",
+        "sha256": "1ec7ec5c57e58c4112e69b70ea9ad68d3bb48f1dca18b1cb0820ab8c52a64866",
+        "sizeBytes": 532421348,
+        "url": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/scgpt-whole-human/0.2.5-beta.2/macos-aarch64-metal/1ec7ec5c57e58c4112e69b70ea9ad68d3bb48f1dca18b1cb0820ab8c52a64866.zip"
+      },
+      "boxId": "scgpt-whole-human",
+      "cacheSubdir": "model-cache/scgpt-whole-human",
+      "compatibility": {
+        "minLiatirVersion": "0.2.1",
+        "minMacosVersion": "13.0",
+        "minRamGb": 16
+      },
+      "installedSizeBytes": 1372956881,
+      "kind": "liatir.runtime-box.release",
+      "labels": {
+        "model": "bowang-scgpt-whole-human",
+        "runtime": "single-cell-foundation-scgpt-whole-human"
+      },
+      "payloadDigest": {
+        "format": "sha256-path-list-v1",
+        "sha256": "043870132b78c4fbc3fa539805a40e9f19f00f592f53216f527f019a748cbf41"
+      },
+      "provenance": {
+        "builderRevision": "f9325e0989197a5c6a04686ae10ebc5cd17ef441",
+        "builtAt": "2026-09-25T20:23:41+02:00",
+        "dependencyLockSha256": "04f83b64db8b5f6faf65fa40c677d6596a50c7d5482c51d8c1baa173588b388a",
+        "pixiVersion": "0.73.0",
+        "runtimeVersion": "3.11.15",
+        "scrollId": "scgpt-whole-human-macos-arm64-metal",
+        "scrollVersion": "1.0.0",
+        "sourceRevision": "cebd6fae655b9c585a4807daa3ac31bb764f06b4",
+        "sourceTreeDirty": false
+      },
+      "runtime": {
+        "entryPoint": "venv/bin/python",
+        "id": "python",
+        "version": "3.11.15"
+      },
+      "schemaVersion": 3,
+      "selfTest": {
+        "probe": {
+          "imports": [
+            "torch",
+            "anndata",
+            "numpy",
+            "scipy",
+            "pandas",
+            "h5py",
+            "tqdm"
+          ]
+        },
+        "timeoutSeconds": 180
+      },
+      "target": {
+        "accelerator": "metal",
+        "arch": "aarch64",
+        "platform": "macos"
+      },
+      "version": "0.2.5-beta.2"
+    },
+    "schemaVersion": 3,
+    "selectedTarget": {
+      "accelerator": "metal",
+      "arch": "aarch64",
+      "platform": "macos"
+    },
+    "signedRelease": {
+      "payloadBase64": "ewogICJzY2hlbWFWZXJzaW9uIjogMywKICAia2luZCI6ICJsaWF0aXIucnVudGltZS1ib3gucmVsZWFzZSIsCiAgImJveElkIjogInNjZ3B0LXdob2xlLWh1bWFuIiwKICAibGFiZWxzIjogewogICAgIm1vZGVsIjogImJvd2FuZy1zY2dwdC13aG9sZS1odW1hbiIsCiAgICAicnVudGltZSI6ICJzaW5nbGUtY2VsbC1mb3VuZGF0aW9uLXNjZ3B0LXdob2xlLWh1bWFuIgogIH0sCiAgInZlcnNpb24iOiAiMC4yLjUtYmV0YS4yIiwKICAidGFyZ2V0IjogewogICAgInBsYXRmb3JtIjogIm1hY29zIiwKICAgICJhcmNoIjogImFhcmNoNjQiLAogICAgImFjY2VsZXJhdG9yIjogIm1ldGFsIgogIH0sCiAgImNvbXBhdGliaWxpdHkiOiB7CiAgICAibWluTGlhdGlyVmVyc2lvbiI6ICIwLjIuMSIsCiAgICAibWluTWFjb3NWZXJzaW9uIjogIjEzLjAiLAogICAgIm1pblJhbUdiIjogMTYKICB9LAogICJhcmNoaXZlIjogewogICAgImZvcm1hdCI6ICJ6aXAiLAogICAgInVybCI6ICJodHRwczovL2Fzc2V0cy5tb2RlbHMubGlhdGlyLmNvbS9haS1ydW50aW1lLWJveGVzL2JveGVzL3NjZ3B0LXdob2xlLWh1bWFuLzAuMi41LWJldGEuMi9tYWNvcy1hYXJjaDY0LW1ldGFsLzFlYzdlYzVjNTdlNThjNDExMmU2OWI3MGVhOWFkNjhkM2JiNDhmMWRjYTE4YjFjYjA4MjBhYjhjNTJhNjQ4NjYuemlwIiwKICAgICJzaGEyNTYiOiAiMWVjN2VjNWM1N2U1OGM0MTEyZTY5YjcwZWE5YWQ2OGQzYmI0OGYxZGNhMThiMWNiMDgyMGFiOGM1MmE2NDg2NiIsCiAgICAic2l6ZUJ5dGVzIjogNTMyNDIxMzQ4CiAgfSwKICAiaW5zdGFsbGVkU2l6ZUJ5dGVzIjogMTM3Mjk1Njg4MSwKICAicGF5bG9hZERpZ2VzdCI6IHsKICAgICJmb3JtYXQiOiAic2hhMjU2LXBhdGgtbGlzdC12MSIsCiAgICAic2hhMjU2IjogIjA0Mzg3MDEzMmI3OGM0ZmJjM2ZhNTM5ODA1YTQwZTlmMTlmMDBmNTkyZjUzMjE2ZjUyN2YwMTlhNzQ4Y2JmNDEiCiAgfSwKICAicnVudGltZSI6IHsKICAgICJpZCI6ICJweXRob24iLAogICAgInZlcnNpb24iOiAiMy4xMS4xNSIsCiAgICAiZW50cnlQb2ludCI6ICJ2ZW52L2Jpbi9weXRob24iCiAgfSwKICAiY2FjaGVTdWJkaXIiOiAibW9kZWwtY2FjaGUvc2NncHQtd2hvbGUtaHVtYW4iLAogICJzZWxmVGVzdCI6IHsKICAgICJwcm9iZSI6IHsKICAgICAgImltcG9ydHMiOiBbCiAgICAgICAgInRvcmNoIiwKICAgICAgICAiYW5uZGF0YSIsCiAgICAgICAgIm51bXB5IiwKICAgICAgICAic2NpcHkiLAogICAgICAgICJwYW5kYXMiLAogICAgICAgICJoNXB5IiwKICAgICAgICAidHFkbSIKICAgICAgXQogICAgfSwKICAgICJ0aW1lb3V0U2Vjb25kcyI6IDE4MAogIH0sCiAgInByb3ZlbmFuY2UiOiB7CiAgICAic2Nyb2xsSWQiOiAic2NncHQtd2hvbGUtaHVtYW4tbWFjb3MtYXJtNjQtbWV0YWwiLAogICAgInNjcm9sbFZlcnNpb24iOiAiMS4wLjAiLAogICAgImJ1aWxkZXJSZXZpc2lvbiI6ICJmOTMyNWUwOTg5MTk3YTVjNmEwNDY4NmFlMTBlYmM1Y2QxN2VmNDQxIiwKICAgICJzb3VyY2VUcmVlRGlydHkiOiBmYWxzZSwKICAgICJzb3VyY2VSZXZpc2lvbiI6ICJjZWJkNmZhZTY1NWI5YzU4NWE0ODA3ZGFhM2FjMzFiYjc2NGYwNmI0IiwKICAgICJydW50aW1lVmVyc2lvbiI6ICIzLjExLjE1IiwKICAgICJwaXhpVmVyc2lvbiI6ICIwLjczLjAiLAogICAgImRlcGVuZGVuY3lMb2NrU2hhMjU2IjogIjA0ZjgzYjY0ZGI4YjVmNmZhZjY1ZmE0MGM2NzdkNjU5NmE1MGM3ZDU0ODJjNTFkOGMxYmFhMTczNTg4YjM4OGEiLAogICAgImJ1aWx0QXQiOiAiMjAyNi0wOS0yNVQyMDoyMzo0MSswMjowMCIKICB9Cn0K",
+      "payloadEncoding": "base64-json-utf8",
+      "payloadSha256": "ea8deeb99ea0d7b9c84bcd69593746ccfd470f52bd6f4f1af28fc86e69341a14",
+      "schemaVersion": 3,
+      "signatures": [
+        {
+          "algorithm": "ed25519",
+          "keyId": "liatir-runtime-box-kms-2026",
+          "signatureBase64": "+vfvews1o/oVyzivwjR8liUduIKqE1aeyTvA3Q2/DbqbDobopZ1I3/Bh43lTLqY3rCIhT3lB6OIsfdPfDA0UDw=="
+        }
+      ]
+    }
+  },
+  "input_sha256": "aeb6f9a2de14b881a81420018963d2d35e33d705f01ecc73c11a78f012001368",
+  "runner_sha256": "581c4909cae3aff876108640cc151960daafe3b68b4f28d22babbb1c84bda27b",
+  "job_id": "job_a",
+  "status": "blocked",
+  "error": "Traceback (most recent call last):\n  File \"/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/ai-runtimes/single-cell-foundation-scgpt-whole-human/runs/7dbe3232-5a0a-46ca-9439-ee3a8d6edc62/script.py\", line 101, in <module>\n    exec(compile(script, \"liatir-production-embedding.py\", \"exec\"), {\"__name__\": \"__main__\"})\n  File \"liatir-production-embedding.py\", line 106, in <module>\nSystemExit: scGPT requires counts, but AnnData .X appears normalized or log-transformed.\nscGPT requires counts, but AnnData .X appears normalized or log-transformed."
+}

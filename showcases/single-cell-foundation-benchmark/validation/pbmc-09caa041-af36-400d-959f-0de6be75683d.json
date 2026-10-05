@@ -1,0 +1,195 @@
+{
+  "outputDir": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/workspaces/__test__/runs/09caa041-af36-400d-959f-0de6be75683d/output",
+  "run": {
+    "durationMs": 299338,
+    "endedAt": 1791126216811,
+    "error": "1 requested method(s) could not complete. See the exported diagnostics.",
+    "execution": {
+      "entityId": "single-cell-foundation-benchmark",
+      "rootRunId": "09caa041-af36-400d-959f-0de6be75683d",
+      "runId": "09caa041-af36-400d-959f-0de6be75683d",
+      "runKind": "native-tool",
+      "schemaVersion": 1,
+      "workspaceId": "__test__"
+    },
+    "id": "09caa041-af36-400d-959f-0de6be75683d",
+    "inputs": [],
+    "jobIds": [
+      "job_1",
+      "job_2",
+      "job_3",
+      "job_4",
+      "job_5",
+      "job_6",
+      "job_7",
+      "job_8",
+      "job_9",
+      "job_a",
+      "job_b",
+      "job_c"
+    ],
+    "label": "Single-cell stability check · PBMC 12k",
+    "outputFiles": [
+      {
+        "createdAt": 1791126216811,
+        "ext": "zip",
+        "label": "single-cell-study.zip",
+        "parentRun": {
+          "analysisRunId": "09caa041-af36-400d-959f-0de6be75683d",
+          "runId": "09caa041-af36-400d-959f-0de6be75683d",
+          "runKind": "native-tool"
+        },
+        "path": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/workspaces/__test__/runs/09caa041-af36-400d-959f-0de6be75683d/output/single-cell-study.zip",
+        "producer": {
+          "id": "single-cell-foundation-benchmark",
+          "kind": "native-tool",
+          "label": "Single-cell stability check · PBMC 12k"
+        },
+        "role": "final",
+        "size": 1622739
+      },
+      {
+        "createdAt": 1791126216811,
+        "ext": "csv",
+        "label": "summary.csv",
+        "parentRun": {
+          "analysisRunId": "09caa041-af36-400d-959f-0de6be75683d",
+          "runId": "09caa041-af36-400d-959f-0de6be75683d",
+          "runKind": "native-tool"
+        },
+        "path": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/workspaces/__test__/runs/09caa041-af36-400d-959f-0de6be75683d/output/results/summary.csv",
+        "producer": {
+          "id": "single-cell-foundation-benchmark",
+          "kind": "native-tool",
+          "label": "Single-cell stability check · PBMC 12k"
+        },
+        "role": "final",
+        "size": 6320
+      },
+      {
+        "createdAt": 1791126216811,
+        "ext": "json",
+        "label": "summary.json",
+        "parentRun": {
+          "analysisRunId": "09caa041-af36-400d-959f-0de6be75683d",
+          "runId": "09caa041-af36-400d-959f-0de6be75683d",
+          "runKind": "native-tool"
+        },
+        "path": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/workspaces/__test__/runs/09caa041-af36-400d-959f-0de6be75683d/output/results/summary.json",
+        "producer": {
+          "id": "single-cell-foundation-benchmark",
+          "kind": "native-tool",
+          "label": "Single-cell stability check · PBMC 12k"
+        },
+        "role": "final",
+        "size": 28367
+      },
+      {
+        "createdAt": 1791126216811,
+        "ext": "md",
+        "label": "results.md",
+        "parentRun": {
+          "analysisRunId": "09caa041-af36-400d-959f-0de6be75683d",
+          "runId": "09caa041-af36-400d-959f-0de6be75683d",
+          "runKind": "native-tool"
+        },
+        "path": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/workspaces/__test__/runs/09caa041-af36-400d-959f-0de6be75683d/output/report/results.md",
+        "producer": {
+          "id": "single-cell-foundation-benchmark",
+          "kind": "native-tool",
+          "label": "Single-cell stability check · PBMC 12k"
+        },
+        "role": "final",
+        "size": 3420
+      },
+      {
+        "createdAt": 1791126216811,
+        "ext": "txt",
+        "label": "requirements.txt",
+        "parentRun": {
+          "analysisRunId": "09caa041-af36-400d-959f-0de6be75683d",
+          "runId": "09caa041-af36-400d-959f-0de6be75683d",
+          "runKind": "native-tool"
+        },
+        "path": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/workspaces/__test__/runs/09caa041-af36-400d-959f-0de6be75683d/output/requirements.txt",
+        "producer": {
+          "id": "single-cell-foundation-benchmark",
+          "kind": "native-tool",
+          "label": "Single-cell stability check · PBMC 12k"
+        },
+        "role": "intermediate",
+        "size": 9082
+      },
+      {
+        "createdAt": 1791126216811,
+        "ext": "json",
+        "label": "liatir-run.json",
+        "parentRun": {
+          "analysisRunId": "09caa041-af36-400d-959f-0de6be75683d",
+          "runId": "09caa041-af36-400d-959f-0de6be75683d",
+          "runKind": "native-tool"
+        },
+        "path": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/workspaces/__test__/runs/09caa041-af36-400d-959f-0de6be75683d/output/liatir-run.json",
+        "producer": {
+          "id": "single-cell-foundation-benchmark",
+          "kind": "native-tool",
+          "label": "Single-cell stability check · PBMC 12k"
+        },
+        "role": "intermediate",
+        "size": 267
+      },
+      {
+        "createdAt": 1791126216811,
+        "ext": "json",
+        "label": "study-environment.json",
+        "parentRun": {
+          "analysisRunId": "09caa041-af36-400d-959f-0de6be75683d",
+          "runId": "09caa041-af36-400d-959f-0de6be75683d",
+          "runKind": "native-tool"
+        },
+        "path": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/workspaces/__test__/runs/09caa041-af36-400d-959f-0de6be75683d/output/study-environment.json",
+        "producer": {
+          "id": "single-cell-foundation-benchmark",
+          "kind": "native-tool",
+          "label": "Single-cell stability check · PBMC 12k"
+        },
+        "role": "intermediate",
+        "size": 3370
+      },
+      {
+        "createdAt": 1791126216811,
+        "ext": "md",
+        "label": "protocol.md",
+        "parentRun": {
+          "analysisRunId": "09caa041-af36-400d-959f-0de6be75683d",
+          "runId": "09caa041-af36-400d-959f-0de6be75683d",
+          "runKind": "native-tool"
+        },
+        "path": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/workspaces/__test__/runs/09caa041-af36-400d-959f-0de6be75683d/output/protocol.md",
+        "producer": {
+          "id": "single-cell-foundation-benchmark",
+          "kind": "native-tool",
+          "label": "Single-cell stability check · PBMC 12k"
+        },
+        "role": "intermediate",
+        "size": 7234
+      }
+    ],
+    "params": {
+      "dataset": "pbmc",
+      "methods": [
+        "pca",
+        "geneformer",
+        "harmony",
+        "scvi",
+        "scgpt",
+        "uce"
+      ],
+      "stabilityCheck": true
+    },
+    "startedAt": 1791125917473,
+    "status": "error",
+    "tool": "single-cell-foundation-benchmark"
+  },
+  "frontendMode": "bundled"
+}

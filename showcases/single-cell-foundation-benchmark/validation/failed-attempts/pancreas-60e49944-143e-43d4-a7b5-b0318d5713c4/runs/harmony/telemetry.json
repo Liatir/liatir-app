@@ -1,0 +1,9 @@
+{
+  "wall_seconds": null,
+  "peak_rss_bytes": null,
+  "peak_accelerator_bytes": null,
+  "execution_target": "CPU",
+  "peak_accelerator_reason": "CPU-only execution; no accelerator used.",
+  "observed_peak_tree_rss_bytes": 2198536192,
+  "reason": "Worker terminated before final OS telemetry: Resource limit: rss_bytes=2198536192, maxRssBytes=2147483648"
+}

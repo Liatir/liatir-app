@@ -1,0 +1,17 @@
+{
+  "command": [
+    "npm",
+    "run",
+    "test:verify"
+  ],
+  "status": "failed",
+  "exit_code": 1,
+  "duration_seconds": 11.161175583000045,
+  "node_max_heap_mib": 1024,
+  "resource_limits": {
+    "maxRssBytes": 2147483648,
+    "minAvailableBytes": 2147483648,
+    "minDiskBytes": 4294967296,
+    "maxSwapGrowthBytes": 268435456
+  }
+}

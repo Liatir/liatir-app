@@ -1,0 +1,29 @@
+{
+  "appLogPath": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/tauri-logs/tauri-2026-10-04T14-36-47-493Z.log",
+  "artifactsDir": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts",
+  "heavy": true,
+  "specs": [
+    "tests/e2e/specs/heavy.single-cell-study.e2e.mjs"
+  ],
+  "startedAt": "2026-10-04T14:36:47.497Z",
+  "finishedAt": "2026-10-04T14:40:12.242Z",
+  "summary": {
+    "durationMs": 204745,
+    "failed": 1,
+    "passed": 0,
+    "skipped": 0,
+    "total": 1
+  },
+  "tests": [
+    {
+      "durationMs": 203596,
+      "error": "Error: expect(received).toBe(expected) // Object.is equality\n\nExpected: true\nReceived: false\n    at Object.run (file:///Users/lorenzo/Documents/GitHub/liatir-stack/tests/e2e/specs/heavy.single-cell-study.e2e.mjs:72:91)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async run (file:///Users/lorenzo/Documents/GitHub/liatir-stack/tests/e2e/run-tauri-e2e.mjs:627:11)",
+      "failureScreenshot": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/screenshots/failure-runs-the-single-cell-study-through-the-no-code-native-ui-and-exports-actual-results.png",
+      "heavy": true,
+      "name": "runs the single-cell study through the no-code native UI and exports actual Results",
+      "specPath": "tests/e2e/specs/heavy.single-cell-study.e2e.mjs",
+      "status": "failed"
+    }
+  ],
+  "visual": false
+}

@@ -1,0 +1,7 @@
+dataset,method,status,wall_seconds,peak_rss_bytes,peak_accelerator_bytes,execution_target,model_runtime_bytes,embedding_dimensions,embedding_bytes
+pbmc,pca,completed,7.514706750000187,1279705088,,CPU,1296210329,50,2335972
+pbmc,geneformer,completed,804.1007339999996,731430912,,CPU,2255303564,256,11506625
+pbmc,harmony,completed,15.195992250000018,1299136512,,CPU,1296210329,50,2335806
+pbmc,scvi,completed,249.21706391599946,1019445248,,CPU,1296210329,30,1462684
+pbmc,scgpt,completed,4994.065955374999,1237647360,,CPU,1925325261,512,22957172
+pbmc,uce,blocked,0.1423245420010062,23281664,,CPU,11757034470,,

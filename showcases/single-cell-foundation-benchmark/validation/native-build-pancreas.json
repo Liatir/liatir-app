@@ -1,0 +1,57 @@
+{
+  "status": "failed",
+  "duration_seconds": 18.645034667000118,
+  "stages": {
+    "single-cell-native-pancreas-compile": {
+      "command": [
+        "cargo",
+        "build",
+        "--locked",
+        "--bin",
+        "liatir",
+        "--features",
+        "wdio,tauri/custom-protocol",
+        "--config",
+        "profile.dev.package.liatir.opt-level=1",
+        "--config",
+        "profile.dev.package.liatir.codegen-units=256"
+      ],
+      "exit_code": -15,
+      "monitor": {
+        "pid": 12156,
+        "limits": {
+          "maxRssBytes": 2147483648,
+          "minAvailableBytes": 2147483648,
+          "minDiskBytes": 4294967296,
+          "maxSwapGrowthBytes": 268435456
+        },
+        "status": "stopped",
+        "peak_rss_bytes": 2179923968,
+        "initial_swap_bytes": 0,
+        "started_at": 1791163956.232439,
+        "last_sample": {
+          "rss_bytes": 2179923968,
+          "tracked_pids": [
+            12156,
+            12160,
+            12164,
+            12198,
+            12421
+          ],
+          "available_bytes": 4976476160,
+          "swap_used_bytes": 0,
+          "disk_free_bytes": 5572091904
+        },
+        "updated_at": 1791163974.8042712,
+        "reason": "Resource limit: rss_bytes=2179923968, maxRssBytes=2147483648"
+      }
+    }
+  },
+  "capabilities_restored_to_git_bytes": true,
+  "resource_limits": {
+    "maxRssBytes": 2147483648,
+    "minAvailableBytes": 2147483648,
+    "minDiskBytes": 4294967296,
+    "maxSwapGrowthBytes": 268435456
+  }
+}

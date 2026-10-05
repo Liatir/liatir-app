@@ -1,0 +1,13 @@
+{
+  "status": "passed",
+  "run_id": "60e49944-143e-43d4-a7b5-b0318d5713c4",
+  "dataset": "pancreas",
+  "cells": 16382,
+  "genes": 19093,
+  "all_count_values_exactly_equal": true,
+  "gene_order_preserved": true,
+  "cell_filter_preserved": true,
+  "source_checksums_verified": true,
+  "fractional_count_entries": 23809035,
+  "prepared_sha256": "aeb6f9a2de14b881a81420018963d2d35e33d705f01ecc73c11a78f012001368"
+}

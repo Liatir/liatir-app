@@ -1,0 +1,97 @@
+{
+  "status": "passed",
+  "compiler": "direct Cargo followed by local packaging-only Tauri bundle",
+  "cargo_arguments": [
+    "build",
+    "--locked",
+    "--bin",
+    "liatir",
+    "--features",
+    "wdio,tauri/custom-protocol",
+    "--config",
+    "profile.dev.package.liatir.opt-level=1",
+    "--config",
+    "profile.dev.package.liatir.codegen-units=256"
+  ],
+  "cargo_environment": {
+    "CARGO_BUILD_JOBS": "1",
+    "CARGO_INCREMENTAL": "0",
+    "CARGO_PROFILE_DEV_DEBUG": "0",
+    "CARGO_PROFILE_DEV_OPT_LEVEL": "2"
+  },
+  "bundle_arguments": [
+    "bundle",
+    "--debug",
+    "--features",
+    "wdio",
+    "--bundles",
+    "app",
+    "--ci",
+    "--no-sign"
+  ],
+  "monitors": {
+    "single-cell-native-separated-production-compile": {
+      "pid": 34422,
+      "limits": {
+        "maxRssBytes": 2147483648,
+        "minAvailableBytes": 2147483648,
+        "minDiskBytes": 4294967296,
+        "maxSwapGrowthBytes": 268435456
+      },
+      "status": "completed",
+      "peak_rss_bytes": 1911439360,
+      "initial_swap_bytes": 591721922,
+      "started_at": 1791128881.185472,
+      "last_sample": {
+        "rss_bytes": 51888128,
+        "tracked_pids": [
+          34422,
+          34426,
+          34430,
+          38648
+        ],
+        "available_bytes": 5198938112,
+        "swap_used_bytes": 583333314,
+        "disk_free_bytes": 6490001408
+      },
+      "updated_at": 1791129215.1661382,
+      "ended_at": 1791129215.2592251
+    },
+    "single-cell-native-separated-production-bundle": {
+      "pid": 38649,
+      "limits": {
+        "maxRssBytes": 2147483648,
+        "minAvailableBytes": 2147483648,
+        "minDiskBytes": 4294967296,
+        "maxSwapGrowthBytes": 268435456
+      },
+      "status": "completed",
+      "peak_rss_bytes": 110428160,
+      "initial_swap_bytes": 583333314,
+      "started_at": 1791129215.3556411,
+      "last_sample": {
+        "rss_bytes": 110428160,
+        "tracked_pids": [
+          38649,
+          38653,
+          38657,
+          38745
+        ],
+        "available_bytes": 5052186624,
+        "swap_used_bytes": 583333314,
+        "disk_free_bytes": 6482456576
+      },
+      "updated_at": 1791129216.185216,
+      "ended_at": 1791129216.268919
+    }
+  },
+  "executable_sha256": "10ca77825884a8cdf6c861bc15b6dfc4eaa562ff575aea82ee8a6dad7308e0ea",
+  "capabilities_restored_to_git_bytes": true,
+  "native_signal_regression": {
+    "durationMs": 2428,
+    "failed": 0,
+    "passed": 1,
+    "skipped": 0,
+    "total": 1
+  }
+}

@@ -242,7 +242,7 @@ The task is complete only when:
 - the Liatir showcase can launch and display the benchmark;
 - reproduction instructions have been tested;
 - repository tests relevant to the changed areas pass;
-- `report/results.md` summarizes the measurements **without overstating conclusions**.
+- [report/results.md](../../showcases/single-cell-foundation-benchmark/report/results.md) summarizes the measurements **without overstating conclusions**.
 
 At the end, provide a concise execution summary containing:
 

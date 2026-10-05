@@ -1,0 +1,9 @@
+{
+  "status": "passed",
+  "tests": 11,
+  "failures": 0,
+  "errors": 0,
+  "duration_seconds": 12.652023957999972,
+  "python": "3.11.9 (main, Aug 14 2024, 04:17:21) [Clang 18.1.8 ]",
+  "scope": "Scientific alignment, fixed split, metric sanity, original-versus-bounded preprocessing equality, fractional-count identity, actual guard stop, checkpoints and collection."
+}

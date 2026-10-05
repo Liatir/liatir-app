@@ -50,6 +50,15 @@
 
   const builtins: BuiltinTool[] = [
     {
+      id: 'single-cell-foundation-benchmark',
+      label: 'Single-cell study',
+      description: 'Compare cell representations, batch effects, runtime and memory on public blood and pancreas data.',
+      href: '/tools/single-cell/benchmark',
+      status: 'available',
+      tags: ['Showcase', 'Benchmark', 'Single-cell', 'AI'],
+      category: 'Single-cell',
+    },
+    {
       id: 'fastqc',
       label: 'FastQC',
       description: 'Per-base quality scores, GC content, adapter detection for FASTQ files.',

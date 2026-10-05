@@ -1,3 +1,5 @@
+import { SOURCE_COUNT_VALIDATION_SCRIPT } from './source-count-validation';
+
 export const SCGPT_EMBEDDING_SCRIPT = String.raw`
 import csv
 import importlib
@@ -101,9 +103,8 @@ else:
     matrix = matrix.tocsr()
 if matrix.data.size and (not np.all(np.isfinite(matrix.data)) or np.min(matrix.data) < 0):
     raise SystemExit("scGPT requires finite, non-negative expression counts in AnnData .X.")
-count_sample = matrix.data[: min(matrix.data.size, 100_000)]
-if count_sample.size and np.mean(np.abs(count_sample - np.rint(count_sample)) > 1e-4) > 0.01:
-    raise SystemExit("scGPT requires counts, but AnnData .X appears normalized or log-transformed.")
+${SOURCE_COUNT_VALIDATION_SCRIPT}
+validate_source_counts(matrix, input_file, payload, summary_warnings, "scGPT")
 
 supported_indices = np.asarray(
     [index for index, gene in enumerate(raw_gene_names) if gene in vocab],
@@ -195,6 +196,8 @@ if len(compatible) < 130 or missing_critical:
     )
 model_state.update(compatible)
 model.load_state_dict(model_state)
+# Loaded parameters own their values; retaining the checkpoint duplicates weights.
+del checkpoint, compatible, model_state
 # PyTorch 2.4 enables nested-tensor conversion inside TransformerEncoder, but
 # its mask-alignment operator is unavailable on MPS. The regular tensor path is
 # numerically equivalent for inference and keeps the remaining model on Metal.
@@ -238,6 +241,8 @@ for cell_index in range(expression.shape[0]):
 if not sequences:
     raise SystemExit("scGPT found no cells with usable human gene counts.")
 
+del expression
+
 embedding_batches = []
 with torch.no_grad():
     for start in range(0, len(sequences), batch_size):
@@ -259,6 +264,8 @@ with torch.no_grad():
         embeddings = encoded[:, 0, :]
         embeddings = embeddings / torch.linalg.vector_norm(embeddings, dim=1, keepdim=True).clamp(min=1e-12)
         embedding_batches.append(embeddings.detach().cpu().numpy().astype(np.float32))
+        if (start + batch_size) % 128 == 0 or start + batch_size >= len(sequences):
+            print(f"scGPT: {min(start + batch_size, len(sequences))}/{len(sequences)} cells", file=sys.stderr, flush=True)
 
 embeddings = np.concatenate(embedding_batches, axis=0)
 result_adata = adata[kept_positions].copy()
@@ -267,6 +274,7 @@ result_adata.uns["liatir_scgpt"] = {
     "model": "scGPT Whole-human",
     "upstream_revision": "cebd6fae655b9c585a4807daa3ac31bb764f06b4",
     "gene_name_source": gene_name_source,
+    "source_count_provenance": payload.get("sourceCountProvenance", {}),
     "value_encoding": "per-cell 51-bin quantile encoding with deterministic tie handling",
     "embedding_layer": "CLS token from the final encoder layer, L2 normalized",
 }

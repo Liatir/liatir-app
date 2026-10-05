@@ -1,0 +1,18 @@
+{
+  "command": [
+    "npm",
+    "run",
+    "test:verify"
+  ],
+  "status": "passed",
+  "exit_code": 0,
+  "duration_seconds": 36.67862262499989,
+  "node_max_heap_mib": 1024,
+  "resource_limits": {
+    "maxRssBytes": 2147483648,
+    "minAvailableBytes": 2147483648,
+    "minDiskBytes": 4294967296,
+    "maxSwapGrowthBytes": 268435456
+  },
+  "precheck": "Three standalone HTML export tests passed, including no external scripts and missing-asset rejection."
+}
