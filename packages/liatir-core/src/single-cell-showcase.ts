@@ -29,4 +29,6 @@ export interface LiatirSingleCellStudyRequest {
   stabilityCheck?: boolean;
   /** Reuse only verified completed stages of this workspace's previous run. */
   resumeFromRunId?: string;
+  /** Import an explicitly verified historical export into a new workspace run. */
+  importStudyFile?: string;
 }

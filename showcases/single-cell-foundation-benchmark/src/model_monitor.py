@@ -13,6 +13,7 @@ import sys
 import time
 import traceback
 import zipfile
+import uuid
 
 
 class Tee:
@@ -33,12 +34,19 @@ class Tee:
 
 payload = json.loads(sys.stdin.read())
 script = payload.pop("modelScript")
+payload["runnerSha256"] = hashlib.sha256(script.encode()).hexdigest()
 guard_source = payload.pop("resourceGuard")
 limits = payload.pop("resourceLimits")
 checkpoint_preflight = payload.pop("uceCheckpointPreflight", False)
 profile_inference = payload.pop("profileInference", False)
 output = Path(payload["outputDir"])
 output.mkdir(parents=True, exist_ok=True)
+if (output / "logs").exists():
+    previous = output / "attempts" / str(uuid.uuid4())
+    previous.mkdir(parents=True)
+    for name in ("logs", "runner.py", "environment.json", "telemetry.json", "resource-monitor.json", "resource_guard.py"):
+        if (output / name).exists():
+            (output / name).rename(previous / name)
 (output / "runner.py").write_text(script)
 guard_path = output / "resource_guard.py"
 guard_path.write_text(guard_source)
@@ -60,6 +68,8 @@ payload["accelerator"] = "cpu"
 payload["batchSize"] = 1
 runtime = Path(payload["runtimePath"])
 env = {"python": sys.version, "os": platform.platform(), "architecture": platform.machine(),
+       "cpu": platform.processor() or (next((line.split(":", 1)[1].strip() for line in Path("/proc/cpuinfo").read_text().splitlines() if line.startswith("model name")), "unknown") if sys.platform.startswith("linux") else platform.machine()),
+       "host_ram_bytes": os.sysconf("SC_PHYS_PAGES") * os.sysconf("SC_PAGE_SIZE"),
        "cpu_count": os.cpu_count(), "execution_target": "CPU", "resource_limits": limits,
        "packages": dict(sorted((d.metadata["Name"], d.version) for d in importlib.metadata.distributions() if d.metadata["Name"])),
        "model_runner_sha256": hashlib.sha256(script.encode()).hexdigest(),
@@ -122,4 +132,13 @@ finally:
         "disk_scope": "signed installed box including model and runtime, excluding run scratch directories",
         "status": status,
     }
+    accounting = output / "scgpt-checkpoint-accounting.json"
+    if accounting.exists():
+        costs = json.loads(accounting.read_text())
+        measured["checkpoint_attempts"] = costs["attempts"]
+        if len(costs["attempts"]) > 1:
+            measured["wall_seconds"] = None
+            measured["wall_seconds_lower_bound"] = costs["wall_seconds_lower_bound"]
+            measured["wall_seconds_reason"] = costs["unmeasured_time_reason"]
+            measured["peak_rss_bytes"] = max(measured["peak_rss_bytes"], costs["peak_rss_bytes"] or 0)
     (output / "telemetry.json").write_text(json.dumps(measured, indent=2))

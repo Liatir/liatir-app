@@ -3,8 +3,17 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { launchBackground } from './single-cell-background.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+if (process.argv.includes('--detach')) {
+  const launched = launchBackground({
+    directory: path.join(root, 'showcases/single-cell-foundation-benchmark/transfer/executions'),
+    args: [fileURLToPath(import.meta.url), ...process.argv.slice(2).filter((arg) => arg !== '--detach')], cwd: root,
+  });
+  console.log(JSON.stringify(launched));
+  process.exit(0);
+}
 const dataset = process.argv[2] ?? 'pbmc';
 const methods = process.argv[3] ?? 'pca,geneformer,harmony,scvi,scgpt,uce';
 if (!['pbmc', 'pancreas'].includes(dataset)) throw new Error('Expected pbmc or pancreas.');

@@ -4,6 +4,7 @@ import type {
   JsonValue,
   LiatirAIModelMetadata,
   LiatirAIModelRecord,
+  LiatirExecutionIdentity,
   LiatirRuntimeBoxActivationMetadata,
   LiatirRuntimeComponentInstallResult,
   LiatirRuntimeComponentStatus,
@@ -64,6 +65,7 @@ export interface AIPythonRunOptions {
   metadata?: Record<string, JsonValue>;
   onJobId?: (jobId: string) => void;
   signal?: AbortSignal;
+  workspaceId?: LiatirExecutionIdentity['workspaceId'];
 }
 
 export function cachePathForModel(model: LiatirAIModelRecord): string | null {
@@ -181,7 +183,7 @@ export async function runAIPython(
     script,
     args: options.args ?? [],
     inputJson,
-    workspaceId: workspaceStore.activeId,
+    workspaceId: options.workspaceId === undefined ? workspaceStore.activeId : options.workspaceId,
     label: options.jobLabel ?? `AI Model: ${model.name}`,
     metadata: {
       modelId: model.id,

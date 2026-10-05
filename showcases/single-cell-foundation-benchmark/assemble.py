@@ -86,6 +86,9 @@ def assemble(roots, destination):
             for name in ("protocol.md", "requirements.txt"):
                 shutil.copy2(root / name, destination / "datasets" / dataset / name)
             copy_tree(root / "code", destination / "datasets" / dataset / "code")
+            if (root / "imported-source").exists():
+                copy_tree(root / "imported-source", destination / "datasets" / dataset / "imported-source")
+                shutil.copy2(root / "import-origin.json", destination / "datasets" / dataset / "import-origin.json")
             manifests.append(manifest)
             executions.append({**recorded, "source_run_directory": str(root),
                                "source_bundle_sha256": sha256(root / "single-cell-study.zip")})

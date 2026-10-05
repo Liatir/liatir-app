@@ -15,11 +15,13 @@ import { ensureRunOutputDir } from '$lib/execution/run-storage';
 import { runLiatirPlugin } from '$lib/utils/plugin-run';
 import { aiModelsStore } from '$lib/stores/aiModels.svelte';
 import { cachePathForModel, runAIPython } from '$lib/ai/runtime';
+import { modelInstallBlock } from '$lib/ai/model-compatibility';
 import { GENEFORMER_EMBEDDING_SCRIPT, SCGPT_EMBEDDING_SCRIPT, UCE_EMBEDDING_SCRIPT } from '$lib/tools/ai/python-scripts';
 import monitor from '../../../../showcases/single-cell-foundation-benchmark/src/model_monitor.py?raw';
 import protocol from '../../../../showcases/single-cell-foundation-benchmark/protocol.md?raw';
 import requirements from '../../../../showcases/single-cell-foundation-benchmark/requirements.txt?raw';
 import resourceGuard from '../../../../showcases/single-cell-foundation-benchmark/src/resource_guard.py?raw';
+import transferManifest from '../../../../showcases/single-cell-foundation-benchmark/validation/windows-wsl2-handoff-manifest.json?raw';
 import { executionRuns } from '$lib/stores/executionRuns.svelte';
 
 const scripts: Record<string, string> = {
@@ -39,6 +41,7 @@ export async function launchSingleCellStudy(request: LiatirSingleCellStudyReques
   if (!api) throw new Error('Liatir is unavailable.');
   const id = crypto.randomUUID();
   const startedAt = Date.now();
+  if (request.resumeFromRunId && request.importStudyFile) throw new Error('Choose one saved study source.');
   if (request.resumeFromRunId) {
     const previous = executionRuns.byId(request.resumeFromRunId);
     if (!/^[a-f0-9-]{36}$/i.test(request.resumeFromRunId) || !previous
@@ -87,16 +90,23 @@ export async function launchSingleCellStudy(request: LiatirSingleCellStudyReques
         if (result.exitCode !== 0 || result.result == null) throw new Error(result.stderr.join('\n') || `Study stage ${action} failed.`);
         return result.result as Record<string, unknown>;
       };
-      const prepared = await stage('prepare', { protocol, requirements, runId: id, modelScripts: scripts,
+      const prepared = await stage('prepare', { protocol, requirements, runId: id, modelScripts: scripts, methods: request.methods,
         stabilityCheck: Boolean(request.stabilityCheck),
+        ...(request.importStudyFile ? { importStudyFile: request.importStudyFile, transferManifest: JSON.parse(transferManifest) } : {}),
         ...(request.resumeFromRunId ? { resumeRoot: `${data}/workspaces/${run.identity.workspaceId}/runs/${request.resumeFromRunId}/output` } : {}) });
       const completed = (prepared.completed_methods ?? []) as string[];
+      const recordedBlocked = (prepared.recorded_blocked_methods ?? []) as string[];
       const sourceCountProvenance = prepared.source_count_provenance as JsonValue | undefined;
       await aiModelsStore.init();
+      const hardware = await aiModelsStore.ensureHardwareInfo();
       for (const method of LIATIR_SINGLE_CELL_STUDY_METHODS.filter((m) => request.methods.includes(m.id))) {
         if (run.signal?.aborted) throw new Error('Study cancelled.');
         if (completed.includes(method.id)) {
           await run.appendLog(`Reusing verified ${method.label} results from the previous study.`);
+          continue;
+        }
+        if (recordedBlocked.includes(method.id)) {
+          await run.appendLog(`Reusing the verified ${method.label} failure record from the saved study.`);
           continue;
         }
         if (!method.modelId) {
@@ -117,7 +127,11 @@ export async function launchSingleCellStudy(request: LiatirSingleCellStudyReques
           await run.appendLog(`Running ${method.label}. Follow the model Job for details.`);
           await aiModelsStore.refreshRuntimeBoxStatus(method.modelId);
           const model = aiModelsStore.byId(method.modelId);
-          if (!model || model.status !== 'installed') throw new Error(`${method.label} is not installed. Install it from AI Models.`);
+          if (!model || model.status !== 'installed') {
+            const blocked = model && hardware ? modelInstallBlock(model, hardware) : null;
+            if (blocked) throw new Error(`${method.label}: ${blocked.reason} ${blocked.details.join(' ')}`);
+            throw new Error(`${method.label} is not installed. Install it from AI Models.`);
+          }
           result = await runAIPython(model, monitor, {
             modelScript: scripts[method.id], runtimePath: model.runtimePath!, modelCacheDir: cachePathForModel(model)!,
             resourceGuard, resourceLimits: LIATIR_SINGLE_CELL_STUDY_LIMITS,
@@ -128,6 +142,7 @@ export async function launchSingleCellStudy(request: LiatirSingleCellStudyReques
             species: 'human', batchSize: 1, accelerator: 'cpu', maxCsvRows: 3, randomSeed: 23,
             verifyEncoderParity: method.id === 'geneformer' && Boolean(request.stabilityCheck),
           }, { jobLabel: `${label} · ${method.label}`, metadata, timeoutSeconds: 24 * 3600,
+            workspaceId: run.identity.workspaceId,
             signal: run.signal, onJobId: (value) => { jobId = value; void run.attachJob(value); } });
         } catch (failure) {
           if (run.signal?.aborted) throw failure;
@@ -135,7 +150,11 @@ export async function launchSingleCellStudy(request: LiatirSingleCellStudyReques
         }
         await stage('collect', { method: method.id, config, jobId, runResult: result });
       }
-      await stage('evaluate', { methods: request.methods });
+      if (!prepared.evaluation_complete || request.methods.some((method) => !completed.includes(method) && !recordedBlocked.includes(method))) {
+        await stage('evaluate', { methods: request.methods });
+      } else {
+        await run.appendLog('Reusing the saved common evaluation and plots; refreshing the result presentation.');
+      }
       const report = await stage('report');
       output = report.output as ToolOutput;
       outputFiles = report.outputFiles as RunOutputFile[];

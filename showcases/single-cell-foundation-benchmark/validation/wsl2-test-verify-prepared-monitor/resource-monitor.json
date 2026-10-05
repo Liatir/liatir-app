@@ -1,0 +1,47 @@
+{
+  "pid": 360,
+  "limits": {
+    "maxRssBytes": 2147483648,
+    "minAvailableBytes": 2147483648,
+    "minDiskBytes": 4294967296,
+    "maxSwapGrowthBytes": 268435456
+  },
+  "status": "completed",
+  "peak_rss_bytes": 1765474304,
+  "initial_swap_bytes": 0,
+  "started_at": 1791200552.9843733,
+  "last_sample": {
+    "rss_bytes": 321888256,
+    "tracked_pids": [
+      360,
+      476,
+      561,
+      572,
+      573,
+      3003,
+      3015,
+      3041,
+      3053,
+      3054,
+      3067
+    ],
+    "process_rss_bytes": {
+      "360": 14721024,
+      "476": 15204352,
+      "561": 65572864,
+      "572": 2043904,
+      "573": 57622528,
+      "3003": 68497408,
+      "3015": 2043904,
+      "3041": 90009600,
+      "3053": 2031616,
+      "3054": 0,
+      "3067": 4141056
+    },
+    "available_bytes": 24131915776,
+    "swap_used_bytes": 0,
+    "disk_free_bytes": 837304279040
+  },
+  "updated_at": 1791200637.5569777,
+  "ended_at": 1791200637.586702
+}

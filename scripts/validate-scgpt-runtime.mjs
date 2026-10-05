@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { builderVersionFields } from 'scrollcase/build';
+import { loadProductPythonScript } from './runtime-box/product-script.mjs';
 import {
   loadRuntimeBoxValidatorContext,
   productAcceleratorForTarget,
@@ -84,15 +85,6 @@ function run(command, args, options = {}) {
   };
 }
 
-/** Extracts the exact embedded runner shipped by the frontend. */
-function extractEmbeddedScript(source) {
-  const prefix = 'export const SCGPT_EMBEDDING_SCRIPT = String.raw`';
-  const start = source.indexOf(prefix);
-  const end = source.lastIndexOf('`;');
-  if (start < 0 || end <= start) throw new Error('Cannot extract the product scGPT runner.');
-  return source.slice(start + prefix.length, end);
-}
-
 /** Finds the product runner's final structured result without trusting incidental stdout. */
 function parseLastJson(stdout) {
   const lines = stdout.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
@@ -168,11 +160,8 @@ try {
     'print(json.dumps({"name":"torch","version":torch.__version__,"reportedCudaCompatibility":torch.version.cuda}))',
   ].join(';')]).stdout);
 
-  const productSource = await readFile(
-    join(ROOT, 'frontend/src/lib/tools/ai/python-scripts/scgpt-embedding.ts'),
-    'utf8',
-  );
-  const productRunner = extractEmbeddedScript(productSource);
+  const productRunner = await loadProductPythonScript(
+    join(ROOT, 'frontend/src/lib/tools/ai/python-scripts/scgpt-embedding.ts'), 'SCGPT_EMBEDDING_SCRIPT');
   const productRunnerSha256 = createHash('sha256').update(productRunner).digest('hex');
   const productScript = join(workDir, 'liatir-scgpt.py');
   await writeFile(productScript, productRunner);

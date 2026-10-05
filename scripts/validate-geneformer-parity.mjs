@@ -22,6 +22,7 @@ import { resolveWorkspace } from 'scrollcase/build';
 import { boxTargetId } from 'scrollcase/contract/browser';
 import { downloadVerified } from './runtime-box/assets.mjs';
 import { resolveRuntimeBoxAuthoringInput } from './runtime-box/authoring-input.mjs';
+import { loadProductPythonScript } from './runtime-box/product-script.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..');
 /** Pinned upstream commit: parity must be checked against a fixed reference, not a moving branch. */
@@ -96,21 +97,6 @@ function run(command, args, options = {}) {
   return result.stdout?.trim() ?? '';
 }
 
-/**
- * Pulls the Python source out of the TypeScript file that ships it.
- *
- * The runner lives in the product as a `String.raw` template literal, so it can be sent to the
- * Python runtime at execution time. Extracting it here — rather than keeping a duplicate copy of
- * the script for testing — means the validated code and the shipped code cannot drift apart.
- */
-function extractEmbeddedScript(source) {
-  const prefix = 'export const GENEFORMER_EMBEDDING_SCRIPT = String.raw`';
-  const start = source.indexOf(prefix);
-  const end = source.lastIndexOf('`;');
-  if (start < 0 || end <= start) throw new Error('Cannot extract the product Geneformer runner.');
-  return source.slice(start + prefix.length, end);
-}
-
 const workDir = await mkdtemp(join(tmpdir(), 'liatir-geneformer-parity-'));
 try {
   const runtimeDir = RUNTIME_DIR;
@@ -120,12 +106,10 @@ try {
   // SHA-256 before the scientific harness can import the reference.
   await downloadVerified(UPSTREAM_TOKENIZER, upstreamTokenizer);
 
-  const productSource = await readFile(
-    join(ROOT, 'frontend/src/lib/tools/ai/python-scripts/geneformer-embedding.ts'),
-    'utf8',
-  );
+  const productSource = await loadProductPythonScript(
+    join(ROOT, 'frontend/src/lib/tools/ai/python-scripts/geneformer-embedding.ts'), 'GENEFORMER_EMBEDDING_SCRIPT');
   const productScript = join(workDir, 'liatir-geneformer.py');
-  await writeFile(productScript, extractEmbeddedScript(productSource));
+  await writeFile(productScript, productSource);
   // Run with the box's own interpreter, so the comparison happens under the exact library versions
   // a user gets. The Python harness does the actual numeric comparison and fails on divergence.
   const output = run(

@@ -19,9 +19,13 @@ methods are reused only after verifying code, data, split and embedding checksum
 
 **Current execution status:** full PBMC measurements exist; pancreas stopped
 after four completed representation stages. It has no final common evaluation.
-The current scGPT worker saves only at the end, so its interrupted partial work
-was lost. Per-batch persistence and a driver independent of the chat session
-must be implemented and tested before another long model attempt. See the
+The Mac scGPT worker saved only at the end, so its interrupted partial work
+was lost. The updated worker commits each completed batch to a checked local
+database; fixture interruption, corruption, changed identity and concurrent-writer
+checks pass. The detached driver survives its launcher exiting. The real signed
+Linux model interruption check remains required before another long model attempt.
+All nine completed representations were imported and checked on Windows/WSL2;
+their original Mac inputs, costs and provenance remain attached. See the
 [Windows/WSL2 handoff](../../.context/state/single-cell-showcase-wsl2-handoff.md).
 
 The approved local operating budget is CPU only, one numerical thread, one-cell
@@ -42,6 +46,15 @@ signed-model activation directory, then run each dataset sequentially:
 node scripts/run-single-cell-showcase.mjs pbmc pca,geneformer,harmony,scvi,scgpt,uce
 node scripts/run-single-cell-showcase.mjs pancreas pca,geneformer,harmony,scvi,scgpt,uce
 ```
+
+Use `--detach` to keep the native driver independent of the launching chat or
+terminal session. It records its own execution identity, exact request, continuous
+log and actual exit under the ignored `transfer/executions` directory. For a
+verified saved study, set `LIATIR_STUDY_IMPORT_FILE` to its `liatir-run.json`, or
+choose that file using **Import saved study** in Liatir. Import verifies original
+input, split, code and embedding identities before reusing completed work. It
+creates fresh workspace/run/Job records and keeps the original source separately.
+It never turns the lost Mac progress log into a reusable scGPT result.
 
 Full native run identities and sources are retained in
 `validation/native-study-runs.json`. Original count inputs and large embeddings
@@ -70,6 +83,13 @@ requires absolute tolerance 1e-9 and relative tolerance 1e-8; missing values and
 their reasons must agree exactly. This verifies evaluation reproducibility. It does
 not claim that pretrained inference or scVI training was rerun.
 
+`finish_study.py` coordinates assembly of two completed native exports, independent
+metric reproduction, exact canonical source-count checks and artifact validation.
+Pass both native output directories, a fresh `--output` directory and `--cache`
+for the checksummed public sources. It uses the same frozen resource limits and
+does not repeat representations. Its full scientific execution remains pending;
+the existence of the helper is not validation evidence.
+
 `verify_counts.py` separately checks every prepared count against the downloaded
 canonical sources, without rounding or reconstructing measurements. For an assembled
 export pass `--dataset pbmc` or `--dataset pancreas`, `--cache` with Liatir's
@@ -83,7 +103,8 @@ evidence of a successful verification.
 
 Keep every individual metric visible. scVI trains on these datasets and must be
 interpreted separately from the pretrained methods, which receive no fine-tuning.
-One seed on one host does not establish statistical superiority or generalization
-to unseen studies. The pancreas source supplies fractional quantification values;
+One seed does not establish statistical superiority or generalization to unseen
+studies. Mac and new Windows/WSL2 costs belong to different computers and cannot
+establish a same-host performance ranking. The pancreas source supplies fractional quantification values;
 they remain unchanged and limit integer count-model assumptions. See
 `report/limitations.md` for the remaining boundaries.

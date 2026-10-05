@@ -1,4 +1,5 @@
 import { SOURCE_COUNT_VALIDATION_SCRIPT } from './source-count-validation';
+import { SCGPT_CHECKPOINT_SCRIPT } from './scgpt-checkpoints';
 
 export const SCGPT_EMBEDDING_SCRIPT = String.raw`
 import csv
@@ -42,6 +43,8 @@ required_paths = {
 missing = [label for label, path in required_paths.items() if not path.is_file()]
 if missing:
     raise SystemExit("scGPT installation is incomplete. Missing: " + ", ".join(missing))
+
+${SCGPT_CHECKPOINT_SCRIPT}
 
 import anndata
 import numpy as np
@@ -153,6 +156,8 @@ if requested_accelerator != "auto" and device.type != requested_accelerator:
         f"scGPT requested {requested_accelerator}, but selected {device.type}."
     )
 
+checkpoint_identity = scgpt_checkpoint_identity(payload, required_paths, source_package, accelerator)
+
 model = TransformerModel(
     ntoken=len(vocab),
     d_model=model_config["embsize"],
@@ -220,12 +225,8 @@ max_length = min(int(model_config.get("max_seq_len") or 1200), 1200)
 pad_token_id = int(vocab[model_config["pad_token"]])
 pad_value = float(model_config["pad_value"])
 cls_token_id = int(vocab["<cls>"])
-sequences = []
-kept_positions = []
-for cell_index in range(expression.shape[0]):
+def sequence_for_cell(cell_index):
     row = expression.getrow(cell_index)
-    if row.nnz == 0:
-        continue
     random_state = np.random.default_rng(cell_index)
     values = bin_values(row.data.astype(np.float64), random_state)
     genes = gene_ids[row.indices]
@@ -233,20 +234,28 @@ for cell_index in range(expression.shape[0]):
         selected = random_state.permutation(genes.size)[: max_length - 1]
         genes = genes[selected]
         values = values[selected]
-    sequences.append((
+    return (
         np.concatenate(([cls_token_id], genes)),
         np.concatenate(([pad_value], values.astype(np.float32))),
-    ))
-    kept_positions.append(cell_index)
-if not sequences:
+    )
+
+# Encode the same rows with the same cell-index seeds, retaining only one batch's
+# token arrays. Full-dataset token lists would compete with checkpoint/output RAM.
+kept_positions = np.flatnonzero(np.diff(expression.indptr) > 0).tolist()
+if not kept_positions:
     raise SystemExit("scGPT found no cells with usable human gene counts.")
 
-del expression
-
-embedding_batches = []
+checkpoint_identity["embedding"] = {
+    "cell_ids_sha256": hashlib.sha256(json.dumps([str(adata.obs_names[i]) for i in kept_positions], separators=(",", ":")).encode()).hexdigest(),
+    "cells": len(kept_positions), "dimensions": int(model_config["embsize"]),
+}
+batch_checkpoint = ScGPTCheckpoint(output_dir, checkpoint_identity, scgpt_attempt_started)
+checkpoint_embeddings, completed_cells = batch_checkpoint.load([str(adata.obs_names[i]) for i in kept_positions], int(model_config["embsize"]))
+if completed_cells:
+    print(f"scGPT: reused {completed_cells}/{len(kept_positions)} committed cells", file=sys.stderr, flush=True)
 with torch.no_grad():
-    for start in range(0, len(sequences), batch_size):
-        batch = sequences[start : start + batch_size]
+    for start in range(completed_cells, len(kept_positions), batch_size):
+        batch = [sequence_for_cell(cell_index) for cell_index in kept_positions[start : start + batch_size]]
         batch_length = max(len(genes) for genes, _ in batch)
         input_genes = torch.full((len(batch), batch_length), pad_token_id, dtype=torch.long)
         input_values = torch.full((len(batch), batch_length), pad_value, dtype=torch.float32)
@@ -263,11 +272,14 @@ with torch.no_grad():
         )
         embeddings = encoded[:, 0, :]
         embeddings = embeddings / torch.linalg.vector_norm(embeddings, dim=1, keepdim=True).clamp(min=1e-12)
-        embedding_batches.append(embeddings.detach().cpu().numpy().astype(np.float32))
-        if (start + batch_size) % 128 == 0 or start + batch_size >= len(sequences):
-            print(f"scGPT: {min(start + batch_size, len(sequences))}/{len(sequences)} cells", file=sys.stderr, flush=True)
+        batch_values = embeddings.detach().cpu().numpy().astype(np.float32)
+        batch_checkpoint.save(start, batch_values)
+        checkpoint_embeddings[start:start + len(batch_values)] = batch_values
+        if (start + batch_size) % 128 == 0 or start + batch_size >= len(kept_positions):
+            print(f"scGPT: {min(start + batch_size, len(kept_positions))}/{len(kept_positions)} cells", file=sys.stderr, flush=True)
 
-embeddings = np.concatenate(embedding_batches, axis=0)
+embeddings = checkpoint_embeddings
+del expression, model
 result_adata = adata[kept_positions].copy()
 result_adata.obsm["X_scGPT"] = embeddings
 result_adata.uns["liatir_scgpt"] = {
@@ -338,6 +350,8 @@ summary = {
 summary_path = output_dir / "scgpt-embedding-summary.json"
 with summary_path.open("w", encoding="utf-8") as target:
     json.dump(summary, target, indent=2)
+
+batch_checkpoint.finish()
 
 print(json.dumps({
     "embeddedAnnDataPath": str(embedded_path),

@@ -54,10 +54,21 @@ their complete embeddings and telemetry. scGPT reached 10,752 of 16,382 cells
 but saved no partial embedding; that inference must restart. No study process
 remained at the subsequent check. The user requested a Windows/WSL2 handoff;
 see [the continuation instructions](./single-cell-showcase-wsl2-handoff.md).
-Do not relaunch on this Mac. Durable partial checkpoints and a driver independent
-of the chat session are prerequisites for another long run; neither fix exists yet.
-Combined results and independent reproduction remain open. Updated native packaging
-was safely stopped at the memory cap; the existing verified Rust bridge is reused.
+Do not relaunch on this Mac. Continuation on the user's Windows/WSL2 PC is now
+authorized. The branch and archive have been retrieved and all 185 file hashes
+verified on both hosts. Atomic scGPT batch saving, a detached driver and explicit
+native import have been implemented; lightweight interruption/identity tests and
+the WSL launcher-exit test pass. Semantic checks passed for both matrices/splits
+and all nine saved embeddings. Canonical public sources were retrieved from
+their recorded URLs and passed original size/hash checks. All seven verify gates
+pass (675 unit tests). The new Linux native compiler exceeds the unchanged
+2 GiB process-family cap even after separated compilation; a user question is
+pending for 4 GiB for app compilation alone. Real signed-model interruption/resume
+and native validation are still required before full inference. Follow the
+[Windows/WSL2 execution checklist](./single-cell-showcase-wsl2-execution.md).
+Combined results and independent reproduction remain open. The earlier Mac used
+its existing verified Rust bridge; no matching Linux binary has been substituted
+for the current revision.
 Do not repeat the old Metal configuration or relax the resource limits automatically.
 
 1. **Signed distribution** — [the release gate](./roadmap/release-signed-distribution.md), in

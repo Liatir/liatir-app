@@ -42,8 +42,11 @@ def validate(root, output):
             require(row["train_cells"] + row["test_cells"] == row["evaluation_cells"],
                     f"Classification partition changed: {identity}")
             require(all(row[k] is not None and row[k] > 0 for k in
-                        ("wall_seconds", "peak_rss_bytes", "model_runtime_bytes", "embedding_dimensions", "embedding_bytes")),
+                        ("peak_rss_bytes", "model_runtime_bytes", "embedding_dimensions", "embedding_bytes")),
                     f"Missing compute measurement: {identity}")
+            require(row["wall_seconds"] is not None and row["wall_seconds"] > 0 or
+                    row["wall_seconds"] is None and row.get("wall_seconds_lower_bound", 0) > 0 and bool(row.get("wall_seconds_reason")),
+                    f"Unexplained missing runtime: {identity}")
             require(sha256(directory / "embedding.npz") == row["embedding_sha256"],
                     f"Changed embedding: {identity}")
             for color in ("cell_type", "batch"):

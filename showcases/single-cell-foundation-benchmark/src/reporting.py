@@ -8,7 +8,7 @@ from common import METHODS, read_json, sha256, write_json
 BIO = ["ari", "nmi", "cell_type_silhouette", "knn_macro_f1", "logistic_macro_f1"]
 BATCH = ["batch_silhouette", "asw_batch", "graph_connectivity", "ilisi_scaled"]
 COMPUTE = ["wall_seconds", "peak_rss_bytes", "peak_accelerator_bytes", "execution_target",
-           "model_runtime_bytes", "embedding_dimensions", "embedding_bytes"]
+           "model_runtime_bytes", "embedding_dimensions", "embedding_bytes", "wall_seconds_lower_bound", "wall_seconds_reason"]
 IDENTITY = ["runtime_box_id", "runtime_box_version", "runtime_archive_sha256", "runtime_payload_sha256",
             "runner_sha256", "host_os", "host_architecture", "host_cpu", "host_ram_bytes", "python_version"]
 
@@ -44,7 +44,11 @@ def report(root):
             metrics = read_json(directory / "metrics.json") if (directory / "metrics.json").exists() else {}
             measured = read_json(directory / "telemetry.json") if (directory / "telemetry.json").exists() else {}
             env = read_json(directory / "environment.json") if (directory / "environment.json").exists() else {}
-            host = read_json(root / "study-environment.json") if (root / "study-environment.json").exists() else env
+            study_environment = root / "datasets" / dataset_dir.name / "study-environment.json"
+            if not study_environment.exists():
+                study_environment = root / "study-environment.json"
+            host = provenance.get("source_study_environment") or env.get("host_environment") or (
+                env if env.get("cpu") else read_json(study_environment) if study_environment.exists() else env)
             release = (provenance.get("runtime_box_activation") or {}).get("release", {})
             row = {"dataset": dataset_dir.name, "method": method, "status": provenance["status"],
                    "stability_check_only": stability_check,
@@ -101,19 +105,20 @@ def report(root):
         figure, axis = plt.subplots(figsize=(9, 6), layout="constrained")
         traces = []
         for dataset in sorted({row["dataset"] for row in rows}):
-            subset = [r for r in rows if r["dataset"] == dataset and r["status"] == "completed"]
+            subset = [r for r in rows if r["dataset"] == dataset and r["status"] == "completed" and r.get(cost) is not None]
             xs = [r[cost] / divisor for r in subset]
             ys = [r["logistic_macro_f1"] for r in subset]
             names = [r["method"] for r in subset]
+            host_names = ["Mac" if r["host_os"] and "macOS" in r["host_os"] else "WSL2" if r["host_os"] and "WSL" in r["host_os"] else r["host_architecture"] or "unknown host" for r in subset]
             axis.scatter(xs, ys, label=dataset)
             offsets = {"pca": (-6, -14), "harmony": (6, 8), "scvi": (-6, 8),
                        "geneformer": (6, -14), "scgpt": (6, 8), "uce": (6, -14)}
-            for x, y, name in zip(xs, ys, names):
+            for x, y, name, host_name in zip(xs, ys, names, host_names):
                 dx, dy = offsets[name]
-                axis.annotate(name, (x, y), xytext=(dx, dy), textcoords="offset points",
+                axis.annotate(f"{name} ({host_name})", (x, y), xytext=(dx, dy), textcoords="offset points",
                               ha="right" if dx < 0 else "left", fontsize=8)
             traces.append({"type": "scatter", "mode": "markers+text", "name": dataset, "x": xs, "y": ys,
-                           "text": names, "textposition": ["bottom left" if name == "pca" else
+                           "text": [f"{name} ({host_name})" for name, host_name in zip(names, host_names)], "textposition": ["bottom left" if name == "pca" else
                                "top left" if name == "scvi" else "bottom right" if name == "geneformer"
                                else "top right" for name in names]})
         if cost == "wall_seconds":
@@ -127,15 +132,17 @@ def report(root):
                             "data": traces, "layout": {"xaxis": {"title": xlabel,
                                 "type": "log" if cost == "wall_seconds" else "linear"},
                                 "yaxis": {"title": "Macro-F1", "range": [0, 1.04]}}})
-    headers = ["Dataset", "Method", "Status", "ARI", "NMI", "Cell silhouette", "kNN F1", "Logistic F1", "Batch ASW", "Connectivity", "iLISI", "Seconds", "Peak RAM GiB"]
+    headers = ["Dataset", "Method", "Status", "ARI", "NMI", "Cell silhouette", "kNN F1", "Logistic F1", "Batch ASW", "Connectivity", "iLISI", "Seconds", "Peak RAM GiB", "Host OS"]
     def display(value):
         return round(value, 5) if isinstance(value, float) else value if value is not None else "—"
     comparison = [[r["dataset"], r["method"], r["status"], *[display(r[k]) for k in BIO],
                    *[display(r[k]) for k in ("asw_batch", "graph_connectivity", "ilisi_scaled", "wall_seconds")],
-                   display(r["peak_rss_bytes"] / 1024 ** 3 if r["peak_rss_bytes"] else None)] for r in rows]
+                   display(r["peak_rss_bytes"] / 1024 ** 3 if r["peak_rss_bytes"] else None), r["host_os"] or "unknown"] for r in rows]
     sections.insert(0, {"type": "table", "label": "Individual measurements", "headers": headers, "rows": comparison})
     sections.insert(0, {"type": "text", "label": "Reading these results", "content":
         "ARI and NMI measure how closely discovered groups match known cell types. F1 measures cell-label prediction on held-out cells, giving each type equal weight (1 is perfect). Cell silhouette measures separation of cell types. Batch ASW and iLISI measure mixing of experimental batches; connectivity measures whether cells of the same type stay connected. Higher values are favorable, but no single measure determines a winner. scVI learned from this dataset; the pretrained models were used without further training."})
+    host_boundary = "Each method retains the computer that produced its embedding. Mac and Windows/WSL2 measurements describe different hosts. Compare runtime and memory within the same host; these plots do not establish a same-host speed ranking."
+    sections.insert(0, {"type": "text", "label": "Computers used", "content": host_boundary})
     report_text = ["# Single-cell foundation-model study", "", "## Observations", "",
                    "Measurements from local Liatir Jobs. F1 measures cell-label prediction on the fixed held-out split (1 is perfect). No combined ranking is computed.", "",
                    "| " + " | ".join(headers) + " |", "|" + "---|" * len(headers)]
@@ -145,9 +152,9 @@ def report(root):
     report_text += ["| " + " | ".join(str(x) for x in row) + " |" for row in comparison]
     report_text += ["", "## Failed or blocked configurations", ""]
     report_text += [f"- {r['dataset']}/{r['method']}: {r['error']}" for r in rows if r["status"] != "completed"] or ["None."]
-    report_text += ["", "## Interpretation boundary", "", "These are dataset-specific measurements from one seeded execution. scVI was trained on the evaluation data; the three pretrained models were not fine-tuned. The study does not establish statistical superiority, generalization to unseen studies, or absence of pretraining overlap."]
+    report_text += ["", "## Interpretation boundary", "", host_boundary, "", "These are dataset-specific measurements from one seeded execution. scVI was trained on the evaluation data; the three pretrained models were not fine-tuned. The study does not establish statistical superiority, generalization to unseen studies, or absence of pretraining overlap."]
     (report_dir / "results.md").write_text("\n".join(report_text) + "\n")
-    (report_dir / "limitations.md").write_text("# Limitations\n\n- One seed and one host; no confidence intervals or multi-host timing claims.\n- Random stratified classification split, not leave-one-batch-out prediction. Unsupervised representation fitting uses all cells.\n- The PBMC loader supplies a historically selected 3,346-gene subset, not a whole-transcriptome input.\n- The canonical pancreas count layer contains fractional quantification values; these are preserved without rounding. Integer count-distribution assumptions are imperfect for this source.\n- scVI learns on the evaluation data and must be interpreted separately from zero-shot models.\n- Public benchmark data may overlap pretrained corpora; zero-shot does not prove unseen-data generalization.\n- Raw cell-type silhouette and ASW-batch have known geometry and batch-composition limitations. Inspect all metrics.\n- Peak RAM is the OS process high-water mark; it excludes other processes. Apple unified memory means it is not additive with device memory. Reliable Metal peak memory is unavailable and is null.\n- Representation time includes imports, model loading, preprocessing and writing embeddings; common evaluation and UMAP are separate. Downloads and installation are not included.\n- Pretrained inputs use each model's required vocabulary and formatting. Exclusions and the common evaluation cell set are exported.\n")
+    (report_dir / "limitations.md").write_text("# Limitations\n\n- One seed; no confidence intervals. Saved Mac representations and new Windows/WSL2 representations retain their own host identities. Costs across these hosts do not establish a same-host speed ranking.\n- Random stratified classification split, not leave-one-batch-out prediction. Unsupervised representation fitting uses all cells.\n- The PBMC loader supplies a historically selected 3,346-gene subset, not a whole-transcriptome input.\n- The canonical pancreas count layer contains fractional quantification values; these are preserved without rounding. Integer count-distribution assumptions are imperfect for this source.\n- scVI learns on the evaluation data and must be interpreted separately from zero-shot models.\n- Public benchmark data may overlap pretrained corpora; zero-shot does not prove unseen-data generalization.\n- Raw cell-type silhouette and ASW-batch have known geometry and batch-composition limitations. Inspect all metrics.\n- Peak RAM is the OS process high-water mark; it excludes other processes. Apple unified memory means it is not additive with device memory. Reliable Metal peak memory is unavailable and is null.\n- Representation time includes imports, model loading, preprocessing and writing embeddings; common evaluation and UMAP are separate. Downloads and installation are not included. Interrupted executions report only verified timing lower bounds when their unsaved tail cannot be measured.\n- Pretrained inputs use each model's required vocabulary and formatting. Exclusions and the common evaluation cell set are exported.\n")
     (report_dir / "reproduction.md").write_text("# Reproduction\n\nIn Liatir open Tools → Single-cell study. Install the three AI Models through AI Models, choose the recorded dataset and methods, and run. The Plugin and public data are downloaded only when absent; installed runtimes work locally.\n\nThe repository showcase contains the pinned Python requirements, protocol, runner and native execution driver. Each run exports config.json, environment.json, telemetry.json and provenance.json. Dataset manifests contain upstream URLs and SHA-256 identities. Compare a new run's source checksums before comparing scores. Re-evaluate retained embeddings with the same Plugin's evaluate and report stages; embedding identities and the saved split are verified first.\n\nSee repository reproduction instructions for tested commands and exact validation evidence.\n")
     # The scientific bundle includes source counts, compact embeddings, metrics, plots and all logs.
     # Model-produced copies of the count matrix are referenced by provenance, avoiding duplicate matrices.

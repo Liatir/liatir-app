@@ -1,0 +1,41 @@
+{
+  "pid": 555,
+  "limits": {
+    "maxRssBytes": 2147483648,
+    "minAvailableBytes": 2147483648,
+    "minDiskBytes": 4294967296,
+    "maxSwapGrowthBytes": 268435456
+  },
+  "status": "stopped",
+  "peak_rss_bytes": 2150260736,
+  "initial_swap_bytes": 0,
+  "started_at": 1791200233.3767242,
+  "last_sample": {
+    "rss_bytes": 2150260736,
+    "tracked_pids": [
+      555,
+      557,
+      559,
+      655,
+      766
+    ],
+    "process_rss_bytes": {
+      "555": 15339520,
+      "557": 15044608,
+      "559": 180510720,
+      "655": 1935224832,
+      "766": 4141056
+    },
+    "available_bytes": 22858874880,
+    "swap_used_bytes": 0,
+    "disk_free_bytes": 837438353408
+  },
+  "updated_at": 1791200260.1708024,
+  "stopped_process_names": {
+    "555": "python3",
+    "557": "python3",
+    "559": "cargo",
+    "655": "rustc"
+  },
+  "reason": "Resource limit: rss_bytes=2150260736, maxRssBytes=2147483648"
+}

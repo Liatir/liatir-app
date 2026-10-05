@@ -4,6 +4,8 @@ data/
 **/*.h5ad
 **/*.npy
 **/*.npz
+**/*.sqlite3
+**/*.sqlite3-journal
 **/*.pt
 **/*.torch
 **/*.pkl

@@ -1,0 +1,13 @@
+{
+  "status": "passed",
+  "archive_sha256": "2caacd2af314d5de0e3fbe8c02377fbff33af1d32846412db17eaa5a631e911b",
+  "manifest_sha256": "f3ac1d09841d5d6a78bfa127327c6eeff0001937534f187e5e23b8b7fd3aa3eb",
+  "files_verified": 185,
+  "output_root": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/showcases/single-cell-foundation-benchmark/transfer/mac-handoff-2026-10-05",
+  "run_ids": [
+    "7afd5cd1-2911-45c7-be7f-28cb212734ca",
+    "6071da5e-c592-4ee3-8544-7bbe5b12be8f"
+  ],
+  "duration_seconds": 2.6573585510000015,
+  "scope": "Exact archive and file bytes; scientific alignment is checked separately."
+}

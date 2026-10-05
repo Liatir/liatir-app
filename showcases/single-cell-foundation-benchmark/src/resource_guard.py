@@ -45,7 +45,9 @@ def snapshot(pid, directory):
             break
         family = expanded
     rss = sum(kib * 1024 for child, _, kib in processes if child in family)
-    return {"rss_bytes": rss, "tracked_pids": sorted(family), "available_bytes": available, "swap_used_bytes": swap_used,
+    residents = {str(child): kib * 1024 for child, _, kib in processes if child in family}
+    return {"rss_bytes": rss, "tracked_pids": sorted(family), "process_rss_bytes": residents,
+            "available_bytes": available, "swap_used_bytes": swap_used,
             "disk_free_bytes": shutil.disk_usage(directory).free}
 
 
@@ -78,6 +80,14 @@ def watch(pid, directory, limits, initial_swap):
         if reason:
             if os.getppid() != pid:
                 return
+            if sys.platform.startswith("linux"):
+                # Process names identify the failed phase without recording command-line secrets.
+                record["stopped_process_names"] = {}
+                for child in record.get("last_sample", {}).get("tracked_pids", []):
+                    try:
+                        record["stopped_process_names"][str(child)] = Path(f"/proc/{child}/comm").read_text().strip()
+                    except OSError:
+                        pass
             record.update(status="stopped", reason=reason)
             write_record(path, record)
             print(reason, file=sys.stderr, flush=True)

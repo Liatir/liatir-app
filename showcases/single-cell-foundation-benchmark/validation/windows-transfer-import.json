@@ -1,0 +1,13 @@
+{
+  "status": "passed",
+  "archive_sha256": "2caacd2af314d5de0e3fbe8c02377fbff33af1d32846412db17eaa5a631e911b",
+  "manifest_sha256": "c180575ded8433822b2fd55c152e920a3e5bfab998857508376a061af53fdb96",
+  "files_verified": 185,
+  "output_root": "C:\\Users\\loren\\Documents\\GitHub\\liatir-stack\\showcases\\single-cell-foundation-benchmark\\transfer\\mac-handoff-2026-10-05",
+  "run_ids": [
+    "7afd5cd1-2911-45c7-be7f-28cb212734ca",
+    "6071da5e-c592-4ee3-8544-7bbe5b12be8f"
+  ],
+  "duration_seconds": 5.040527699980885,
+  "scope": "Exact archive and file bytes; scientific alignment is checked separately."
+}

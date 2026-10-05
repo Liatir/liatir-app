@@ -11,13 +11,14 @@ PANCREAS_SHA256 = "97e6dfd65553e4d10aa3ef5d904362970a75c677c31d70fabc9234191a09d
 GENCODE_URL = "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_47/gencode.v47.basic.annotation.gtf.gz"
 
 
-def download(url, path):
+def download(url, path, headers=None):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     if not path.exists():
         print(f"Downloading {url}", flush=True)
         temporary = path.with_suffix(path.suffix + ".partial")
-        with urllib.request.urlopen(url, timeout=120) as source, temporary.open("wb") as dest:
+        request = urllib.request.Request(url, headers=headers) if headers else url
+        with urllib.request.urlopen(request, timeout=120) as source, temporary.open("wb") as dest:
             while block := source.read(8 * 1024 * 1024):
                 dest.write(block)
         temporary.rename(path)

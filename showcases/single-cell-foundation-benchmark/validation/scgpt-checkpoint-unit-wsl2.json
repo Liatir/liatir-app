@@ -1,0 +1,17 @@
+{
+  "status": "passed",
+  "scope": "Checkpoint durability and trusted transfer regressions; other scientific tests require the full pinned Plugin environment.",
+  "python": "Python 3.11.16",
+  "results": [
+    {
+      "file": "test_scgpt_checkpoints.py",
+      "exit_code": 0,
+      "output": "test_changed_order_nonfinite_batch_and_second_writer_are_refused (test_scgpt_checkpoints.ScGPTCheckpointTests.test_changed_order_nonfinite_batch_and_second_writer_are_refused) ... ok\ntest_each_identity_change_and_corrupt_batch_is_refused (test_scgpt_checkpoints.ScGPTCheckpointTests.test_each_identity_change_and_corrupt_batch_is_refused) ... ok\ntest_killed_process_resumes_exactly_and_accounts_for_the_interrupted_attempt (test_scgpt_checkpoints.ScGPTCheckpointTests.test_killed_process_resumes_exactly_and_accounts_for_the_interrupted_attempt) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.123s\n\nOK\n"
+    },
+    {
+      "file": "test_transfer.py",
+      "exit_code": 0,
+      "output": "test_changed_frozen_code_is_refused_even_if_output_is_valid (test_transfer.TransferTests.test_changed_frozen_code_is_refused_even_if_output_is_valid) ... ok\ntest_unsafe_paths_and_changed_archive_are_refused_before_extraction (test_transfer.TransferTests.test_unsafe_paths_and_changed_archive_are_refused_before_extraction) ... ok\n\n----------------------------------------------------------------------\nRan 2 tests in 0.004s\n\nOK\n"
+    }
+  ]
+}

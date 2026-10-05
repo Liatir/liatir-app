@@ -35,9 +35,18 @@ def run_stage(inputs):
                 raise ValueError("Unknown model script in the reproducibility bundle.")
             (root / "code" / f"{method}-inference.py").write_text(script)
         write_json(root / "study-environment.json", environment())
+        if inputs.get("importStudyFile"):
+            from checkpoints import restore
+            file = Path(inputs["importStudyFile"])
+            if file.name != "liatir-run.json" or not file.is_file():
+                raise ValueError("Choose the saved study's liatir-run.json file.")
+            recorded = read_json(file)
+            transfer = inputs["transferManifest"]
+            recognized = any(run["run_id"] == recorded["run_id"] for run in transfer["runs"])
+            return restore(root, file.resolve().parent, dataset, bool(inputs.get("stabilityCheck")), transfer if recognized else None, inputs.get("methods"))
         if inputs.get("resumeRoot"):
             from checkpoints import restore
-            return restore(root, inputs["resumeRoot"], dataset, bool(inputs.get("stabilityCheck")))
+            return restore(root, inputs["resumeRoot"], dataset, bool(inputs.get("stabilityCheck")), requested_methods=inputs.get("methods"))
         return prepare(root, dataset, Path(inputs["cacheDir"]), bool(inputs.get("stabilityCheck")))
     if action == "baseline":
         from representations import baseline

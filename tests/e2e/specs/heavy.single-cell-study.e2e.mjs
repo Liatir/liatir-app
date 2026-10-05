@@ -30,6 +30,13 @@ export const tests = [{
       const checkbox = await browser.$(`[data-testid="study-method-${method}"]`);
       if (await checkbox.isSelected() !== methods.includes(method)) await checkbox.click();
     }
+    if (process.env.LIATIR_STUDY_IMPORT_FILE) {
+      await browser.execute((file) => {
+        const input = document.querySelector('[data-testid="study-import-file"]');
+        input.value = file;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      }, process.env.LIATIR_STUDY_IMPORT_FILE);
+    }
     const existing = await browser.execute(() => Array.from(document.querySelectorAll('[data-testid="study-run"]'), (el) => el.dataset.runId));
     await (await browser.$('[data-testid="study-launch"]')).click();
     await browser.waitUntil(async () => browser.execute((ids) => Array.from(document.querySelectorAll('[data-testid="study-run"]')).some((el) => !ids.includes(el.dataset.runId)), existing));
