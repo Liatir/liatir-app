@@ -1,0 +1,27 @@
+{
+  "appLogPath": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/tests/.artifacts/tauri-logs/tauri-2026-10-05T16-59-45-252Z.log",
+  "artifactsDir": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/tests/.artifacts",
+  "heavy": false,
+  "specs": [
+    "tests/e2e/specs/single-cell-index-distribution.e2e.mjs"
+  ],
+  "startedAt": "2026-10-05T16:59:45.256Z",
+  "finishedAt": "2026-10-05T16:59:48.330Z",
+  "summary": {
+    "durationMs": 3074,
+    "failed": 0,
+    "passed": 1,
+    "skipped": 0,
+    "total": 1
+  },
+  "tests": [
+    {
+      "durationMs": 1971,
+      "heavy": false,
+      "name": "downloads once, reuses the verified index, and removes it cleanly",
+      "specPath": "tests/e2e/specs/single-cell-index-distribution.e2e.mjs",
+      "status": "passed"
+    }
+  ],
+  "visual": false
+}

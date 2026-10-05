@@ -1,0 +1,124 @@
+{
+  "status": "passed",
+  "reviewed_at": "2026-10-05T17:32:42.552068+00:00",
+  "scope": "Manual inspection of all 20 UMAPs via five four-panel source contact sheets, two full-resolution examples and both final cost plots; actual native Results screenshot also inspected.",
+  "observations": [
+    "Cell-type and batch maps have visible points, axes and legends; all ten representations are included, including low-scoring Geneformer and pancreas scGPT.",
+    "Final cost plots separate datasets, keep all measured coordinates, and have readable method/computer labels without clipping or obscuring points.",
+    "Native Results truthfully exposes the UCE blocker alongside ZIP, CSV, JSON and report outputs.",
+    "Performance uses full embeddings; UMAP geometry is visualization only."
+  ],
+  "files": [
+    {
+      "file": "results/figures/biological-performance-vs-peak_rss_bytes.png",
+      "sha256": "6a0c46743a9f4cdef156477d56047b6fd70419494312d3410eadce9de310b494",
+      "bytes": 73113
+    },
+    {
+      "file": "results/figures/biological-performance-vs-wall_seconds.png",
+      "sha256": "43916a938236f35e7f053cfab1cd6ebf98030c804c8800c3ad7240e34442d2f1",
+      "bytes": 75761
+    },
+    {
+      "file": "results/figures/pancreas-geneformer-batch.png",
+      "sha256": "905a4f8c64f1aaebb134d666f5e6e86f371c78a01c04e8d17d5fe9ba9cc40cbb",
+      "bytes": 451859
+    },
+    {
+      "file": "results/figures/pancreas-geneformer-cell_type.png",
+      "sha256": "d76cd4ddf3fdc4b67580eb2142e2bfa2671375b3eac48811bb55afcea5737781",
+      "bytes": 481168
+    },
+    {
+      "file": "results/figures/pancreas-harmony-batch.png",
+      "sha256": "efe1ccf7b7ba70014b3bab427577914d63b55fe854ede520fe2db852ff32cdc2",
+      "bytes": 341173
+    },
+    {
+      "file": "results/figures/pancreas-harmony-cell_type.png",
+      "sha256": "5419b3bce5bdc682770c224516c5ca0e424de381b25517d9bb31269fe267d4b5",
+      "bytes": 229765
+    },
+    {
+      "file": "results/figures/pancreas-pca-batch.png",
+      "sha256": "3f8e898a25bddc9bcde5ced3c63e138f6a68f922927567e2ad2190daf812e638",
+      "bytes": 277140
+    },
+    {
+      "file": "results/figures/pancreas-pca-cell_type.png",
+      "sha256": "a8c81093c3805a284609d22ddaefd507f8405ae5dd4a8ac7e25a178175f299b5",
+      "bytes": 251464
+    },
+    {
+      "file": "results/figures/pancreas-scgpt-batch.png",
+      "sha256": "67aa8a174246b5f6f4edf60121f94152c34d89bbed4a5b560fbd4ca8edd6b432",
+      "bytes": 429121
+    },
+    {
+      "file": "results/figures/pancreas-scgpt-cell_type.png",
+      "sha256": "8ed74dd850e547fa6905cb4c062a8708d714b88ca117262ccc6fe30cd55f1bc4",
+      "bytes": 423295
+    },
+    {
+      "file": "results/figures/pancreas-scvi-batch.png",
+      "sha256": "341cbfb5535dd210d9a42141b687403cf8d57c1280b9b725279a6e7bd40302e6",
+      "bytes": 377625
+    },
+    {
+      "file": "results/figures/pancreas-scvi-cell_type.png",
+      "sha256": "35b876bb943031a8d9247fc6cb32a882dfa6e851c86e2c54f5e9e2c22f554bfe",
+      "bytes": 275147
+    },
+    {
+      "file": "results/figures/pbmc-geneformer-batch.png",
+      "sha256": "7012a61d5b53fbe9f0db4688a675f2640319fdb98c6b0da64d6e38bb5d69ec08",
+      "bytes": 523339
+    },
+    {
+      "file": "results/figures/pbmc-geneformer-cell_type.png",
+      "sha256": "029416d69dae66197a7b6691b786243bf3b49f9d1d58aebbede3b530696650a1",
+      "bytes": 493057
+    },
+    {
+      "file": "results/figures/pbmc-harmony-batch.png",
+      "sha256": "d72e3ee7f87c663285e5bcbb9d8f7ec934a2aa6db6d710f0d1606c6d16bec8ca",
+      "bytes": 303885
+    },
+    {
+      "file": "results/figures/pbmc-harmony-cell_type.png",
+      "sha256": "07ed178e6f562505331a79e99e4b35a2ea7dd47c1c5092c15ef622b10716038e",
+      "bytes": 231912
+    },
+    {
+      "file": "results/figures/pbmc-pca-batch.png",
+      "sha256": "13e4a75b71ccf43000835bf5d7c66fa11d5e25c0596a67343b97ed0313acec43",
+      "bytes": 287567
+    },
+    {
+      "file": "results/figures/pbmc-pca-cell_type.png",
+      "sha256": "01988ff5bf09b449e984309ad7abc0a48f4b810b08233344cb280cf36a309aab",
+      "bytes": 219335
+    },
+    {
+      "file": "results/figures/pbmc-scgpt-batch.png",
+      "sha256": "50ea5f5f3110416cbe336f36b710cc71c71989ca299da35eb770ec6c6b9890dc",
+      "bytes": 389131
+    },
+    {
+      "file": "results/figures/pbmc-scgpt-cell_type.png",
+      "sha256": "932b59aedea15726333f2c32af7d4c7432c4327449f0ac8d922300047b093edf",
+      "bytes": 312796
+    },
+    {
+      "file": "results/figures/pbmc-scvi-batch.png",
+      "sha256": "27a2bf5f885015d9aaaf836435298e7f8e77121ec6392f928cb54d7f945c5cd9",
+      "bytes": 377359
+    },
+    {
+      "file": "results/figures/pbmc-scvi-cell_type.png",
+      "sha256": "8a2cd2416e25c861737404321fa0215c3d4119c3de3a7f92e69342371faf3fa4",
+      "bytes": 304518
+    }
+  ],
+  "native_pancreas_screenshot_sha256": "0811184277e6bc4082b889e8fc874b5e3299cc3b9b39ffc58b180629bebd380e"
+}

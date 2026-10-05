@@ -1,0 +1,38 @@
+{
+  "appLogPaths": [
+    "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/tests/.artifacts/tauri-logs/tauri-2026-10-05T16-59-50-561Z.log",
+    "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/tests/.artifacts/tauri-logs/tauri-2026-10-05T16-59-56-554Z.log"
+  ],
+  "artifactsDir": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/tests/.artifacts",
+  "heavy": false,
+  "specs": [
+    "tests/e2e/specs/pipeline-settlement-restart-start.e2e.mjs",
+    "tests/e2e/specs/pipeline-settlement-restart-recover.e2e.mjs"
+  ],
+  "startedAt": "2026-10-05T16:59:50.566Z",
+  "finishedAt": "2026-10-05T16:59:58.746Z",
+  "summary": {
+    "durationMs": 8180,
+    "failed": 0,
+    "passed": 2,
+    "skipped": 0,
+    "total": 2
+  },
+  "tests": [
+    {
+      "durationMs": 2795,
+      "heavy": false,
+      "name": "persists an active pipeline before the native app process exits",
+      "specPath": "tests/e2e/specs/pipeline-settlement-restart-start.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 1100,
+      "heavy": false,
+      "name": "recovers an interrupted pipeline exactly once in a new native app process",
+      "specPath": "tests/e2e/specs/pipeline-settlement-restart-recover.e2e.mjs",
+      "status": "passed"
+    }
+  ],
+  "visual": false
+}

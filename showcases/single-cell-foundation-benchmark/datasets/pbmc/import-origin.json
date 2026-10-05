@@ -1,0 +1,14 @@
+{
+  "source_run_id": "7afd5cd1-2911-45c7-be7f-28cb212734ca",
+  "source_dataset": "pbmc",
+  "source_root": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/showcases/single-cell-foundation-benchmark/transfer/mac-handoff-2026-10-05/runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output",
+  "archive_sha256": "2caacd2af314d5de0e3fbe8c02377fbff33af1d32846412db17eaa5a631e911b",
+  "reused_methods": [
+    "pca",
+    "geneformer",
+    "harmony",
+    "scvi",
+    "scgpt"
+  ],
+  "scope": "Verified historical artifacts, not newly executed Jobs."
+}

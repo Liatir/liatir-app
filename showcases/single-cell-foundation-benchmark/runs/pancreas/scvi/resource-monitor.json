@@ -1,0 +1,26 @@
+{
+  "pid": 7659,
+  "limits": {
+    "maxRssBytes": 2147483648,
+    "maxSwapGrowthBytes": 268435456,
+    "minAvailableBytes": 2147483648,
+    "minDiskBytes": 4294967296
+  },
+  "status": "completed",
+  "peak_rss_bytes": 1759232000,
+  "initial_swap_bytes": 0,
+  "started_at": 1791173593.89578,
+  "last_sample": {
+    "rss_bytes": 1481932800,
+    "tracked_pids": [
+      7659,
+      7663,
+      15012
+    ],
+    "available_bytes": 4686970880,
+    "swap_used_bytes": 0,
+    "disk_free_bytes": 4926398464
+  },
+  "updated_at": 1791173927.5425549,
+  "ended_at": 1791173927.723201
+}

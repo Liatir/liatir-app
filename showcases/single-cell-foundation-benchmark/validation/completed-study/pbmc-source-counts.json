@@ -1,0 +1,13 @@
+{
+  "status": "passed",
+  "run_id": "c8dcfc55-cb26-4074-a877-5ec423b62817",
+  "dataset": "pbmc",
+  "cells": 11990,
+  "genes": 3346,
+  "all_count_values_exactly_equal": true,
+  "gene_order_preserved": true,
+  "cell_filter_preserved": true,
+  "source_checksums_verified": true,
+  "fractional_count_entries": 0,
+  "prepared_sha256": "bd6aa9473c1895462cabff3cde087ba7776307103579ab2a77892269e6a99709"
+}

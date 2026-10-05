@@ -157,7 +157,7 @@ finally:
         "peak_accelerator_reason": "PyTorch CUDA peak allocated tensor memory; excludes display, driver and other processes." if accelerator == "cuda" else "CPU-only execution; no accelerator used.",
         "execution_target": target,
         "model_runtime_bytes": disk_bytes,
-        "disk_scope": "signed installed box including model and runtime, excluding run scratch directories",
+        "disk_scope": "Sum of installed file sizes, following symlink aliases per path; excludes run scratch directories. Signed release installedSizeBytes is recorded separately in the activation.",
         "status": status,
     }
     accounting = output / "scgpt-checkpoint-accounting.json"

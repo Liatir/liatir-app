@@ -1,0 +1,19 @@
+{
+  "ari": 0.050193181085463195,
+  "nmi": 0.11351904655590664,
+  "cell_type_silhouette": -0.2668815553188324,
+  "knn_macro_f1": 0.4746030769916364,
+  "logistic_macro_f1": 0.7643451754489563,
+  "batch_silhouette": 0.05525654926896095,
+  "asw_batch": 0.8550582570689065,
+  "graph_connectivity": 0.5038652387691159,
+  "ilisi_scaled": 0.014327451586723328,
+  "null_reasons": {},
+  "evaluation_cells": 16382,
+  "train_cells": 13105,
+  "test_cells": 3277,
+  "label_count": 14,
+  "batch_count": 9,
+  "warnings": [],
+  "evaluation_seconds": 45.51400779300002
+}

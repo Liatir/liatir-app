@@ -1,0 +1,79 @@
+{
+  "includeHeavy": false,
+  "profiles": [
+    "ui"
+  ],
+  "requestedSuites": [
+    "tauri-e2e",
+    "single-cell-index-e2e",
+    "pipeline-settlement-restart-e2e"
+  ],
+  "reportDir": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/showcases/single-cell-foundation-benchmark/transfer/corrected-final-ui-reports",
+  "rootDir": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05",
+  "runId": "2026-10-05T16-58-09-652Z",
+  "startedAt": "2026-10-05T16:58:09.653Z",
+  "finishedAt": "2026-10-05T17:00:00.961Z",
+  "summary": {
+    "durationMs": 111308,
+    "failed": 0,
+    "passed": 3,
+    "skipped": 0,
+    "total": 3
+  },
+  "suites": [
+    {
+      "command": "npm run test:tauri:run",
+      "description": "Runs native webview tests against the compiled Tauri app.",
+      "durationMs": 95327,
+      "e2eReportPath": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/showcases/single-cell-foundation-benchmark/transfer/corrected-final-ui-reports/2026-10-05T16-58-09-652Z/e2e/tauri-e2e.json",
+      "finishedAt": "2026-10-05T16:59:44.980Z",
+      "heavy": false,
+      "id": "tauri-e2e",
+      "label": "Native Tauri E2E",
+      "layer": "tauri",
+      "logPath": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/showcases/single-cell-foundation-benchmark/transfer/corrected-final-ui-reports/2026-10-05T16-58-09-652Z/logs/tauri-e2e.log",
+      "signal": null,
+      "startedAt": "2026-10-05T16:58:09.653Z",
+      "status": "passed",
+      "timeoutMs": 900000,
+      "timedOut": false,
+      "exitCode": 0
+    },
+    {
+      "command": "node scripts/run-single-cell-index-e2e.mjs",
+      "description": "Installs a tiny signed index, proves verified reuse without a second download, and removes it.",
+      "durationMs": 5387,
+      "e2eReportPath": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/showcases/single-cell-foundation-benchmark/transfer/corrected-final-ui-reports/2026-10-05T16-58-09-652Z/e2e/single-cell-index-e2e.json",
+      "finishedAt": "2026-10-05T16:59:50.368Z",
+      "heavy": false,
+      "id": "single-cell-index-e2e",
+      "label": "Single-cell reference index lifecycle",
+      "layer": "tauri",
+      "logPath": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/showcases/single-cell-foundation-benchmark/transfer/corrected-final-ui-reports/2026-10-05T16-58-09-652Z/logs/single-cell-index-e2e.log",
+      "signal": null,
+      "startedAt": "2026-10-05T16:59:44.981Z",
+      "status": "passed",
+      "timeoutMs": 180000,
+      "timedOut": false,
+      "exitCode": 0
+    },
+    {
+      "command": "node scripts/run-pipeline-settlement-restart-e2e.mjs",
+      "description": "Runs an active API pipeline across two native app processes and verifies exactly-once interrupted recovery.",
+      "durationMs": 10593,
+      "e2eReportPath": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/showcases/single-cell-foundation-benchmark/transfer/corrected-final-ui-reports/2026-10-05T16-58-09-652Z/e2e/pipeline-settlement-restart-e2e.json",
+      "finishedAt": "2026-10-05T17:00:00.961Z",
+      "heavy": false,
+      "id": "pipeline-settlement-restart-e2e",
+      "label": "Pipeline settlement restart lifecycle",
+      "layer": "tauri",
+      "logPath": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/showcases/single-cell-foundation-benchmark/transfer/corrected-final-ui-reports/2026-10-05T16-58-09-652Z/logs/pipeline-settlement-restart-e2e.log",
+      "signal": null,
+      "startedAt": "2026-10-05T16:59:50.368Z",
+      "status": "passed",
+      "timeoutMs": 180000,
+      "timedOut": false,
+      "exitCode": 0
+    }
+  ]
+}

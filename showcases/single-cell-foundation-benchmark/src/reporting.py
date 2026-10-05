@@ -112,30 +112,31 @@ def report(root):
         table(results / f"{filename}.csv", rows, ["dataset", "method", "status"] + fields)
     for cost, xlabel, divisor in (("wall_seconds", "Representation runtime (seconds; logarithmic scale)", 1),
                                   ("peak_rss_bytes", "Peak process RAM (GiB)", 1024 ** 3)):
-        figure, axis = plt.subplots(figsize=(9, 6), layout="constrained")
+        datasets = sorted({row["dataset"] for row in rows})
+        figure, axes = plt.subplots(1, len(datasets), figsize=(7 * len(datasets), 6),
+                                    squeeze=False, layout="constrained", sharey=True)
         traces = []
-        for dataset in sorted({row["dataset"] for row in rows}):
+        for dataset, axis in zip(datasets, axes[0]):
             subset = [r for r in rows if r["dataset"] == dataset and r["status"] == "completed" and r.get(cost) is not None]
             xs = [r[cost] / divisor for r in subset]
             ys = [r["logistic_macro_f1"] for r in subset]
             names = [r["method"] for r in subset]
             host_names = [("Mac" if r["host_os"] and "macOS" in r["host_os"] else "WSL2" if r["host_os"] and "WSL" in r["host_os"] else r["host_architecture"] or "unknown host") + f"/{r['execution_target']}" for r in subset]
             axis.scatter(xs, ys, label=dataset)
-            offsets = {"pca": (-6, -14), "harmony": (6, 8), "scvi": (-6, 8),
-                       "geneformer": (6, -14), "scgpt": (6, 8), "uce": (6, -14)}
+            offsets = {"pca": (-6, -30), "harmony": (6, 12), "scvi": (-6, 12),
+                       "geneformer": (6, -30), "scgpt": (-6, -30), "uce": (6, -30)}
             for x, y, name, host_name in zip(xs, ys, names, host_names):
                 dx, dy = offsets[name]
-                axis.annotate(f"{name} ({host_name})", (x, y), xytext=(dx, dy), textcoords="offset points",
+                axis.annotate(f"{name}\n{host_name}", (x, y), xytext=(dx, dy), textcoords="offset points",
                               ha="right" if dx < 0 else "left", fontsize=8)
-            traces.append({"type": "scatter", "mode": "markers+text", "name": dataset, "x": xs, "y": ys,
-                           "text": [f"{name} ({host_name})" for name, host_name in zip(names, host_names)], "textposition": ["bottom left" if name == "pca" else
-                               "top left" if name == "scvi" else "bottom right" if name == "geneformer"
-                               else "top right" for name in names]})
-        if cost == "wall_seconds":
-            axis.set_xscale("log")
-        axis.margins(x=0.15)
-        axis.set(xlabel=xlabel, ylabel="Logistic regression macro-F1", ylim=(0, 1.04))
-        axis.legend(loc="lower right")
+            traces.append({"type": "scatter", "mode": "markers", "name": dataset, "x": xs, "y": ys,
+                           "text": [f"{name} ({host_name})" for name, host_name in zip(names, host_names)],
+                           "hovertemplate": "%{text}<br>Cost: %{x}<br>Macro-F1: %{y}<extra>%{fullData.name}</extra>"})
+            if cost == "wall_seconds":
+                axis.set_xscale("log")
+            axis.margins(x=0.4)
+            axis.set(xlabel=xlabel, title=dataset, ylim=(0, 1.12))
+        axes[0][0].set_ylabel("Logistic regression macro-F1")
         figure.savefig(figures / f"biological-performance-vs-{cost}.png", dpi=160)
         plt.close(figure)
         sections.insert(0, {"type": "plotly", "plotlyType": "scatter", "title": f"Cell identity vs {xlabel.lower()}",
@@ -187,6 +188,14 @@ def report(root):
         "See report/reproduction-validation.md and validation/ for tested commands and exact outcomes.\n")
     # The scientific bundle includes source counts, compact embeddings, metrics, plots and all logs.
     # Model-produced copies of the count matrix are referenced by provenance, avoiding duplicate matrices.
+    bundle = build_bundle(root)
+    artifacts = [bundle, results / "summary.csv", results / "summary.json", report_dir / "results.md"]
+    return {"output": {"sections": sections}, "blockedCount": sum(r["status"] != "completed" for r in rows),
+            "outputFiles": [{"label": p.name, "path": str(p), "ext": p.suffix[1:], "role": "final", "size": p.stat().st_size} for p in artifacts]}
+
+
+def build_bundle(root):
+    """Package the current reports and immutable scientific records after curation."""
     bundle = root / "single-cell-study.zip"
     excluded = []
     with zipfile.ZipFile(bundle, "w", zipfile.ZIP_DEFLATED, compresslevel=1) as archive:
@@ -199,6 +208,4 @@ def report(root):
                 continue
             archive.write(path, str(relative))
         archive.writestr("referenced-intermediates.json", __import__('json').dumps(excluded, indent=2))
-    artifacts = [bundle, results / "summary.csv", results / "summary.json", report_dir / "results.md"]
-    return {"output": {"sections": sections}, "blockedCount": sum(r["status"] != "completed" for r in rows),
-            "outputFiles": [{"label": p.name, "path": str(p), "ext": p.suffix[1:], "role": "final", "size": p.stat().st_size} for p in artifacts]}
+    return bundle

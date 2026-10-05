@@ -1,0 +1,8 @@
+{
+  "status": "passed",
+  "summary_rows_unchanged": true,
+  "renderer_sha256": "2e8b7dba1abfc3840d51e411cc994f1c58c0396b2c242fc32ddd0d9e3e5f8e97",
+  "only_presentation_regenerated": true,
+  "figures": 22,
+  "previous_bundle_sha256": "096eab667266fe18ac74c743550c504c537f48cda921f0ed54dd293668b0708e"
+}

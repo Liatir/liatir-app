@@ -1,0 +1,184 @@
+{
+  "python": "3.11.15 | packaged by conda-forge | (main, Jun 11 2026, 03:29:05) [Clang 19.1.7 ]",
+  "os": "macOS-14.4.1-arm64-arm-64bit",
+  "architecture": "arm64",
+  "cpu_count": 8,
+  "execution_target": "CPU",
+  "resource_limits": {
+    "maxRssBytes": 2147483648,
+    "maxSwapGrowthBytes": 268435456,
+    "minAvailableBytes": 2147483648,
+    "minDiskBytes": 4294967296
+  },
+  "packages": {
+    "Deprecated": "1.3.1",
+    "Jinja2": "3.1.6",
+    "MarkupSafe": "3.0.3",
+    "PyYAML": "6.0.3",
+    "anndata": "0.12.19",
+    "array-api-compat": "1.15.0",
+    "cached-property": "1.5.2",
+    "donfig": "0.8.1.post1",
+    "filelock": "3.32.0",
+    "fsspec": "2026.6.0",
+    "gmpy2": "2.3.0",
+    "google-crc32c": "1.8.0",
+    "h5py": "3.16.0",
+    "legacy-api-wrap": "1.5",
+    "mpmath": "1.4.1",
+    "msgpack": "1.2.1",
+    "natsort": "8.4.0",
+    "networkx": "3.6.1",
+    "numcodecs": "0.16.5",
+    "numpy": "2.4.6",
+    "optree": "0.19.1",
+    "packaging": "26.2",
+    "pandas": "2.3.3",
+    "pybind11": "2.13.6",
+    "pybind11_global": "2.13.6",
+    "python-dateutil": "2.9.0.post0",
+    "pytz": "2026.2",
+    "scipy": "1.17.1",
+    "scverse-misc": "0.0.3",
+    "session-info2": "0.4.1",
+    "setuptools": "83.0.0",
+    "six": "1.17.0",
+    "sympy": "1.14.0",
+    "torch": "2.8.0",
+    "tqdm": "4.69.0",
+    "typing_extensions": "4.16.0",
+    "tzdata": "2026.3",
+    "wrapt": "2.2.2",
+    "zarr": "3.1.6"
+  },
+  "model_runner_sha256": "581c4909cae3aff876108640cc151960daafe3b68b4f28d22babbb1c84bda27b",
+  "box": {
+    "schemaVersion": 3,
+    "boxId": "scgpt-whole-human",
+    "labels": {
+      "model": "bowang-scgpt-whole-human",
+      "runtime": "single-cell-foundation-scgpt-whole-human"
+    },
+    "version": "0.2.5-beta.2",
+    "target": {
+      "platform": "macos",
+      "arch": "aarch64",
+      "accelerator": "metal"
+    },
+    "runtime": {
+      "id": "python",
+      "version": "3.11.15",
+      "entryPoint": "venv/bin/python"
+    },
+    "cacheSubdir": "model-cache/scgpt-whole-human",
+    "selfTest": {
+      "probe": {
+        "imports": [
+          "torch",
+          "anndata",
+          "numpy",
+          "scipy",
+          "pandas",
+          "h5py",
+          "tqdm"
+        ]
+      },
+      "timeoutSeconds": 180
+    },
+    "provenance": {
+      "scrollId": "scgpt-whole-human-macos-arm64-metal",
+      "scrollVersion": "1.0.0",
+      "builderRevision": "f9325e0989197a5c6a04686ae10ebc5cd17ef441",
+      "sourceTreeDirty": false,
+      "sourceRevision": "cebd6fae655b9c585a4807daa3ac31bb764f06b4",
+      "runtimeVersion": "3.11.15",
+      "pixiVersion": "0.73.0",
+      "dependencyLockSha256": "04f83b64db8b5f6faf65fa40c677d6596a50c7d5482c51d8c1baa173588b388a",
+      "builtAt": "2026-09-25T20:23:41+02:00"
+    }
+  },
+  "runtime_box_activation": {
+    "schemaVersion": 3,
+    "selectedTarget": {
+      "platform": "macos",
+      "arch": "aarch64",
+      "accelerator": "metal"
+    },
+    "hostEnvironment": "native",
+    "release": {
+      "schemaVersion": 3,
+      "kind": "liatir.runtime-box.release",
+      "boxId": "scgpt-whole-human",
+      "labels": {
+        "model": "bowang-scgpt-whole-human",
+        "runtime": "single-cell-foundation-scgpt-whole-human"
+      },
+      "version": "0.2.5-beta.2",
+      "target": {
+        "platform": "macos",
+        "arch": "aarch64",
+        "accelerator": "metal"
+      },
+      "compatibility": {
+        "minMacosVersion": "13.0",
+        "minRamGb": 16.0,
+        "minLiatirVersion": "0.2.1"
+      },
+      "archive": {
+        "format": "zip",
+        "url": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/scgpt-whole-human/0.2.5-beta.2/macos-aarch64-metal/1ec7ec5c57e58c4112e69b70ea9ad68d3bb48f1dca18b1cb0820ab8c52a64866.zip",
+        "sha256": "1ec7ec5c57e58c4112e69b70ea9ad68d3bb48f1dca18b1cb0820ab8c52a64866",
+        "sizeBytes": 532421348
+      },
+      "installedSizeBytes": 1372956881,
+      "payloadDigest": {
+        "format": "sha256-path-list-v1",
+        "sha256": "043870132b78c4fbc3fa539805a40e9f19f00f592f53216f527f019a748cbf41"
+      },
+      "runtime": {
+        "id": "python",
+        "version": "3.11.15",
+        "entryPoint": "venv/bin/python"
+      },
+      "cacheSubdir": "model-cache/scgpt-whole-human",
+      "selfTest": {
+        "probe": {
+          "imports": [
+            "torch",
+            "anndata",
+            "numpy",
+            "scipy",
+            "pandas",
+            "h5py",
+            "tqdm"
+          ]
+        },
+        "timeoutSeconds": 180
+      },
+      "provenance": {
+        "scrollId": "scgpt-whole-human-macos-arm64-metal",
+        "scrollVersion": "1.0.0",
+        "builderRevision": "f9325e0989197a5c6a04686ae10ebc5cd17ef441",
+        "sourceTreeDirty": false,
+        "sourceRevision": "cebd6fae655b9c585a4807daa3ac31bb764f06b4",
+        "runtimeVersion": "3.11.15",
+        "dependencyLockSha256": "04f83b64db8b5f6faf65fa40c677d6596a50c7d5482c51d8c1baa173588b388a",
+        "builtAt": "2026-09-25T20:23:41+02:00",
+        "pixiVersion": "0.73.0"
+      }
+    },
+    "signedRelease": {
+      "payloadBase64": "ewogICJzY2hlbWFWZXJzaW9uIjogMywKICAia2luZCI6ICJsaWF0aXIucnVudGltZS1ib3gucmVsZWFzZSIsCiAgImJveElkIjogInNjZ3B0LXdob2xlLWh1bWFuIiwKICAibGFiZWxzIjogewogICAgIm1vZGVsIjogImJvd2FuZy1zY2dwdC13aG9sZS1odW1hbiIsCiAgICAicnVudGltZSI6ICJzaW5nbGUtY2VsbC1mb3VuZGF0aW9uLXNjZ3B0LXdob2xlLWh1bWFuIgogIH0sCiAgInZlcnNpb24iOiAiMC4yLjUtYmV0YS4yIiwKICAidGFyZ2V0IjogewogICAgInBsYXRmb3JtIjogIm1hY29zIiwKICAgICJhcmNoIjogImFhcmNoNjQiLAogICAgImFjY2VsZXJhdG9yIjogIm1ldGFsIgogIH0sCiAgImNvbXBhdGliaWxpdHkiOiB7CiAgICAibWluTGlhdGlyVmVyc2lvbiI6ICIwLjIuMSIsCiAgICAibWluTWFjb3NWZXJzaW9uIjogIjEzLjAiLAogICAgIm1pblJhbUdiIjogMTYKICB9LAogICJhcmNoaXZlIjogewogICAgImZvcm1hdCI6ICJ6aXAiLAogICAgInVybCI6ICJodHRwczovL2Fzc2V0cy5tb2RlbHMubGlhdGlyLmNvbS9haS1ydW50aW1lLWJveGVzL2JveGVzL3NjZ3B0LXdob2xlLWh1bWFuLzAuMi41LWJldGEuMi9tYWNvcy1hYXJjaDY0LW1ldGFsLzFlYzdlYzVjNTdlNThjNDExMmU2OWI3MGVhOWFkNjhkM2JiNDhmMWRjYTE4YjFjYjA4MjBhYjhjNTJhNjQ4NjYuemlwIiwKICAgICJzaGEyNTYiOiAiMWVjN2VjNWM1N2U1OGM0MTEyZTY5YjcwZWE5YWQ2OGQzYmI0OGYxZGNhMThiMWNiMDgyMGFiOGM1MmE2NDg2NiIsCiAgICAic2l6ZUJ5dGVzIjogNTMyNDIxMzQ4CiAgfSwKICAiaW5zdGFsbGVkU2l6ZUJ5dGVzIjogMTM3Mjk1Njg4MSwKICAicGF5bG9hZERpZ2VzdCI6IHsKICAgICJmb3JtYXQiOiAic2hhMjU2LXBhdGgtbGlzdC12MSIsCiAgICAic2hhMjU2IjogIjA0Mzg3MDEzMmI3OGM0ZmJjM2ZhNTM5ODA1YTQwZTlmMTlmMDBmNTkyZjUzMjE2ZjUyN2YwMTlhNzQ4Y2JmNDEiCiAgfSwKICAicnVudGltZSI6IHsKICAgICJpZCI6ICJweXRob24iLAogICAgInZlcnNpb24iOiAiMy4xMS4xNSIsCiAgICAiZW50cnlQb2ludCI6ICJ2ZW52L2Jpbi9weXRob24iCiAgfSwKICAiY2FjaGVTdWJkaXIiOiAibW9kZWwtY2FjaGUvc2NncHQtd2hvbGUtaHVtYW4iLAogICJzZWxmVGVzdCI6IHsKICAgICJwcm9iZSI6IHsKICAgICAgImltcG9ydHMiOiBbCiAgICAgICAgInRvcmNoIiwKICAgICAgICAiYW5uZGF0YSIsCiAgICAgICAgIm51bXB5IiwKICAgICAgICAic2NpcHkiLAogICAgICAgICJwYW5kYXMiLAogICAgICAgICJoNXB5IiwKICAgICAgICAidHFkbSIKICAgICAgXQogICAgfSwKICAgICJ0aW1lb3V0U2Vjb25kcyI6IDE4MAogIH0sCiAgInByb3ZlbmFuY2UiOiB7CiAgICAic2Nyb2xsSWQiOiAic2NncHQtd2hvbGUtaHVtYW4tbWFjb3MtYXJtNjQtbWV0YWwiLAogICAgInNjcm9sbFZlcnNpb24iOiAiMS4wLjAiLAogICAgImJ1aWxkZXJSZXZpc2lvbiI6ICJmOTMyNWUwOTg5MTk3YTVjNmEwNDY4NmFlMTBlYmM1Y2QxN2VmNDQxIiwKICAgICJzb3VyY2VUcmVlRGlydHkiOiBmYWxzZSwKICAgICJzb3VyY2VSZXZpc2lvbiI6ICJjZWJkNmZhZTY1NWI5YzU4NWE0ODA3ZGFhM2FjMzFiYjc2NGYwNmI0IiwKICAgICJydW50aW1lVmVyc2lvbiI6ICIzLjExLjE1IiwKICAgICJwaXhpVmVyc2lvbiI6ICIwLjczLjAiLAogICAgImRlcGVuZGVuY3lMb2NrU2hhMjU2IjogIjA0ZjgzYjY0ZGI4YjVmNmZhZjY1ZmE0MGM2NzdkNjU5NmE1MGM3ZDU0ODJjNTFkOGMxYmFhMTczNTg4YjM4OGEiLAogICAgImJ1aWx0QXQiOiAiMjAyNi0wOS0yNVQyMDoyMzo0MSswMjowMCIKICB9Cn0K",
+      "payloadEncoding": "base64-json-utf8",
+      "payloadSha256": "ea8deeb99ea0d7b9c84bcd69593746ccfd470f52bd6f4f1af28fc86e69341a14",
+      "schemaVersion": 3,
+      "signatures": [
+        {
+          "algorithm": "ed25519",
+          "keyId": "liatir-runtime-box-kms-2026",
+          "signatureBase64": "+vfvews1o/oVyzivwjR8liUduIKqE1aeyTvA3Q2/DbqbDobopZ1I3/Bh43lTLqY3rCIhT3lB6OIsfdPfDA0UDw=="
+        }
+      ]
+    }
+  }
+}

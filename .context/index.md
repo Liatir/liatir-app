@@ -43,6 +43,10 @@ Markdown and stays complete and meaningful without the tool.
 
 ## Historical
 
+- [Completed single-cell study](./history/liatir_single_cell_showcase_codex_plan.md),
+  [Windows/WSL2 execution evidence](./history/single-cell-showcase-wsl2-execution.md),
+  and [final measured report](../showcases/single-cell-foundation-benchmark/report/results.md).
+
 - `.context/history/` — completed, superseded or closed operational
   context: the [status log](./history/status-log-2026-07-to-2026-09.md) that
   `state/current.md` accumulated until 2026-09-27, the gate evidence records, the

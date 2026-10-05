@@ -68,7 +68,7 @@ export async function navigateSidebar(browser, route) {
   await new Promise((resolve) => setTimeout(resolve, 300));
   await nav.click();
   await browser.waitUntil(
-    async () => browser.execute((expectedRoute) => window.location.pathname.startsWith(expectedRoute), route),
+    async () => browser.execute((expectedRoute) => window.location.pathname === expectedRoute, route),
     {
       timeout: 20_000,
       timeoutMsg: `Navigation to ${route} did not complete`,

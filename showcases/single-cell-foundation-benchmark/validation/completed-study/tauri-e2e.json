@@ -1,0 +1,653 @@
+{
+  "appLogPath": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/tests/.artifacts/tauri-logs/tauri-2026-10-05T16-58-09-871Z.log",
+  "artifactsDir": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/tests/.artifacts",
+  "heavy": false,
+  "specs": [
+    "tests/e2e/specs/00-pipeline-lifecycle.e2e.mjs",
+    "tests/e2e/specs/ai-catalog.e2e.mjs",
+    "tests/e2e/specs/ai-models.e2e.mjs",
+    "tests/e2e/specs/app-update.e2e.mjs",
+    "tests/e2e/specs/dependencies.e2e.mjs",
+    "tests/e2e/specs/desktop-beta-linux-install.e2e.mjs",
+    "tests/e2e/specs/desktop-beta-linux-recover.e2e.mjs",
+    "tests/e2e/specs/desktop-beta-macos-install.e2e.mjs",
+    "tests/e2e/specs/desktop-beta-macos-recover.e2e.mjs",
+    "tests/e2e/specs/desktop-beta-windows-install.e2e.mjs",
+    "tests/e2e/specs/desktop-beta-windows-recover.e2e.mjs",
+    "tests/e2e/specs/execution-spine.e2e.mjs",
+    "tests/e2e/specs/external-workflow-nextflow-restart-recover.e2e.mjs",
+    "tests/e2e/specs/external-workflow-nextflow-restart-start.e2e.mjs",
+    "tests/e2e/specs/external-workflow-nextflow.e2e.mjs",
+    "tests/e2e/specs/genome-viewer.e2e.mjs",
+    "tests/e2e/specs/job-signal-exit.e2e.mjs",
+    "tests/e2e/specs/mcp.e2e.mjs",
+    "tests/e2e/specs/native-bridge.e2e.mjs",
+    "tests/e2e/specs/pipeline-editor.e2e.mjs",
+    "tests/e2e/specs/pipeline-settlement-restart-recover.e2e.mjs",
+    "tests/e2e/specs/pipeline-settlement-restart-start.e2e.mjs",
+    "tests/e2e/specs/python-plugins.e2e.mjs",
+    "tests/e2e/specs/quenta.e2e.mjs",
+    "tests/e2e/specs/runtime-box-boltz-2-native.e2e.mjs",
+    "tests/e2e/specs/runtime-box-mhcflurry-native.e2e.mjs",
+    "tests/e2e/specs/runtime-box-native.e2e.mjs",
+    "tests/e2e/specs/runtime-box-openmm-native.e2e.mjs",
+    "tests/e2e/specs/runtime-box-protenix-base-v1-0-0-native.e2e.mjs",
+    "tests/e2e/specs/runtime-box-pvactools-native.e2e.mjs",
+    "tests/e2e/specs/runtime-box-release-candidate.e2e.mjs",
+    "tests/e2e/specs/runtime-box-scgpt-native.e2e.mjs",
+    "tests/e2e/specs/runtime-box-security-install.e2e.mjs",
+    "tests/e2e/specs/runtime-box-security-restart.e2e.mjs",
+    "tests/e2e/specs/runtime-box-uce-native.e2e.mjs",
+    "tests/e2e/specs/scientific-artifacts.e2e.mjs",
+    "tests/e2e/specs/single-cell-index-distribution.e2e.mjs",
+    "tests/e2e/specs/single-cell-lighthouse.e2e.mjs",
+    "tests/e2e/specs/snpeff-suite.e2e.mjs",
+    "tests/e2e/specs/startup-recovery.e2e.mjs",
+    "tests/e2e/specs/structure-prediction-editor.e2e.mjs",
+    "tests/e2e/specs/structure-viewer.e2e.mjs"
+  ],
+  "startedAt": "2026-10-05T16:58:09.874Z",
+  "finishedAt": "2026-10-05T16:59:42.933Z",
+  "summary": {
+    "durationMs": 93059,
+    "failed": 0,
+    "passed": 48,
+    "skipped": 32,
+    "total": 80
+  },
+  "tests": [
+    {
+      "durationMs": 13689,
+      "heavy": false,
+      "name": "keeps pipeline runs isolated across navigation and finalizes the originating Result",
+      "specPath": "tests/e2e/specs/00-pipeline-lifecycle.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 2263,
+      "heavy": false,
+      "name": "settles a Plugin Job and durable file before releasing its downstream node",
+      "specPath": "tests/e2e/specs/00-pipeline-lifecycle.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 966,
+      "heavy": false,
+      "name": "cancels the owning Plugin Job without releasing its downstream node",
+      "specPath": "tests/e2e/specs/00-pipeline-lifecycle.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 4178,
+      "heavy": false,
+      "name": "settles nested API work before completing a sub-pipeline and propagates child failure",
+      "specPath": "tests/e2e/specs/00-pipeline-lifecycle.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 2314,
+      "heavy": false,
+      "name": "cancels an API Connector step before downstream and Result finalization",
+      "specPath": "tests/e2e/specs/00-pipeline-lifecycle.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 1208,
+      "heavy": false,
+      "name": "persists a failed pipeline exactly once with readable Result state",
+      "specPath": "tests/e2e/specs/00-pipeline-lifecycle.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 1971,
+      "heavy": false,
+      "name": "reconciles an interrupted pipeline after reload and finalizes one Result",
+      "specPath": "tests/e2e/specs/00-pipeline-lifecycle.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 1274,
+      "heavy": false,
+      "name": "attributes a native child Job to its originating pipeline run",
+      "specPath": "tests/e2e/specs/00-pipeline-lifecycle.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 1839,
+      "heavy": false,
+      "name": "cancels only the originating pipeline and finalizes killed Job and Result state",
+      "specPath": "tests/e2e/specs/00-pipeline-lifecycle.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 1072,
+      "heavy": false,
+      "name": "streams a scientific alignment artifact into a typed downstream QC step",
+      "specPath": "tests/e2e/specs/00-pipeline-lifecycle.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 345,
+      "heavy": false,
+      "name": "keeps removed legacy AI Models out of the visible catalog",
+      "specPath": "tests/e2e/specs/ai-catalog.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 68,
+      "heavy": false,
+      "name": "exposes stable AI Model card selectors for automation",
+      "specPath": "tests/e2e/specs/ai-catalog.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 293,
+      "heavy": false,
+      "name": "shows the published oncology model, tool, and pipeline preset",
+      "specPath": "tests/e2e/specs/ai-catalog.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 159,
+      "heavy": false,
+      "name": "filters the Runtime Box catalog by search and restores it when cleared",
+      "specPath": "tests/e2e/specs/ai-models.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 315,
+      "heavy": false,
+      "name": "keeps a feedless startup check silent, reports a manual check, and refuses a restart while scientific work is active",
+      "specPath": "tests/e2e/specs/app-update.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 2381,
+      "heavy": false,
+      "name": "loads dependency checks through the real Tauri bridge",
+      "specPath": "tests/e2e/specs/dependencies.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 176,
+      "heavy": false,
+      "name": "runs a bundled Native Tool from inside the application, not from PATH",
+      "specPath": "tests/e2e/specs/dependencies.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 0,
+      "heavy": false,
+      "name": "migrates legacy state without losing Results in the first native app process",
+      "reason": "Missing required environment variable: LIATIR_DESKTOP_BETA_LIFECYCLE",
+      "specPath": "tests/e2e/specs/desktop-beta-linux-install.e2e.mjs",
+      "status": "skipped"
+    },
+    {
+      "durationMs": 0,
+      "heavy": false,
+      "name": "recovers migrated workspace state and Results in a second app process",
+      "reason": "Missing required environment variable: LIATIR_DESKTOP_BETA_LIFECYCLE",
+      "specPath": "tests/e2e/specs/desktop-beta-linux-recover.e2e.mjs",
+      "status": "skipped"
+    },
+    {
+      "durationMs": 0,
+      "heavy": false,
+      "name": "migrates legacy state without losing Results in the first native app process",
+      "reason": "Missing required environment variable: LIATIR_DESKTOP_BETA_LIFECYCLE",
+      "specPath": "tests/e2e/specs/desktop-beta-macos-install.e2e.mjs",
+      "status": "skipped"
+    },
+    {
+      "durationMs": 0,
+      "heavy": false,
+      "name": "recovers migrated workspace state and Results in a second app process",
+      "reason": "Missing required environment variable: LIATIR_DESKTOP_BETA_LIFECYCLE",
+      "specPath": "tests/e2e/specs/desktop-beta-macos-recover.e2e.mjs",
+      "status": "skipped"
+    },
+    {
+      "durationMs": 0,
+      "heavy": false,
+      "name": "migrates legacy state without losing Results in the first native app process",
+      "reason": "Missing required environment variable: LIATIR_DESKTOP_BETA_LIFECYCLE",
+      "specPath": "tests/e2e/specs/desktop-beta-windows-install.e2e.mjs",
+      "status": "skipped"
+    },
+    {
+      "durationMs": 0,
+      "heavy": false,
+      "name": "recovers migrated workspace state and Results in a second app process",
+      "reason": "Missing required environment variable: LIATIR_DESKTOP_BETA_LIFECYCLE",
+      "specPath": "tests/e2e/specs/desktop-beta-windows-recover.e2e.mjs",
+      "status": "skipped"
+    },
+    {
+      "durationMs": 75,
+      "heavy": false,
+      "name": "keeps independently owned logical Jobs isolated and first-writer terminal",
+      "specPath": "tests/e2e/specs/execution-spine.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 2909,
+      "heavy": false,
+      "name": "runs and cancels standalone API Connectors without cross-run blocking",
+      "specPath": "tests/e2e/specs/execution-spine.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 2300,
+      "heavy": false,
+      "name": "runs and cancels a standalone Native Tool with one Job and Result identity",
+      "specPath": "tests/e2e/specs/execution-spine.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 2904,
+      "heavy": false,
+      "name": "settles WASM Plugin success, failure and off-page cancellation through one spine",
+      "specPath": "tests/e2e/specs/execution-spine.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 5614,
+      "heavy": false,
+      "name": "retains and resumes a cancelled native download with an HTTP Range request",
+      "specPath": "tests/e2e/specs/execution-spine.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 0,
+      "heavy": false,
+      "name": "stops the orphaned WSL2 process tree and reconciles its Result exactly once",
+      "reason": "Missing required environment variables: LIATIR_E2E_NEXTFLOW, LIATIR_E2E_NEXTFLOW_WINDOWS_WSL_RESTART, LIATIR_NEXTFLOW_RESTART_STATE",
+      "specPath": "tests/e2e/specs/external-workflow-nextflow-restart-recover.e2e.mjs",
+      "status": "skipped"
+    },
+    {
+      "durationMs": 0,
+      "heavy": false,
+      "name": "leaves one real WSL2 Nextflow process owned by a persisted External Workflow Run",
+      "reason": "Missing required environment variables: LIATIR_E2E_NEXTFLOW, LIATIR_E2E_NEXTFLOW_WINDOWS_WSL_RESTART, LIATIR_NEXTFLOW_RESTART_STATE",
+      "specPath": "tests/e2e/specs/external-workflow-nextflow-restart-start.e2e.mjs",
+      "status": "skipped"
+    },
+    {
+      "durationMs": 0,
+      "heavy": false,
+      "name": "runs one saved Nextflow definition directly and twice in a reusable pipeline",
+      "reason": "Missing required environment variable: LIATIR_E2E_NEXTFLOW",
+      "specPath": "tests/e2e/specs/external-workflow-nextflow.e2e.mjs",
+      "status": "skipped"
+    },
+    {
+      "durationMs": 0,
+      "heavy": false,
+      "name": "preserves Nextflow failure evidence and cancels only the selected direct run",
+      "reason": "Missing required environment variable: LIATIR_E2E_NEXTFLOW",
+      "specPath": "tests/e2e/specs/external-workflow-nextflow.e2e.mjs",
+      "status": "skipped"
+    },
+    {
+      "durationMs": 0,
+      "heavy": false,
+      "name": "reconciles an interrupted External Workflow Result exactly once after reload",
+      "reason": "Missing required environment variable: LIATIR_E2E_NEXTFLOW",
+      "specPath": "tests/e2e/specs/external-workflow-nextflow.e2e.mjs",
+      "status": "skipped"
+    },
+    {
+      "durationMs": 3893,
+      "heavy": false,
+      "name": "draws a GFF annotation track on the reference in JBrowse 2",
+      "specPath": "tests/e2e/specs/genome-viewer.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 2598,
+      "heavy": false,
+      "name": "indexes a BAM that has none and draws it from byte-range reads",
+      "specPath": "tests/e2e/specs/genome-viewer.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 149,
+      "heavy": false,
+      "name": "records a process terminated by a signal as failed while preserving successful exits",
+      "specPath": "tests/e2e/specs/job-signal-exit.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 6546,
+      "heavy": false,
+      "name": "passes declared pipeline inputs and exposes owner-scoped Jobs, Results, artifacts, and cancellation",
+      "specPath": "tests/e2e/specs/mcp.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 77,
+      "heavy": false,
+      "name": "starts the real Tauri app with an isolated app storage root",
+      "specPath": "tests/e2e/specs/native-bridge.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 31,
+      "heavy": false,
+      "name": "opens the sandbox workspace through the real workspace store",
+      "specPath": "tests/e2e/specs/native-bridge.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 70,
+      "heavy": false,
+      "name": "reveals only directories inside the data root, through a command of its own",
+      "specPath": "tests/e2e/specs/native-bridge.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 1696,
+      "heavy": false,
+      "name": "builds a pipeline on the canvas and keeps it across a reload",
+      "specPath": "tests/e2e/specs/pipeline-editor.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 1278,
+      "heavy": false,
+      "name": "adds a note, then walks the canvas back and forward through undo and redo",
+      "specPath": "tests/e2e/specs/pipeline-editor.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 1838,
+      "heavy": false,
+      "name": "saves a named pipeline and reopens exactly it from the list",
+      "specPath": "tests/e2e/specs/pipeline-editor.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 1161,
+      "heavy": false,
+      "name": "frames a graph far wider than the screen when it is opened",
+      "specPath": "tests/e2e/specs/pipeline-editor.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 0,
+      "heavy": false,
+      "name": "recovers an interrupted pipeline exactly once in a new native app process",
+      "reason": "Missing required environment variable: LIATIR_PIPELINE_RESTART_API_URL",
+      "specPath": "tests/e2e/specs/pipeline-settlement-restart-recover.e2e.mjs",
+      "status": "skipped"
+    },
+    {
+      "durationMs": 0,
+      "heavy": false,
+      "name": "persists an active pipeline before the native app process exits",
+      "reason": "Missing required environment variable: LIATIR_PIPELINE_RESTART_API_URL",
+      "specPath": "tests/e2e/specs/pipeline-settlement-restart-start.e2e.mjs",
+      "status": "skipped"
+    },
+    {
+      "durationMs": 3854,
+      "heavy": false,
+      "name": "builds, prepares, and runs a Python .lia plugin through the real Tauri bridge",
+      "specPath": "tests/e2e/specs/python-plugins.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 0,
+      "heavy": false,
+      "name": "manages Quenta chat titles, tags, search filters, and deletion",
+      "reason": "Missing required environment variable: LIATIR_E2E_QUENTA_UNIMPLEMENTED",
+      "specPath": "tests/e2e/specs/quenta.e2e.mjs",
+      "status": "skipped"
+    },
+    {
+      "durationMs": 2284,
+      "heavy": false,
+      "name": "collapses exact focused-chat duplicates and keeps reload idempotent",
+      "specPath": "tests/e2e/specs/quenta.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 0,
+      "heavy": false,
+      "name": "opens Result report in a separate Quenta window with Structured report selected",
+      "reason": "Missing required environment variable: LIATIR_E2E_QUENTA_UNIMPLEMENTED",
+      "specPath": "tests/e2e/specs/quenta.e2e.mjs",
+      "status": "skipped"
+    },
+    {
+      "durationMs": 0,
+      "heavy": false,
+      "name": "consumes Result report deep links without duplicating the chat after reload",
+      "reason": "Missing required environment variable: LIATIR_E2E_QUENTA_UNIMPLEMENTED",
+      "specPath": "tests/e2e/specs/quenta.e2e.mjs",
+      "status": "skipped"
+    },
+    {
+      "durationMs": 1365,
+      "heavy": false,
+      "name": "runs a read-only Quenta explanation against a mock Ollama server",
+      "specPath": "tests/e2e/specs/quenta.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 1953,
+      "heavy": false,
+      "name": "repairs developer-facing model output before showing it to the user",
+      "specPath": "tests/e2e/specs/quenta.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 2752,
+      "heavy": false,
+      "name": "shows sanitized local-model reasoning without exposing local paths",
+      "specPath": "tests/e2e/specs/quenta.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 1739,
+      "heavy": false,
+      "name": "stops and retries a Quenta response without duplicating the user message",
+      "specPath": "tests/e2e/specs/quenta.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 0,
+      "heavy": false,
+      "name": "reattaches to an active Quenta response after reload without duplicating messages",
+      "reason": "Missing required environment variable: LIATIR_E2E_QUENTA_UNIMPLEMENTED",
+      "specPath": "tests/e2e/specs/quenta.e2e.mjs",
+      "status": "skipped"
+    },
+    {
+      "durationMs": 0,
+      "heavy": false,
+      "name": "generates a structured report with local citations through mock Ollama",
+      "reason": "Missing required environment variable: LIATIR_E2E_QUENTA_UNIMPLEMENTED",
+      "specPath": "tests/e2e/specs/quenta.e2e.mjs",
+      "status": "skipped"
+    },
+    {
+      "durationMs": 0,
+      "heavy": true,
+      "name": "predicts ubiquitin and an affinity with Boltz-2 2.2.1 through the product pages and keeps both Results after removal",
+      "reason": "Heavy test not enabled.",
+      "specPath": "tests/e2e/specs/runtime-box-boltz-2-native.e2e.mjs",
+      "status": "skipped"
+    },
+    {
+      "durationMs": 0,
+      "heavy": true,
+      "name": "runs MHCflurry offline across navigation and keeps its Result after removal",
+      "reason": "Heavy test not enabled.",
+      "specPath": "tests/e2e/specs/runtime-box-mhcflurry-native.e2e.mjs",
+      "status": "skipped"
+    },
+    {
+      "durationMs": 0,
+      "heavy": true,
+      "name": "validates install, resume, real Job and Result provenance, replacement, rollback, and cleanup",
+      "reason": "Heavy test not enabled.",
+      "specPath": "tests/e2e/specs/runtime-box-native.e2e.mjs",
+      "status": "skipped"
+    },
+    {
+      "durationMs": 0,
+      "heavy": true,
+      "name": "confirms an unmeasured run, relaxes and simulates the official fixture, and preserves both Results",
+      "reason": "Heavy test not enabled.",
+      "specPath": "tests/e2e/specs/runtime-box-openmm-native.e2e.mjs",
+      "status": "skipped"
+    },
+    {
+      "durationMs": 0,
+      "heavy": true,
+      "name": "predicts ubiquitin with Protenix base v1.0.0 through the product page and keeps its Result after removal",
+      "reason": "Heavy test not enabled.",
+      "specPath": "tests/e2e/specs/runtime-box-protenix-base-v1-0-0-native.e2e.mjs",
+      "status": "skipped"
+    },
+    {
+      "durationMs": 0,
+      "heavy": true,
+      "name": "runs the reduced official pVACseq fixture offline and preserves its Result",
+      "reason": "Heavy test not enabled.",
+      "specPath": "tests/e2e/specs/runtime-box-pvactools-native.e2e.mjs",
+      "status": "skipped"
+    },
+    {
+      "durationMs": 0,
+      "heavy": false,
+      "name": "exposes the checked release candidate without changing the product catalog",
+      "reason": "Missing required environment variable: LIATIR_RUNTIME_BOX_RELEASE_CANDIDATE_ID",
+      "specPath": "tests/e2e/specs/runtime-box-release-candidate.e2e.mjs",
+      "status": "skipped"
+    },
+    {
+      "durationMs": 0,
+      "heavy": true,
+      "name": "validates install, resume, real Job and Result provenance, replacement, rollback, and cleanup",
+      "reason": "Heavy test not enabled.",
+      "specPath": "tests/e2e/specs/runtime-box-scgpt-native.e2e.mjs",
+      "status": "skipped"
+    },
+    {
+      "durationMs": 0,
+      "heavy": false,
+      "name": "installs A, updates to B, persists global floors, and rolls back to A",
+      "reason": "Missing required environment variables: LIATIR_RUNTIME_BOX_SECURITY_CONTROL_TOKEN, LIATIR_RUNTIME_BOX_SECURITY_REGISTRY_URL, LIATIR_RUNTIME_BOX_SECURITY_TARGET_JSON, LIATIR_RUNTIME_BOX_TRUSTED_KEY_FILE",
+      "specPath": "tests/e2e/specs/runtime-box-security-install.e2e.mjs",
+      "status": "skipped"
+    },
+    {
+      "durationMs": 0,
+      "heavy": false,
+      "name": "retains floors across restart and fails closed without disabling installed runtimes",
+      "reason": "Missing required environment variables: LIATIR_RUNTIME_BOX_SECURITY_CONTROL_TOKEN, LIATIR_RUNTIME_BOX_SECURITY_REGISTRY_URL, LIATIR_RUNTIME_BOX_SECURITY_TARGET_JSON, LIATIR_RUNTIME_BOX_TRUSTED_KEY_FILE",
+      "specPath": "tests/e2e/specs/runtime-box-security-restart.e2e.mjs",
+      "status": "skipped"
+    },
+    {
+      "durationMs": 0,
+      "heavy": true,
+      "name": "installs live UCE, finalizes a direct Job into a Result, and removes the box",
+      "reason": "Heavy test not enabled.",
+      "specPath": "tests/e2e/specs/runtime-box-uce-native.e2e.mjs",
+      "status": "skipped"
+    },
+    {
+      "durationMs": 1668,
+      "heavy": false,
+      "name": "keeps AnnData digest, profile, validation and lineage visible across Data and Results",
+      "specPath": "tests/e2e/specs/scientific-artifacts.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 0,
+      "heavy": false,
+      "name": "downloads once, reuses the verified index, and removes it cleanly",
+      "reason": "Missing required environment variables: LIATIR_SINGLE_CELL_INDEX_CATALOG_URL, LIATIR_SINGLE_CELL_INDEX_FIXTURE_BASE_URL, LIATIR_RUNTIME_BOX_TRUSTED_KEY_FILE",
+      "specPath": "tests/e2e/specs/single-cell-index-distribution.e2e.mjs",
+      "status": "skipped"
+    },
+    {
+      "durationMs": 1395,
+      "heavy": false,
+      "name": "opens embedded AnnData, reuses it from Data, and creates the lighthouse preset",
+      "specPath": "tests/e2e/specs/single-cell-lighthouse.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 0,
+      "heavy": false,
+      "name": "installs, verifies, reuses and removes the SnpEff plus SnpSift suite and database",
+      "reason": "Missing required environment variables: LIATIR_SNPEFF_SUITE_CATALOG_PATH, LIATIR_SNPEFF_SUITE_FIXTURE_BASE_URL",
+      "specPath": "tests/e2e/specs/snpeff-suite.e2e.mjs",
+      "status": "skipped"
+    },
+    {
+      "durationMs": 562,
+      "heavy": false,
+      "name": "keeps an unreadable workspace index intact and recovers after a real retry",
+      "specPath": "tests/e2e/specs/startup-recovery.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 0,
+      "heavy": false,
+      "name": "preserves independent structure drafts, explicit accuracy consent and invalid advanced input across navigation",
+      "reason": "Missing required environment variable: LIATIR_STRUCTURE_EDITOR_E2E",
+      "specPath": "tests/e2e/specs/structure-prediction-editor.e2e.mjs",
+      "status": "skipped"
+    },
+    {
+      "durationMs": 1074,
+      "heavy": false,
+      "name": "offers the 3D runtime for install instead of failing when it is missing",
+      "specPath": "tests/e2e/specs/structure-viewer.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 716,
+      "heavy": false,
+      "name": "hands the structure and style to the installed runtime, then goes fullscreen",
+      "specPath": "tests/e2e/specs/structure-viewer.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 779,
+      "heavy": false,
+      "name": "answers a screenshot request with a real PNG or the platform limit, never a silent success",
+      "specPath": "tests/e2e/specs/structure-viewer.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 653,
+      "heavy": false,
+      "name": "draws the structure from its own coordinates when the runtime fails",
+      "specPath": "tests/e2e/specs/structure-viewer.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 2449,
+      "heavy": false,
+      "name": "treats a runtime recorded as installed whose files are gone as not installed",
+      "specPath": "tests/e2e/specs/structure-viewer.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 730,
+      "heavy": false,
+      "name": "names the mistake when the file is not a structure",
+      "specPath": "tests/e2e/specs/structure-viewer.e2e.mjs",
+      "status": "passed"
+    }
+  ],
+  "visual": false
+}

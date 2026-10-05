@@ -1,0 +1,9 @@
+{
+  "status": "passed",
+  "startedAt": "2026-10-05T16:57:40.697Z",
+  "cgroup": "/system.slice/liatir-single-cell-40c882aa-b360-4df0-94f5-71edbf18567d.service",
+  "swapMax": "0",
+  "scope": "Focused corrected native checks, then full relevant UI matrix; no inference.",
+  "finishedAt": "2026-10-05T17:00:00.988Z",
+  "swapBytes": "0"
+}

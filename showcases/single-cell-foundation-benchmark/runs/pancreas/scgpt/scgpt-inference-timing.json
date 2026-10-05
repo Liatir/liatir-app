@@ -1,0 +1,7 @@
+{
+  "computed_cells": 16382,
+  "seconds": 508.57309906,
+  "batch_size": 16,
+  "accelerator": "CUDA",
+  "scope": "Batch tokenization, model encoding, device-to-host copy and durable batch commits; excludes model loading and final serialization."
+}

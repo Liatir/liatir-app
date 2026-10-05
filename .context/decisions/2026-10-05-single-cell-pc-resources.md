@@ -3,7 +3,7 @@
 On 2026-10-05 the user explicitly authorized increasing local execution limits,
 using this otherwise idle PC fully with a safety margin. This supersedes the
 Mac-only CPU / one-thread / one-cell / 2 GiB continuation restriction in the
-[handoff](../state/single-cell-showcase-wsl2-handoff.md). No additional approval is
+[handoff](../history/single-cell-showcase-wsl2-handoff.md). No additional approval is
 needed for local GPU execution. Paid compute, GPU CI, publishing and releases
 remain outside the request.
 

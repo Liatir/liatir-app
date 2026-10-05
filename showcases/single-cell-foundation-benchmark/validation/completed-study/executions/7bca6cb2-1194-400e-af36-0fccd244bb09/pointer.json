@@ -1,0 +1,11 @@
+{
+  "id": "7bca6cb2-1194-400e-af36-0fccd244bb09",
+  "pid": 29652,
+  "execution": "C:\\Users\\loren\\Documents\\GitHub\\liatir-stack\\showcases\\single-cell-foundation-benchmark\\transfer\\windows-executions\\7bca6cb2-1194-400e-af36-0fccd244bb09",
+  "distribution": "Ubuntu",
+  "linuxUser": "lorenzo",
+  "linuxRoot": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05",
+  "entry": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/showcases/single-cell-foundation-benchmark/transfer/final-presentation-resume-entry.mjs",
+  "unit": "liatir-single-cell-8fb6007d-bd65-4ee6-9628-5a38c539c389",
+  "executionProfile": "pc-cuda"
+}

@@ -1,0 +1,38 @@
+{
+  "status": "failed",
+  "startedAt": "2026-10-05T16:30:51.381Z",
+  "pid": 584,
+  "cgroup": "/system.slice/liatir-single-cell-69374c90-5851-4f14-b986-caf41d197735.service",
+  "swapMax": "0",
+  "boot": "cc2b71fc-12bc-48b7-bb86-a266022206e2",
+  "originalNativeRun": "2eb280d5-6af6-46da-a78b-be3278fdbc65",
+  "native": {
+    "id": "0151bed8-9cc5-4873-bf59-f14351c655ff",
+    "pid": 3336,
+    "execution": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/showcases/single-cell-foundation-benchmark/transfer/executions/0151bed8-9cc5-4873-bf59-f14351c655ff"
+  },
+  "finishing": {
+    "id": "b0b53790-de71-4860-8778-f915bea04801",
+    "pid": 3572,
+    "execution": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/showcases/single-cell-foundation-benchmark/transfer/executions/b0b53790-de71-4860-8778-f915bea04801"
+  },
+  "nativeRunId": "12b601e2-cd4f-44ba-b3ec-1238b7da569f",
+  "nativeExit": {
+    "id": "0151bed8-9cc5-4873-bf59-f14351c655ff",
+    "code": 0,
+    "signal": null,
+    "error": null,
+    "endedAt": "2026-10-05T16:44:41.576Z",
+    "status": "completed"
+  },
+  "finishingExit": {
+    "id": "b0b53790-de71-4860-8778-f915bea04801",
+    "code": 1,
+    "signal": null,
+    "error": null,
+    "endedAt": "2026-10-05T16:51:53.958Z",
+    "status": "failed"
+  },
+  "finishedAt": "2026-10-05T16:51:53.959Z",
+  "swapBytes": "0"
+}

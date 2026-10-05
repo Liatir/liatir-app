@@ -1,0 +1,36 @@
+{
+  "pid": 3639,
+  "limits": {
+    "maxGpuUsedBytes": 6442450944,
+    "maxRssBytes": 17179869184,
+    "maxSwapGrowthBytes": 268435456,
+    "minAvailableBytes": 6442450944,
+    "minDiskBytes": 8589934592
+  },
+  "status": "completed",
+  "peak_rss_bytes": 2438782976,
+  "initial_swap_bytes": 0,
+  "started_at": 1791217960.0153017,
+  "peak_gpu_used_bytes": 4799332352,
+  "last_sample": {
+    "rss_bytes": 2109689856,
+    "tracked_pids": [
+      3639,
+      3647,
+      11160
+    ],
+    "process_rss_bytes": {
+      "3639": 2091704320,
+      "3647": 13828096,
+      "11160": 4157440
+    },
+    "available_bytes": 21844881408,
+    "swap_used_bytes": 0,
+    "disk_free_bytes": 799501213696,
+    "gpu_used_bytes": 4774166528,
+    "gpu_total_bytes": 8585740288,
+    "gpu_memory_scope": "Whole NVIDIA device 0, including display and other processes"
+  },
+  "updated_at": 1791218475.1875584,
+  "ended_at": 1791218475.4155965
+}

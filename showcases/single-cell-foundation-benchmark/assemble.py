@@ -93,6 +93,8 @@ def assemble(roots, destination):
             if (root / "imported-source").exists():
                 copy_tree(root / "imported-source", destination / "datasets" / dataset / "imported-source")
                 shutil.copy2(root / "import-origin.json", destination / "datasets" / dataset / "import-origin.json")
+            if (root / "historical-attempts").exists():
+                copy_tree(root / "historical-attempts", destination / "datasets" / dataset / "historical-attempts")
             manifests.append(manifest)
             executions.append({**recorded, "source_run_directory": str(root),
                                "source_bundle_sha256": sha256(root / "single-cell-study.zip")})

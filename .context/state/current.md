@@ -35,75 +35,42 @@ The Scrollcase v3 migration is closed: the app reads only v3 since `2ea19a7`, ev
 was republished as v3 (2026-09-24 to 2026-09-26), and the 127 stale v2 objects, about 215 GB, were
 deleted from R2 on 2026-09-27 — see [Scrollcase v3 adoption](../history/scrollcase-v3-adoption.md).
 
-## What is open, in order
+## Completed scientific showcase
 
-The requested [single-cell foundation-model showcase](./liatir_single_cell_showcase_codex_plan.md)
-resumed with the user's approval for CPU-only execution and strict resource limits,
-after two macOS failures during the earlier attempts. Its
-[execution checklist](./single-cell-showcase-execution.md) records the crashes,
-the tested independent process monitor and a successful native 72-cell diagnostic
-for five methods. UCE's checkpoint exceeds the approved memory cap and is refused
-before allocation. The bounded native rebuild passed. The full 11,990-cell PBMC
-run completed with real measurements and exported figures for PCA, Geneformer,
-Harmony, scVI and scGPT; native Results/chart validation passed. Full pancreas
-execution initially stopped on diagnosed memory overhead and fractional-input
-rejection. Those fixes passed scientific regressions and full source-preservation
-checks. Full native run `6071da5e-c592-4ee3-8544-7bbe5b12be8f` stopped when the
-session was interrupted on 2026-10-05. PCA, Geneformer, Harmony and scVI saved
-their complete embeddings and telemetry. scGPT reached 10,752 of 16,382 cells
-but saved no partial embedding; that inference must restart. No study process
-remained at the subsequent check. The user requested a Windows/WSL2 handoff;
-see [the continuation instructions](./single-cell-showcase-wsl2-handoff.md).
-Do not relaunch on this Mac. Continuation on the user's Windows/WSL2 PC is now
-authorized. The branch and archive have been retrieved and all 185 file hashes
-verified on both hosts. Atomic scGPT batch saving, a detached driver and explicit
-native import have been implemented; lightweight interruption/identity tests and
-the WSL launcher-exit test pass. Semantic checks passed for both matrices/splits
-and all nine saved embeddings. Canonical public sources were retrieved from
-their recorded URLs and passed original size/hash checks. All seven verify gates
-pass (675 unit tests). After an explicit user-approved 4 GiB ceiling for app
-compilation alone, the new Linux native build passed in 29 seconds, with
-2,333,007,872-byte peak process-family RSS and no swap growth. Scientific work
-retains the original 2 GiB ceiling. The signed Linux CPU scGPT box activated
-through the normal native API. Real interruption/resume passed with exact
-16-cell equality against the frozen original runner and changed-seed rejection.
-Native PBMC import/Results/export passed with all Mac scores and costs preserved;
-only prepare/report Jobs ran. Its corrected detached driver exited cleanly.
-The first full PC pancreas attempt, parent
-`2eb280d5-6af6-46da-a78b-be3278fdbc65`, reused four Mac embeddings but was
-stopped by the unchanged swap-growth guard. Its 1,181 committed scGPT cells
-remain intact. A Windows-owned foreground WSL supervisor now passed a real
-95-second launcher-exit/idle-lifetime check; its unique workload cgroup refuses
-swap without changing global WSL settings or raising scientific limits.
-The corrected native CPU continuation, parent
-`22c037dc-6d1b-4b3a-9234-5246b8258f25`, reused all 1,181 batches exactly.
-It was then cancelled through the native execution store after the user explicitly
-approved increasing PC resources and using the local GPU. All 2,066 committed
-cells are preserved; neither that checkpoint nor the Mac records are relabeled.
-The [PC resource decision](../decisions/2026-10-05-single-cell-pc-resources.md)
-supersedes the old continuation limits: six threads, guarded 16 GiB RAM / 6 GiB
-GPU budgets, with system headroom and no workload swap. The published signed
-scGPT CUDA target is activated through the actual native Liatir API. The native
-128-cell pancreas diagnostic passed exact GPU interruption/resume equality,
-changed-seed rejection, CPU/GPU compatibility and an observed GPU guard refusal.
-Six threads / groups of 16 fit the safety margin; groups of 32 exceeded the
-allocator ceiling and were rejected. The user accepts the virtual app window.
-The updated seven-suite gate passed again (87 files / 676 tests) before the
-full accelerated native parent `12b601e2-cd4f-44ba-b3ec-1238b7da569f` started.
-Windows execution `9d50a8e0-464d-4bc9-a49d-01c15b087234` owns its foreground
-WSL session and dependent finisher, with a 16 GiB / zero-swap cgroup. Readback
-verified the CUDA target, six numerical threads, batch 16 and exact original
-pancreas input hash; all four completed Mac methods are byte-identical.
-Earlier CPU attempts are preserved separately in the new export. Assembly,
-independent metric reproduction, source-count checks and full scientific
-regressions remain pending, with their finisher dependent on actual native success.
-Follow the
-[Windows/WSL2 execution checklist](./single-cell-showcase-wsl2-execution.md).
-Combined results and independent reproduction remain open. The earlier Mac used
-its existing verified Rust bridge. The PC uses the newly built Linux native
-bridge with the current development frontend; this is WSL2 native verification,
-not a Windows desktop release/package gate.
-Do not repeat the old Metal configuration or relax the resource limits automatically.
+The [single-cell foundation-model study](../history/liatir_single_cell_showcase_codex_plan.md)
+is complete with two documented UCE blockers: its original Mac checkpoint
+exceeded the then-approved 2 GiB cap, and the PC has no published signed Linux
+target. All ten feasible configurations ran through real native Liatir on the
+complete PBMC (11,990 cells) and pancreas (16,382 cells) datasets. Nine Mac
+representations and their original costs were reused byte for byte; only unfinished
+pancreas scGPT inference ran anew on the explicitly approved RTX 4060 Ti profile,
+six threads / batch 16, guarded 16 GiB RAM / 6 GiB whole-GPU memory, zero workload
+swap. It completed in 515.536567396 seconds; whole-GPU peak was 4,799,332,352
+bytes. The new CUDA checkpoint contains all 16,382 cells. Real interruption/resume
+and changed-identity/guard refusal passed before full inference. Historical Mac
+interruption and the separate 2,066-cell PC CPU checkpoint remain attached.
+
+The twelve-row tables, all biological/batch/compute measurements, 22 reviewed
+figures and [measured report](../../showcases/single-cell-foundation-benchmark/report/results.md)
+are tracked. Independent metric reproduction passed at 1e-9 / 1e-8 tolerances;
+canonical count/split checks were exact. The final seven-gate verify passed
+87 unit files / 676 tests, and all 18 scientific regressions passed. Three relevant
+native UI suites passed: ordinary native 48/0/32 explicit platform/heavy skips,
+plus signed-index and two-process restart checks. The actual virtual Linux app
+used its authorized development frontend; this is WSL2 native verification,
+rather than a Windows release/package gate.
+
+The complete portable export is in both checkouts' ignored showcase
+`transfer/completed-study-final-wsl2-2026-10-05`. All 382 copied files were
+SHA-256 verified, and the portable tools validated the actual Windows ZIP,
+405,019,914 bytes, SHA-256
+`184475f893e7f23efd24d095dccaccac8deefb79a525c0c7aa3d55a193f06de3`.
+See [completion evidence](../../showcases/single-cell-foundation-benchmark/validation/completed-study/completion.json),
+[tested reproduction](../../showcases/single-cell-foundation-benchmark/report/reproduction-validation.md)
+and the [closed execution record](../history/single-cell-showcase-wsl2-execution.md).
+No paid job, GPU CI, new target publication, release or remote push was performed.
+
+## What is open, in order
 
 1. **Signed distribution** — [the release gate](./roadmap/release-signed-distribution.md), in
    progress for `0.1.0` ([decision](../decisions/desktop-distribution-channel.md)): updates from

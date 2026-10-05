@@ -1,0 +1,12 @@
+{
+  "wall_seconds": 22.929401999999754,
+  "peak_rss_bytes": 1840218112,
+  "rss_measurement": "OS process high-water mark, includes imports and serialization",
+  "peak_accelerator_bytes": null,
+  "peak_accelerator_reason": "No reliable Metal peak allocator counter; CPU runs do not use accelerator memory.",
+  "execution_target": "CPU",
+  "embedding_dimensions": 50,
+  "embedding_bytes": 3160534,
+  "model_runtime_bytes": 1296695770,
+  "disk_scope": "isolated shared baseline/evaluation Plugin environment; repeated per baseline, not additive"
+}

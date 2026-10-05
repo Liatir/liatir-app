@@ -1,0 +1,5 @@
+{
+  "status": "passed",
+  "sha256": "35544712015f03c57b9a9d7f42f57932a79623a8f992b4eafe775496e2a2f2b1",
+  "scope": "Current generated scGPT production script equals the completed native GPU runner; later changes affect report presentation and disk-scope description only."
+}

@@ -1,0 +1,10 @@
+# Preserve the original bytes, including each producer's text line endings.
+# Carriage returns at line endings are valid in these frozen scientific records.
+datasets/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+runs/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+results/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+validation/completed-study/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+validation/scgpt-final-runner-source.json -text
+validation/visual-review-final-wsl2.json -text
+validation/wsl2-windows-owned-cpu-pipeline.json -text
+validation/wsl2-windows-owned-pipeline.json -text

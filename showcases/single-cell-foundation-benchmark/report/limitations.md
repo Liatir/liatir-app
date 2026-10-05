@@ -1,27 +1,15 @@
-# Current scientific and execution limitations
+# Limitations
 
-- The two-dataset study remains incomplete. PBMC has final measurements;
-  pancreas has four completed representation stages and no final biological
-  or batch measurements. The scGPT partial attempt lost its in-memory output.
-- One seed and a fixed split do not estimate variation across training,
-  clustering, datasets or deployments. There is no statistical superiority claim.
-- scVI is trained on each dataset; foundation models receive no fine-tuning.
-  Downstream classifiers use the same fixed held-out split for every method.
-- The pancreas upstream count layer contains fractional quantification values.
-  They are preserved exactly. Integer-count model assumptions are imperfect;
-  provenance-gated acceptance does not remove that scientific limitation.
-- Resource ceilings deliberately constrain feasibility. UCE's checkpoint alone
-  exceeds the Mac's approved memory cap; a preflight failure is not a scientific
-  performance score. Linux target availability must be checked independently.
-- CPU runs have no accelerator measurement. The recorded nulls and reasons
-  must be retained. OS peak RSS for pretrained workers excludes child processes;
-  the independent monitor additionally records the whole process family.
-- Resumed Linux work creates a different hardware/runtime condition. Preserve
-  original Mac provenance and identify each new host; do not compare mixed-host
-  timings as if every method ran on one machine.
-- Full PBMC native Results and chart validation passed. Pancreas used the
-  supported development frontend with the existing verified native bridge;
-  updated bundled-native packaging exceeded the Mac's unchanged memory cap.
-- Independent final metric reproduction and the complete twelve-row artifact
-  validation have not run yet. Helper scripts and instructions are not evidence
-  that those remaining completion criteria passed.
+- One seed; no confidence intervals. Saved Mac representations and new Windows/WSL2 representations retain their own host identities. Costs across these hosts do not establish a same-host speed ranking.
+- Random stratified classification split, not leave-one-batch-out prediction. Unsupervised representation fitting uses all cells.
+- The PBMC loader supplies a historically selected 3,346-gene subset, not a whole-transcriptome input.
+- The canonical pancreas count layer contains fractional quantification values; these are preserved without rounding. Integer count-distribution assumptions are imperfect for this source.
+- scVI learns on the evaluation data and must be interpreted separately from zero-shot models.
+- Public benchmark data may overlap pretrained corpora; zero-shot does not prove unseen-data generalization.
+- Raw cell-type silhouette and ASW-batch have known geometry and batch-composition limitations. Inspect all metrics.
+- Peak RAM is the OS process high-water mark; it excludes other processes. Apple unified memory means it is not additive with device memory. Reliable Metal peak memory is unavailable and is null.
+- Representation time includes imports, model loading, preprocessing and writing embeddings; common evaluation and UMAP are separate. Downloads and installation are not included. Interrupted executions report only verified timing lower bounds when their unsaved tail cannot be measured.
+- Pretrained inputs use each model's required vocabulary and formatting. Exclusions and the common evaluation cell set are exported.
+- Historical disk telemetry follows symlink aliases per path. This is a logical file-size sum, not allocated disk blocks. Signed release sizes and the distinct-inode PC audit are retained separately; original Mac telemetry is unchanged.
+- Old interrupted scGPT attempts contribute historical costs, not the fresh complete GPU runtime. Unsaved timing tails remain unknown. CPU vectors were not merged into the incompatible GPU checkpoint.
+- Increasing PC resources cannot provide UCE's missing signed Linux target. Its old Mac memory refusal is a historical budget diagnosis, not a claim about the PC's larger memory.

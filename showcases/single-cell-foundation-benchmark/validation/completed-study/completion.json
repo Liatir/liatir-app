@@ -1,0 +1,35 @@
+{
+  "status": "passed",
+  "datasets": {
+    "pbmc": {
+      "cells": 11990,
+      "genes": 3346
+    },
+    "pancreas": {
+      "cells": 16382,
+      "genes": 19093
+    }
+  },
+  "completed_configurations": 10,
+  "blocked_configurations": [
+    "pbmc/uce",
+    "pancreas/uce"
+  ],
+  "native_runs": [
+    "c8dcfc55-cb26-4074-a877-5ec423b62817",
+    "12b601e2-cd4f-44ba-b3ec-1238b7da569f"
+  ],
+  "mac_representations_reused": 9,
+  "new_pc_representation": "pancreas/scgpt CUDA",
+  "bundle_sha256": "184475f893e7f23efd24d095dccaccac8deefb79a525c0c7aa3d55a193f06de3",
+  "evidence": {
+    "metric_reproduction": "both dataset comparison JSONs passed at 1e-9/1e-8",
+    "source_preservation": "both exact source-count JSONs passed",
+    "native_ui": "three relevant suites passed; 48 ordinary native cases and 32 explicit skips",
+    "scientific_tests": 18,
+    "repository_verify": "seven suites passed; 87 unit files / 676 tests",
+    "visual_review": "22 figures manually reviewed",
+    "windows_portable_copy": "every exported file SHA-256 verified; artifact validator passed on Windows paths"
+  },
+  "scope": "Complete scientific study with diagnosed UCE blockers. This is Linux native Liatir under WSL2, not a Windows release gate."
+}

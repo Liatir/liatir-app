@@ -1,0 +1,44 @@
+{
+  "status": "passed",
+  "request_user_agent": "Mozilla/5.0 (compatible; Liatir/0.2.1; +https://liatir.com)",
+  "sources": [
+    {
+      "file": "pbmc/gene_info_pbmc.csv",
+      "sha256": "cc33ad3226e9750de0f1d9782b9021d6a82224f6dde43005e6d6558eb560f9d5",
+      "bytes": 908183,
+      "url": "https://github.com/YosefLab/scVI-data/raw/master/gene_info.csv"
+    },
+    {
+      "file": "pbmc/pbmc4k/filtered_gene_bc_matrices.tar.gz",
+      "sha256": "097ff873bae645bec5586898ac002ccebbce952d52ac19ea0a35c27c4820df26",
+      "bytes": 18423814,
+      "url": "https://cf.10xgenomics.com/samples/cell-exp/2.1.0/pbmc4k/pbmc4k_filtered_gene_bc_matrices.tar.gz"
+    },
+    {
+      "file": "pbmc/pbmc8k/filtered_gene_bc_matrices.tar.gz",
+      "sha256": "8351eff1f33de79befb16e669d969f22198638f544a12b0e8c56c6bc931c5afe",
+      "bytes": 37558165,
+      "url": "https://cf.10xgenomics.com/samples/cell-exp/2.1.0/pbmc8k/pbmc8k_filtered_gene_bc_matrices.tar.gz"
+    },
+    {
+      "file": "pbmc/pbmc_metadata.pickle",
+      "sha256": "a7b8b2a5cec508b8f3c080aa28bcc3c6be34ab249bacc4c6b8bc1cec3a966e07",
+      "bytes": 4000144,
+      "url": "https://github.com/YosefLab/scVI-data/raw/master/pbmc_metadata.pickle"
+    },
+    {
+      "file": "pancreas/scib-pancreas-24539828.h5ad",
+      "sha256": "97e6dfd65553e4d10aa3ef5d904362970a75c677c31d70fabc9234191a09db8c",
+      "bytes": 315955785,
+      "url": "https://api.figshare.com/v2/file/download/24539828"
+    },
+    {
+      "url": "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_47/gencode.v47.basic.annotation.gtf.gz",
+      "file": "gencode.v47.basic.annotation.gtf.gz",
+      "sha256": "8858ec2557c2904f91e44aeda762759cd998ce663774245710cb52ad4dc334ee",
+      "bytes": 33706193,
+      "release": "GENCODE human v47 GRCh38 basic",
+      "policy": "Exact case-sensitive symbol; only unique Ensembl mappings; no guessing."
+    }
+  ]
+}

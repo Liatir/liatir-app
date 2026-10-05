@@ -1,0 +1,8 @@
+{
+  "runtime_box_activation": null,
+  "input_sha256": "aeb6f9a2de14b881a81420018963d2d35e33d705f01ecc73c11a78f012001368",
+  "runner_sha256": null,
+  "job_id": null,
+  "status": "blocked",
+  "error": "Error: UCE 4-layer: This AI Model does not have a published Runtime Box for Linux. Published platforms: macOS Detected: Linux x86_64 with NVIDIA driver 610.62"
+}

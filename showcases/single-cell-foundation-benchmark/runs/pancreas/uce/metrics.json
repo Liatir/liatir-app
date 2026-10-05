@@ -1,0 +1,4 @@
+{
+  "status": "blocked",
+  "reason": "Error: UCE 4-layer: This AI Model does not have a published Runtime Box for Linux. Published platforms: macOS Detected: Linux x86_64 with NVIDIA driver 610.62"
+}

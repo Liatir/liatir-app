@@ -1,0 +1,110 @@
+{
+  "status": "passed",
+  "source": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/tests/.artifacts/home/single-cell-showcase/.local/share/app.liatir.app/.liatir/.main/data/workspaces/__test__/runs/12b601e2-cd4f-44ba-b3ec-1238b7da569f/output/historical-attempts",
+  "files": [
+    {
+      "file": "pc-cpu-before-gpu/scgpt-cpu-checkpoint-before-cuda.json",
+      "sha256": "92dfe3aae88b9c99e6e2238715341ee99aef3fd6cc194c57994316168b68d4ab",
+      "bytes": 3118
+    },
+    {
+      "file": "pc-cpu-before-gpu/README.md",
+      "sha256": "4ebadf7f3cc15ebdde442a0c70c32118d1e208281a86343222f5c717bc6f9ee5",
+      "bytes": 604
+    },
+    {
+      "file": "pc-cpu-before-gpu/wsl2-cpu-attempt-cancellation.json",
+      "sha256": "5a858e6e333ee76369ed8ff88a6a699e90bae523209523ed30f0efd870497dd8",
+      "bytes": 396
+    },
+    {
+      "file": "pc-cpu-before-gpu/scgpt/resource_guard.py",
+      "sha256": "04bb963093c98806cc916888719cc4c6229ed22da3bf27417c082841f9afb6a0",
+      "bytes": 7507
+    },
+    {
+      "file": "pc-cpu-before-gpu/scgpt/metrics.json",
+      "sha256": "ccf01baf0b26cb97fb88ec4ca75c9ee8a0f80f088beba7d6859664fb3866f2f4",
+      "bytes": 86
+    },
+    {
+      "file": "pc-cpu-before-gpu/scgpt/provenance.json",
+      "sha256": "bd5f71d1d5de218409c99032263d0cb51fb6103808da556b82ffb1af3363d338",
+      "bytes": 5514
+    },
+    {
+      "file": "pc-cpu-before-gpu/scgpt/scgpt-checkpoint.sqlite3",
+      "sha256": "a3a13dc015e070d7ecea088945642250597b05cbc557e95334c3ad79f4c9277e",
+      "bytes": 8503296
+    },
+    {
+      "file": "pc-cpu-before-gpu/scgpt/config.json",
+      "sha256": "cbb5aeaacdb13cb32d340e51cb306dc45b7554d3a491e327ea8c4cbab1f482be",
+      "bytes": 609
+    },
+    {
+      "file": "pc-cpu-before-gpu/scgpt/environment.json",
+      "sha256": "7f8d6cb23f69eb2d2a88ac99f9de3c44dc32b07c70e4ab18ed7aa68ef13bfca4",
+      "bytes": 8088
+    },
+    {
+      "file": "pc-cpu-before-gpu/scgpt/resource-monitor.json",
+      "sha256": "58df73ef865684cda8a07736bf71b2cbd7d80488c1becd7fd5027aaff736d90b",
+      "bytes": 661
+    },
+    {
+      "file": "pc-cpu-before-gpu/scgpt/runner.py",
+      "sha256": "28b7089f05edf66996a284816b046fc186504b97774ee8c1070a94d5de641ba9",
+      "bytes": 26710
+    },
+    {
+      "file": "pc-cpu-before-gpu/scgpt/attempts/a620eb4c-ef32-494c-98e3-cb2d2ebd7c65/telemetry.json",
+      "sha256": "79a5a266b795916df4446a1e95779f0e59bc420b16b6f36cb77b97c07ef793b8",
+      "bytes": 340
+    },
+    {
+      "file": "pc-cpu-before-gpu/scgpt/attempts/a620eb4c-ef32-494c-98e3-cb2d2ebd7c65/resource_guard.py",
+      "sha256": "04bb963093c98806cc916888719cc4c6229ed22da3bf27417c082841f9afb6a0",
+      "bytes": 7507
+    },
+    {
+      "file": "pc-cpu-before-gpu/scgpt/attempts/a620eb4c-ef32-494c-98e3-cb2d2ebd7c65/environment.json",
+      "sha256": "97668e60ddb554eefbb2f3973eb2f8edb20e47f79d08efdcb443a85ddd75512a",
+      "bytes": 8088
+    },
+    {
+      "file": "pc-cpu-before-gpu/scgpt/attempts/a620eb4c-ef32-494c-98e3-cb2d2ebd7c65/resource-monitor.json",
+      "sha256": "7d8dd9cd44a24d258d81ca9ab1dfc8bd087628367f8fef7994617633a75806fb",
+      "bytes": 806
+    },
+    {
+      "file": "pc-cpu-before-gpu/scgpt/attempts/a620eb4c-ef32-494c-98e3-cb2d2ebd7c65/runner.py",
+      "sha256": "28b7089f05edf66996a284816b046fc186504b97774ee8c1070a94d5de641ba9",
+      "bytes": 26710
+    },
+    {
+      "file": "pc-cpu-before-gpu/scgpt/attempts/a620eb4c-ef32-494c-98e3-cb2d2ebd7c65/logs/stderr.log",
+      "sha256": "5497690f22c903202b30aa533990c22a6bac6858ce28406a2a7ebebdc256098e",
+      "bytes": 209
+    },
+    {
+      "file": "pc-cpu-before-gpu/scgpt/attempts/a620eb4c-ef32-494c-98e3-cb2d2ebd7c65/logs/stdout.log",
+      "sha256": "493d8ba680c80b825d598b4ceda91224e70f0953fa58cb7b8fb03e7f1378b09b",
+      "bytes": 62
+    },
+    {
+      "file": "pc-cpu-before-gpu/scgpt/logs/stderr.log",
+      "sha256": "f09e9250caf89dfe7ec91be545aa756d0be8d3e6da55ba39634c1708c206b15a",
+      "bytes": 209
+    },
+    {
+      "file": "pc-cpu-before-gpu/scgpt/logs/stdout.log",
+      "sha256": "493d8ba680c80b825d598b4ceda91224e70f0953fa58cb7b8fb03e7f1378b09b",
+      "bytes": 62
+    }
+  ],
+  "excluded_generated_cache_files": [
+    "pc-cpu-before-gpu/scgpt/__pycache__/resource_guard.cpython-311.pyc"
+  ],
+  "scope": "Copied historical CPU attempts byte for byte; no checkpoint identity migration."
+}

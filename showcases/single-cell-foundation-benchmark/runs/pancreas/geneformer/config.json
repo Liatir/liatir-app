@@ -1,0 +1,21 @@
+{
+  "accelerator": "cpu",
+  "batchSize": 1,
+  "method": "geneformer",
+  "modelId": "ctheodoris-geneformer-v1-10m",
+  "resource_limits": {
+    "maxRssBytes": 2147483648,
+    "maxSwapGrowthBytes": 268435456,
+    "minAvailableBytes": 2147483648,
+    "minDiskBytes": 4294967296
+  },
+  "seed": 23,
+  "sourceCountProvenance": {
+    "kind": "canonical-source-count-layer",
+    "prepared_sha256": "aeb6f9a2de14b881a81420018963d2d35e33d705f01ecc73c11a78f012001368",
+    "source_layer": "counts",
+    "source_sha256": "97e6dfd65553e4d10aa3ef5d904362970a75c677c31d70fabc9234191a09db8c"
+  },
+  "threads": 1,
+  "zero_shot": true
+}

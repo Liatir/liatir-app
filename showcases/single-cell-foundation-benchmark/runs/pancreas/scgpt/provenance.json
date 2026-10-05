@@ -1,0 +1,132 @@
+{
+  "runtime_box_activation": {
+    "hostEnvironment": "native",
+    "release": {
+      "archive": {
+        "format": "zip",
+        "sha256": "3da31f6ef9c6ca48e55af52190451e4ca8ce293cd9421fc88e997c8cfceed932",
+        "sizeBytes": 7857676593,
+        "url": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/scgpt-whole-human/0.2.5-beta.2/linux-x86_64-cuda12.9/3da31f6ef9c6ca48e55af52190451e4ca8ce293cd9421fc88e997c8cfceed932.zip"
+      },
+      "boxId": "scgpt-whole-human",
+      "cacheSubdir": "model-cache/scgpt-whole-human",
+      "compatibility": {
+        "hostEnvironments": [
+          "native",
+          "windows-wsl2"
+        ],
+        "minLiatirVersion": "0.2.1",
+        "minNvidiaDriverVersion": "525.60.13",
+        "minRamGb": 16
+      },
+      "installedSizeBytes": 13278575392,
+      "kind": "liatir.runtime-box.release",
+      "labels": {
+        "model": "bowang-scgpt-whole-human",
+        "runtime": "single-cell-foundation-scgpt-whole-human"
+      },
+      "payloadDigest": {
+        "format": "sha256-path-list-v1",
+        "sha256": "0d041ba730d1e51a1ca018bd9817fc79cd609bd5bd805535e72a59e190acf9cd"
+      },
+      "provenance": {
+        "builderRevision": "5bd54a9f1854b0c01ee55b69099105eb0a52689c",
+        "builtAt": "2026-09-25T00:34:56+02:00",
+        "dependencyLockSha256": "3bc87da78d23f009d4f654f3da734f7ca226489f700f9ad5e355163b4a729194",
+        "pixiVersion": "0.73.0",
+        "runtimeVersion": "3.11.15",
+        "scrollId": "scgpt-whole-human-linux-x86_64-cuda12.9",
+        "scrollVersion": "1.0.0",
+        "sourceRevision": "cebd6fae655b9c585a4807daa3ac31bb764f06b4",
+        "sourceTreeDirty": false
+      },
+      "runtime": {
+        "entryPoint": "venv/bin/python",
+        "id": "python",
+        "version": "3.11.15"
+      },
+      "schemaVersion": 3,
+      "selfTest": {
+        "probe": {
+          "imports": [
+            "torch",
+            "anndata",
+            "numpy",
+            "scipy",
+            "pandas",
+            "h5py",
+            "tqdm"
+          ]
+        },
+        "timeoutSeconds": 180
+      },
+      "target": {
+        "accelerator": "cuda",
+        "arch": "x86_64",
+        "cudaVersion": "12.9",
+        "platform": "linux"
+      },
+      "version": "0.2.5-beta.2"
+    },
+    "schemaVersion": 3,
+    "selectedTarget": {
+      "accelerator": "cuda",
+      "arch": "x86_64",
+      "cudaVersion": "12.9",
+      "platform": "linux"
+    },
+    "signedRelease": {
+      "payloadBase64": "ewogICJzY2hlbWFWZXJzaW9uIjogMywKICAia2luZCI6ICJsaWF0aXIucnVudGltZS1ib3gucmVsZWFzZSIsCiAgImJveElkIjogInNjZ3B0LXdob2xlLWh1bWFuIiwKICAibGFiZWxzIjogewogICAgIm1vZGVsIjogImJvd2FuZy1zY2dwdC13aG9sZS1odW1hbiIsCiAgICAicnVudGltZSI6ICJzaW5nbGUtY2VsbC1mb3VuZGF0aW9uLXNjZ3B0LXdob2xlLWh1bWFuIgogIH0sCiAgInZlcnNpb24iOiAiMC4yLjUtYmV0YS4yIiwKICAidGFyZ2V0IjogewogICAgInBsYXRmb3JtIjogImxpbnV4IiwKICAgICJhcmNoIjogIng4Nl82NCIsCiAgICAiYWNjZWxlcmF0b3IiOiAiY3VkYSIsCiAgICAiY3VkYVZlcnNpb24iOiAiMTIuOSIKICB9LAogICJjb21wYXRpYmlsaXR5IjogewogICAgIm1pbkxpYXRpclZlcnNpb24iOiAiMC4yLjEiLAogICAgIm1pblJhbUdiIjogMTYsCiAgICAibWluTnZpZGlhRHJpdmVyVmVyc2lvbiI6ICI1MjUuNjAuMTMiLAogICAgImhvc3RFbnZpcm9ubWVudHMiOiBbCiAgICAgICJuYXRpdmUiLAogICAgICAid2luZG93cy13c2wyIgogICAgXQogIH0sCiAgImFyY2hpdmUiOiB7CiAgICAiZm9ybWF0IjogInppcCIsCiAgICAidXJsIjogImh0dHBzOi8vYXNzZXRzLm1vZGVscy5saWF0aXIuY29tL2FpLXJ1bnRpbWUtYm94ZXMvYm94ZXMvc2NncHQtd2hvbGUtaHVtYW4vMC4yLjUtYmV0YS4yL2xpbnV4LXg4Nl82NC1jdWRhMTIuOS8zZGEzMWY2ZWY5YzZjYTQ4ZTU1YWY1MjE5MDQ1MWU0Y2E4Y2UyOTNjZDk0MjFmYzg4ZTk5N2M4Y2ZjZWVkOTMyLnppcCIsCiAgICAic2hhMjU2IjogIjNkYTMxZjZlZjljNmNhNDhlNTVhZjUyMTkwNDUxZTRjYThjZTI5M2NkOTQyMWZjODhlOTk3YzhjZmNlZWQ5MzIiLAogICAgInNpemVCeXRlcyI6IDc4NTc2NzY1OTMKICB9LAogICJpbnN0YWxsZWRTaXplQnl0ZXMiOiAxMzI3ODU3NTM5MiwKICAicGF5bG9hZERpZ2VzdCI6IHsKICAgICJmb3JtYXQiOiAic2hhMjU2LXBhdGgtbGlzdC12MSIsCiAgICAic2hhMjU2IjogIjBkMDQxYmE3MzBkMWU1MWExY2EwMThiZDk4MTdmYzc5Y2Q2MDliZDViZDgwNTUzNWU3MmE1OWUxOTBhY2Y5Y2QiCiAgfSwKICAicnVudGltZSI6IHsKICAgICJpZCI6ICJweXRob24iLAogICAgInZlcnNpb24iOiAiMy4xMS4xNSIsCiAgICAiZW50cnlQb2ludCI6ICJ2ZW52L2Jpbi9weXRob24iCiAgfSwKICAiY2FjaGVTdWJkaXIiOiAibW9kZWwtY2FjaGUvc2NncHQtd2hvbGUtaHVtYW4iLAogICJzZWxmVGVzdCI6IHsKICAgICJwcm9iZSI6IHsKICAgICAgImltcG9ydHMiOiBbCiAgICAgICAgInRvcmNoIiwKICAgICAgICAiYW5uZGF0YSIsCiAgICAgICAgIm51bXB5IiwKICAgICAgICAic2NpcHkiLAogICAgICAgICJwYW5kYXMiLAogICAgICAgICJoNXB5IiwKICAgICAgICAidHFkbSIKICAgICAgXQogICAgfSwKICAgICJ0aW1lb3V0U2Vjb25kcyI6IDE4MAogIH0sCiAgInByb3ZlbmFuY2UiOiB7CiAgICAic2Nyb2xsSWQiOiAic2NncHQtd2hvbGUtaHVtYW4tbGludXgteDg2XzY0LWN1ZGExMi45IiwKICAgICJzY3JvbGxWZXJzaW9uIjogIjEuMC4wIiwKICAgICJidWlsZGVyUmV2aXNpb24iOiAiNWJkNTRhOWYxODU0YjBjMDFlZTU1YjY5MDk5MTA1ZWIwYTUyNjg5YyIsCiAgICAic291cmNlVHJlZURpcnR5IjogZmFsc2UsCiAgICAic291cmNlUmV2aXNpb24iOiAiY2ViZDZmYWU2NTViOWM1ODVhNDgwN2RhYTNhYzMxYmI3NjRmMDZiNCIsCiAgICAicnVudGltZVZlcnNpb24iOiAiMy4xMS4xNSIsCiAgICAicGl4aVZlcnNpb24iOiAiMC43My4wIiwKICAgICJkZXBlbmRlbmN5TG9ja1NoYTI1NiI6ICIzYmM4N2RhNzhkMjNmMDA5ZDRmNjU0ZjNkYTczNGY3Y2EyMjY0ODlmNzAwZjlhZDVlMzU1MTYzYjRhNzI5MTk0IiwKICAgICJidWlsdEF0IjogIjIwMjYtMDktMjVUMDA6MzQ6NTYrMDI6MDAiCiAgfQp9Cg==",
+      "payloadEncoding": "base64-json-utf8",
+      "payloadSha256": "9ed266d51cb60ed58ea3c1f15e635b4b6a803ffee26c1532d0b44b899904dbd2",
+      "schemaVersion": 3,
+      "signatures": [
+        {
+          "algorithm": "ed25519",
+          "keyId": "liatir-runtime-box-kms-2026",
+          "signatureBase64": "YJErk9N4+P0xaRgc2mPZH6gKHYBIwoyMUaDX6EoHEwXJmNOVxsr7uhW7UrWATMXz6F9lxAQMgb4c+5YFh2SYCg=="
+        }
+      ]
+    }
+  },
+  "input_sha256": "aeb6f9a2de14b881a81420018963d2d35e33d705f01ecc73c11a78f012001368",
+  "runner_sha256": "35544712015f03c57b9a9d7f42f57932a79623a8f992b4eafe775496e2a2f2b1",
+  "job_id": "job_2",
+  "status": "completed",
+  "embedding": {
+    "path": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/tests/.artifacts/home/single-cell-showcase/.local/share/app.liatir.app/.liatir/.main/data/workspaces/__test__/runs/12b601e2-cd4f-44ba-b3ec-1238b7da569f/output/runs/pancreas/scgpt/embedding.npz",
+    "sha256": "9c4eca18655335a64f5723617d9d5b68f5df6a29b0c244adfed63f70cb50aca0",
+    "bytes": 31318387,
+    "cells": 16382,
+    "dimensions": 512
+  },
+  "model_summary": {
+    "cellCount": 16382,
+    "geneCount": 18160,
+    "outputGeneCount": 19093,
+    "matchedGeneCount": 18160,
+    "inputCellCount": 16382,
+    "inputGeneCount": 19093,
+    "embeddingDim": 512,
+    "embeddingKey": "X_scGPT",
+    "embeddingLayer": "final encoder CLS token, L2 normalized",
+    "normalization": "scGPT 51-bin per-cell quantile value encoding",
+    "model": "scGPT Whole-human",
+    "species": "human",
+    "batchSize": 16,
+    "previewRows": 3,
+    "intermediateCount": 0,
+    "accelerator": "CUDA",
+    "requestedAccelerator": "cuda",
+    "peakVramBytes": 3510297600,
+    "gpuModel": "NVIDIA GeForce RTX 4060 Ti",
+    "gpuMemoryBytes": 8585084928,
+    "computeCapability": "8.9",
+    "reportedCudaCompatibility": "12.9",
+    "warnings": [
+      "scGPT embeddings are exploratory representations and are not cell-type labels.",
+      "Retained fractional values from the canonical pancreas source count layer without rounding. These are source-supplied quantification values; integer count assumptions are imperfect."
+    ]
+  },
+  "model_output_sha256": "63eb7aa6339a37d41db1bc1cdab20335bc48c08640680aac2e077aca3aa6ae93"
+}

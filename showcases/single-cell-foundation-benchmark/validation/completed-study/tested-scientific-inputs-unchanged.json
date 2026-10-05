@@ -1,0 +1,247 @@
+{
+  "status": "passed",
+  "files": [
+    {
+      "file": "datasets/pbmc/counts.h5ad",
+      "sha256": "bd6aa9473c1895462cabff3cde087ba7776307103579ab2a77892269e6a99709"
+    },
+    {
+      "file": "datasets/pbmc/split.csv",
+      "sha256": "369daa5bc09ad8e32b7babc67e23068bfcd790d5eface55a63e7af63e4d69178"
+    },
+    {
+      "file": "datasets/pbmc/code/common.py",
+      "sha256": "2eebd6d7cf210c255568c362c4a78a46d495850a94e19d691edcc711294305d0"
+    },
+    {
+      "file": "datasets/pbmc/code/evaluation.py",
+      "sha256": "10003666dd7d8c5b6794eaaba0016c3fbfe25ef22f1d0f8db997c4e7856039b2"
+    },
+    {
+      "file": "datasets/pbmc/study-environment.json",
+      "sha256": "90070487c5a0ea9f74dd5876a66d08c74e598cde6ccc4f1d07de92cf31ca5aa3"
+    },
+    {
+      "file": "runs/pbmc/pca/embedding.npz",
+      "sha256": "6b5c3febd28940c9152e73e927925fa0b9e187c0e16b13e169717e3f2cbde67d"
+    },
+    {
+      "file": "runs/pbmc/pca/metrics.json",
+      "sha256": "617469dd9c6776adf343a227a5ca24f7c8f71e7e24b7595fa2c3bb6a2dd9e0a0"
+    },
+    {
+      "file": "runs/pbmc/pca/config.json",
+      "sha256": "16375926071480588c24f72d336d48f85ef53ed6fc3fe90a4dc8c1efae724d39"
+    },
+    {
+      "file": "runs/pbmc/pca/telemetry.json",
+      "sha256": "c92b3fb70228d00ef101c90192cc3898e36420f6a9a11d8f2e594300d7ad81bf"
+    },
+    {
+      "file": "runs/pbmc/pca/provenance.json",
+      "sha256": "03f90a56bb5760519f564670a69f3840714276eabab046b9bced1d673df148a9"
+    },
+    {
+      "file": "runs/pbmc/geneformer/embedding.npz",
+      "sha256": "8d3ca677e0fc09d25184eed2f06eac2b346b0d0625ba0bb4399c36a845a41704"
+    },
+    {
+      "file": "runs/pbmc/geneformer/metrics.json",
+      "sha256": "678f1dc00359bad05cad8c84e0a026cc4c1ecf84196e2d8b41e353015b43a733"
+    },
+    {
+      "file": "runs/pbmc/geneformer/config.json",
+      "sha256": "9c851219d26c46cfedfd75bdf58a599dc9c8b306f73bafe312a0486bba626b25"
+    },
+    {
+      "file": "runs/pbmc/geneformer/telemetry.json",
+      "sha256": "f92be3da808f6656958413502d96ae2f3ccea82713119b6f25d6dd6490d9a303"
+    },
+    {
+      "file": "runs/pbmc/geneformer/provenance.json",
+      "sha256": "16a3aec8f898c1dbbe17c244fe4bc86eb1b08cf9177917e1223c600f4dae62e6"
+    },
+    {
+      "file": "runs/pbmc/harmony/embedding.npz",
+      "sha256": "35e11380385a57df7d626d620de6dff831e6ced4b7c28e97834aa99a55786c70"
+    },
+    {
+      "file": "runs/pbmc/harmony/metrics.json",
+      "sha256": "43a22d8cca8a70bc3cfc13caf5e25b2dc561a15d7b795196c6e63e5021a7b993"
+    },
+    {
+      "file": "runs/pbmc/harmony/config.json",
+      "sha256": "c67d741672f94f3edf0f3f823b5337c302c48104c9199c6e867a2e1e9854cf3a"
+    },
+    {
+      "file": "runs/pbmc/harmony/telemetry.json",
+      "sha256": "b36ccd99d53de0f4faff7176f2ee18fba299a2cf9ac52088ac459bd7c9c95be4"
+    },
+    {
+      "file": "runs/pbmc/harmony/provenance.json",
+      "sha256": "e31a24d041be4326c76519b925ed0eb0eb67a5fb890a610873cf304d61c1fc1b"
+    },
+    {
+      "file": "runs/pbmc/scvi/embedding.npz",
+      "sha256": "1837568290c693eb1cadfc24b86af6994d574b87cb9d4407a00796b854d85be9"
+    },
+    {
+      "file": "runs/pbmc/scvi/metrics.json",
+      "sha256": "3f17ba4e74c03ad9da14a8d07dc141f7e1e5d0b383b6eeafc21f2535b6d8155a"
+    },
+    {
+      "file": "runs/pbmc/scvi/config.json",
+      "sha256": "265dfcbe99cba4ab2349910caaf2c6f18f0444506face2fdb60cc3d9151eed70"
+    },
+    {
+      "file": "runs/pbmc/scvi/telemetry.json",
+      "sha256": "98be4d40594ee37d027b40386acbae76792cba80d3d510c77409f155e7bbd562"
+    },
+    {
+      "file": "runs/pbmc/scvi/provenance.json",
+      "sha256": "3a25c3db1472333b9b73ad9cfe1d45d9417d5ee81b691bdd584689022ea138ff"
+    },
+    {
+      "file": "runs/pbmc/scgpt/embedding.npz",
+      "sha256": "bcd76be0a12ee7ae29104f67a9b99eb8604610356e21db2eb75afeb6d546e552"
+    },
+    {
+      "file": "runs/pbmc/scgpt/metrics.json",
+      "sha256": "7f515592183780a04f8e4b9c5658d3c125e9fda59c51a5978d0aec3cfb62c0b1"
+    },
+    {
+      "file": "runs/pbmc/scgpt/config.json",
+      "sha256": "bd12fe4cd1bd6320564793b911d7724baab0e88054bf63f4088a08d4bf38a5b6"
+    },
+    {
+      "file": "runs/pbmc/scgpt/telemetry.json",
+      "sha256": "d4828e6f3d47a5687644f6175d36cff3219d7d4865e5957d29560855ebe6bcc6"
+    },
+    {
+      "file": "runs/pbmc/scgpt/provenance.json",
+      "sha256": "63195953098edd1933671787e0e1c0ef61868ebac2c011912248531f35f5efbf"
+    },
+    {
+      "file": "datasets/pancreas/counts.h5ad",
+      "sha256": "aeb6f9a2de14b881a81420018963d2d35e33d705f01ecc73c11a78f012001368"
+    },
+    {
+      "file": "datasets/pancreas/split.csv",
+      "sha256": "194090a9d944c371e8df45f0795b9b05140b782d760c062c6e38d38f55abf0cd"
+    },
+    {
+      "file": "datasets/pancreas/code/common.py",
+      "sha256": "2eebd6d7cf210c255568c362c4a78a46d495850a94e19d691edcc711294305d0"
+    },
+    {
+      "file": "datasets/pancreas/code/evaluation.py",
+      "sha256": "10003666dd7d8c5b6794eaaba0016c3fbfe25ef22f1d0f8db997c4e7856039b2"
+    },
+    {
+      "file": "datasets/pancreas/study-environment.json",
+      "sha256": "0b0c9c8641a5729607ae46e8aff3571996681de15e35cc6093eaa33690aa19cc"
+    },
+    {
+      "file": "runs/pancreas/pca/embedding.npz",
+      "sha256": "d7a0b78021d154eadffc1478d32d60af7932b6fd8030623c4ea3814d4b6d0b95"
+    },
+    {
+      "file": "runs/pancreas/pca/metrics.json",
+      "sha256": "d4761ea2ed019e3fd69747de82eb489cbabee336f565969698075906ed82bd77"
+    },
+    {
+      "file": "runs/pancreas/pca/config.json",
+      "sha256": "70ec7cb80fe6fed90a02ffe4dab8bd2d1e12ad3ab057ad85c990d01a8e06bb9d"
+    },
+    {
+      "file": "runs/pancreas/pca/telemetry.json",
+      "sha256": "9ddd95247d70f3a68ef22d4b11a472d191043bf0ff9eefa36496faf04d86d6c5"
+    },
+    {
+      "file": "runs/pancreas/pca/provenance.json",
+      "sha256": "3430b251c6b9627d5ad8e62b53dc56c3aac4ecaf2e686fa86ab0302572da4994"
+    },
+    {
+      "file": "runs/pancreas/geneformer/embedding.npz",
+      "sha256": "9cffdee319c308cca57a85f50ac1535fed1a9a7fbefa7f4d3936cea358f05892"
+    },
+    {
+      "file": "runs/pancreas/geneformer/metrics.json",
+      "sha256": "902b933d7a4e83a5e1d12e26442432449f9415688cade2be458979275acc06b6"
+    },
+    {
+      "file": "runs/pancreas/geneformer/config.json",
+      "sha256": "464a1a59c390abf4b1a0cbd37d83f4543d9f7e25a9774ea9306de3c1ee208f7f"
+    },
+    {
+      "file": "runs/pancreas/geneformer/telemetry.json",
+      "sha256": "02850876bdf62c91a1b8d1ba09a3bd7a1ff2cbc96fb73f62b6adcbd57eccadcb"
+    },
+    {
+      "file": "runs/pancreas/geneformer/provenance.json",
+      "sha256": "d0c5cd6a7a33887870a94ed88b5df5fa39159cba65d800c3087634b32b370028"
+    },
+    {
+      "file": "runs/pancreas/harmony/embedding.npz",
+      "sha256": "b01639480227099fd73bbb11a07b09454483f36ca6b6b661fda9912041fbc1e9"
+    },
+    {
+      "file": "runs/pancreas/harmony/metrics.json",
+      "sha256": "1803f81ff8f2d8f9c4309323cb15f5bdd43f47ecac040c2271b3330b0c391e05"
+    },
+    {
+      "file": "runs/pancreas/harmony/config.json",
+      "sha256": "52061f8f3c480c28e7ad59834063dec429db4960f1d61df17c59e27c95ae4672"
+    },
+    {
+      "file": "runs/pancreas/harmony/telemetry.json",
+      "sha256": "37024ceecace6ce8d78f55912ce9fe4cf2189bd7c9562fc2618fbcf679e7d27c"
+    },
+    {
+      "file": "runs/pancreas/harmony/provenance.json",
+      "sha256": "ab90f8102d5f4eb85953bfffa8089a352ada6017fd6d9b273ff8c49a36542645"
+    },
+    {
+      "file": "runs/pancreas/scvi/embedding.npz",
+      "sha256": "714888c570eaf76bb7d70ca33acb10ff15c088e931cd3bd6ca7f4a11e0ffa0a6"
+    },
+    {
+      "file": "runs/pancreas/scvi/metrics.json",
+      "sha256": "eaa8b73dcdc72b7a459957dd8633ff57458b803684b7d2aad34b72aca6e4927b"
+    },
+    {
+      "file": "runs/pancreas/scvi/config.json",
+      "sha256": "f060a76965e577eb8fac98c21740587a7ef19a5b9daeec4a36ebfaf43e324cb4"
+    },
+    {
+      "file": "runs/pancreas/scvi/telemetry.json",
+      "sha256": "c2c1566635e2a43aa36b5db4dcfb16ac49a55a7986cf0f225a82b4caffaafb61"
+    },
+    {
+      "file": "runs/pancreas/scvi/provenance.json",
+      "sha256": "4910180e99866eb7b63d7afa8a244f84245df047a78f00e6e901ec82b422c11a"
+    },
+    {
+      "file": "runs/pancreas/scgpt/embedding.npz",
+      "sha256": "9c4eca18655335a64f5723617d9d5b68f5df6a29b0c244adfed63f70cb50aca0"
+    },
+    {
+      "file": "runs/pancreas/scgpt/metrics.json",
+      "sha256": "a2c9b38998f34377ce5e287490fa4f9c2386dbf2935d1e85098cbac3971eb7be"
+    },
+    {
+      "file": "runs/pancreas/scgpt/config.json",
+      "sha256": "8598403e6f90b5e128c2b6f4b2ee97f7105b262a8182bf874f32cb879cdadc5b"
+    },
+    {
+      "file": "runs/pancreas/scgpt/telemetry.json",
+      "sha256": "37dcc49667133f498c0c1975d02ee133a959da7c2a37782e1b04e97742de61e3"
+    },
+    {
+      "file": "runs/pancreas/scgpt/provenance.json",
+      "sha256": "147916d86bd52c36acfada35cf0970f96864f87e38094e3cea79d681e9cdec38"
+    }
+  ],
+  "source_tested_export": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/showcases/single-cell-foundation-benchmark/transfer/completed-study-cuda-wsl2-2026-10-05",
+  "scope": "Exact byte identity with the independently reproduced data; only reports, figures and added evidence were curated."
+}

@@ -1,0 +1,28 @@
+{
+  "cellCount": 16382,
+  "geneCount": 18160,
+  "outputGeneCount": 19093,
+  "matchedGeneCount": 18160,
+  "inputCellCount": 16382,
+  "inputGeneCount": 19093,
+  "embeddingDim": 512,
+  "embeddingKey": "X_scGPT",
+  "embeddingLayer": "final encoder CLS token, L2 normalized",
+  "normalization": "scGPT 51-bin per-cell quantile value encoding",
+  "model": "scGPT Whole-human",
+  "species": "human",
+  "batchSize": 16,
+  "previewRows": 3,
+  "intermediateCount": 0,
+  "accelerator": "CUDA",
+  "requestedAccelerator": "cuda",
+  "peakVramBytes": 3510297600,
+  "gpuModel": "NVIDIA GeForce RTX 4060 Ti",
+  "gpuMemoryBytes": 8585084928,
+  "computeCapability": "8.9",
+  "reportedCudaCompatibility": "12.9",
+  "warnings": [
+    "scGPT embeddings are exploratory representations and are not cell-type labels.",
+    "Retained fractional values from the canonical pancreas source count layer without rounding. These are source-supplied quantification values; integer count assumptions are imperfect."
+  ]
+}

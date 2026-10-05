@@ -1,0 +1,1383 @@
+{
+  "schema_version": 1,
+  "created_utc": "2026-10-05T10:11:56Z",
+  "purpose": "Portable scientific handoff; the twelve-row study is incomplete.",
+  "archive_name": "single-cell-wsl2-handoff-2026-10-05.tar.gz",
+  "archive_sha256": "2caacd2af314d5de0e3fbe8c02377fbff33af1d32846412db17eaa5a631e911b",
+  "archive_bytes": 246562756,
+  "archive_layout": "runs/<original-native-run-id>/output; evidence",
+  "runs": [
+    {
+      "run_id": "7afd5cd1-2911-45c7-be7f-28cb212734ca",
+      "dataset": "pbmc",
+      "archive_root": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output",
+      "dataset_manifest": {
+        "dataset": "pbmc",
+        "source": "scvi.data.pbmc_dataset, scvi-tools 1.3.3; original 10x Cell Ranger 2.1.0 PBMC8k + PBMC4k",
+        "urls": [
+          "https://github.com/YosefLab/scVI-data/raw/master/gene_info.csv",
+          "https://github.com/YosefLab/scVI-data/raw/master/pbmc_metadata.pickle",
+          "https://cf.10xgenomics.com/samples/cell-exp/2.1.0/pbmc8k/pbmc8k_filtered_gene_bc_matrices.tar.gz",
+          "https://cf.10xgenomics.com/samples/cell-exp/2.1.0/pbmc4k/pbmc4k_filtered_gene_bc_matrices.tar.gz"
+        ],
+        "stability_check_only": false,
+        "upstream_shape": [
+          11990,
+          3346
+        ],
+        "cell_count": 11990,
+        "gene_count": 3346,
+        "label_field": "str_labels",
+        "batch_field": "batch",
+        "raw_count_source": "X",
+        "cell_types": {
+          "CD4 T cells": 4996,
+          "CD14+ Monocytes": 2227,
+          "B cells": 1621,
+          "CD8 T cells": 1448,
+          "Other": 463,
+          "NK cells": 457,
+          "FCGR3A+ Monocytes": 351,
+          "Dendritic Cells": 339,
+          "Megakaryocytes": 88
+        },
+        "batches": {
+          "0": 7982,
+          "1": 4008
+        },
+        "source_files": [
+          {
+            "file": "pbmc/gene_info_pbmc.csv",
+            "sha256": "cc33ad3226e9750de0f1d9782b9021d6a82224f6dde43005e6d6558eb560f9d5",
+            "bytes": 908183
+          },
+          {
+            "file": "pbmc/pbmc4k/filtered_gene_bc_matrices.tar.gz",
+            "sha256": "097ff873bae645bec5586898ac002ccebbce952d52ac19ea0a35c27c4820df26",
+            "bytes": 18423814
+          },
+          {
+            "file": "pbmc/pbmc8k/filtered_gene_bc_matrices.tar.gz",
+            "sha256": "8351eff1f33de79befb16e669d969f22198638f544a12b0e8c56c6bc931c5afe",
+            "bytes": 37558165
+          },
+          {
+            "file": "pbmc/pbmc_metadata.pickle",
+            "sha256": "a7b8b2a5cec508b8f3c080aa28bcc3c6be34ab249bacc4c6b8bc1cec3a966e07",
+            "bytes": 4000144
+          }
+        ],
+        "gene_identifiers": "gene symbols plus Ensembl gene IDs",
+        "gene_symbol_source": "10x original var['gene_symbols']",
+        "ensembl_mapped_genes": 3346,
+        "filtering": {
+          "minimum_total_count_exclusive": 0,
+          "require_label_and_batch": true,
+          "gene_filter": null
+        },
+        "excluded_cells": [],
+        "fractional_count_entries": 0,
+        "count_integrality": "integer-valued",
+        "seed": 23,
+        "test_fraction": 0.2,
+        "split_sha256": "369daa5bc09ad8e32b7babc67e23068bfcd790d5eface55a63e7af63e4d69178",
+        "prepared_sha256": "bd6aa9473c1895462cabff3cde087ba7776307103579ab2a77892269e6a99709",
+        "prepared_path": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/workspaces/__test__/runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/datasets/pbmc/counts.h5ad",
+        "prepared_bytes": 13565116
+      },
+      "native_run": {
+        "run_id": "7afd5cd1-2911-45c7-be7f-28cb212734ca",
+        "dataset": "pbmc",
+        "stability_check": false,
+        "resource_limits": {
+          "maxRssBytes": 2147483648,
+          "maxSwapGrowthBytes": 268435456,
+          "minAvailableBytes": 2147483648,
+          "minDiskBytes": 4294967296
+        }
+      },
+      "stages": [
+        {
+          "method": "pca",
+          "status": "completed",
+          "embedding": {
+            "path": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/workspaces/__test__/runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/pca/embedding.npz",
+            "sha256": "6b5c3febd28940c9152e73e927925fa0b9e187c0e16b13e169717e3f2cbde67d",
+            "bytes": 2335972,
+            "cells": 11990,
+            "dimensions": 50
+          },
+          "telemetry": {
+            "wall_seconds": 7.514706750000187,
+            "peak_rss_bytes": 1279705088,
+            "rss_measurement": "OS process high-water mark, includes imports and serialization",
+            "peak_accelerator_bytes": null,
+            "peak_accelerator_reason": "No reliable Metal peak allocator counter; CPU runs do not use accelerator memory.",
+            "execution_target": "CPU",
+            "embedding_dimensions": 50,
+            "embedding_bytes": 2335972,
+            "model_runtime_bytes": 1296210329,
+            "disk_scope": "isolated shared baseline/evaluation Plugin environment; repeated per baseline, not additive"
+          }
+        },
+        {
+          "method": "geneformer",
+          "status": "completed",
+          "embedding": {
+            "path": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/workspaces/__test__/runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/geneformer/embedding.npz",
+            "sha256": "8d3ca677e0fc09d25184eed2f06eac2b346b0d0625ba0bb4399c36a845a41704",
+            "bytes": 11506625,
+            "cells": 11990,
+            "dimensions": 256
+          },
+          "telemetry": {
+            "wall_seconds": 804.1007339999996,
+            "peak_rss_bytes": 731430912,
+            "rss_measurement": "OS root-process high-water mark; excludes child processes",
+            "peak_accelerator_bytes": null,
+            "peak_accelerator_reason": "CPU-only execution; no accelerator used.",
+            "execution_target": "CPU",
+            "model_runtime_bytes": 2255303564,
+            "disk_scope": "signed installed box including model and runtime, excluding run scratch directories",
+            "status": "completed",
+            "embedding_dimensions": 256,
+            "embedding_bytes": 11506625
+          }
+        },
+        {
+          "method": "harmony",
+          "status": "completed",
+          "embedding": {
+            "path": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/workspaces/__test__/runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/harmony/embedding.npz",
+            "sha256": "35e11380385a57df7d626d620de6dff831e6ced4b7c28e97834aa99a55786c70",
+            "bytes": 2335806,
+            "cells": 11990,
+            "dimensions": 50
+          },
+          "telemetry": {
+            "wall_seconds": 15.195992250000018,
+            "peak_rss_bytes": 1299136512,
+            "rss_measurement": "OS process high-water mark, includes imports and serialization",
+            "peak_accelerator_bytes": null,
+            "peak_accelerator_reason": "No reliable Metal peak allocator counter; CPU runs do not use accelerator memory.",
+            "execution_target": "CPU",
+            "embedding_dimensions": 50,
+            "embedding_bytes": 2335806,
+            "model_runtime_bytes": 1296210329,
+            "disk_scope": "isolated shared baseline/evaluation Plugin environment; repeated per baseline, not additive"
+          }
+        },
+        {
+          "method": "scvi",
+          "status": "completed",
+          "embedding": {
+            "path": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/workspaces/__test__/runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/scvi/embedding.npz",
+            "sha256": "1837568290c693eb1cadfc24b86af6994d574b87cb9d4407a00796b854d85be9",
+            "bytes": 1462684,
+            "cells": 11990,
+            "dimensions": 30
+          },
+          "telemetry": {
+            "wall_seconds": 249.21706391599946,
+            "peak_rss_bytes": 1019445248,
+            "rss_measurement": "OS process high-water mark, includes imports and serialization",
+            "peak_accelerator_bytes": null,
+            "peak_accelerator_reason": "No reliable Metal peak allocator counter; CPU runs do not use accelerator memory.",
+            "execution_target": "CPU",
+            "embedding_dimensions": 30,
+            "embedding_bytes": 1462684,
+            "model_runtime_bytes": 1296210329,
+            "disk_scope": "isolated shared baseline/evaluation Plugin environment; repeated per baseline, not additive"
+          }
+        },
+        {
+          "method": "scgpt",
+          "status": "completed",
+          "embedding": {
+            "path": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/workspaces/__test__/runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/scgpt/embedding.npz",
+            "sha256": "bcd76be0a12ee7ae29104f67a9b99eb8604610356e21db2eb75afeb6d546e552",
+            "bytes": 22957172,
+            "cells": 11990,
+            "dimensions": 512
+          },
+          "telemetry": {
+            "wall_seconds": 4994.065955374999,
+            "peak_rss_bytes": 1237647360,
+            "rss_measurement": "OS root-process high-water mark; excludes child processes",
+            "peak_accelerator_bytes": null,
+            "peak_accelerator_reason": "CPU-only execution; no accelerator used.",
+            "execution_target": "CPU",
+            "model_runtime_bytes": 1925325261,
+            "disk_scope": "signed installed box including model and runtime, excluding run scratch directories",
+            "status": "completed",
+            "embedding_dimensions": 512,
+            "embedding_bytes": 22957172
+          }
+        },
+        {
+          "method": "uce",
+          "status": "blocked"
+        }
+      ],
+      "has_final_summary": true
+    },
+    {
+      "run_id": "6071da5e-c592-4ee3-8544-7bbe5b12be8f",
+      "dataset": "pancreas",
+      "archive_root": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output",
+      "dataset_manifest": {
+        "dataset": "pancreas",
+        "source": "scIB pancreas, canonical scvi-tools reference-mapping tutorial distribution, Figshare file 24539828",
+        "urls": [
+          "https://api.figshare.com/v2/file/download/24539828"
+        ],
+        "stability_check_only": false,
+        "upstream_shape": [
+          16382,
+          19093
+        ],
+        "cell_count": 16382,
+        "gene_count": 19093,
+        "label_field": "celltype",
+        "batch_field": "tech",
+        "raw_count_source": "counts",
+        "cell_types": {
+          "alpha": 5493,
+          "beta": 4169,
+          "ductal": 2142,
+          "acinar": 1669,
+          "delta": 1055,
+          "gamma": 699,
+          "activated_stellate": 464,
+          "endothelial": 313,
+          "quiescent_stellate": 193,
+          "macrophage": 79,
+          "mast": 42,
+          "epsilon": 32,
+          "schwann": 25,
+          "t_cell": 7
+        },
+        "batches": {
+          "inDrop3": 3605,
+          "smartseq2": 2394,
+          "celseq2": 2285,
+          "inDrop1": 1937,
+          "inDrop2": 1724,
+          "smarter": 1492,
+          "inDrop4": 1303,
+          "celseq": 1004,
+          "fluidigmc1": 638
+        },
+        "source_files": [
+          {
+            "file": "pancreas/scib-pancreas-24539828.h5ad",
+            "sha256": "97e6dfd65553e4d10aa3ef5d904362970a75c677c31d70fabc9234191a09db8c",
+            "bytes": 315955785
+          }
+        ],
+        "gene_identifiers": "gene symbols plus Ensembl gene IDs",
+        "gene_symbol_source": "original var_names",
+        "ensembl_mapped_genes": 17749,
+        "filtering": {
+          "minimum_total_count_exclusive": 0,
+          "require_label_and_batch": true,
+          "gene_filter": null
+        },
+        "excluded_cells": [],
+        "fractional_count_entries": 23809035,
+        "count_integrality": "Source-supplied nonnegative count layer contains fractional values; retained without rounding or reconstruction.",
+        "seed": 23,
+        "test_fraction": 0.2,
+        "split_sha256": "194090a9d944c371e8df45f0795b9b05140b782d760c062c6e38d38f55abf0cd",
+        "prepared_sha256": "aeb6f9a2de14b881a81420018963d2d35e33d705f01ecc73c11a78f012001368",
+        "prepared_path": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/workspaces/__test__/runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/datasets/pancreas/counts.h5ad",
+        "prepared_bytes": 160257412,
+        "source_count_provenance": {
+          "kind": "canonical-source-count-layer",
+          "source_layer": "counts",
+          "source_sha256": "97e6dfd65553e4d10aa3ef5d904362970a75c677c31d70fabc9234191a09db8c",
+          "prepared_sha256": "aeb6f9a2de14b881a81420018963d2d35e33d705f01ecc73c11a78f012001368"
+        }
+      },
+      "native_run": {
+        "run_id": "6071da5e-c592-4ee3-8544-7bbe5b12be8f",
+        "dataset": "pancreas",
+        "stability_check": false,
+        "resource_limits": {
+          "maxRssBytes": 2147483648,
+          "maxSwapGrowthBytes": 268435456,
+          "minAvailableBytes": 2147483648,
+          "minDiskBytes": 4294967296
+        }
+      },
+      "stages": [
+        {
+          "method": "pca",
+          "status": "completed",
+          "embedding": {
+            "path": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/workspaces/__test__/runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/runs/pancreas/pca/embedding.npz",
+            "sha256": "d7a0b78021d154eadffc1478d32d60af7932b6fd8030623c4ea3814d4b6d0b95",
+            "bytes": 3156785,
+            "cells": 16382,
+            "dimensions": 50
+          },
+          "telemetry": {
+            "wall_seconds": 7.941703041999972,
+            "peak_rss_bytes": 1931542528,
+            "rss_measurement": "OS process high-water mark, includes imports and serialization",
+            "peak_accelerator_bytes": null,
+            "peak_accelerator_reason": "No reliable Metal peak allocator counter; CPU runs do not use accelerator memory.",
+            "execution_target": "CPU",
+            "embedding_dimensions": 50,
+            "embedding_bytes": 3156785,
+            "model_runtime_bytes": 1296695770,
+            "disk_scope": "isolated shared baseline/evaluation Plugin environment; repeated per baseline, not additive"
+          }
+        },
+        {
+          "method": "geneformer",
+          "status": "completed",
+          "embedding": {
+            "path": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/workspaces/__test__/runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/runs/pancreas/geneformer/embedding.npz",
+            "sha256": "9cffdee319c308cca57a85f50ac1535fed1a9a7fbefa7f4d3936cea358f05892",
+            "bytes": 15687884,
+            "cells": 16382,
+            "dimensions": 256
+          },
+          "telemetry": {
+            "wall_seconds": 8448.011730292,
+            "peak_rss_bytes": 1841070080,
+            "rss_measurement": "OS root-process high-water mark; excludes child processes",
+            "peak_accelerator_bytes": null,
+            "peak_accelerator_reason": "CPU-only execution; no accelerator used.",
+            "execution_target": "CPU",
+            "model_runtime_bytes": 2255303564,
+            "disk_scope": "signed installed box including model and runtime, excluding run scratch directories",
+            "status": "completed",
+            "embedding_dimensions": 256,
+            "embedding_bytes": 15687884
+          }
+        },
+        {
+          "method": "harmony",
+          "status": "completed",
+          "embedding": {
+            "path": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/workspaces/__test__/runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/runs/pancreas/harmony/embedding.npz",
+            "sha256": "b01639480227099fd73bbb11a07b09454483f36ca6b6b661fda9912041fbc1e9",
+            "bytes": 3160534,
+            "cells": 16382,
+            "dimensions": 50
+          },
+          "telemetry": {
+            "wall_seconds": 22.929401999999754,
+            "peak_rss_bytes": 1840218112,
+            "rss_measurement": "OS process high-water mark, includes imports and serialization",
+            "peak_accelerator_bytes": null,
+            "peak_accelerator_reason": "No reliable Metal peak allocator counter; CPU runs do not use accelerator memory.",
+            "execution_target": "CPU",
+            "embedding_dimensions": 50,
+            "embedding_bytes": 3160534,
+            "model_runtime_bytes": 1296695770,
+            "disk_scope": "isolated shared baseline/evaluation Plugin environment; repeated per baseline, not additive"
+          }
+        },
+        {
+          "method": "scvi",
+          "status": "completed",
+          "embedding": {
+            "path": "/Users/lorenzo/Documents/GitHub/liatir-stack/tests/.artifacts/home/single-cell-showcase/Library/Application Support/app.liatir.app/.liatir/.main/data/workspaces/__test__/runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/runs/pancreas/scvi/embedding.npz",
+            "sha256": "714888c570eaf76bb7d70ca33acb10ff15c088e931cd3bd6ca7f4a11e0ffa0a6",
+            "bytes": 1944364,
+            "cells": 16382,
+            "dimensions": 30
+          },
+          "telemetry": {
+            "wall_seconds": 333.28791012500005,
+            "peak_rss_bytes": 1797013504,
+            "rss_measurement": "OS process high-water mark, includes imports and serialization",
+            "peak_accelerator_bytes": null,
+            "peak_accelerator_reason": "No reliable Metal peak allocator counter; CPU runs do not use accelerator memory.",
+            "execution_target": "CPU",
+            "embedding_dimensions": 30,
+            "embedding_bytes": 1944364,
+            "model_runtime_bytes": 1296695770,
+            "disk_scope": "isolated shared baseline/evaluation Plugin environment; repeated per baseline, not additive"
+          }
+        },
+        {
+          "method": "scgpt",
+          "status": "interrupted"
+        },
+        {
+          "method": "uce",
+          "status": "not_started"
+        }
+      ],
+      "has_final_summary": false
+    }
+  ],
+  "files": [
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/code/checkpoints.py",
+      "bytes": 2731,
+      "sha256": "058716b32826f97e3e34a78946923cc344f3c76594732578bac6bb88b858da86"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/code/common.py",
+      "bytes": 2889,
+      "sha256": "2eebd6d7cf210c255568c362c4a78a46d495850a94e19d691edcc711294305d0"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/code/evaluation.py",
+      "bytes": 7201,
+      "sha256": "10003666dd7d8c5b6794eaaba0016c3fbfe25ef22f1d0f8db997c4e7856039b2"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/code/geneformer-inference.py",
+      "bytes": 13557,
+      "sha256": "3fa5fbdc961af99e5a79ed4692070bd16d02896fbe3db44381650f958987b9b8"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/code/main.py",
+      "bytes": 3992,
+      "sha256": "ae05ef948cfdf6a126dfe190383b834c2ca8fa0823aab5be7fdd4f65d66994df"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/code/model_monitor.py",
+      "bytes": 5561,
+      "sha256": "8ff09de6924a7ee29d1d4751cb1074552132bb119a60655fd68c0ba5f1b9e23c"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/code/reporting.py",
+      "bytes": 14203,
+      "sha256": "5f7b6c7f45d3eb44f1c76629b1a595fa17ba1e0c2259751dc38a45135a994f7f"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/code/representations.py",
+      "bytes": 7572,
+      "sha256": "fce8547fba0f79d22db0f67f285b7069ef7ebb6fc6bc3bc1b32fab3541221212"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/code/resource_guard.py",
+      "bytes": 6741,
+      "sha256": "fb83773e4bc2eb6c42f15066ab012f2fc945c8e87a7be070c86432ce477e6002"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/code/scgpt-inference.py",
+      "bytes": 15190,
+      "sha256": "581c4909cae3aff876108640cc151960daafe3b68b4f28d22babbb1c84bda27b"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/code/study_data.py",
+      "bytes": 9686,
+      "sha256": "be754cdf618028e33b9bde9ba564afd3e10ada16bdb4bbc385568e014d534e31"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/code/uce-inference.py",
+      "bytes": 11568,
+      "sha256": "b15b01f967c4a7466c7f0855ee54bcfaec0edcda0f2682acc9bc54c38b04ab34"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/datasets/manifest.json",
+      "bytes": 2750,
+      "sha256": "435af373e9eb3eab3986682812c1afd91b7bd3671444afa33b6ee6a505c25d58"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/datasets/pbmc/counts.h5ad",
+      "bytes": 13565116,
+      "sha256": "bd6aa9473c1895462cabff3cde087ba7776307103579ab2a77892269e6a99709"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/datasets/pbmc/evaluation_cells.json",
+      "bytes": 433107,
+      "sha256": "ded081d32a77dedf7d79011b2a69ff0bba5c5c7238854cf242c6528070759d10"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/datasets/pbmc/genes.csv",
+      "bytes": 148968,
+      "sha256": "49edc07b901dab39539d008d3a209c46b65fc169d77ad5c6a27843b10bc2e010"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/datasets/pbmc/manifest.json",
+      "bytes": 2598,
+      "sha256": "c3f7a5a28d6ec4ed69c0f09b228d267ce3294ce363aeb2a5385a6d58e03c6880"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/datasets/pbmc/split.csv",
+      "bytes": 815848,
+      "sha256": "369daa5bc09ad8e32b7babc67e23068bfcd790d5eface55a63e7af63e4d69178"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/liatir-run.json",
+      "bytes": 268,
+      "sha256": "783d9d9a7c2a5df1fabec47f0b513952564d0156cad810afce528a1594be0562"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/protocol.md",
+      "bytes": 7234,
+      "sha256": "f361177fe07f4607142a90d806d09496bbaf9d086525557343accfb5af283d4c"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/report/limitations.md",
+      "bytes": 1343,
+      "sha256": "47df8805c7aa90ff019039b89f6ed514e6734c38a262095522d619ad6e49bd28"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/report/reproduction.md",
+      "bytes": 809,
+      "sha256": "3fc399b4a9d469b489c606271569af6814c7551124dd855e6c07df907af09c8a"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/report/results.md",
+      "bytes": 3384,
+      "sha256": "5e5119fdaf54d68382e76c029724ab49580fb64101d296ca1aa41254d6b516d7"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/requirements.txt",
+      "bytes": 9082,
+      "sha256": "6bc12ba21a9eaebc0568be78e408dfa5525342258903ff8909dc7b1b6eed84d2"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/results/batch_metrics.csv",
+      "bytes": 612,
+      "sha256": "114c19dea544b357eecd3c2c2192d8b53bec716790add0c05ba08d3093388eba"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/results/biological_metrics.csv",
+      "bytes": 697,
+      "sha256": "8d979133aa85c2b364733a6c016d0283c9d03f4a34cd41058e34081e6e699f7f"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/results/compute_metrics.csv",
+      "bytes": 612,
+      "sha256": "cfebb9fec323ab5f113010e8517d13a089435eaefc48093fbfac3b4b645f5782"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/results/figures/biological-performance-vs-peak_rss_bytes.png",
+      "bytes": 37551,
+      "sha256": "1bae2bb21f3ccb5d48de9138c8a533dd611804e5f7bc93b3b81da8340fa5208a"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/results/figures/biological-performance-vs-wall_seconds.png",
+      "bytes": 38816,
+      "sha256": "8be6589a65565df0cc4bffc34b9c5b147f4a0ad4a0f1075b7c6a6bc9017231ba"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/results/figures/pbmc-geneformer-batch.png",
+      "bytes": 488161,
+      "sha256": "1166cf694003750596b46ad7e5da50b9ca9fa62940ee757c8fd96162e581eff4"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/results/figures/pbmc-geneformer-cell_type.png",
+      "bytes": 481983,
+      "sha256": "15cd4363e573a18c2d0112561c8591874291f57b77250101ffcbf3a75a35dc5a"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/results/figures/pbmc-harmony-batch.png",
+      "bytes": 288994,
+      "sha256": "7794da592b1dfc8776856b08d26fb756066700cf279faf7a5c934d85c29c7a1c"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/results/figures/pbmc-harmony-cell_type.png",
+      "bytes": 225232,
+      "sha256": "de361564e0772b280da58bde8c482b7735c9a02293a4c45657495c57d98eeec0"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/results/figures/pbmc-pca-batch.png",
+      "bytes": 273458,
+      "sha256": "060269859fc0a06c6a7269ca2c7bdd2d1a50f97f594cfa2b30cf62ca37e4a087"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/results/figures/pbmc-pca-cell_type.png",
+      "bytes": 213751,
+      "sha256": "533d5f8b6d60730aaef5b06ce496f3b4e6d101a06a00580fb959f5da5172315b"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/results/figures/pbmc-scgpt-batch.png",
+      "bytes": 366116,
+      "sha256": "86928be302ab51e26d5a3fead5ad686d4d17c00e631dc623fdb25ec2db1c6c51"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/results/figures/pbmc-scgpt-cell_type.png",
+      "bytes": 304546,
+      "sha256": "91d503e3e5d4bde9f05d9b8f0cb22164335749671a27914dbbe76d947c433a55"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/results/figures/pbmc-scvi-batch.png",
+      "bytes": 356045,
+      "sha256": "cb4c63c18981e3a32726576c893d1508fe0fb5ebb3dbee940e7921ad96e21265"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/results/figures/pbmc-scvi-cell_type.png",
+      "bytes": 296046,
+      "sha256": "3690b9f1cb0e84fa442d51bd16c2b7701356c59fac41fb420cd35b08f476fedc"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/results/summary.csv",
+      "bytes": 6676,
+      "sha256": "9c157ae15839bb53b44c5ae56b2e4149d9027e9ab915f2881e498ae82eb1043b"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/results/summary.json",
+      "bytes": 27928,
+      "sha256": "47d28e91fc9db93c2b516504e4a74def56277d7ab9ccf0ce895160d1d13efadc"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/geneformer/config.json",
+      "bytes": 331,
+      "sha256": "9c851219d26c46cfedfd75bdf58a599dc9c8b306f73bafe312a0486bba626b25"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/geneformer/embedding.npz",
+      "bytes": 11506625,
+      "sha256": "8d3ca677e0fc09d25184eed2f06eac2b346b0d0625ba0bb4399c36a845a41704"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/geneformer/environment.json",
+      "bytes": 8521,
+      "sha256": "ec8184d0e49bdce72143c24c034b260a3616274b79168bd4221a99a68a794edb"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/geneformer/geneformer-embedding-preview.csv",
+      "bytes": 18359,
+      "sha256": "24e7ffa88d214d8c15e618966a37c9ccd49494ac134bc4ba2808c8e9e6b18da2"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/geneformer/geneformer-embedding-summary.json",
+      "bytes": 733,
+      "sha256": "96c4944c291b5b8dc6007fabb7e34b81dd04f56c20e8cd056807b8813786c7fe"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/geneformer/logs/stderr.log",
+      "bytes": 2705,
+      "sha256": "a22ded7c99f903a6ff37f0a045aaad73da6342ae2374ed4afe6105efc08bd615"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/geneformer/logs/stdout.log",
+      "bytes": 2635,
+      "sha256": "40ff0ae0aaec53251b70344a91844f6b599c8cbc1cd722bf54532981fb98b7eb"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/geneformer/metrics.json",
+      "bytes": 550,
+      "sha256": "678f1dc00359bad05cad8c84e0a026cc4c1ecf84196e2d8b41e353015b43a733"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/geneformer/provenance.json",
+      "bytes": 6793,
+      "sha256": "fbd6453e8a4ca63bf8e21019cc82da85dd09782652fdfd1c9e37cbc665c37c74"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/geneformer/resource-monitor.json",
+      "bytes": 591,
+      "sha256": "d4ee8ddf18f58b787b1060516190b2c2d49125a1dcc17ba6c9d8b51259b41701"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/geneformer/resource_guard.py",
+      "bytes": 6741,
+      "sha256": "fb83773e4bc2eb6c42f15066ab012f2fc945c8e87a7be070c86432ce477e6002"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/geneformer/runner.py",
+      "bytes": 13557,
+      "sha256": "3fa5fbdc961af99e5a79ed4692070bd16d02896fbe3db44381650f958987b9b8"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/geneformer/telemetry.json",
+      "bytes": 516,
+      "sha256": "f92be3da808f6656958413502d96ae2f3ccea82713119b6f25d6dd6490d9a303"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/geneformer/umap.csv",
+      "bytes": 828655,
+      "sha256": "61425a5e1e96e94b83c121651ecb685108957ae56fffc26bda10ae3a76be9b6b"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/harmony/config.json",
+      "bytes": 26907,
+      "sha256": "c67d741672f94f3edf0f3f823b5337c302c48104c9199c6e867a2e1e9854cf3a"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/harmony/embedding.npz",
+      "bytes": 2335806,
+      "sha256": "35e11380385a57df7d626d620de6dff831e6ced4b7c28e97834aa99a55786c70"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/harmony/environment.json",
+      "bytes": 3370,
+      "sha256": "aca71a9b2ff97f0173c39174120110f30aebff891a751f3297246654e48b3cf5"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/harmony/logs/stderr.log",
+      "bytes": 789,
+      "sha256": "d55a13cfcb6155075873c3e892690d4ca487a2d27ea670eb499ca2f67983d065"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/harmony/logs/stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/harmony/metrics.json",
+      "bytes": 548,
+      "sha256": "43a22d8cca8a70bc3cfc13caf5e25b2dc561a15d7b795196c6e63e5021a7b993"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/harmony/provenance.json",
+      "bytes": 683,
+      "sha256": "604fd0224360925fa34c36233a6df966e3c46d0f2f1406a31ab3cd206ba3a08b"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/harmony/resource-monitor.json",
+      "bytes": 594,
+      "sha256": "6ec0ac873744ff5c82fd200e64e659c6302620534d8c277c09d16efd4784f53d"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/harmony/telemetry.json",
+      "bytes": 545,
+      "sha256": "b36ccd99d53de0f4faff7176f2ee18fba299a2cf9ac52088ac459bd7c9c95be4"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/harmony/umap.csv",
+      "bytes": 825596,
+      "sha256": "d03d24bdbf58eb52bb8cb48910cb7bb1ec8c4c82ef303eb087516d6586897228"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/pca/config.json",
+      "bytes": 26826,
+      "sha256": "16375926071480588c24f72d336d48f85ef53ed6fc3fe90a4dc8c1efae724d39"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/pca/embedding.npz",
+      "bytes": 2335972,
+      "sha256": "6b5c3febd28940c9152e73e927925fa0b9e187c0e16b13e169717e3f2cbde67d"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/pca/environment.json",
+      "bytes": 3370,
+      "sha256": "aca71a9b2ff97f0173c39174120110f30aebff891a751f3297246654e48b3cf5"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/pca/logs/stderr.log",
+      "bytes": 219,
+      "sha256": "ae06a452503ce5b38057d47853fead08c8d0bad20943d70e4883c39e0d43f51d"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/pca/logs/stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/pca/metrics.json",
+      "bytes": 1273,
+      "sha256": "617469dd9c6776adf343a227a5ca24f7c8f71e7e24b7595fa2c3bb6a2dd9e0a0"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/pca/provenance.json",
+      "bytes": 679,
+      "sha256": "31165024def1b20d2c3d48af75109129111581e4f6c0ac8fa8dce42846580f18"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/pca/resource-monitor.json",
+      "bytes": 590,
+      "sha256": "b280dbeed6e1ccae8440145216b8e28b577e0fd337d3eb66593be097e8b467d7"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/pca/telemetry.json",
+      "bytes": 544,
+      "sha256": "c92b3fb70228d00ef101c90192cc3898e36420f6a9a11d8f2e594300d7ad81bf"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/pca/umap.csv",
+      "bytes": 824538,
+      "sha256": "ea681d19e14eb1b3b533cfd70c2c94e71fe25f48993f410d5b8eb206c55e76ca"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/scgpt/config.json",
+      "bytes": 322,
+      "sha256": "bd12fe4cd1bd6320564793b911d7724baab0e88054bf63f4088a08d4bf38a5b6"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/scgpt/embedding.npz",
+      "bytes": 22957172,
+      "sha256": "bcd76be0a12ee7ae29104f67a9b99eb8604610356e21db2eb75afeb6d546e552"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/scgpt/environment.json",
+      "bytes": 7890,
+      "sha256": "f04664c957b4f60056ebc1b0239a2fa940323d74a4a83d9329d0a7213db804b3"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/scgpt/logs/stderr.log",
+      "bytes": 2265,
+      "sha256": "ca14b0ed619aee072f3499b258887e640fe7fe9f1902aae51e969892bcde6868"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/scgpt/logs/stdout.log",
+      "bytes": 2631,
+      "sha256": "1115817aefa9153218a63232603b8c732127d1270f563579b16e679e5d659429"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/scgpt/metrics.json",
+      "bytes": 545,
+      "sha256": "7f515592183780a04f8e4b9c5658d3c125e9fda59c51a5978d0aec3cfb62c0b1"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/scgpt/provenance.json",
+      "bytes": 6724,
+      "sha256": "906ad886375b3621db183d0b44b0d75ab86079a91adb19c6c854c539e0aa3b7e"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/scgpt/resource-monitor.json",
+      "bytes": 590,
+      "sha256": "d53520d194684354d0efaba0ac3b78cab7efe66019b40f966e45367e34f9ee76"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/scgpt/resource_guard.py",
+      "bytes": 6741,
+      "sha256": "fb83773e4bc2eb6c42f15066ab012f2fc945c8e87a7be070c86432ce477e6002"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/scgpt/runner.py",
+      "bytes": 15190,
+      "sha256": "581c4909cae3aff876108640cc151960daafe3b68b4f28d22babbb1c84bda27b"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/scgpt/scgpt-embedding-preview.csv",
+      "bytes": 36929,
+      "sha256": "9b0699e600d569f1ef5dc64df77ebe47fac545281ab10c13b4c7a1d2df41d0ae"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/scgpt/scgpt-embedding-summary.json",
+      "bytes": 753,
+      "sha256": "e6a18c76fc0ee920aee5792142d78240fa43f23d87060675268deaf5cb3f6442"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/scgpt/telemetry.json",
+      "bytes": 517,
+      "sha256": "d4828e6f3d47a5687644f6175d36cff3219d7d4865e5957d29560855ebe6bcc6"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/scgpt/umap.csv",
+      "bytes": 828662,
+      "sha256": "dd92b612ea611ac568ff0d2020a778904be2ab4246e62dde440162b28cd8434f"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/scvi/config.json",
+      "bytes": 26966,
+      "sha256": "265dfcbe99cba4ab2349910caaf2c6f18f0444506face2fdb60cc3d9151eed70"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/scvi/embedding.npz",
+      "bytes": 1462684,
+      "sha256": "1837568290c693eb1cadfc24b86af6994d574b87cb9d4407a00796b854d85be9"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/scvi/environment.json",
+      "bytes": 3370,
+      "sha256": "aca71a9b2ff97f0173c39174120110f30aebff891a751f3297246654e48b3cf5"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/scvi/logs/stderr.log",
+      "bytes": 1515,
+      "sha256": "5f2320447d6b8e8c2f2da72b4dfeb0ddcb56a5a566bc2b2648a6fd9244a797db"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/scvi/logs/stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/scvi/metrics.json",
+      "bytes": 546,
+      "sha256": "3f17ba4e74c03ad9da14a8d07dc141f7e1e5d0b383b6eeafc21f2535b6d8155a"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/scvi/provenance.json",
+      "bytes": 680,
+      "sha256": "a2679ae1b2024b4c2201537ed0bf3a04a9feb2a7362e0781d3261516c41ea170"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/scvi/resource-monitor.json",
+      "bytes": 592,
+      "sha256": "bf75b21cf89a9b690538ea601358de2d3998e10d1b95a3b3faafea5b1e057447"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/scvi/telemetry.json",
+      "bytes": 545,
+      "sha256": "98be4d40594ee37d027b40386acbae76792cba80d3d510c77409f155e7bbd562"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/scvi/trained-model/model.pt",
+      "bytes": 5521821,
+      "sha256": "3a3c23026020023adb2f078d716682a5f8b887b3ba9b76a6456d15829f9fb9c1"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/scvi/umap.csv",
+      "bytes": 831742,
+      "sha256": "830c9bc21f28b931d141c7d0590745726684a62395e8d482c58e6155d65ff63b"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/uce/config.json",
+      "bytes": 320,
+      "sha256": "ccee6560a0535cf7e0d8e6fd1ec69d3917af5e2c67a169fb3fb04cc7ae044611"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/uce/environment.json",
+      "bytes": 9139,
+      "sha256": "497e099abc6f6aa2731f4ad83bb6726fec4d482840c419b2ecd860eb67887f63"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/uce/logs/stderr.log",
+      "bytes": 1879,
+      "sha256": "6433ca6a6f533128e31f140ec78ecb268a9008b7d9e3fa45d25dbf52ace95c65"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/uce/logs/stdout.log",
+      "bytes": 62,
+      "sha256": "493d8ba680c80b825d598b4ceda91224e70f0953fa58cb7b8fb03e7f1378b09b"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/uce/memory-preflight.json",
+      "bytes": 432,
+      "sha256": "fd7be006a031e9ea2d6546b5d2e65adda508ed623386c72eca93b15f03bb0548"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/uce/metrics.json",
+      "bytes": 1954,
+      "sha256": "514f9939d2a9fdfcd9db5e60122e593ef85ee5475c7e190a49f11712bf29756f"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/uce/provenance.json",
+      "bytes": 7290,
+      "sha256": "d2c84d06690c17bbda9c617bbae7061d89b5fda32c4525ec23d34609c27feab4"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/uce/resource-monitor.json",
+      "bytes": 588,
+      "sha256": "0d62d9c0924fcffb433094d4491effeaea942543ba1ddb31bed2bb6d81916d28"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/uce/resource_guard.py",
+      "bytes": 6741,
+      "sha256": "fb83773e4bc2eb6c42f15066ab012f2fc945c8e87a7be070c86432ce477e6002"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/uce/runner.py",
+      "bytes": 11568,
+      "sha256": "b15b01f967c4a7466c7f0855ee54bcfaec0edcda0f2682acc9bc54c38b04ab34"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/uce/telemetry.json",
+      "bytes": 451,
+      "sha256": "60a613e9d66e0b513327572bd3fc45e1e1f876b5ab2b85e40fa40224ce41150a"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/stages/collect/resource-monitor.json",
+      "bytes": 583,
+      "sha256": "923de23abd8a99ab05e700f18761c5387440f0cb317142d101757c4addb6350b"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/stages/evaluate/resource-monitor.json",
+      "bytes": 599,
+      "sha256": "b13346ac757b76cc3609ee62f55d71c69666a1a892b4e90ecb51b8d24eb9b1ad"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/stages/prepare/resource-monitor.json",
+      "bytes": 593,
+      "sha256": "88e5b96b2f0af5b9cd14fe67ef6df38b41ced5fa4a3db2c915f0476f80912138"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/stages/report/resource-monitor.json",
+      "bytes": 587,
+      "sha256": "8873a6ed796380c1521b39a8396572a916010e9ccf5ca6bf0f4e50d0830b929f"
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/study-environment.json",
+      "bytes": 3370,
+      "sha256": "aca71a9b2ff97f0173c39174120110f30aebff891a751f3297246654e48b3cf5"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/code/checkpoints.py",
+      "bytes": 2731,
+      "sha256": "058716b32826f97e3e34a78946923cc344f3c76594732578bac6bb88b858da86"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/code/common.py",
+      "bytes": 2889,
+      "sha256": "2eebd6d7cf210c255568c362c4a78a46d495850a94e19d691edcc711294305d0"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/code/evaluation.py",
+      "bytes": 7201,
+      "sha256": "10003666dd7d8c5b6794eaaba0016c3fbfe25ef22f1d0f8db997c4e7856039b2"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/code/geneformer-inference.py",
+      "bytes": 15106,
+      "sha256": "18b19728ce956bfddf71d70866afc154664d2f37084a835bf4f291194b24c8dd"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/code/main.py",
+      "bytes": 3992,
+      "sha256": "ae05ef948cfdf6a126dfe190383b834c2ca8fa0823aab5be7fdd4f65d66994df"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/code/model_monitor.py",
+      "bytes": 5561,
+      "sha256": "8ff09de6924a7ee29d1d4751cb1074552132bb119a60655fd68c0ba5f1b9e23c"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/code/reporting.py",
+      "bytes": 14203,
+      "sha256": "5f7b6c7f45d3eb44f1c76629b1a595fa17ba1e0c2259751dc38a45135a994f7f"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/code/representations.py",
+      "bytes": 8018,
+      "sha256": "196e4ee435172d475cfa02b16c79f83cebc77dea95b07540f456473c4fd0c390"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/code/resource_guard.py",
+      "bytes": 6741,
+      "sha256": "fb83773e4bc2eb6c42f15066ab012f2fc945c8e87a7be070c86432ce477e6002"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/code/scgpt-inference.py",
+      "bytes": 16700,
+      "sha256": "33f761a6fc0dcbff506980974dfdcd35e595ba532876b021498ce87a1365abfe"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/code/study_data.py",
+      "bytes": 9945,
+      "sha256": "01f3615304d734eb07c20841e99839138a77445c9534052c351a7359ec85c6f0"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/code/uce-inference.py",
+      "bytes": 11568,
+      "sha256": "b15b01f967c4a7466c7f0855ee54bcfaec0edcda0f2682acc9bc54c38b04ab34"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/datasets/manifest.json",
+      "bytes": 2577,
+      "sha256": "b2d8e0a058915673bbfd27a59aae0049fdb4e0ed0c6ca95cbf06a9ce1e20979c"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/datasets/pancreas/counts.h5ad",
+      "bytes": 160257412,
+      "sha256": "aeb6f9a2de14b881a81420018963d2d35e33d705f01ecc73c11a78f012001368"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/datasets/pancreas/gene_mapping_source.json",
+      "bytes": 404,
+      "sha256": "5267aba44f10cb8c9f2d68d2ea39f25105e50d3e4e0e1806236d226e35d5ea70"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/datasets/pancreas/genes.csv",
+      "bytes": 655792,
+      "sha256": "7167b549a79e091e2cdc5259cbe972477f8a356eadc26b3a3607265cd22a083b"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/datasets/pancreas/manifest.json",
+      "bytes": 2425,
+      "sha256": "5454e9fdeb009bfe6dc2ec27c01ec3808dec091e92e7739b9edda13f58fd871c"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/datasets/pancreas/split.csv",
+      "bytes": 1234495,
+      "sha256": "194090a9d944c371e8df45f0795b9b05140b782d760c062c6e38d38f55abf0cd"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/liatir-run.json",
+      "bytes": 272,
+      "sha256": "596521c0a2b8c33f5cab9c0df6f92d70d5ef142dfbc8ae9381dd77abe7898711"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/protocol.md",
+      "bytes": 7874,
+      "sha256": "d7cc921b7ad8074d7a6e30cfe749da579602da09452a8d46f0e19251946fdf8c"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/requirements.txt",
+      "bytes": 9082,
+      "sha256": "6bc12ba21a9eaebc0568be78e408dfa5525342258903ff8909dc7b1b6eed84d2"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/runs/pancreas/geneformer/config.json",
+      "bytes": 618,
+      "sha256": "464a1a59c390abf4b1a0cbd37d83f4543d9f7e25a9774ea9306de3c1ee208f7f"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/runs/pancreas/geneformer/embedding.npz",
+      "bytes": 15687884,
+      "sha256": "9cffdee319c308cca57a85f50ac1535fed1a9a7fbefa7f4d3936cea358f05892"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/runs/pancreas/geneformer/environment.json",
+      "bytes": 8521,
+      "sha256": "158690212ea7240f0213cf8f937afbf937c7c348d43be86889d91206516b7f39"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/runs/pancreas/geneformer/geneformer-embedding-preview.csv",
+      "bytes": 18274,
+      "sha256": "88e72c40da47ae99ca5c50e38f800fc97b776993b25d9329aeba8b7c7210e142"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/runs/pancreas/geneformer/geneformer-embedding-summary.json",
+      "bytes": 926,
+      "sha256": "629f0f1838aa3dc9661d7a997c361489220a5c4d27071230e00d0f38d7e0ab1d"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/runs/pancreas/geneformer/logs/stderr.log",
+      "bytes": 3725,
+      "sha256": "819cdf3746a70527e1e376c1370008ab2261084dbdde4dbc9dd5a5f39807775c"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/runs/pancreas/geneformer/logs/stdout.log",
+      "bytes": 2796,
+      "sha256": "872f45be3dc5ce3e69dff97c4b5289116aee3f55ad3f7f409583671e385ab30f"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/runs/pancreas/geneformer/provenance.json",
+      "bytes": 6992,
+      "sha256": "f742cceb95c4245fd98b0c83b8d26f37f3e450774025987373f2317cd4520a3b"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/runs/pancreas/geneformer/resource-monitor.json",
+      "bytes": 575,
+      "sha256": "498887e57b8df6593b059b8b057869977989d3f55acf2e8ec431ab25048cb591"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/runs/pancreas/geneformer/resource_guard.py",
+      "bytes": 6741,
+      "sha256": "fb83773e4bc2eb6c42f15066ab012f2fc945c8e87a7be070c86432ce477e6002"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/runs/pancreas/geneformer/runner.py",
+      "bytes": 15106,
+      "sha256": "18b19728ce956bfddf71d70866afc154664d2f37084a835bf4f291194b24c8dd"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/runs/pancreas/geneformer/telemetry.json",
+      "bytes": 514,
+      "sha256": "02850876bdf62c91a1b8d1ba09a3bd7a1ff2cbc96fb73f62b6adcbd57eccadcb"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/runs/pancreas/harmony/config.json",
+      "bytes": 26548,
+      "sha256": "52061f8f3c480c28e7ad59834063dec429db4960f1d61df17c59e27c95ae4672"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/runs/pancreas/harmony/embedding.npz",
+      "bytes": 3160534,
+      "sha256": "b01639480227099fd73bbb11a07b09454483f36ca6b6b661fda9912041fbc1e9"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/runs/pancreas/harmony/environment.json",
+      "bytes": 3370,
+      "sha256": "aca71a9b2ff97f0173c39174120110f30aebff891a751f3297246654e48b3cf5"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/runs/pancreas/harmony/logs/stderr.log",
+      "bytes": 1041,
+      "sha256": "d2454d52a81a75791d480782e8cd6c8e002f9002cf71832d1506e1b5901756be"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/runs/pancreas/harmony/logs/stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/runs/pancreas/harmony/provenance.json",
+      "bytes": 687,
+      "sha256": "568e789d6a92005135c2c31a3354f8a6a9ab78cbf0181cede31d77ed73b37259"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/runs/pancreas/harmony/resource-monitor.json",
+      "bytes": 571,
+      "sha256": "213dc5cd4fddef89a577d7e61cb27309e5488fd21360fdfda464cd6ac7bf82bc"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/runs/pancreas/harmony/telemetry.json",
+      "bytes": 545,
+      "sha256": "37024ceecace6ce8d78f55912ce9fe4cf2189bd7c9562fc2618fbcf679e7d27c"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/runs/pancreas/pca/config.json",
+      "bytes": 26467,
+      "sha256": "70ec7cb80fe6fed90a02ffe4dab8bd2d1e12ad3ab057ad85c990d01a8e06bb9d"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/runs/pancreas/pca/embedding.npz",
+      "bytes": 3156785,
+      "sha256": "d7a0b78021d154eadffc1478d32d60af7932b6fd8030623c4ea3814d4b6d0b95"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/runs/pancreas/pca/environment.json",
+      "bytes": 3370,
+      "sha256": "aca71a9b2ff97f0173c39174120110f30aebff891a751f3297246654e48b3cf5"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/runs/pancreas/pca/logs/stderr.log",
+      "bytes": 219,
+      "sha256": "ae06a452503ce5b38057d47853fead08c8d0bad20943d70e4883c39e0d43f51d"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/runs/pancreas/pca/logs/stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/runs/pancreas/pca/provenance.json",
+      "bytes": 683,
+      "sha256": "3348791fb91dc34c8aa46e95ee6246c142e5a8a13ca14ebfad5706bb834e984a"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/runs/pancreas/pca/resource-monitor.json",
+      "bytes": 577,
+      "sha256": "daccf9d025ab2ac4568066c85e195ee6759a1398421b4b6b7e14ab10219c0270"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/runs/pancreas/pca/telemetry.json",
+      "bytes": 544,
+      "sha256": "9ddd95247d70f3a68ef22d4b11a472d191043bf0ff9eefa36496faf04d86d6c5"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/runs/pancreas/scgpt/environment.json",
+      "bytes": 7890,
+      "sha256": "9ae3541a7260946367e8d9a14c0adb75eefa452a2a0f4801207324ee57690ab6"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/runs/pancreas/scgpt/logs/stderr.log",
+      "bytes": 2015,
+      "sha256": "4b66e448744ebe1fa0cc3190ad92bfed3dec846f6c28bd08bd345cffb46e44ea"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/runs/pancreas/scgpt/logs/stdout.log",
+      "bytes": 62,
+      "sha256": "493d8ba680c80b825d598b4ceda91224e70f0953fa58cb7b8fb03e7f1378b09b"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/runs/pancreas/scgpt/resource-monitor.json",
+      "bytes": 545,
+      "sha256": "f289fa5a04dee7099631c6a04cfc82c630f3c96ee18dcc5fcc51e71c1e962589"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/runs/pancreas/scgpt/resource_guard.py",
+      "bytes": 6741,
+      "sha256": "fb83773e4bc2eb6c42f15066ab012f2fc945c8e87a7be070c86432ce477e6002"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/runs/pancreas/scgpt/runner.py",
+      "bytes": 16700,
+      "sha256": "33f761a6fc0dcbff506980974dfdcd35e595ba532876b021498ce87a1365abfe"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/runs/pancreas/scvi/config.json",
+      "bytes": 26607,
+      "sha256": "f060a76965e577eb8fac98c21740587a7ef19a5b9daeec4a36ebfaf43e324cb4"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/runs/pancreas/scvi/embedding.npz",
+      "bytes": 1944364,
+      "sha256": "714888c570eaf76bb7d70ca33acb10ff15c088e931cd3bd6ca7f4a11e0ffa0a6"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/runs/pancreas/scvi/environment.json",
+      "bytes": 3370,
+      "sha256": "aca71a9b2ff97f0173c39174120110f30aebff891a751f3297246654e48b3cf5"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/runs/pancreas/scvi/logs/stderr.log",
+      "bytes": 1933,
+      "sha256": "b0e642c07b985bce11527da72902c236b4b833c1862e761176eb82ae6dab8128"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/runs/pancreas/scvi/logs/stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/runs/pancreas/scvi/provenance.json",
+      "bytes": 684,
+      "sha256": "ce1acdd9aaaee244631ccc0f197be96d45aea3668c8446f773822430515069c7"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/runs/pancreas/scvi/resource-monitor.json",
+      "bytes": 573,
+      "sha256": "64d4a1bd8eeb105691af1bd71f87869e94acb999a1790474df72b12192ba7971"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/runs/pancreas/scvi/telemetry.json",
+      "bytes": 545,
+      "sha256": "c2c1566635e2a43aa36b5db4dcfb16ac49a55a7986cf0f225a82b4caffaafb61"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/runs/pancreas/scvi/trained-model/model.pt",
+      "bytes": 5566109,
+      "sha256": "63c071ddc32988511f628d6af2e8aed9f609f85be46acf24acf37207e04f1d98"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/stages/collect/resource-monitor.json",
+      "bytes": 568,
+      "sha256": "2a39dc5b9428d51a3ca2594ecf6d515c80683fc7e86245026dcfb0a3f92022c5"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/stages/prepare/resource-monitor.json",
+      "bytes": 576,
+      "sha256": "ea6cb2861712cfd6173bc713b8b1a9c92d8d32783952c7a9df7b28dcf848d016"
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/study-environment.json",
+      "bytes": 3370,
+      "sha256": "aca71a9b2ff97f0173c39174120110f30aebff891a751f3297246654e48b3cf5"
+    },
+    {
+      "path": "evidence/single-cell-study-pbmc.png",
+      "bytes": 379619,
+      "sha256": "a24cd41e1e27af114680a9465c4e51faaaf0f105219b3c83c50f2a6e0305e829"
+    },
+    {
+      "path": "evidence/pancreas-frontend-resource-monitor.json",
+      "bytes": 581,
+      "sha256": "8d1a3332ff1a3de7100d39aa614413ff8bafc666b702dc844eccbd8e7292471b"
+    }
+  ],
+  "excluded_files": [
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/geneformer/counts_geneformer_adata.h5ad",
+      "bytes": 58510744,
+      "sha256": "8141c6bcac0ccd30782c10e0fd0fbc7615f74feadea8a1a4cfb21c1a6a4c21e7",
+      "reason": "Redundant model-annotated count copy or duplicate export; prepared inputs and compact embeddings are included."
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/runs/pbmc/scgpt/counts_scgpt_adata.h5ad",
+      "bytes": 70788224,
+      "sha256": "0939f3fc6357a5b6adfea10d7dafb7d55db3723f0c18c9423f954135296d2714",
+      "reason": "Redundant model-annotated count copy or duplicate export; prepared inputs and compact embeddings are included."
+    },
+    {
+      "path": "runs/7afd5cd1-2911-45c7-be7f-28cb212734ca/output/single-cell-study.zip",
+      "bytes": 58019906,
+      "sha256": "db1c4ca8bc0b1b308dcbb0c2cd5e56fbb5187babc9b5dd09ad44bbe856a18dcc",
+      "reason": "Redundant model-annotated count copy or duplicate export; prepared inputs and compact embeddings are included."
+    },
+    {
+      "path": "runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output/runs/pancreas/geneformer/counts_geneformer_adata.h5ad",
+      "bytes": 467754704,
+      "sha256": "61557611b32b37519c748cd13ffb0ae3f28d0048767671710745c9e253888fcd",
+      "reason": "Redundant model-annotated count copy or duplicate export; prepared inputs and compact embeddings are included."
+    }
+  ],
+  "upstream_source_cache_included": false,
+  "upstream_source_cache_reason": "Public original sources can be downloaded and verified against each dataset manifest; retaining the complete cache exceeded the Mac free-disk budget. Exact prepared count inputs and fixed splits ARE included.",
+  "verification": {
+    "status": "passed",
+    "archive_members_verified": 185,
+    "all_payload_sha256_verified": true,
+    "nine_completed_embeddings_verified": true,
+    "prepared_inputs_and_splits_verified": true,
+    "disk_free_bytes_after": 4628619264,
+    "duration_seconds": 6.592536457999813
+  }
+}

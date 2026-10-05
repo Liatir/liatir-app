@@ -1,0 +1,43 @@
+{
+  "includeHeavy": false,
+  "profiles": [
+    "ui"
+  ],
+  "requestedSuites": [
+    "tauri-e2e",
+    "single-cell-index-e2e",
+    "pipeline-settlement-restart-e2e"
+  ],
+  "reportDir": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/showcases/single-cell-foundation-benchmark/transfer/final-ui-reports",
+  "rootDir": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05",
+  "runId": "2026-10-05T16-50-18-320Z",
+  "startedAt": "2026-10-05T16:50:18.321Z",
+  "finishedAt": "2026-10-05T16:51:53.921Z",
+  "summary": {
+    "durationMs": 95600,
+    "failed": 1,
+    "passed": 0,
+    "skipped": 0,
+    "total": 1
+  },
+  "suites": [
+    {
+      "command": "npm run test:tauri:run",
+      "description": "Runs native webview tests against the compiled Tauri app.",
+      "durationMs": 95600,
+      "e2eReportPath": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/showcases/single-cell-foundation-benchmark/transfer/final-ui-reports/2026-10-05T16-50-18-320Z/e2e/tauri-e2e.json",
+      "finishedAt": "2026-10-05T16:51:53.921Z",
+      "heavy": false,
+      "id": "tauri-e2e",
+      "label": "Native Tauri E2E",
+      "layer": "tauri",
+      "logPath": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/showcases/single-cell-foundation-benchmark/transfer/final-ui-reports/2026-10-05T16-50-18-320Z/logs/tauri-e2e.log",
+      "signal": null,
+      "startedAt": "2026-10-05T16:50:18.321Z",
+      "status": "failed",
+      "timeoutMs": 900000,
+      "timedOut": false,
+      "exitCode": 1
+    }
+  ]
+}

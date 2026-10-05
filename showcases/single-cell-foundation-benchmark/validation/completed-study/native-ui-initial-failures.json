@@ -1,0 +1,48 @@
+{
+  "finishedAt": "2026-10-05T16:51:53.921Z",
+  "failures": [
+    {
+      "command": "npm run test:tauri:run",
+      "durationMs": 95600,
+      "e2eFailures": [
+        {
+          "durationMs": 2735,
+          "error": "Error: expect(received).toContain(expected) // indexOf\n\nExpected substring: \"Check update only reads a small signed manifest\"\nReceived string:    \"········\nDependencies\nSystem runtimes and bioinformatics tools available on this system\nRe-check all\nTool Runtimes\nInstallable scientific command environments, kept separate from AI Models and their files.\npVACtools pVACseq\nTool Runtime\nLocal MHC Class I neoantigen prioritization with the supported pVACtools and MHCflurry pair.\nInstall\nAvailable\n12\nof 13 dependencies\nCore issues\n1\nruntime essentials\nChecked\n13\ntotal\nDependencies are installed globally, therefore available to all workspaces\npython·\nPython 3.13.15 — requires 3.10, 3.11, or 3.12\nLocal AI Models use isolated Python runtimes, and the current protein structure stack requires Python >=3.10,<3.13.·\nRelated deps\nexpand\njava·\nopenjdk 21.0.12.1 2026-08-18 (requires 21+)\nTool dependency\nInstalled\nCheck update ↗\nsamtools·\nIncluded with Liatir — 1.24\nBuilt in\nbcftools·\nIncluded with Liatir — 1.24\nBuilt in\nseqkit·\nIncluded with Liatir — 2.13.0\nBuilt in\nfastp·\nIncluded with Liatir — 1.3.6\nBuilt in\nbwa·\nIncluded with Liatir — 0.7.19\nBuilt in\nminimap2·\nIncluded with Liatir — 2.31\nBuilt in\nsimpleaf·\nIncluded with Liatir — 0.28.0\nBuilt in\nalevin-fry·\nIncluded with Liatir — 0.18.0\nBuilt in\nh5repack·\nIncluded with Liatir — 2.2.0\nsimpleaf compresses its .h5ad count matrix in a way most AnnData readers cannot open. Liatir rewrites it with standard compression, so the single-cell AI Tools and any other tool can read it.\nBuilt in\nnextflow·\nversion 26.04.6 build 12646 (requires 22.10.0+)\nWorkflow dependency\nInstalled\nCheck update ↗\nsnakemake·\nInstall when needed by a tool — use brew, conda, or apt\nViewer runtimes\nOptional scientific visualization dependencies. Install only the runtimes needed by your workflows.\n3Dmol.js\nstructure-3d\nInteractive WebGL structure viewer for PDB, mmCIF, SDF, MOL2, XYZ, and related molecular formats.\nBSD-3-Clause\nInstall\nJBrowse 2\ngenome-browser\nGenome browser runtime for indexed FASTA, GFF, BAM, VCF, and AI-generated genomic tracks.\nMIT · Optional UMD runtime kept outside the core bundle.\nInstall\nVitessce\nsingle-cell-spatial\nSingle-cell and spatial viewer runtime for AnnData-derived artifacts, embeddings, labels, and imaging layouts.\nMIT · Kept outside the core bundle. Liatir currently emits Vitessce-ready artifacts and a lightweight preview while the full ESM/React adapter stays modular.\nDocs ↗\nNo package manager detected in PATH. \\\"Download & Install\\\" bundles precompiled binaries directly into Liatir — no package manager required.\nLiatir\"\n    at Object.run (file:///home/lorenzo/liatir-single-cell-wsl2-2026-10-05/tests/e2e/specs/dependencies.e2e.mjs:41:26)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async run (file:///home/lorenzo/liatir-single-cell-wsl2-2026-10-05/tests/e2e/run-tauri-e2e.mjs:627:11)",
+          "failureScreenshot": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/tests/.artifacts/screenshots/failure-loads-dependency-checks-through-the-real-tauri-bridge.png",
+          "name": "loads dependency checks through the real Tauri bridge",
+          "specPath": "tests/e2e/specs/dependencies.e2e.mjs"
+        },
+        {
+          "durationMs": 2116,
+          "error": "Error: Unable to locate element\n    at NativeWebDriverClient.request (file:///home/lorenzo/liatir-single-cell-wsl2-2026-10-05/tests/e2e/run-tauri-e2e.mjs:362:21)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async NativeWebDriverClient.findElementId (file:///home/lorenzo/liatir-single-cell-wsl2-2026-10-05/tests/e2e/run-tauri-e2e.mjs:386:20)\n    at async WebDriverElement.resolveId (file:///home/lorenzo/liatir-single-cell-wsl2-2026-10-05/tests/e2e/run-tauri-e2e.mjs:246:15)\n    at async WebDriverElement.click (file:///home/lorenzo/liatir-single-cell-wsl2-2026-10-05/tests/e2e/run-tauri-e2e.mjs:293:51)\n    at async Object.run (file:///home/lorenzo/liatir-single-cell-wsl2-2026-10-05/tests/e2e/specs/execution-spine.e2e.mjs:692:7)\n    at async run (file:///home/lorenzo/liatir-single-cell-wsl2-2026-10-05/tests/e2e/run-tauri-e2e.mjs:627:11)",
+          "failureScreenshot": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/tests/.artifacts/screenshots/failure-settles-wasm-plugin-success-failure-and-off-page-cancellation-through-one-spine.png",
+          "name": "settles WASM Plugin success, failure and off-page cancellation through one spine",
+          "specPath": "tests/e2e/specs/execution-spine.e2e.mjs"
+        },
+        {
+          "durationMs": 846,
+          "error": "Error: Unable to locate element\n    at NativeWebDriverClient.request (file:///home/lorenzo/liatir-single-cell-wsl2-2026-10-05/tests/e2e/run-tauri-e2e.mjs:362:21)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async NativeWebDriverClient.findElementId (file:///home/lorenzo/liatir-single-cell-wsl2-2026-10-05/tests/e2e/run-tauri-e2e.mjs:386:20)\n    at async WebDriverElement.resolveId (file:///home/lorenzo/liatir-single-cell-wsl2-2026-10-05/tests/e2e/run-tauri-e2e.mjs:246:15)\n    at async WebDriverElement.click (file:///home/lorenzo/liatir-single-cell-wsl2-2026-10-05/tests/e2e/run-tauri-e2e.mjs:293:51)\n    at async Object.run (file:///home/lorenzo/liatir-single-cell-wsl2-2026-10-05/tests/e2e/specs/single-cell-lighthouse.e2e.mjs:216:5)\n    at async run (file:///home/lorenzo/liatir-single-cell-wsl2-2026-10-05/tests/e2e/run-tauri-e2e.mjs:627:11)",
+          "failureScreenshot": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/tests/.artifacts/screenshots/failure-opens-embedded-anndata-reuses-it-from-data-and-creates-the-lighthouse-preset.png",
+          "name": "opens embedded AnnData, reuses it from Data, and creates the lighthouse preset",
+          "specPath": "tests/e2e/specs/single-cell-lighthouse.e2e.mjs"
+        }
+      ],
+      "e2eReportPath": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/showcases/single-cell-foundation-benchmark/transfer/final-ui-reports/2026-10-05T16-50-18-320Z/e2e/tauri-e2e.json",
+      "exitCode": 1,
+      "id": "tauri-e2e",
+      "label": "Native Tauri E2E",
+      "layer": "tauri",
+      "logPath": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/showcases/single-cell-foundation-benchmark/transfer/final-ui-reports/2026-10-05T16-50-18-320Z/logs/tauri-e2e.log",
+      "signal": null,
+      "timedOut": false
+    }
+  ],
+  "runId": "2026-10-05T16-50-18-320Z",
+  "summary": {
+    "durationMs": 95600,
+    "failed": 1,
+    "passed": 0,
+    "skipped": 0,
+    "total": 1
+  }
+}

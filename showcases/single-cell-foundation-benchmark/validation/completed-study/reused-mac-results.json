@@ -1,0 +1,115 @@
+{
+  "status": "passed",
+  "archive_sha256": "2caacd2af314d5de0e3fbe8c02377fbff33af1d32846412db17eaa5a631e911b",
+  "files": [
+    {
+      "file": "runs/pbmc/pca/embedding.npz",
+      "sha256": "6b5c3febd28940c9152e73e927925fa0b9e187c0e16b13e169717e3f2cbde67d"
+    },
+    {
+      "file": "runs/pbmc/pca/config.json",
+      "sha256": "16375926071480588c24f72d336d48f85ef53ed6fc3fe90a4dc8c1efae724d39"
+    },
+    {
+      "file": "runs/pbmc/pca/telemetry.json",
+      "sha256": "c92b3fb70228d00ef101c90192cc3898e36420f6a9a11d8f2e594300d7ad81bf"
+    },
+    {
+      "file": "runs/pbmc/geneformer/embedding.npz",
+      "sha256": "8d3ca677e0fc09d25184eed2f06eac2b346b0d0625ba0bb4399c36a845a41704"
+    },
+    {
+      "file": "runs/pbmc/geneformer/config.json",
+      "sha256": "9c851219d26c46cfedfd75bdf58a599dc9c8b306f73bafe312a0486bba626b25"
+    },
+    {
+      "file": "runs/pbmc/geneformer/telemetry.json",
+      "sha256": "f92be3da808f6656958413502d96ae2f3ccea82713119b6f25d6dd6490d9a303"
+    },
+    {
+      "file": "runs/pbmc/harmony/embedding.npz",
+      "sha256": "35e11380385a57df7d626d620de6dff831e6ced4b7c28e97834aa99a55786c70"
+    },
+    {
+      "file": "runs/pbmc/harmony/config.json",
+      "sha256": "c67d741672f94f3edf0f3f823b5337c302c48104c9199c6e867a2e1e9854cf3a"
+    },
+    {
+      "file": "runs/pbmc/harmony/telemetry.json",
+      "sha256": "b36ccd99d53de0f4faff7176f2ee18fba299a2cf9ac52088ac459bd7c9c95be4"
+    },
+    {
+      "file": "runs/pbmc/scvi/embedding.npz",
+      "sha256": "1837568290c693eb1cadfc24b86af6994d574b87cb9d4407a00796b854d85be9"
+    },
+    {
+      "file": "runs/pbmc/scvi/config.json",
+      "sha256": "265dfcbe99cba4ab2349910caaf2c6f18f0444506face2fdb60cc3d9151eed70"
+    },
+    {
+      "file": "runs/pbmc/scvi/telemetry.json",
+      "sha256": "98be4d40594ee37d027b40386acbae76792cba80d3d510c77409f155e7bbd562"
+    },
+    {
+      "file": "runs/pbmc/scgpt/embedding.npz",
+      "sha256": "bcd76be0a12ee7ae29104f67a9b99eb8604610356e21db2eb75afeb6d546e552"
+    },
+    {
+      "file": "runs/pbmc/scgpt/config.json",
+      "sha256": "bd12fe4cd1bd6320564793b911d7724baab0e88054bf63f4088a08d4bf38a5b6"
+    },
+    {
+      "file": "runs/pbmc/scgpt/telemetry.json",
+      "sha256": "d4828e6f3d47a5687644f6175d36cff3219d7d4865e5957d29560855ebe6bcc6"
+    },
+    {
+      "file": "runs/pancreas/pca/embedding.npz",
+      "sha256": "d7a0b78021d154eadffc1478d32d60af7932b6fd8030623c4ea3814d4b6d0b95"
+    },
+    {
+      "file": "runs/pancreas/pca/config.json",
+      "sha256": "70ec7cb80fe6fed90a02ffe4dab8bd2d1e12ad3ab057ad85c990d01a8e06bb9d"
+    },
+    {
+      "file": "runs/pancreas/pca/telemetry.json",
+      "sha256": "9ddd95247d70f3a68ef22d4b11a472d191043bf0ff9eefa36496faf04d86d6c5"
+    },
+    {
+      "file": "runs/pancreas/geneformer/embedding.npz",
+      "sha256": "9cffdee319c308cca57a85f50ac1535fed1a9a7fbefa7f4d3936cea358f05892"
+    },
+    {
+      "file": "runs/pancreas/geneformer/config.json",
+      "sha256": "464a1a59c390abf4b1a0cbd37d83f4543d9f7e25a9774ea9306de3c1ee208f7f"
+    },
+    {
+      "file": "runs/pancreas/geneformer/telemetry.json",
+      "sha256": "02850876bdf62c91a1b8d1ba09a3bd7a1ff2cbc96fb73f62b6adcbd57eccadcb"
+    },
+    {
+      "file": "runs/pancreas/harmony/embedding.npz",
+      "sha256": "b01639480227099fd73bbb11a07b09454483f36ca6b6b661fda9912041fbc1e9"
+    },
+    {
+      "file": "runs/pancreas/harmony/config.json",
+      "sha256": "52061f8f3c480c28e7ad59834063dec429db4960f1d61df17c59e27c95ae4672"
+    },
+    {
+      "file": "runs/pancreas/harmony/telemetry.json",
+      "sha256": "37024ceecace6ce8d78f55912ce9fe4cf2189bd7c9562fc2618fbcf679e7d27c"
+    },
+    {
+      "file": "runs/pancreas/scvi/embedding.npz",
+      "sha256": "714888c570eaf76bb7d70ca33acb10ff15c088e931cd3bd6ca7f4a11e0ffa0a6"
+    },
+    {
+      "file": "runs/pancreas/scvi/config.json",
+      "sha256": "f060a76965e577eb8fac98c21740587a7ef19a5b9daeec4a36ebfaf43e324cb4"
+    },
+    {
+      "file": "runs/pancreas/scvi/telemetry.json",
+      "sha256": "c2c1566635e2a43aa36b5db4dcfb16ac49a55a7986cf0f225a82b4caffaafb61"
+    }
+  ],
+  "completed_representations_reused": 9
+}

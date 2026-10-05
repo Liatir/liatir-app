@@ -1,0 +1,82 @@
+{
+  "attempts": [
+    {
+      "id": "200ed4fb-7df4-4c7b-a723-0e53d5f38c9b",
+      "started_at": 1791217966.0180478,
+      "updated_at": 1791218475.3787842,
+      "elapsed_seconds": 513.860411033,
+      "peak_rss_bytes": 2518573056,
+      "status": "completed",
+      "peak_accelerator_bytes": 3510297600
+    }
+  ],
+  "wall_seconds_lower_bound": 513.860411033,
+  "peak_rss_bytes": 2518573056,
+  "unmeasured_time_reason": "Interrupted attempts record elapsed time through their last committed batch; any unsaved tail is unknown.",
+  "identity": {
+    "accelerator": "CUDA",
+    "activation_sha256": "949a7bc3598b5a9e0aafe26f5f41c9d307b631f996182ead344fde2d3a1dbd85",
+    "batch_size": 16,
+    "box_sha256": "09e02c4d1eea6afad57b179ffa7f53f7abd4f9ef9eb351056da8e25bbf410914",
+    "cuda_device": {
+      "capability": [
+        8,
+        9
+      ],
+      "cublas_workspace": ":4096:8",
+      "cudnn_tf32": false,
+      "deterministic_algorithms": true,
+      "matmul_tf32": false,
+      "name": "NVIDIA GeForce RTX 4060 Ti",
+      "runtime": "12.9",
+      "total_memory": 8585084928
+    },
+    "embedding": {
+      "cell_ids_sha256": "9916a694a2760d848dd2e1d970b3e6607ca13bab55d901822e32423e5f8b3875",
+      "cells": 16382,
+      "dimensions": 512
+    },
+    "format_version": 1,
+    "host": "Lorenzo",
+    "input_sha256": "aeb6f9a2de14b881a81420018963d2d35e33d705f01ecc73c11a78f012001368",
+    "model_files": {
+      "gene vocabulary": "acca93d114ca62c3f0f50debbd23e8c87f0714f4737764454f6b2b13f2e8580f",
+      "model configuration": "c18e075e018140cb8b2d9029387b9de26607a5ce6a8ccabd6ead70cd76b95d60",
+      "model weights": "6cb5d451ab5c4b33eb673adbe4fddc61d2389df1b89b7651a9fe2e557572b922",
+      "pinned scGPT source": "4ae77618cc6f12a7d1f6d946fee3f7bd5c56f3e9e103073394a590ceba5a35ed"
+    },
+    "packages": {
+      "anndata": "0.12.19",
+      "numpy": "2.4.6",
+      "scipy": "1.17.1",
+      "torch": "2.8.0"
+    },
+    "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.43",
+    "python": "3.11.15 | packaged by conda-forge | (main, Jun 11 2026, 03:34:02) [GCC 14.3.0]",
+    "runner_sha256": "35544712015f03c57b9a9d7f42f57932a79623a8f992b4eafe775496e2a2f2b1",
+    "runtime_identity_scope": "Activated box",
+    "seed": 23,
+    "source_count_provenance": {
+      "kind": "canonical-source-count-layer",
+      "prepared_sha256": "aeb6f9a2de14b881a81420018963d2d35e33d705f01ecc73c11a78f012001368",
+      "source_layer": "counts",
+      "source_sha256": "97e6dfd65553e4d10aa3ef5d904362970a75c677c31d70fabc9234191a09db8c"
+    },
+    "source_files": {
+      "model/dsbn.py": "666e443b530b8f4c7a26759c18b2c3125d96bb8ae55b7d91f26599ae7f84fb9b",
+      "model/flash_attn_compat.py": "5a37a9a172c83c286cd45d9387051d7cc09634bc7f635e11e7615da636860251",
+      "model/grad_reverse.py": "506b0adb351b1dc50f5778434b6c4a553cd18d23a6100add62fdbf2791764ad6",
+      "model/model.py": "4ae77618cc6f12a7d1f6d946fee3f7bd5c56f3e9e103073394a590ceba5a35ed",
+      "tokenizer/gene_tokenizer.py": "5044666baf469c46b77a124ae01c2ccbea02c185c6a93333d09b9571c088b8b5",
+      "tokenizer/vocab_compat.py": "8c0b24277a4d9eaef2176be038af5b082acd071f331922eb075a38fdb3f9c59c"
+    },
+    "species": "human",
+    "threads": {
+      "MKL_NUM_THREADS": "6",
+      "NUMBA_NUM_THREADS": "6",
+      "OMP_NUM_THREADS": "6",
+      "OPENBLAS_NUM_THREADS": "6"
+    }
+  },
+  "peak_accelerator_bytes": 3510297600
+}

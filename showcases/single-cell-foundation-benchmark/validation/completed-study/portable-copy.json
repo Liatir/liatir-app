@@ -1,0 +1,1922 @@
+{
+  "status": "passed",
+  "files": [
+    {
+      "file": "study-environment.json",
+      "sha256": "90070487c5a0ea9f74dd5876a66d08c74e598cde6ccc4f1d07de92cf31ca5aa3",
+      "bytes": 3966
+    },
+    {
+      "file": "single-cell-study.zip",
+      "sha256": "184475f893e7f23efd24d095dccaccac8deefb79a525c0c7aa3d55a193f06de3",
+      "bytes": 405019914
+    },
+    {
+      "file": "results/summary.csv",
+      "sha256": "1c519b5315852087d958b895e1311ff72e69069357ef27d29da7e7b3b76bfb71",
+      "bytes": 11262
+    },
+    {
+      "file": "results/batch_metrics.csv",
+      "sha256": "97821f4b2cc88ca2f92286dc3b1768e6e920e2a03dc766e3eace54d40d897ec4",
+      "bytes": 1166
+    },
+    {
+      "file": "results/summary.json",
+      "sha256": "9647428561e6b4a88b4df8631cc4a881a5d5b4df8c9d5b0f24d9b51d7f645cad",
+      "bytes": 51483
+    },
+    {
+      "file": "results/compute_metrics.csv",
+      "sha256": "7ebf427a66cc309815c6d18b4410f86d8676641ff93fab451e620ae3653f409a",
+      "bytes": 1434
+    },
+    {
+      "file": "results/biological_metrics.csv",
+      "sha256": "77f88d508fda9b92867b29b28335ffe23aa2a333ce035d201aacd1c1d5e28be6",
+      "bytes": 1340
+    },
+    {
+      "file": "results/figures/pbmc-scgpt-batch.png",
+      "sha256": "50ea5f5f3110416cbe336f36b710cc71c71989ca299da35eb770ec6c6b9890dc",
+      "bytes": 389131
+    },
+    {
+      "file": "results/figures/pbmc-pca-batch.png",
+      "sha256": "13e4a75b71ccf43000835bf5d7c66fa11d5e25c0596a67343b97ed0313acec43",
+      "bytes": 287567
+    },
+    {
+      "file": "results/figures/biological-performance-vs-peak_rss_bytes.png",
+      "sha256": "6a0c46743a9f4cdef156477d56047b6fd70419494312d3410eadce9de310b494",
+      "bytes": 73113
+    },
+    {
+      "file": "results/figures/pbmc-scgpt-cell_type.png",
+      "sha256": "932b59aedea15726333f2c32af7d4c7432c4327449f0ac8d922300047b093edf",
+      "bytes": 312796
+    },
+    {
+      "file": "results/figures/pbmc-geneformer-cell_type.png",
+      "sha256": "029416d69dae66197a7b6691b786243bf3b49f9d1d58aebbede3b530696650a1",
+      "bytes": 493057
+    },
+    {
+      "file": "results/figures/pancreas-pca-cell_type.png",
+      "sha256": "a8c81093c3805a284609d22ddaefd507f8405ae5dd4a8ac7e25a178175f299b5",
+      "bytes": 251464
+    },
+    {
+      "file": "results/figures/pbmc-harmony-batch.png",
+      "sha256": "d72e3ee7f87c663285e5bcbb9d8f7ec934a2aa6db6d710f0d1606c6d16bec8ca",
+      "bytes": 303885
+    },
+    {
+      "file": "results/figures/pbmc-harmony-cell_type.png",
+      "sha256": "07ed178e6f562505331a79e99e4b35a2ea7dd47c1c5092c15ef622b10716038e",
+      "bytes": 231912
+    },
+    {
+      "file": "results/figures/pbmc-scvi-cell_type.png",
+      "sha256": "8a2cd2416e25c861737404321fa0215c3d4119c3de3a7f92e69342371faf3fa4",
+      "bytes": 304518
+    },
+    {
+      "file": "results/figures/pancreas-harmony-batch.png",
+      "sha256": "efe1ccf7b7ba70014b3bab427577914d63b55fe854ede520fe2db852ff32cdc2",
+      "bytes": 341173
+    },
+    {
+      "file": "results/figures/pancreas-scgpt-batch.png",
+      "sha256": "67aa8a174246b5f6f4edf60121f94152c34d89bbed4a5b560fbd4ca8edd6b432",
+      "bytes": 429121
+    },
+    {
+      "file": "results/figures/pancreas-scvi-batch.png",
+      "sha256": "341cbfb5535dd210d9a42141b687403cf8d57c1280b9b725279a6e7bd40302e6",
+      "bytes": 377625
+    },
+    {
+      "file": "results/figures/pbmc-pca-cell_type.png",
+      "sha256": "01988ff5bf09b449e984309ad7abc0a48f4b810b08233344cb280cf36a309aab",
+      "bytes": 219335
+    },
+    {
+      "file": "results/figures/pancreas-pca-batch.png",
+      "sha256": "3f8e898a25bddc9bcde5ced3c63e138f6a68f922927567e2ad2190daf812e638",
+      "bytes": 277140
+    },
+    {
+      "file": "results/figures/pbmc-geneformer-batch.png",
+      "sha256": "7012a61d5b53fbe9f0db4688a675f2640319fdb98c6b0da64d6e38bb5d69ec08",
+      "bytes": 523339
+    },
+    {
+      "file": "results/figures/pancreas-geneformer-cell_type.png",
+      "sha256": "d76cd4ddf3fdc4b67580eb2142e2bfa2671375b3eac48811bb55afcea5737781",
+      "bytes": 481168
+    },
+    {
+      "file": "results/figures/pancreas-harmony-cell_type.png",
+      "sha256": "5419b3bce5bdc682770c224516c5ca0e424de381b25517d9bb31269fe267d4b5",
+      "bytes": 229765
+    },
+    {
+      "file": "results/figures/pancreas-scvi-cell_type.png",
+      "sha256": "35b876bb943031a8d9247fc6cb32a882dfa6e851c86e2c54f5e9e2c22f554bfe",
+      "bytes": 275147
+    },
+    {
+      "file": "results/figures/pancreas-geneformer-batch.png",
+      "sha256": "905a4f8c64f1aaebb134d666f5e6e86f371c78a01c04e8d17d5fe9ba9cc40cbb",
+      "bytes": 451859
+    },
+    {
+      "file": "results/figures/biological-performance-vs-wall_seconds.png",
+      "sha256": "43916a938236f35e7f053cfab1cd6ebf98030c804c8800c3ad7240e34442d2f1",
+      "bytes": 75761
+    },
+    {
+      "file": "results/figures/pancreas-scgpt-cell_type.png",
+      "sha256": "8ed74dd850e547fa6905cb4c062a8708d714b88ca117262ccc6fe30cd55f1bc4",
+      "bytes": 423295
+    },
+    {
+      "file": "results/figures/pbmc-scvi-batch.png",
+      "sha256": "27a2bf5f885015d9aaaf836435298e7f8e77121ec6392f928cb54d7f945c5cd9",
+      "bytes": 377359
+    },
+    {
+      "file": "runs/pbmc/harmony/telemetry.json",
+      "sha256": "b36ccd99d53de0f4faff7176f2ee18fba299a2cf9ac52088ac459bd7c9c95be4",
+      "bytes": 545
+    },
+    {
+      "file": "runs/pbmc/harmony/umap.csv",
+      "sha256": "d03d24bdbf58eb52bb8cb48910cb7bb1ec8c4c82ef303eb087516d6586897228",
+      "bytes": 825596
+    },
+    {
+      "file": "runs/pbmc/harmony/metrics.json",
+      "sha256": "43a22d8cca8a70bc3cfc13caf5e25b2dc561a15d7b795196c6e63e5021a7b993",
+      "bytes": 548
+    },
+    {
+      "file": "runs/pbmc/harmony/provenance.json",
+      "sha256": "e31a24d041be4326c76519b925ed0eb0eb67a5fb890a610873cf304d61c1fc1b",
+      "bytes": 4623
+    },
+    {
+      "file": "runs/pbmc/harmony/config.json",
+      "sha256": "c67d741672f94f3edf0f3f823b5337c302c48104c9199c6e867a2e1e9854cf3a",
+      "bytes": 26907
+    },
+    {
+      "file": "runs/pbmc/harmony/environment.json",
+      "sha256": "aca71a9b2ff97f0173c39174120110f30aebff891a751f3297246654e48b3cf5",
+      "bytes": 3370
+    },
+    {
+      "file": "runs/pbmc/harmony/resource-monitor.json",
+      "sha256": "6ec0ac873744ff5c82fd200e64e659c6302620534d8c277c09d16efd4784f53d",
+      "bytes": 594
+    },
+    {
+      "file": "runs/pbmc/harmony/embedding.npz",
+      "sha256": "35e11380385a57df7d626d620de6dff831e6ced4b7c28e97834aa99a55786c70",
+      "bytes": 2335806
+    },
+    {
+      "file": "runs/pbmc/harmony/logs/stderr.log",
+      "sha256": "d55a13cfcb6155075873c3e892690d4ca487a2d27ea670eb499ca2f67983d065",
+      "bytes": 789
+    },
+    {
+      "file": "runs/pbmc/harmony/logs/stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "file": "runs/pbmc/scvi/telemetry.json",
+      "sha256": "98be4d40594ee37d027b40386acbae76792cba80d3d510c77409f155e7bbd562",
+      "bytes": 545
+    },
+    {
+      "file": "runs/pbmc/scvi/umap.csv",
+      "sha256": "830c9bc21f28b931d141c7d0590745726684a62395e8d482c58e6155d65ff63b",
+      "bytes": 831742
+    },
+    {
+      "file": "runs/pbmc/scvi/metrics.json",
+      "sha256": "3f17ba4e74c03ad9da14a8d07dc141f7e1e5d0b383b6eeafc21f2535b6d8155a",
+      "bytes": 546
+    },
+    {
+      "file": "runs/pbmc/scvi/provenance.json",
+      "sha256": "3a25c3db1472333b9b73ad9cfe1d45d9417d5ee81b691bdd584689022ea138ff",
+      "bytes": 4620
+    },
+    {
+      "file": "runs/pbmc/scvi/config.json",
+      "sha256": "265dfcbe99cba4ab2349910caaf2c6f18f0444506face2fdb60cc3d9151eed70",
+      "bytes": 26966
+    },
+    {
+      "file": "runs/pbmc/scvi/environment.json",
+      "sha256": "aca71a9b2ff97f0173c39174120110f30aebff891a751f3297246654e48b3cf5",
+      "bytes": 3370
+    },
+    {
+      "file": "runs/pbmc/scvi/resource-monitor.json",
+      "sha256": "bf75b21cf89a9b690538ea601358de2d3998e10d1b95a3b3faafea5b1e057447",
+      "bytes": 592
+    },
+    {
+      "file": "runs/pbmc/scvi/embedding.npz",
+      "sha256": "1837568290c693eb1cadfc24b86af6994d574b87cb9d4407a00796b854d85be9",
+      "bytes": 1462684
+    },
+    {
+      "file": "runs/pbmc/scvi/trained-model/model.pt",
+      "sha256": "3a3c23026020023adb2f078d716682a5f8b887b3ba9b76a6456d15829f9fb9c1",
+      "bytes": 5521821
+    },
+    {
+      "file": "runs/pbmc/scvi/logs/stderr.log",
+      "sha256": "5f2320447d6b8e8c2f2da72b4dfeb0ddcb56a5a566bc2b2648a6fd9244a797db",
+      "bytes": 1515
+    },
+    {
+      "file": "runs/pbmc/scvi/logs/stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "file": "runs/pbmc/pca/telemetry.json",
+      "sha256": "c92b3fb70228d00ef101c90192cc3898e36420f6a9a11d8f2e594300d7ad81bf",
+      "bytes": 544
+    },
+    {
+      "file": "runs/pbmc/pca/umap.csv",
+      "sha256": "ea681d19e14eb1b3b533cfd70c2c94e71fe25f48993f410d5b8eb206c55e76ca",
+      "bytes": 824538
+    },
+    {
+      "file": "runs/pbmc/pca/metrics.json",
+      "sha256": "617469dd9c6776adf343a227a5ca24f7c8f71e7e24b7595fa2c3bb6a2dd9e0a0",
+      "bytes": 1273
+    },
+    {
+      "file": "runs/pbmc/pca/provenance.json",
+      "sha256": "03f90a56bb5760519f564670a69f3840714276eabab046b9bced1d673df148a9",
+      "bytes": 4619
+    },
+    {
+      "file": "runs/pbmc/pca/config.json",
+      "sha256": "16375926071480588c24f72d336d48f85ef53ed6fc3fe90a4dc8c1efae724d39",
+      "bytes": 26826
+    },
+    {
+      "file": "runs/pbmc/pca/environment.json",
+      "sha256": "aca71a9b2ff97f0173c39174120110f30aebff891a751f3297246654e48b3cf5",
+      "bytes": 3370
+    },
+    {
+      "file": "runs/pbmc/pca/resource-monitor.json",
+      "sha256": "b280dbeed6e1ccae8440145216b8e28b577e0fd337d3eb66593be097e8b467d7",
+      "bytes": 590
+    },
+    {
+      "file": "runs/pbmc/pca/embedding.npz",
+      "sha256": "6b5c3febd28940c9152e73e927925fa0b9e187c0e16b13e169717e3f2cbde67d",
+      "bytes": 2335972
+    },
+    {
+      "file": "runs/pbmc/pca/logs/stderr.log",
+      "sha256": "ae06a452503ce5b38057d47853fead08c8d0bad20943d70e4883c39e0d43f51d",
+      "bytes": 219
+    },
+    {
+      "file": "runs/pbmc/pca/logs/stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "file": "runs/pbmc/geneformer/telemetry.json",
+      "sha256": "f92be3da808f6656958413502d96ae2f3ccea82713119b6f25d6dd6490d9a303",
+      "bytes": 516
+    },
+    {
+      "file": "runs/pbmc/geneformer/umap.csv",
+      "sha256": "61425a5e1e96e94b83c121651ecb685108957ae56fffc26bda10ae3a76be9b6b",
+      "bytes": 828655
+    },
+    {
+      "file": "runs/pbmc/geneformer/geneformer-embedding-preview.csv",
+      "sha256": "24e7ffa88d214d8c15e618966a37c9ccd49494ac134bc4ba2808c8e9e6b18da2",
+      "bytes": 18359
+    },
+    {
+      "file": "runs/pbmc/geneformer/resource_guard.py",
+      "sha256": "fb83773e4bc2eb6c42f15066ab012f2fc945c8e87a7be070c86432ce477e6002",
+      "bytes": 6741
+    },
+    {
+      "file": "runs/pbmc/geneformer/metrics.json",
+      "sha256": "678f1dc00359bad05cad8c84e0a026cc4c1ecf84196e2d8b41e353015b43a733",
+      "bytes": 550
+    },
+    {
+      "file": "runs/pbmc/geneformer/geneformer-embedding-summary.json",
+      "sha256": "96c4944c291b5b8dc6007fabb7e34b81dd04f56c20e8cd056807b8813786c7fe",
+      "bytes": 733
+    },
+    {
+      "file": "runs/pbmc/geneformer/provenance.json",
+      "sha256": "16a3aec8f898c1dbbe17c244fe4bc86eb1b08cf9177917e1223c600f4dae62e6",
+      "bytes": 10733
+    },
+    {
+      "file": "runs/pbmc/geneformer/config.json",
+      "sha256": "9c851219d26c46cfedfd75bdf58a599dc9c8b306f73bafe312a0486bba626b25",
+      "bytes": 331
+    },
+    {
+      "file": "runs/pbmc/geneformer/environment.json",
+      "sha256": "ec8184d0e49bdce72143c24c034b260a3616274b79168bd4221a99a68a794edb",
+      "bytes": 8521
+    },
+    {
+      "file": "runs/pbmc/geneformer/resource-monitor.json",
+      "sha256": "d4ee8ddf18f58b787b1060516190b2c2d49125a1dcc17ba6c9d8b51259b41701",
+      "bytes": 591
+    },
+    {
+      "file": "runs/pbmc/geneformer/runner.py",
+      "sha256": "3fa5fbdc961af99e5a79ed4692070bd16d02896fbe3db44381650f958987b9b8",
+      "bytes": 13557
+    },
+    {
+      "file": "runs/pbmc/geneformer/embedding.npz",
+      "sha256": "8d3ca677e0fc09d25184eed2f06eac2b346b0d0625ba0bb4399c36a845a41704",
+      "bytes": 11506625
+    },
+    {
+      "file": "runs/pbmc/geneformer/logs/stderr.log",
+      "sha256": "a22ded7c99f903a6ff37f0a045aaad73da6342ae2374ed4afe6105efc08bd615",
+      "bytes": 2705
+    },
+    {
+      "file": "runs/pbmc/geneformer/logs/stdout.log",
+      "sha256": "40ff0ae0aaec53251b70344a91844f6b599c8cbc1cd722bf54532981fb98b7eb",
+      "bytes": 2635
+    },
+    {
+      "file": "runs/pbmc/scgpt/telemetry.json",
+      "sha256": "d4828e6f3d47a5687644f6175d36cff3219d7d4865e5957d29560855ebe6bcc6",
+      "bytes": 517
+    },
+    {
+      "file": "runs/pbmc/scgpt/umap.csv",
+      "sha256": "dd92b612ea611ac568ff0d2020a778904be2ab4246e62dde440162b28cd8434f",
+      "bytes": 828662
+    },
+    {
+      "file": "runs/pbmc/scgpt/resource_guard.py",
+      "sha256": "fb83773e4bc2eb6c42f15066ab012f2fc945c8e87a7be070c86432ce477e6002",
+      "bytes": 6741
+    },
+    {
+      "file": "runs/pbmc/scgpt/scgpt-embedding-preview.csv",
+      "sha256": "9b0699e600d569f1ef5dc64df77ebe47fac545281ab10c13b4c7a1d2df41d0ae",
+      "bytes": 36929
+    },
+    {
+      "file": "runs/pbmc/scgpt/metrics.json",
+      "sha256": "7f515592183780a04f8e4b9c5658d3c125e9fda59c51a5978d0aec3cfb62c0b1",
+      "bytes": 545
+    },
+    {
+      "file": "runs/pbmc/scgpt/provenance.json",
+      "sha256": "63195953098edd1933671787e0e1c0ef61868ebac2c011912248531f35f5efbf",
+      "bytes": 10664
+    },
+    {
+      "file": "runs/pbmc/scgpt/config.json",
+      "sha256": "bd12fe4cd1bd6320564793b911d7724baab0e88054bf63f4088a08d4bf38a5b6",
+      "bytes": 322
+    },
+    {
+      "file": "runs/pbmc/scgpt/scgpt-embedding-summary.json",
+      "sha256": "e6a18c76fc0ee920aee5792142d78240fa43f23d87060675268deaf5cb3f6442",
+      "bytes": 753
+    },
+    {
+      "file": "runs/pbmc/scgpt/environment.json",
+      "sha256": "f04664c957b4f60056ebc1b0239a2fa940323d74a4a83d9329d0a7213db804b3",
+      "bytes": 7890
+    },
+    {
+      "file": "runs/pbmc/scgpt/resource-monitor.json",
+      "sha256": "d53520d194684354d0efaba0ac3b78cab7efe66019b40f966e45367e34f9ee76",
+      "bytes": 590
+    },
+    {
+      "file": "runs/pbmc/scgpt/runner.py",
+      "sha256": "581c4909cae3aff876108640cc151960daafe3b68b4f28d22babbb1c84bda27b",
+      "bytes": 15190
+    },
+    {
+      "file": "runs/pbmc/scgpt/embedding.npz",
+      "sha256": "bcd76be0a12ee7ae29104f67a9b99eb8604610356e21db2eb75afeb6d546e552",
+      "bytes": 22957172
+    },
+    {
+      "file": "runs/pbmc/scgpt/logs/stderr.log",
+      "sha256": "ca14b0ed619aee072f3499b258887e640fe7fe9f1902aae51e969892bcde6868",
+      "bytes": 2265
+    },
+    {
+      "file": "runs/pbmc/scgpt/logs/stdout.log",
+      "sha256": "1115817aefa9153218a63232603b8c732127d1270f563579b16e679e5d659429",
+      "bytes": 2631
+    },
+    {
+      "file": "runs/pbmc/uce/telemetry.json",
+      "sha256": "60a613e9d66e0b513327572bd3fc45e1e1f876b5ab2b85e40fa40224ce41150a",
+      "bytes": 451
+    },
+    {
+      "file": "runs/pbmc/uce/resource_guard.py",
+      "sha256": "fb83773e4bc2eb6c42f15066ab012f2fc945c8e87a7be070c86432ce477e6002",
+      "bytes": 6741
+    },
+    {
+      "file": "runs/pbmc/uce/metrics.json",
+      "sha256": "514f9939d2a9fdfcd9db5e60122e593ef85ee5475c7e190a49f11712bf29756f",
+      "bytes": 1954
+    },
+    {
+      "file": "runs/pbmc/uce/memory-preflight.json",
+      "sha256": "fd7be006a031e9ea2d6546b5d2e65adda508ed623386c72eca93b15f03bb0548",
+      "bytes": 432
+    },
+    {
+      "file": "runs/pbmc/uce/provenance.json",
+      "sha256": "9e2a9789461cb061c240195102610808b82cf437498a07b7b3166eee59ec3c45",
+      "bytes": 11015
+    },
+    {
+      "file": "runs/pbmc/uce/config.json",
+      "sha256": "ccee6560a0535cf7e0d8e6fd1ec69d3917af5e2c67a169fb3fb04cc7ae044611",
+      "bytes": 320
+    },
+    {
+      "file": "runs/pbmc/uce/environment.json",
+      "sha256": "497e099abc6f6aa2731f4ad83bb6726fec4d482840c419b2ecd860eb67887f63",
+      "bytes": 9139
+    },
+    {
+      "file": "runs/pbmc/uce/resource-monitor.json",
+      "sha256": "0d62d9c0924fcffb433094d4491effeaea942543ba1ddb31bed2bb6d81916d28",
+      "bytes": 588
+    },
+    {
+      "file": "runs/pbmc/uce/runner.py",
+      "sha256": "b15b01f967c4a7466c7f0855ee54bcfaec0edcda0f2682acc9bc54c38b04ab34",
+      "bytes": 11568
+    },
+    {
+      "file": "runs/pbmc/uce/logs/stderr.log",
+      "sha256": "6433ca6a6f533128e31f140ec78ecb268a9008b7d9e3fa45d25dbf52ace95c65",
+      "bytes": 1879
+    },
+    {
+      "file": "runs/pbmc/uce/logs/stdout.log",
+      "sha256": "493d8ba680c80b825d598b4ceda91224e70f0953fa58cb7b8fb03e7f1378b09b",
+      "bytes": 62
+    },
+    {
+      "file": "runs/pancreas/harmony/telemetry.json",
+      "sha256": "37024ceecace6ce8d78f55912ce9fe4cf2189bd7c9562fc2618fbcf679e7d27c",
+      "bytes": 545
+    },
+    {
+      "file": "runs/pancreas/harmony/umap.csv",
+      "sha256": "6dd40b04dd8b1a461f8b3b1f50406cd41f9b4fabf3d217077b97dee3ee381dd7",
+      "bytes": 1228847
+    },
+    {
+      "file": "runs/pancreas/harmony/metrics.json",
+      "sha256": "1803f81ff8f2d8f9c4309323cb15f5bdd43f47ecac040c2271b3330b0c391e05",
+      "bytes": 547
+    },
+    {
+      "file": "runs/pancreas/harmony/provenance.json",
+      "sha256": "ab90f8102d5f4eb85953bfffa8089a352ada6017fd6d9b273ff8c49a36542645",
+      "bytes": 4798
+    },
+    {
+      "file": "runs/pancreas/harmony/config.json",
+      "sha256": "52061f8f3c480c28e7ad59834063dec429db4960f1d61df17c59e27c95ae4672",
+      "bytes": 26548
+    },
+    {
+      "file": "runs/pancreas/harmony/environment.json",
+      "sha256": "aca71a9b2ff97f0173c39174120110f30aebff891a751f3297246654e48b3cf5",
+      "bytes": 3370
+    },
+    {
+      "file": "runs/pancreas/harmony/resource-monitor.json",
+      "sha256": "213dc5cd4fddef89a577d7e61cb27309e5488fd21360fdfda464cd6ac7bf82bc",
+      "bytes": 571
+    },
+    {
+      "file": "runs/pancreas/harmony/embedding.npz",
+      "sha256": "b01639480227099fd73bbb11a07b09454483f36ca6b6b661fda9912041fbc1e9",
+      "bytes": 3160534
+    },
+    {
+      "file": "runs/pancreas/harmony/logs/stderr.log",
+      "sha256": "d2454d52a81a75791d480782e8cd6c8e002f9002cf71832d1506e1b5901756be",
+      "bytes": 1041
+    },
+    {
+      "file": "runs/pancreas/harmony/logs/stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "file": "runs/pancreas/scvi/telemetry.json",
+      "sha256": "c2c1566635e2a43aa36b5db4dcfb16ac49a55a7986cf0f225a82b4caffaafb61",
+      "bytes": 545
+    },
+    {
+      "file": "runs/pancreas/scvi/umap.csv",
+      "sha256": "6f07c740e945990bfbb074c0587239c42d7170891b51c4d0f84724b2df18afa6",
+      "bytes": 1239502
+    },
+    {
+      "file": "runs/pancreas/scvi/metrics.json",
+      "sha256": "eaa8b73dcdc72b7a459957dd8633ff57458b803684b7d2aad34b72aca6e4927b",
+      "bytes": 548
+    },
+    {
+      "file": "runs/pancreas/scvi/provenance.json",
+      "sha256": "4910180e99866eb7b63d7afa8a244f84245df047a78f00e6e901ec82b422c11a",
+      "bytes": 4795
+    },
+    {
+      "file": "runs/pancreas/scvi/config.json",
+      "sha256": "f060a76965e577eb8fac98c21740587a7ef19a5b9daeec4a36ebfaf43e324cb4",
+      "bytes": 26607
+    },
+    {
+      "file": "runs/pancreas/scvi/environment.json",
+      "sha256": "aca71a9b2ff97f0173c39174120110f30aebff891a751f3297246654e48b3cf5",
+      "bytes": 3370
+    },
+    {
+      "file": "runs/pancreas/scvi/resource-monitor.json",
+      "sha256": "64d4a1bd8eeb105691af1bd71f87869e94acb999a1790474df72b12192ba7971",
+      "bytes": 573
+    },
+    {
+      "file": "runs/pancreas/scvi/embedding.npz",
+      "sha256": "714888c570eaf76bb7d70ca33acb10ff15c088e931cd3bd6ca7f4a11e0ffa0a6",
+      "bytes": 1944364
+    },
+    {
+      "file": "runs/pancreas/scvi/trained-model/model.pt",
+      "sha256": "63c071ddc32988511f628d6af2e8aed9f609f85be46acf24acf37207e04f1d98",
+      "bytes": 5566109
+    },
+    {
+      "file": "runs/pancreas/scvi/logs/stderr.log",
+      "sha256": "b0e642c07b985bce11527da72902c236b4b833c1862e761176eb82ae6dab8128",
+      "bytes": 1933
+    },
+    {
+      "file": "runs/pancreas/scvi/logs/stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "file": "runs/pancreas/pca/telemetry.json",
+      "sha256": "9ddd95247d70f3a68ef22d4b11a472d191043bf0ff9eefa36496faf04d86d6c5",
+      "bytes": 544
+    },
+    {
+      "file": "runs/pancreas/pca/umap.csv",
+      "sha256": "08e8552a023f9e2fa435684dc1d8ed36c3a690c4e931c7bab0ff1c2f4b572d63",
+      "bytes": 1228501
+    },
+    {
+      "file": "runs/pancreas/pca/metrics.json",
+      "sha256": "d4761ea2ed019e3fd69747de82eb489cbabee336f565969698075906ed82bd77",
+      "bytes": 1275
+    },
+    {
+      "file": "runs/pancreas/pca/provenance.json",
+      "sha256": "3430b251c6b9627d5ad8e62b53dc56c3aac4ecaf2e686fa86ab0302572da4994",
+      "bytes": 4794
+    },
+    {
+      "file": "runs/pancreas/pca/config.json",
+      "sha256": "70ec7cb80fe6fed90a02ffe4dab8bd2d1e12ad3ab057ad85c990d01a8e06bb9d",
+      "bytes": 26467
+    },
+    {
+      "file": "runs/pancreas/pca/environment.json",
+      "sha256": "aca71a9b2ff97f0173c39174120110f30aebff891a751f3297246654e48b3cf5",
+      "bytes": 3370
+    },
+    {
+      "file": "runs/pancreas/pca/resource-monitor.json",
+      "sha256": "daccf9d025ab2ac4568066c85e195ee6759a1398421b4b6b7e14ab10219c0270",
+      "bytes": 577
+    },
+    {
+      "file": "runs/pancreas/pca/embedding.npz",
+      "sha256": "d7a0b78021d154eadffc1478d32d60af7932b6fd8030623c4ea3814d4b6d0b95",
+      "bytes": 3156785
+    },
+    {
+      "file": "runs/pancreas/pca/logs/stderr.log",
+      "sha256": "ae06a452503ce5b38057d47853fead08c8d0bad20943d70e4883c39e0d43f51d",
+      "bytes": 219
+    },
+    {
+      "file": "runs/pancreas/pca/logs/stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "file": "runs/pancreas/geneformer/telemetry.json",
+      "sha256": "02850876bdf62c91a1b8d1ba09a3bd7a1ff2cbc96fb73f62b6adcbd57eccadcb",
+      "bytes": 514
+    },
+    {
+      "file": "runs/pancreas/geneformer/umap.csv",
+      "sha256": "21ec78d31100a242c334c76d74e6f359e2ae81912c76abbe5c1c7cd03a828f42",
+      "bytes": 1233847
+    },
+    {
+      "file": "runs/pancreas/geneformer/geneformer-embedding-preview.csv",
+      "sha256": "88e72c40da47ae99ca5c50e38f800fc97b776993b25d9329aeba8b7c7210e142",
+      "bytes": 18274
+    },
+    {
+      "file": "runs/pancreas/geneformer/resource_guard.py",
+      "sha256": "fb83773e4bc2eb6c42f15066ab012f2fc945c8e87a7be070c86432ce477e6002",
+      "bytes": 6741
+    },
+    {
+      "file": "runs/pancreas/geneformer/metrics.json",
+      "sha256": "902b933d7a4e83a5e1d12e26442432449f9415688cade2be458979275acc06b6",
+      "bytes": 553
+    },
+    {
+      "file": "runs/pancreas/geneformer/geneformer-embedding-summary.json",
+      "sha256": "629f0f1838aa3dc9661d7a997c361489220a5c4d27071230e00d0f38d7e0ab1d",
+      "bytes": 926
+    },
+    {
+      "file": "runs/pancreas/geneformer/provenance.json",
+      "sha256": "d0c5cd6a7a33887870a94ed88b5df5fa39159cba65d800c3087634b32b370028",
+      "bytes": 11103
+    },
+    {
+      "file": "runs/pancreas/geneformer/config.json",
+      "sha256": "464a1a59c390abf4b1a0cbd37d83f4543d9f7e25a9774ea9306de3c1ee208f7f",
+      "bytes": 618
+    },
+    {
+      "file": "runs/pancreas/geneformer/environment.json",
+      "sha256": "158690212ea7240f0213cf8f937afbf937c7c348d43be86889d91206516b7f39",
+      "bytes": 8521
+    },
+    {
+      "file": "runs/pancreas/geneformer/resource-monitor.json",
+      "sha256": "498887e57b8df6593b059b8b057869977989d3f55acf2e8ec431ab25048cb591",
+      "bytes": 575
+    },
+    {
+      "file": "runs/pancreas/geneformer/runner.py",
+      "sha256": "18b19728ce956bfddf71d70866afc154664d2f37084a835bf4f291194b24c8dd",
+      "bytes": 15106
+    },
+    {
+      "file": "runs/pancreas/geneformer/embedding.npz",
+      "sha256": "9cffdee319c308cca57a85f50ac1535fed1a9a7fbefa7f4d3936cea358f05892",
+      "bytes": 15687884
+    },
+    {
+      "file": "runs/pancreas/geneformer/logs/stderr.log",
+      "sha256": "819cdf3746a70527e1e376c1370008ab2261084dbdde4dbc9dd5a5f39807775c",
+      "bytes": 3725
+    },
+    {
+      "file": "runs/pancreas/geneformer/logs/stdout.log",
+      "sha256": "872f45be3dc5ce3e69dff97c4b5289116aee3f55ad3f7f409583671e385ab30f",
+      "bytes": 2796
+    },
+    {
+      "file": "runs/pancreas/scgpt/telemetry.json",
+      "sha256": "37dcc49667133f498c0c1975d02ee133a959da7c2a37782e1b04e97742de61e3",
+      "bytes": 893
+    },
+    {
+      "file": "runs/pancreas/scgpt/umap.csv",
+      "sha256": "be25f6f3faa9e5e9fc8c940dfa7b9cde1bc1d5d507681ad643fa57b7194ae703",
+      "bytes": 1236525
+    },
+    {
+      "file": "runs/pancreas/scgpt/resource_guard.py",
+      "sha256": "f6532ad4965fe2ff7e7f73a788ee0cd5b151d983871d2f0b0d21a1da384d4699",
+      "bytes": 8898
+    },
+    {
+      "file": "runs/pancreas/scgpt/scgpt-embedding-preview.csv",
+      "sha256": "9b2baf2f3727177745cae55f7e29ecbd2bb0b1e3f74d1929d38bace231a4acb5",
+      "bytes": 36812
+    },
+    {
+      "file": "runs/pancreas/scgpt/metrics.json",
+      "sha256": "a2c9b38998f34377ce5e287490fa4f9c2386dbf2935d1e85098cbac3971eb7be",
+      "bytes": 553
+    },
+    {
+      "file": "runs/pancreas/scgpt/provenance.json",
+      "sha256": "147916d86bd52c36acfada35cf0970f96864f87e38094e3cea79d681e9cdec38",
+      "bytes": 7272
+    },
+    {
+      "file": "runs/pancreas/scgpt/scgpt-checkpoint.sqlite3",
+      "sha256": "847ea19be498222981e4da6024945744d59a02e5468223f2520bd5d42eb64482",
+      "bytes": 34103296
+    },
+    {
+      "file": "runs/pancreas/scgpt/config.json",
+      "sha256": "8598403e6f90b5e128c2b6f4b2ee97f7105b262a8182bf874f32cb879cdadc5b",
+      "bytes": 679
+    },
+    {
+      "file": "runs/pancreas/scgpt/scgpt-checkpoint-accounting.json",
+      "sha256": "094613f55ad1946e963ad1ef92335bdece0ffb9a37cffaa9667f042b3e6d98b8",
+      "bytes": 3388
+    },
+    {
+      "file": "runs/pancreas/scgpt/scgpt-embedding-summary.json",
+      "sha256": "987a9ebdbd411ea255acd9c5c153e55b749ece6dd6f26753a6a065f8e1169007",
+      "bytes": 988
+    },
+    {
+      "file": "runs/pancreas/scgpt/environment.json",
+      "sha256": "51ffc90b36db6c4df10590d98f6343400be69d580a46c6315273ccf406385b3d",
+      "bytes": 8717
+    },
+    {
+      "file": "runs/pancreas/scgpt/counts_scgpt_adata.h5ad",
+      "sha256": "63eb7aa6339a37d41db1bc1cdab20335bc48c08640680aac2e077aca3aa6ae93",
+      "bytes": 484529672
+    },
+    {
+      "file": "runs/pancreas/scgpt/resource-monitor.json",
+      "sha256": "b69ca7493f6f3802bb5bb2ebfe009265fbf9a6ee3e32c6c90995e622c31b128b",
+      "bytes": 916
+    },
+    {
+      "file": "runs/pancreas/scgpt/runner.py",
+      "sha256": "35544712015f03c57b9a9d7f42f57932a79623a8f992b4eafe775496e2a2f2b1",
+      "bytes": 28535
+    },
+    {
+      "file": "runs/pancreas/scgpt/scgpt-inference-timing.json",
+      "sha256": "928d96f7f5d644db8e2a2717071d2a1ea3ec3cd06d305bfe2c42d4f78beb08af",
+      "bytes": 246
+    },
+    {
+      "file": "runs/pancreas/scgpt/embedding.npz",
+      "sha256": "9c4eca18655335a64f5723617d9d5b68f5df6a29b0c244adfed63f70cb50aca0",
+      "bytes": 31318387
+    },
+    {
+      "file": "runs/pancreas/scgpt/logs/stderr.log",
+      "sha256": "94392d405a826dceafe18bdd691a890dad6f9db7869c06c5ab1f824c324181bd",
+      "bytes": 3115
+    },
+    {
+      "file": "runs/pancreas/scgpt/logs/stdout.log",
+      "sha256": "9907c061959f6599c6d63ed8abfe6cd09cd0c6d7e26e850f5251f9d325c8effa",
+      "bytes": 2791
+    },
+    {
+      "file": "runs/pancreas/uce/telemetry.json",
+      "sha256": "0651bd36153a1d29455154a68ea972ba0a16af19e1d319d87c811fd17b1b2be1",
+      "bytes": 448
+    },
+    {
+      "file": "runs/pancreas/uce/metrics.json",
+      "sha256": "b837c5ba5c1c5845dda5ef7026b22ed093ffac59a81c0ccd250dae69f243a6d8",
+      "bytes": 200
+    },
+    {
+      "file": "runs/pancreas/uce/provenance.json",
+      "sha256": "2e17fcdb81944a5f713f72823e1e4bfd9d17f1e2e537a0fd4a871aa28869da5e",
+      "bytes": 362
+    },
+    {
+      "file": "runs/pancreas/uce/config.json",
+      "sha256": "21dcfc9d7006f21eebf73061b214d4832bc9a2a56b7dcf395455361f77242b38",
+      "bytes": 677
+    },
+    {
+      "file": "runs/pancreas/uce/environment.json",
+      "sha256": "dac5e8407dc9829febad9e203a7db62d9f2998dba394e340e1ebb74ddaf15c4f",
+      "bytes": 5228
+    },
+    {
+      "file": "runs/pancreas/uce/logs/stderr.log",
+      "sha256": "e575ea23bfe380c076552fead735f2f7cddce6564f490a267d2f6fdda71ea9f9",
+      "bytes": 158
+    },
+    {
+      "file": "runs/pancreas/uce/logs/stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "file": "report/reproduction-validation.md",
+      "sha256": "aca661253a358ce2299aab54824c150db61dd831e3b772a70b7ca98f23f0f208",
+      "bytes": 3602
+    },
+    {
+      "file": "report/results.md",
+      "sha256": "46907ef248fd5ee944fdaffbeb9472e3bbe57659f93b44b7f545c330ef9bd0ef",
+      "bytes": 11149
+    },
+    {
+      "file": "report/reproduction.md",
+      "sha256": "7c0502035afab275712fbf7bc10f4692ca91ae84f6cf21543e3b236660130794",
+      "bytes": 3696
+    },
+    {
+      "file": "report/limitations.md",
+      "sha256": "22e0102ef6f0105c88d28400c59019a091f8a57dc5e09a614b51054545f0cd24",
+      "bytes": 2193
+    },
+    {
+      "file": "datasets/manifest.json",
+      "sha256": "08e02deded16271f40ad65aa55ab0255df31f8bb05a468d160ab99427aeb6f33",
+      "bytes": 5302
+    },
+    {
+      "file": "datasets/pbmc/study-environment.json",
+      "sha256": "90070487c5a0ea9f74dd5876a66d08c74e598cde6ccc4f1d07de92cf31ca5aa3",
+      "bytes": 3966
+    },
+    {
+      "file": "datasets/pbmc/liatir-run.json",
+      "sha256": "af589f6ef217e9ea669a5a2593d08e39247871dcb81b95f193f34a804518fc71",
+      "bytes": 268
+    },
+    {
+      "file": "datasets/pbmc/counts.h5ad",
+      "sha256": "bd6aa9473c1895462cabff3cde087ba7776307103579ab2a77892269e6a99709",
+      "bytes": 13565116
+    },
+    {
+      "file": "datasets/pbmc/manifest.json",
+      "sha256": "0433a5b2a32d6291b92ae56e62749a508b89e08696891b88e8532751ba10c293",
+      "bytes": 2587
+    },
+    {
+      "file": "datasets/pbmc/protocol.md",
+      "sha256": "d7cc921b7ad8074d7a6e30cfe749da579602da09452a8d46f0e19251946fdf8c",
+      "bytes": 7874
+    },
+    {
+      "file": "datasets/pbmc/split.csv",
+      "sha256": "369daa5bc09ad8e32b7babc67e23068bfcd790d5eface55a63e7af63e4d69178",
+      "bytes": 815848
+    },
+    {
+      "file": "datasets/pbmc/evaluation_cells.json",
+      "sha256": "ded081d32a77dedf7d79011b2a69ff0bba5c5c7238854cf242c6528070759d10",
+      "bytes": 433107
+    },
+    {
+      "file": "datasets/pbmc/import-origin.json",
+      "sha256": "744918d7f0378444b515ee42bbe2dcfe991fc459740145c388412e63a3f5ccb1",
+      "bytes": 536
+    },
+    {
+      "file": "datasets/pbmc/genes.csv",
+      "sha256": "49edc07b901dab39539d008d3a209c46b65fc169d77ad5c6a27843b10bc2e010",
+      "bytes": 148968
+    },
+    {
+      "file": "datasets/pbmc/requirements.txt",
+      "sha256": "6bc12ba21a9eaebc0568be78e408dfa5525342258903ff8909dc7b1b6eed84d2",
+      "bytes": 9082
+    },
+    {
+      "file": "datasets/pbmc/imported-source/study-environment.json",
+      "sha256": "aca71a9b2ff97f0173c39174120110f30aebff891a751f3297246654e48b3cf5",
+      "bytes": 3370
+    },
+    {
+      "file": "datasets/pbmc/imported-source/liatir-run.json",
+      "sha256": "783d9d9a7c2a5df1fabec47f0b513952564d0156cad810afce528a1594be0562",
+      "bytes": 268
+    },
+    {
+      "file": "datasets/pbmc/imported-source/protocol.md",
+      "sha256": "f361177fe07f4607142a90d806d09496bbaf9d086525557343accfb5af283d4c",
+      "bytes": 7234
+    },
+    {
+      "file": "datasets/pbmc/imported-source/requirements.txt",
+      "sha256": "6bc12ba21a9eaebc0568be78e408dfa5525342258903ff8909dc7b1b6eed84d2",
+      "bytes": 9082
+    },
+    {
+      "file": "datasets/pbmc/imported-source/code/resource_guard.py",
+      "sha256": "fb83773e4bc2eb6c42f15066ab012f2fc945c8e87a7be070c86432ce477e6002",
+      "bytes": 6741
+    },
+    {
+      "file": "datasets/pbmc/imported-source/code/main.py",
+      "sha256": "ae05ef948cfdf6a126dfe190383b834c2ca8fa0823aab5be7fdd4f65d66994df",
+      "bytes": 3992
+    },
+    {
+      "file": "datasets/pbmc/imported-source/code/evaluation.py",
+      "sha256": "10003666dd7d8c5b6794eaaba0016c3fbfe25ef22f1d0f8db997c4e7856039b2",
+      "bytes": 7201
+    },
+    {
+      "file": "datasets/pbmc/imported-source/code/representations.py",
+      "sha256": "fce8547fba0f79d22db0f67f285b7069ef7ebb6fc6bc3bc1b32fab3541221212",
+      "bytes": 7572
+    },
+    {
+      "file": "datasets/pbmc/imported-source/code/uce-inference.py",
+      "sha256": "b15b01f967c4a7466c7f0855ee54bcfaec0edcda0f2682acc9bc54c38b04ab34",
+      "bytes": 11568
+    },
+    {
+      "file": "datasets/pbmc/imported-source/code/geneformer-inference.py",
+      "sha256": "3fa5fbdc961af99e5a79ed4692070bd16d02896fbe3db44381650f958987b9b8",
+      "bytes": 13557
+    },
+    {
+      "file": "datasets/pbmc/imported-source/code/model_monitor.py",
+      "sha256": "8ff09de6924a7ee29d1d4751cb1074552132bb119a60655fd68c0ba5f1b9e23c",
+      "bytes": 5561
+    },
+    {
+      "file": "datasets/pbmc/imported-source/code/reporting.py",
+      "sha256": "5f7b6c7f45d3eb44f1c76629b1a595fa17ba1e0c2259751dc38a45135a994f7f",
+      "bytes": 14203
+    },
+    {
+      "file": "datasets/pbmc/imported-source/code/study_data.py",
+      "sha256": "be754cdf618028e33b9bde9ba564afd3e10ada16bdb4bbc385568e014d534e31",
+      "bytes": 9686
+    },
+    {
+      "file": "datasets/pbmc/imported-source/code/checkpoints.py",
+      "sha256": "058716b32826f97e3e34a78946923cc344f3c76594732578bac6bb88b858da86",
+      "bytes": 2731
+    },
+    {
+      "file": "datasets/pbmc/imported-source/code/common.py",
+      "sha256": "2eebd6d7cf210c255568c362c4a78a46d495850a94e19d691edcc711294305d0",
+      "bytes": 2889
+    },
+    {
+      "file": "datasets/pbmc/imported-source/code/scgpt-inference.py",
+      "sha256": "581c4909cae3aff876108640cc151960daafe3b68b4f28d22babbb1c84bda27b",
+      "bytes": 15190
+    },
+    {
+      "file": "datasets/pbmc/code/resource_guard.py",
+      "sha256": "04bb963093c98806cc916888719cc4c6229ed22da3bf27417c082841f9afb6a0",
+      "bytes": 7507
+    },
+    {
+      "file": "datasets/pbmc/code/main.py",
+      "sha256": "57ded2d30ef35680603b247abda2d66d95e3be91a2e4e65be73820134468ae23",
+      "bytes": 4759
+    },
+    {
+      "file": "datasets/pbmc/code/evaluation.py",
+      "sha256": "10003666dd7d8c5b6794eaaba0016c3fbfe25ef22f1d0f8db997c4e7856039b2",
+      "bytes": 7201
+    },
+    {
+      "file": "datasets/pbmc/code/representations.py",
+      "sha256": "196e4ee435172d475cfa02b16c79f83cebc77dea95b07540f456473c4fd0c390",
+      "bytes": 8018
+    },
+    {
+      "file": "datasets/pbmc/code/uce-inference.py",
+      "sha256": "b15b01f967c4a7466c7f0855ee54bcfaec0edcda0f2682acc9bc54c38b04ab34",
+      "bytes": 11568
+    },
+    {
+      "file": "datasets/pbmc/code/geneformer-inference.py",
+      "sha256": "18b19728ce956bfddf71d70866afc154664d2f37084a835bf4f291194b24c8dd",
+      "bytes": 15106
+    },
+    {
+      "file": "datasets/pbmc/code/model_monitor.py",
+      "sha256": "fab58ab01b7cfb7660cab97cce17e420a605f0bbde160bb57efaa4f40fecc026",
+      "bytes": 6965
+    },
+    {
+      "file": "datasets/pbmc/code/reporting.py",
+      "sha256": "a9914c2adc884d96b90500e29dd367f533a72594b3f6f9a767974bd488cedda3",
+      "bytes": 17260
+    },
+    {
+      "file": "datasets/pbmc/code/study_data.py",
+      "sha256": "639510f40486c2ae410e22e587bc123b094354ba2fd74a353aad802768ae5265",
+      "bytes": 10208
+    },
+    {
+      "file": "datasets/pbmc/code/checkpoints.py",
+      "sha256": "ea9afee1dfaa4833418fac142e8f0d51b6991761cf881970efee788d8cdef72b",
+      "bytes": 7004
+    },
+    {
+      "file": "datasets/pbmc/code/common.py",
+      "sha256": "2eebd6d7cf210c255568c362c4a78a46d495850a94e19d691edcc711294305d0",
+      "bytes": 2889
+    },
+    {
+      "file": "datasets/pbmc/code/scgpt-inference.py",
+      "sha256": "28b7089f05edf66996a284816b046fc186504b97774ee8c1070a94d5de641ba9",
+      "bytes": 26710
+    },
+    {
+      "file": "datasets/pancreas/study-environment.json",
+      "sha256": "0b0c9c8641a5729607ae46e8aff3571996681de15e35cc6093eaa33690aa19cc",
+      "bytes": 3966
+    },
+    {
+      "file": "datasets/pancreas/liatir-run.json",
+      "sha256": "fa0b72313fea3751ded7ffc1b71de0a9857a31e29fbb71c43c4ce882cc7a764d",
+      "bytes": 323
+    },
+    {
+      "file": "datasets/pancreas/counts.h5ad",
+      "sha256": "aeb6f9a2de14b881a81420018963d2d35e33d705f01ecc73c11a78f012001368",
+      "bytes": 160257412
+    },
+    {
+      "file": "datasets/pancreas/manifest.json",
+      "sha256": "9eb1b09c69d9018809903683e02e66ff71c86472c941a3a12e009e407a4bb62c",
+      "bytes": 2414
+    },
+    {
+      "file": "datasets/pancreas/protocol.md",
+      "sha256": "7715d21c0db1cce665ab7b0a0b3cf672ff3d8a0391a0dcdf203ced91ef16f81a",
+      "bytes": 9005
+    },
+    {
+      "file": "datasets/pancreas/split.csv",
+      "sha256": "194090a9d944c371e8df45f0795b9b05140b782d760c062c6e38d38f55abf0cd",
+      "bytes": 1234495
+    },
+    {
+      "file": "datasets/pancreas/evaluation_cells.json",
+      "sha256": "b92a82dbfdff0f48a732ccf2bb444a1cea364576807503a620616f31d71c55eb",
+      "bytes": 679498
+    },
+    {
+      "file": "datasets/pancreas/import-origin.json",
+      "sha256": "8ec075ceea179ebd87a7ae5c01cbfc911d716689ffbabe517154340a3eef08a5",
+      "bytes": 527
+    },
+    {
+      "file": "datasets/pancreas/gene_mapping_source.json",
+      "sha256": "5267aba44f10cb8c9f2d68d2ea39f25105e50d3e4e0e1806236d226e35d5ea70",
+      "bytes": 404
+    },
+    {
+      "file": "datasets/pancreas/genes.csv",
+      "sha256": "7167b549a79e091e2cdc5259cbe972477f8a356eadc26b3a3607265cd22a083b",
+      "bytes": 655792
+    },
+    {
+      "file": "datasets/pancreas/requirements.txt",
+      "sha256": "6bc12ba21a9eaebc0568be78e408dfa5525342258903ff8909dc7b1b6eed84d2",
+      "bytes": 9082
+    },
+    {
+      "file": "datasets/pancreas/imported-source/study-environment.json",
+      "sha256": "aca71a9b2ff97f0173c39174120110f30aebff891a751f3297246654e48b3cf5",
+      "bytes": 3370
+    },
+    {
+      "file": "datasets/pancreas/imported-source/liatir-run.json",
+      "sha256": "596521c0a2b8c33f5cab9c0df6f92d70d5ef142dfbc8ae9381dd77abe7898711",
+      "bytes": 272
+    },
+    {
+      "file": "datasets/pancreas/imported-source/protocol.md",
+      "sha256": "d7cc921b7ad8074d7a6e30cfe749da579602da09452a8d46f0e19251946fdf8c",
+      "bytes": 7874
+    },
+    {
+      "file": "datasets/pancreas/imported-source/requirements.txt",
+      "sha256": "6bc12ba21a9eaebc0568be78e408dfa5525342258903ff8909dc7b1b6eed84d2",
+      "bytes": 9082
+    },
+    {
+      "file": "datasets/pancreas/imported-source/runs/pancreas/scgpt/resource_guard.py",
+      "sha256": "fb83773e4bc2eb6c42f15066ab012f2fc945c8e87a7be070c86432ce477e6002",
+      "bytes": 6741
+    },
+    {
+      "file": "datasets/pancreas/imported-source/runs/pancreas/scgpt/environment.json",
+      "sha256": "9ae3541a7260946367e8d9a14c0adb75eefa452a2a0f4801207324ee57690ab6",
+      "bytes": 7890
+    },
+    {
+      "file": "datasets/pancreas/imported-source/runs/pancreas/scgpt/resource-monitor.json",
+      "sha256": "f289fa5a04dee7099631c6a04cfc82c630f3c96ee18dcc5fcc51e71c1e962589",
+      "bytes": 545
+    },
+    {
+      "file": "datasets/pancreas/imported-source/runs/pancreas/scgpt/runner.py",
+      "sha256": "33f761a6fc0dcbff506980974dfdcd35e595ba532876b021498ce87a1365abfe",
+      "bytes": 16700
+    },
+    {
+      "file": "datasets/pancreas/imported-source/runs/pancreas/scgpt/logs/stderr.log",
+      "sha256": "4b66e448744ebe1fa0cc3190ad92bfed3dec846f6c28bd08bd345cffb46e44ea",
+      "bytes": 2015
+    },
+    {
+      "file": "datasets/pancreas/imported-source/runs/pancreas/scgpt/logs/stdout.log",
+      "sha256": "493d8ba680c80b825d598b4ceda91224e70f0953fa58cb7b8fb03e7f1378b09b",
+      "bytes": 62
+    },
+    {
+      "file": "datasets/pancreas/imported-source/code/resource_guard.py",
+      "sha256": "fb83773e4bc2eb6c42f15066ab012f2fc945c8e87a7be070c86432ce477e6002",
+      "bytes": 6741
+    },
+    {
+      "file": "datasets/pancreas/imported-source/code/main.py",
+      "sha256": "ae05ef948cfdf6a126dfe190383b834c2ca8fa0823aab5be7fdd4f65d66994df",
+      "bytes": 3992
+    },
+    {
+      "file": "datasets/pancreas/imported-source/code/evaluation.py",
+      "sha256": "10003666dd7d8c5b6794eaaba0016c3fbfe25ef22f1d0f8db997c4e7856039b2",
+      "bytes": 7201
+    },
+    {
+      "file": "datasets/pancreas/imported-source/code/representations.py",
+      "sha256": "196e4ee435172d475cfa02b16c79f83cebc77dea95b07540f456473c4fd0c390",
+      "bytes": 8018
+    },
+    {
+      "file": "datasets/pancreas/imported-source/code/uce-inference.py",
+      "sha256": "b15b01f967c4a7466c7f0855ee54bcfaec0edcda0f2682acc9bc54c38b04ab34",
+      "bytes": 11568
+    },
+    {
+      "file": "datasets/pancreas/imported-source/code/geneformer-inference.py",
+      "sha256": "18b19728ce956bfddf71d70866afc154664d2f37084a835bf4f291194b24c8dd",
+      "bytes": 15106
+    },
+    {
+      "file": "datasets/pancreas/imported-source/code/model_monitor.py",
+      "sha256": "8ff09de6924a7ee29d1d4751cb1074552132bb119a60655fd68c0ba5f1b9e23c",
+      "bytes": 5561
+    },
+    {
+      "file": "datasets/pancreas/imported-source/code/reporting.py",
+      "sha256": "5f7b6c7f45d3eb44f1c76629b1a595fa17ba1e0c2259751dc38a45135a994f7f",
+      "bytes": 14203
+    },
+    {
+      "file": "datasets/pancreas/imported-source/code/study_data.py",
+      "sha256": "01f3615304d734eb07c20841e99839138a77445c9534052c351a7359ec85c6f0",
+      "bytes": 9945
+    },
+    {
+      "file": "datasets/pancreas/imported-source/code/checkpoints.py",
+      "sha256": "058716b32826f97e3e34a78946923cc344f3c76594732578bac6bb88b858da86",
+      "bytes": 2731
+    },
+    {
+      "file": "datasets/pancreas/imported-source/code/common.py",
+      "sha256": "2eebd6d7cf210c255568c362c4a78a46d495850a94e19d691edcc711294305d0",
+      "bytes": 2889
+    },
+    {
+      "file": "datasets/pancreas/imported-source/code/scgpt-inference.py",
+      "sha256": "33f761a6fc0dcbff506980974dfdcd35e595ba532876b021498ce87a1365abfe",
+      "bytes": 16700
+    },
+    {
+      "file": "datasets/pancreas/code/resource_guard.py",
+      "sha256": "f6532ad4965fe2ff7e7f73a788ee0cd5b151d983871d2f0b0d21a1da384d4699",
+      "bytes": 8898
+    },
+    {
+      "file": "datasets/pancreas/code/main.py",
+      "sha256": "12158cfdebbde67711962a183523b34d0978f5cf713d02891936a2363bb6fc3f",
+      "bytes": 5066
+    },
+    {
+      "file": "datasets/pancreas/code/evaluation.py",
+      "sha256": "10003666dd7d8c5b6794eaaba0016c3fbfe25ef22f1d0f8db997c4e7856039b2",
+      "bytes": 7201
+    },
+    {
+      "file": "datasets/pancreas/code/representations.py",
+      "sha256": "196e4ee435172d475cfa02b16c79f83cebc77dea95b07540f456473c4fd0c390",
+      "bytes": 8018
+    },
+    {
+      "file": "datasets/pancreas/code/uce-inference.py",
+      "sha256": "b15b01f967c4a7466c7f0855ee54bcfaec0edcda0f2682acc9bc54c38b04ab34",
+      "bytes": 11568
+    },
+    {
+      "file": "datasets/pancreas/code/geneformer-inference.py",
+      "sha256": "18b19728ce956bfddf71d70866afc154664d2f37084a835bf4f291194b24c8dd",
+      "bytes": 15106
+    },
+    {
+      "file": "datasets/pancreas/code/model_monitor.py",
+      "sha256": "22b07db02163ac9b954f8d5f9373102ec15b3cd362d67e6a44fe1968e62548af",
+      "bytes": 9519
+    },
+    {
+      "file": "datasets/pancreas/code/reporting.py",
+      "sha256": "7475505775225bea6254e3f5fb3a9653ab9d5262d84f3540de67e6f21e1f1911",
+      "bytes": 18331
+    },
+    {
+      "file": "datasets/pancreas/code/study_data.py",
+      "sha256": "639510f40486c2ae410e22e587bc123b094354ba2fd74a353aad802768ae5265",
+      "bytes": 10208
+    },
+    {
+      "file": "datasets/pancreas/code/checkpoints.py",
+      "sha256": "fd90cc0b001924972ba9afc0da361b3a7202139d6513b9e1677c085b9f7da157",
+      "bytes": 7191
+    },
+    {
+      "file": "datasets/pancreas/code/common.py",
+      "sha256": "2eebd6d7cf210c255568c362c4a78a46d495850a94e19d691edcc711294305d0",
+      "bytes": 2889
+    },
+    {
+      "file": "datasets/pancreas/code/scgpt-inference.py",
+      "sha256": "35544712015f03c57b9a9d7f42f57932a79623a8f992b4eafe775496e2a2f2b1",
+      "bytes": 28535
+    },
+    {
+      "file": "datasets/pancreas/historical-attempts/pc-cpu-before-gpu/scgpt-cpu-checkpoint-before-cuda.json",
+      "sha256": "92dfe3aae88b9c99e6e2238715341ee99aef3fd6cc194c57994316168b68d4ab",
+      "bytes": 3118
+    },
+    {
+      "file": "datasets/pancreas/historical-attempts/pc-cpu-before-gpu/README.md",
+      "sha256": "4ebadf7f3cc15ebdde442a0c70c32118d1e208281a86343222f5c717bc6f9ee5",
+      "bytes": 604
+    },
+    {
+      "file": "datasets/pancreas/historical-attempts/pc-cpu-before-gpu/wsl2-cpu-attempt-cancellation.json",
+      "sha256": "5a858e6e333ee76369ed8ff88a6a699e90bae523209523ed30f0efd870497dd8",
+      "bytes": 396
+    },
+    {
+      "file": "datasets/pancreas/historical-attempts/pc-cpu-before-gpu/scgpt/resource_guard.py",
+      "sha256": "04bb963093c98806cc916888719cc4c6229ed22da3bf27417c082841f9afb6a0",
+      "bytes": 7507
+    },
+    {
+      "file": "datasets/pancreas/historical-attempts/pc-cpu-before-gpu/scgpt/metrics.json",
+      "sha256": "ccf01baf0b26cb97fb88ec4ca75c9ee8a0f80f088beba7d6859664fb3866f2f4",
+      "bytes": 86
+    },
+    {
+      "file": "datasets/pancreas/historical-attempts/pc-cpu-before-gpu/scgpt/provenance.json",
+      "sha256": "bd5f71d1d5de218409c99032263d0cb51fb6103808da556b82ffb1af3363d338",
+      "bytes": 5514
+    },
+    {
+      "file": "datasets/pancreas/historical-attempts/pc-cpu-before-gpu/scgpt/scgpt-checkpoint.sqlite3",
+      "sha256": "a3a13dc015e070d7ecea088945642250597b05cbc557e95334c3ad79f4c9277e",
+      "bytes": 8503296
+    },
+    {
+      "file": "datasets/pancreas/historical-attempts/pc-cpu-before-gpu/scgpt/config.json",
+      "sha256": "cbb5aeaacdb13cb32d340e51cb306dc45b7554d3a491e327ea8c4cbab1f482be",
+      "bytes": 609
+    },
+    {
+      "file": "datasets/pancreas/historical-attempts/pc-cpu-before-gpu/scgpt/environment.json",
+      "sha256": "7f8d6cb23f69eb2d2a88ac99f9de3c44dc32b07c70e4ab18ed7aa68ef13bfca4",
+      "bytes": 8088
+    },
+    {
+      "file": "datasets/pancreas/historical-attempts/pc-cpu-before-gpu/scgpt/resource-monitor.json",
+      "sha256": "58df73ef865684cda8a07736bf71b2cbd7d80488c1becd7fd5027aaff736d90b",
+      "bytes": 661
+    },
+    {
+      "file": "datasets/pancreas/historical-attempts/pc-cpu-before-gpu/scgpt/runner.py",
+      "sha256": "28b7089f05edf66996a284816b046fc186504b97774ee8c1070a94d5de641ba9",
+      "bytes": 26710
+    },
+    {
+      "file": "datasets/pancreas/historical-attempts/pc-cpu-before-gpu/scgpt/attempts/a620eb4c-ef32-494c-98e3-cb2d2ebd7c65/telemetry.json",
+      "sha256": "79a5a266b795916df4446a1e95779f0e59bc420b16b6f36cb77b97c07ef793b8",
+      "bytes": 340
+    },
+    {
+      "file": "datasets/pancreas/historical-attempts/pc-cpu-before-gpu/scgpt/attempts/a620eb4c-ef32-494c-98e3-cb2d2ebd7c65/resource_guard.py",
+      "sha256": "04bb963093c98806cc916888719cc4c6229ed22da3bf27417c082841f9afb6a0",
+      "bytes": 7507
+    },
+    {
+      "file": "datasets/pancreas/historical-attempts/pc-cpu-before-gpu/scgpt/attempts/a620eb4c-ef32-494c-98e3-cb2d2ebd7c65/environment.json",
+      "sha256": "97668e60ddb554eefbb2f3973eb2f8edb20e47f79d08efdcb443a85ddd75512a",
+      "bytes": 8088
+    },
+    {
+      "file": "datasets/pancreas/historical-attempts/pc-cpu-before-gpu/scgpt/attempts/a620eb4c-ef32-494c-98e3-cb2d2ebd7c65/resource-monitor.json",
+      "sha256": "7d8dd9cd44a24d258d81ca9ab1dfc8bd087628367f8fef7994617633a75806fb",
+      "bytes": 806
+    },
+    {
+      "file": "datasets/pancreas/historical-attempts/pc-cpu-before-gpu/scgpt/attempts/a620eb4c-ef32-494c-98e3-cb2d2ebd7c65/runner.py",
+      "sha256": "28b7089f05edf66996a284816b046fc186504b97774ee8c1070a94d5de641ba9",
+      "bytes": 26710
+    },
+    {
+      "file": "datasets/pancreas/historical-attempts/pc-cpu-before-gpu/scgpt/attempts/a620eb4c-ef32-494c-98e3-cb2d2ebd7c65/logs/stderr.log",
+      "sha256": "5497690f22c903202b30aa533990c22a6bac6858ce28406a2a7ebebdc256098e",
+      "bytes": 209
+    },
+    {
+      "file": "datasets/pancreas/historical-attempts/pc-cpu-before-gpu/scgpt/attempts/a620eb4c-ef32-494c-98e3-cb2d2ebd7c65/logs/stdout.log",
+      "sha256": "493d8ba680c80b825d598b4ceda91224e70f0953fa58cb7b8fb03e7f1378b09b",
+      "bytes": 62
+    },
+    {
+      "file": "datasets/pancreas/historical-attempts/pc-cpu-before-gpu/scgpt/logs/stderr.log",
+      "sha256": "f09e9250caf89dfe7ec91be545aa756d0be8d3e6da55ba39634c1708c206b15a",
+      "bytes": 209
+    },
+    {
+      "file": "datasets/pancreas/historical-attempts/pc-cpu-before-gpu/scgpt/logs/stdout.log",
+      "sha256": "493d8ba680c80b825d598b4ceda91224e70f0953fa58cb7b8fb03e7f1378b09b",
+      "bytes": 62
+    },
+    {
+      "file": "validation/public-sources.json",
+      "sha256": "4e9db645f5b3bb9c6880dba6ee1e281766d368ef6bab664700fdbb52b90d2794",
+      "bytes": 1891
+    },
+    {
+      "file": "validation/pancreas-source-counts.json",
+      "sha256": "edeacea1de4589ce976335cd41b9d7c6fc10bafe5eb6e4fe590f666d4c529bf9",
+      "bytes": 411
+    },
+    {
+      "file": "validation/native-study-runs.json",
+      "sha256": "f8dd41e5176e15aa45e2f27ff89748dee092daff3b1512068f463bd7c70bceaf",
+      "bytes": 1314
+    },
+    {
+      "file": "validation/pbmc-source-counts.json",
+      "sha256": "72e806bed3c54f6c045e5ce3ae450d6f121c1fbd2c0a05cd0725a85326f34b70",
+      "bytes": 399
+    },
+    {
+      "file": "validation/pbmc-source-counts.monitor/resource-monitor.json",
+      "sha256": "a2c333a7b5e86bc6362125237a5ac4efc4a48764e9020b7dec600eb5271541e2",
+      "bytes": 691
+    },
+    {
+      "file": "validation/pancreas-source-counts.monitor/resource-monitor.json",
+      "sha256": "51617e37828a0a7fe0229b0b0cee3fa8efb3c3df8609bf8d4ac44c907202ec12",
+      "bytes": 689
+    },
+    {
+      "file": "validation/pre-curation/finish.json",
+      "sha256": "a273b0b3fb57ab039e48bfbd6bba261d1d581e0d5af1237b23241b7fc30e3d87",
+      "bytes": 975
+    },
+    {
+      "file": "validation/pre-curation/artifact-verification.json",
+      "sha256": "f40aac636dd02e33b6a5d4b3a9c8494d1755168cd811016779610d029fe288d6",
+      "bytes": 324
+    },
+    {
+      "file": "validation/completed-study/native-ui-initial-failures.json",
+      "sha256": "9301ebae81646e06add93438000bebd78b216934549b958b3c4a56c3ebeb267d",
+      "bytes": 6986
+    },
+    {
+      "file": "validation/completed-study/native-pancreas-results.png",
+      "sha256": "0811184277e6bc4082b889e8fc874b5e3299cc3b9b39ffc58b180629bebd380e",
+      "bytes": 103214
+    },
+    {
+      "file": "validation/completed-study/gpu-durability.json",
+      "sha256": "7a18cf359bc766ebc2b307854bba042739a9098ea6e3d323eaec0663bfa88b59",
+      "bytes": 22570
+    },
+    {
+      "file": "validation/completed-study/reused-mac-results.json",
+      "sha256": "218b6b8647ed0216623c116f28791e8ebccaa6ee9f8dafdf102cf1beeb63a851",
+      "bytes": 4095
+    },
+    {
+      "file": "validation/completed-study/tested-scientific-inputs-unchanged.json",
+      "sha256": "c6d99bf4ad810532fd6dafeebc5f57becf37b600b7848fc4639ff9b4ce54f5e8",
+      "bytes": 9076
+    },
+    {
+      "file": "validation/completed-study/visual-review-final-wsl2.json",
+      "sha256": "09d73441ebd055a742b5845040733a3324c692b5f4b445b8e541019a55beb78a",
+      "bytes": 4863
+    },
+    {
+      "file": "validation/completed-study/single-cell-index-e2e.json",
+      "sha256": "adde5a7dad707d85e66b9ade6d190f76e5a42ea1a5be323a6df30a2a842e2ac9",
+      "bytes": 796
+    },
+    {
+      "file": "validation/completed-study/windows-owned-gpu-pipeline.json",
+      "sha256": "d10cfef805eb5a6526ae41344a1fab9c56ff2e76d8b05abfead71c5af6ca74cf",
+      "bytes": 1329
+    },
+    {
+      "file": "validation/completed-study/completed-scgpt-checkpoint.json",
+      "sha256": "01d206b3692bad5b08279c3645ffabc9415a435776517152fbdb604354ca3459",
+      "bytes": 3286
+    },
+    {
+      "file": "validation/completed-study/pbmc-metric-reproduction.json",
+      "sha256": "42e4316aba1db8e3b46f8c8a17670b08dce81ac001087977fed0f838bc0b29be",
+      "bytes": 5813
+    },
+    {
+      "file": "validation/completed-study/historical-attachments.json",
+      "sha256": "66d92fc21b1fa839d580a1efa00e6ce67e1b28926815334933baac4946e70bc6",
+      "bytes": 4312
+    },
+    {
+      "file": "validation/completed-study/windows-handoff-manifest.json",
+      "sha256": "c180575ded8433822b2fd55c152e920a3e5bfab998857508376a061af53fdb96",
+      "bytes": 62149
+    },
+    {
+      "file": "validation/completed-study/tauri-e2e.json",
+      "sha256": "24300d36cff527c2bd1004ab26827c20b19548a3c998f549a04dd57252dee1fa",
+      "bytes": 25062
+    },
+    {
+      "file": "validation/completed-study/scientific-regressions.json",
+      "sha256": "4a35b8fade9db6420a4731fa431d05a3f778fecde39987437c30d5457c4cc98e",
+      "bytes": 6392
+    },
+    {
+      "file": "validation/completed-study/public-sources.json",
+      "sha256": "4e9db645f5b3bb9c6880dba6ee1e281766d368ef6bab664700fdbb52b90d2794",
+      "bytes": 1891
+    },
+    {
+      "file": "validation/completed-study/runner-source.json",
+      "sha256": "e075992b8b1c6d3bd5424a6a1b28b4874398cbea44870811c710b60c0c656311",
+      "bytes": 275
+    },
+    {
+      "file": "validation/completed-study/native-pancreas.json",
+      "sha256": "f629d3193c7c3ea0a5378a0cce7356135954e71d9faf8c02021bc351f1fda1a5",
+      "bytes": 50638
+    },
+    {
+      "file": "validation/completed-study/pancreas-source-counts.json",
+      "sha256": "edeacea1de4589ce976335cd41b9d7c6fc10bafe5eb6e4fe590f666d4c529bf9",
+      "bytes": 411
+    },
+    {
+      "file": "validation/completed-study/pancreas-metric-reproduction.json",
+      "sha256": "16b0b18e3644679eb6c28d88084719d090428452642215cc404a070346986617",
+      "bytes": 5832
+    },
+    {
+      "file": "validation/completed-study/gpu-native-install.json",
+      "sha256": "6fa42ace6ab37ef2d379377c9f6c1d50167183b448612461e179207ff46c8d0e",
+      "bytes": 13708
+    },
+    {
+      "file": "validation/completed-study/corrected-ui-execution.json",
+      "sha256": "bee12342ed5fdb1e9892169fc0d2de260a2e2a11776e16a3f356ed40517bf606",
+      "bytes": 333
+    },
+    {
+      "file": "validation/completed-study/native-ui-matrix.json",
+      "sha256": "9c7a3649a9720c2ff7cf1440fc95d151ed970a26600d3f40ef98b3fe0849f7e2",
+      "bytes": 3545
+    },
+    {
+      "file": "validation/completed-study/native-pbmc.json",
+      "sha256": "8c1a0b59a629ce3c44ae0f48e2c58091bab05a30dc5af778595921dc52690d26",
+      "bytes": 24597
+    },
+    {
+      "file": "validation/completed-study/pbmc-source-counts.json",
+      "sha256": "72e806bed3c54f6c045e5ce3ae450d6f121c1fbd2c0a05cd0725a85326f34b70",
+      "bytes": 399
+    },
+    {
+      "file": "validation/completed-study/pipeline-settlement-restart-e2e.json",
+      "sha256": "8934de50f554d4a421e5c3ec1de2f8fc3574f24ed1c06333b19ea6a0b1353efd",
+      "bytes": 1256
+    },
+    {
+      "file": "validation/completed-study/test-verify.json",
+      "sha256": "299c7cb5407bd708f45add2ffbf07534e99ba22736717154b3a6983a417ceacd",
+      "bytes": 5619
+    },
+    {
+      "file": "validation/completed-study/focused-native-ui.json",
+      "sha256": "53c3589dec2abd408d4fb660d2fae9ae15c0edb8a725584b230d3215feef40de",
+      "bytes": 2523
+    },
+    {
+      "file": "validation/completed-study/native-ui-initial-failure.json",
+      "sha256": "988146b75e078ac2bf7794a932ce9c1f2bff0f5a1c49a24c7a9cd2573e5d5c7c",
+      "bytes": 1482
+    },
+    {
+      "file": "validation/completed-study/disk-footprint-audit.json",
+      "sha256": "bd5127f21bc13fdfa07bc8ef9254bfd9bf76fb091b110fd1d06f13197aef1962",
+      "bytes": 601
+    },
+    {
+      "file": "validation/completed-study/presentation-regeneration.json",
+      "sha256": "535766447e53bc809083066a3dd3d3ee37ffdd96efddb6f4b5b3fe80570a0f06",
+      "bytes": 302
+    },
+    {
+      "file": "validation/completed-study/executions/21f514aa-f408-4d9e-be9b-00ef8d340e7a/launcher.json",
+      "sha256": "61f5cb6f66cb9250f24032499273b3e557d29d2a154d555356c452817b575301",
+      "bytes": 264
+    },
+    {
+      "file": "validation/completed-study/executions/21f514aa-f408-4d9e-be9b-00ef8d340e7a/pointer.json",
+      "sha256": "e2339d9776b14751d4faf5544eb498979c4d379467823015ac88ed2776d8b38c",
+      "bytes": 609
+    },
+    {
+      "file": "validation/completed-study/executions/21f514aa-f408-4d9e-be9b-00ef8d340e7a/request.json",
+      "sha256": "4120e03387cdbec50e563d77c6e60feb99a7558fe30a10e78209e1ddccda996f",
+      "bytes": 1207
+    },
+    {
+      "file": "validation/completed-study/executions/21f514aa-f408-4d9e-be9b-00ef8d340e7a/exit.json",
+      "sha256": "6a26f6158a2845bd5f6602e47a6276235269e26baa3b4c077ba724195654af3a",
+      "bytes": 165
+    },
+    {
+      "file": "validation/completed-study/executions/bd157ff1-79b5-4235-8b67-26072e19b5e4/launcher.json",
+      "sha256": "d8986ddbdb362b83e140fd7eb7115bf621354e898f48010cf73dc7f4b9706911",
+      "bytes": 264
+    },
+    {
+      "file": "validation/completed-study/executions/bd157ff1-79b5-4235-8b67-26072e19b5e4/pointer.json",
+      "sha256": "ade1ab93884dbfbc435cafbf2bdee083c910ec29596813abf229c5b63da449d0",
+      "bytes": 611
+    },
+    {
+      "file": "validation/completed-study/executions/bd157ff1-79b5-4235-8b67-26072e19b5e4/request.json",
+      "sha256": "af2cc5680cfe9f913c7464789da4419d6a659d8401ac12c551b1002fac94c786",
+      "bytes": 1209
+    },
+    {
+      "file": "validation/completed-study/executions/bd157ff1-79b5-4235-8b67-26072e19b5e4/exit.json",
+      "sha256": "7c36e9408766250368dcbff18cd326bbfd01b210c4454dcf2fe1d3153886a531",
+      "bytes": 162
+    },
+    {
+      "file": "validation/completed-study/executions/8b265179-6384-4f06-bc0a-c990984548a2/launcher.json",
+      "sha256": "5a8887d487badf9b91cfe1f13bfa118063ce8ae55d8033e0e543b009c075d531",
+      "bytes": 264
+    },
+    {
+      "file": "validation/completed-study/executions/8b265179-6384-4f06-bc0a-c990984548a2/pointer.json",
+      "sha256": "55f43775768e6ca2b16dbd8e5d664ca79997639cd91b47b3148adeaff7ff5869",
+      "bytes": 615
+    },
+    {
+      "file": "validation/completed-study/executions/8b265179-6384-4f06-bc0a-c990984548a2/request.json",
+      "sha256": "3c672cc994a8a1ed9ea7f01c8adbe4634b27498f96638bd2954e4f25d7be79ba",
+      "bytes": 1213
+    },
+    {
+      "file": "validation/completed-study/executions/8b265179-6384-4f06-bc0a-c990984548a2/exit.json",
+      "sha256": "ad2ed646cadb014c607a56dd9d67669fffec0fd710c19277e28b6421c4a3f5a7",
+      "bytes": 162
+    },
+    {
+      "file": "validation/completed-study/executions/9d50a8e0-464d-4bc9-a49d-01c15b087234/launcher.json",
+      "sha256": "494dac28a23811debc7baa25df48938a168527199cfca51db6a50508eb67d7fa",
+      "bytes": 264
+    },
+    {
+      "file": "validation/completed-study/executions/9d50a8e0-464d-4bc9-a49d-01c15b087234/pointer.json",
+      "sha256": "c336e871a7f0e474bf1125b9dce1384efd926f341c39a696f61df7762a4cc487",
+      "bytes": 612
+    },
+    {
+      "file": "validation/completed-study/executions/9d50a8e0-464d-4bc9-a49d-01c15b087234/request.json",
+      "sha256": "52cc047a8465b2b2696a3819e6e9319a4900c32b590af173dc2f411a5197d221",
+      "bytes": 1210
+    },
+    {
+      "file": "validation/completed-study/executions/9d50a8e0-464d-4bc9-a49d-01c15b087234/exit.json",
+      "sha256": "53d407c7df9d17d314af473add9b5d0d907e9f5a866eb251c1c64e481b991168",
+      "bytes": 162
+    },
+    {
+      "file": "validation/completed-study/executions/f89adf76-cb8e-4ee3-9c4b-e15762d93aca/launcher.json",
+      "sha256": "78525d0fdd470f36d18e12dffe1fac84986197797cd8c1556086d8b9dcc14729",
+      "bytes": 264
+    },
+    {
+      "file": "validation/completed-study/executions/f89adf76-cb8e-4ee3-9c4b-e15762d93aca/pointer.json",
+      "sha256": "a9ce8b71cd18fbe085a3975a968538dfdd3334e3f352cb9a4299524ee0bf0010",
+      "bytes": 609
+    },
+    {
+      "file": "validation/completed-study/executions/f89adf76-cb8e-4ee3-9c4b-e15762d93aca/request.json",
+      "sha256": "713593670f6c3dd90b0f323b0616dfe3f958e5957202de8d4a4cf1c0a15a0428",
+      "bytes": 1207
+    },
+    {
+      "file": "validation/completed-study/executions/f89adf76-cb8e-4ee3-9c4b-e15762d93aca/exit.json",
+      "sha256": "eb8fc730865ac8b578806778dc8c07d5e1f6341bd67f761ad8adaecf9dfee247",
+      "bytes": 165
+    },
+    {
+      "file": "validation/completed-study/executions/7bca6cb2-1194-400e-af36-0fccd244bb09/launcher.json",
+      "sha256": "6837571b327dee110a86cd1baf563d88f80f6765e878a7b2326b53e882482393",
+      "bytes": 264
+    },
+    {
+      "file": "validation/completed-study/executions/7bca6cb2-1194-400e-af36-0fccd244bb09/pointer.json",
+      "sha256": "3578721b08cb51b463efd0ddc3db5348e2e1fa52c5b2f8a8cac92d1f7be0cc38",
+      "bytes": 622
+    },
+    {
+      "file": "validation/completed-study/executions/7bca6cb2-1194-400e-af36-0fccd244bb09/request.json",
+      "sha256": "c322b7bce77db6542e6aa1ffe2d10014e829d8512f467b3bed0b84f337413e55",
+      "bytes": 1220
+    },
+    {
+      "file": "validation/completed-study/executions/7bca6cb2-1194-400e-af36-0fccd244bb09/exit.json",
+      "sha256": "b15d683b968ef8bf6e6299d789aad88caf13682604a41b21ffd5bcade77fcf52",
+      "bytes": 165
+    },
+    {
+      "file": "validation/reproduction/pbmc/reproduction.json",
+      "sha256": "42e4316aba1db8e3b46f8c8a17670b08dce81ac001087977fed0f838bc0b29be",
+      "bytes": 5813
+    },
+    {
+      "file": "validation/reproduction/pbmc/runs/pbmc/harmony/provenance.json",
+      "sha256": "e31a24d041be4326c76519b925ed0eb0eb67a5fb890a610873cf304d61c1fc1b",
+      "bytes": 4623
+    },
+    {
+      "file": "validation/reproduction/pbmc/runs/pbmc/harmony/embedding.npz",
+      "sha256": "35e11380385a57df7d626d620de6dff831e6ced4b7c28e97834aa99a55786c70",
+      "bytes": 2335806
+    },
+    {
+      "file": "validation/reproduction/pbmc/runs/pbmc/scvi/provenance.json",
+      "sha256": "3a25c3db1472333b9b73ad9cfe1d45d9417d5ee81b691bdd584689022ea138ff",
+      "bytes": 4620
+    },
+    {
+      "file": "validation/reproduction/pbmc/runs/pbmc/scvi/embedding.npz",
+      "sha256": "1837568290c693eb1cadfc24b86af6994d574b87cb9d4407a00796b854d85be9",
+      "bytes": 1462684
+    },
+    {
+      "file": "validation/reproduction/pbmc/runs/pbmc/pca/provenance.json",
+      "sha256": "03f90a56bb5760519f564670a69f3840714276eabab046b9bced1d673df148a9",
+      "bytes": 4619
+    },
+    {
+      "file": "validation/reproduction/pbmc/runs/pbmc/pca/embedding.npz",
+      "sha256": "6b5c3febd28940c9152e73e927925fa0b9e187c0e16b13e169717e3f2cbde67d",
+      "bytes": 2335972
+    },
+    {
+      "file": "validation/reproduction/pbmc/runs/pbmc/geneformer/provenance.json",
+      "sha256": "16a3aec8f898c1dbbe17c244fe4bc86eb1b08cf9177917e1223c600f4dae62e6",
+      "bytes": 10733
+    },
+    {
+      "file": "validation/reproduction/pbmc/runs/pbmc/geneformer/embedding.npz",
+      "sha256": "8d3ca677e0fc09d25184eed2f06eac2b346b0d0625ba0bb4399c36a845a41704",
+      "bytes": 11506625
+    },
+    {
+      "file": "validation/reproduction/pbmc/runs/pbmc/scgpt/provenance.json",
+      "sha256": "63195953098edd1933671787e0e1c0ef61868ebac2c011912248531f35f5efbf",
+      "bytes": 10664
+    },
+    {
+      "file": "validation/reproduction/pbmc/runs/pbmc/scgpt/embedding.npz",
+      "sha256": "bcd76be0a12ee7ae29104f67a9b99eb8604610356e21db2eb75afeb6d546e552",
+      "bytes": 22957172
+    },
+    {
+      "file": "validation/reproduction/pbmc/datasets/pbmc/split.csv",
+      "sha256": "369daa5bc09ad8e32b7babc67e23068bfcd790d5eface55a63e7af63e4d69178",
+      "bytes": 815848
+    },
+    {
+      "file": "validation/reproduction/pbmc/datasets/pbmc/evaluation_cells.json",
+      "sha256": "ded081d32a77dedf7d79011b2a69ff0bba5c5c7238854cf242c6528070759d10",
+      "bytes": 433107
+    },
+    {
+      "file": "validation/reproduction/pbmc/monitor/resource-monitor.json",
+      "sha256": "07d8389b8a61f3c9f71f94ae123263589df9b11b5add5254fc7e8044c6cbe846",
+      "bytes": 687
+    },
+    {
+      "file": "validation/reproduction/pancreas/reproduction.json",
+      "sha256": "16b0b18e3644679eb6c28d88084719d090428452642215cc404a070346986617",
+      "bytes": 5832
+    },
+    {
+      "file": "validation/reproduction/pancreas/runs/pancreas/harmony/provenance.json",
+      "sha256": "ab90f8102d5f4eb85953bfffa8089a352ada6017fd6d9b273ff8c49a36542645",
+      "bytes": 4798
+    },
+    {
+      "file": "validation/reproduction/pancreas/runs/pancreas/harmony/embedding.npz",
+      "sha256": "b01639480227099fd73bbb11a07b09454483f36ca6b6b661fda9912041fbc1e9",
+      "bytes": 3160534
+    },
+    {
+      "file": "validation/reproduction/pancreas/runs/pancreas/scvi/provenance.json",
+      "sha256": "4910180e99866eb7b63d7afa8a244f84245df047a78f00e6e901ec82b422c11a",
+      "bytes": 4795
+    },
+    {
+      "file": "validation/reproduction/pancreas/runs/pancreas/scvi/embedding.npz",
+      "sha256": "714888c570eaf76bb7d70ca33acb10ff15c088e931cd3bd6ca7f4a11e0ffa0a6",
+      "bytes": 1944364
+    },
+    {
+      "file": "validation/reproduction/pancreas/runs/pancreas/pca/provenance.json",
+      "sha256": "3430b251c6b9627d5ad8e62b53dc56c3aac4ecaf2e686fa86ab0302572da4994",
+      "bytes": 4794
+    },
+    {
+      "file": "validation/reproduction/pancreas/runs/pancreas/pca/embedding.npz",
+      "sha256": "d7a0b78021d154eadffc1478d32d60af7932b6fd8030623c4ea3814d4b6d0b95",
+      "bytes": 3156785
+    },
+    {
+      "file": "validation/reproduction/pancreas/runs/pancreas/geneformer/provenance.json",
+      "sha256": "d0c5cd6a7a33887870a94ed88b5df5fa39159cba65d800c3087634b32b370028",
+      "bytes": 11103
+    },
+    {
+      "file": "validation/reproduction/pancreas/runs/pancreas/geneformer/embedding.npz",
+      "sha256": "9cffdee319c308cca57a85f50ac1535fed1a9a7fbefa7f4d3936cea358f05892",
+      "bytes": 15687884
+    },
+    {
+      "file": "validation/reproduction/pancreas/runs/pancreas/scgpt/provenance.json",
+      "sha256": "147916d86bd52c36acfada35cf0970f96864f87e38094e3cea79d681e9cdec38",
+      "bytes": 7272
+    },
+    {
+      "file": "validation/reproduction/pancreas/runs/pancreas/scgpt/embedding.npz",
+      "sha256": "9c4eca18655335a64f5723617d9d5b68f5df6a29b0c244adfed63f70cb50aca0",
+      "bytes": 31318387
+    },
+    {
+      "file": "validation/reproduction/pancreas/datasets/pancreas/split.csv",
+      "sha256": "194090a9d944c371e8df45f0795b9b05140b782d760c062c6e38d38f55abf0cd",
+      "bytes": 1234495
+    },
+    {
+      "file": "validation/reproduction/pancreas/datasets/pancreas/evaluation_cells.json",
+      "sha256": "b92a82dbfdff0f48a732ccf2bb444a1cea364576807503a620616f31d71c55eb",
+      "bytes": 679498
+    },
+    {
+      "file": "validation/reproduction/pancreas/monitor/resource-monitor.json",
+      "sha256": "5c697b2a51ded2835da559263bc628c7350092520aa94b11534c9dd0f4ef756c",
+      "bytes": 691
+    },
+    {
+      "file": "validation/final-report-monitor/resource-monitor.json",
+      "sha256": "fb41518fa49f11000ad1a554e92bf7b654e1116961d3250b9b3f6106525e6852",
+      "bytes": 688
+    },
+    {
+      "file": "validation/assembly-monitor/resource-monitor.json",
+      "sha256": "0db56a878188984dfde0f35c01093752d2ad7ca5e203bcc6d042925344f6ff8b",
+      "bytes": 687
+    },
+    {
+      "file": "reproduction-tools/validate_artifacts.py",
+      "sha256": "1caff3d3657989d9ba204549bc9d04164c89aa5ce7388549c3e10bfcdc4b65f2",
+      "bytes": 7419
+    },
+    {
+      "file": "reproduction-tools/reproduce.py",
+      "sha256": "ea9e4c99cd981652b2ece4c588a02871ec5dc068575a71f673fbaad115b57e84",
+      "bytes": 6942
+    },
+    {
+      "file": "reproduction-tools/verify_counts.py",
+      "sha256": "2a84d3931accb8e3df4d2ef9eb07548b56a4929181f2c68f443b216c0fa79696",
+      "bytes": 6427
+    },
+    {
+      "file": "reproduction-tools/requirements.txt",
+      "sha256": "6bc12ba21a9eaebc0568be78e408dfa5525342258903ff8909dc7b1b6eed84d2",
+      "bytes": 9082
+    },
+    {
+      "file": "reproduction-tools/src/resource_guard.py",
+      "sha256": "f6532ad4965fe2ff7e7f73a788ee0cd5b151d983871d2f0b0d21a1da384d4699",
+      "bytes": 8898
+    },
+    {
+      "file": "reproduction-tools/src/main.py",
+      "sha256": "12158cfdebbde67711962a183523b34d0978f5cf713d02891936a2363bb6fc3f",
+      "bytes": 5066
+    },
+    {
+      "file": "reproduction-tools/src/evaluation.py",
+      "sha256": "10003666dd7d8c5b6794eaaba0016c3fbfe25ef22f1d0f8db997c4e7856039b2",
+      "bytes": 7201
+    },
+    {
+      "file": "reproduction-tools/src/representations.py",
+      "sha256": "196e4ee435172d475cfa02b16c79f83cebc77dea95b07540f456473c4fd0c390",
+      "bytes": 8018
+    },
+    {
+      "file": "reproduction-tools/src/model_monitor.py",
+      "sha256": "fdbda28653fc494802aa383f17eba76e0b46f97a2a6905d278a78b11209e3aee",
+      "bytes": 9609
+    },
+    {
+      "file": "reproduction-tools/src/reporting.py",
+      "sha256": "2e8b7dba1abfc3840d51e411cc994f1c58c0396b2c242fc32ddd0d9e3e5f8e97",
+      "bytes": 18528
+    },
+    {
+      "file": "reproduction-tools/src/study_data.py",
+      "sha256": "639510f40486c2ae410e22e587bc123b094354ba2fd74a353aad802768ae5265",
+      "bytes": 10208
+    },
+    {
+      "file": "reproduction-tools/src/checkpoints.py",
+      "sha256": "fd90cc0b001924972ba9afc0da361b3a7202139d6513b9e1677c085b9f7da157",
+      "bytes": 7191
+    },
+    {
+      "file": "reproduction-tools/src/common.py",
+      "sha256": "2eebd6d7cf210c255568c362c4a78a46d495850a94e19d691edcc711294305d0",
+      "bytes": 2889
+    }
+  ],
+  "files_verified": 382,
+  "source": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/showcases/single-cell-foundation-benchmark/transfer/completed-study-final-wsl2-2026-10-05",
+  "destination": "/mnt/c/Users/loren/Documents/GitHub/liatir-stack/showcases/single-cell-foundation-benchmark/transfer/completed-study-final-wsl2-2026-10-05",
+  "total_bytes": 1335332301,
+  "bundle_sha256": "184475f893e7f23efd24d095dccaccac8deefb79a525c0c7aa3d55a193f06de3",
+  "excluded_generated_cache_directories": "__pycache__",
+  "scope": "Every exported file copied from Linux to Windows and SHA-256 verified; final validator executed from the portable tools on the Windows paths."
+}

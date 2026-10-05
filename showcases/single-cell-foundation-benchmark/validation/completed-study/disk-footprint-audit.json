@@ -1,0 +1,17 @@
+{
+  "status": "passed",
+  "model": "scgpt-whole-human",
+  "target": {
+    "platform": "linux",
+    "arch": "x86_64",
+    "accelerator": "cuda",
+    "cudaVersion": "12.9"
+  },
+  "original_telemetry_preserved": true,
+  "alias_expanded_file_bytes": 27751283099,
+  "distinct_inode_file_bytes": 13315193600,
+  "signed_release_installed_bytes": 13278575392,
+  "file_paths": 64721,
+  "symlink_files": 1755,
+  "scope": "Logical installed file lengths; distinct inode accounting removes hard-link and followed symlink aliases. Neither value measures allocated filesystem blocks. Model run scratch excluded."
+}

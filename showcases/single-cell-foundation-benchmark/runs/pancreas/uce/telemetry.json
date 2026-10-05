@@ -1,0 +1,9 @@
+{
+  "wall_seconds": null,
+  "peak_rss_bytes": null,
+  "peak_accelerator_bytes": null,
+  "execution_target": "CPU",
+  "peak_accelerator_reason": "CPU-only execution; no accelerator used.",
+  "observed_peak_tree_rss_bytes": null,
+  "reason": "Worker terminated before final OS telemetry: Error: UCE 4-layer: This AI Model does not have a published Runtime Box for Linux. Published platforms: macOS Detected: Linux x86_64 with NVIDIA driver 610.62"
+}

@@ -1,0 +1,236 @@
+{
+  "python": "3.11.15 | packaged by conda-forge | (main, Jun 11 2026, 03:29:05) [Clang 19.1.7 ]",
+  "os": "macOS-14.4.1-arm64-arm-64bit",
+  "architecture": "arm64",
+  "cpu_count": 8,
+  "execution_target": "CPU",
+  "resource_limits": {
+    "maxRssBytes": 2147483648,
+    "maxSwapGrowthBytes": 268435456,
+    "minAvailableBytes": 2147483648,
+    "minDiskBytes": 4294967296
+  },
+  "packages": {
+    "Brotli": "1.2.0",
+    "Deprecated": "1.3.1",
+    "Jinja2": "3.1.6",
+    "MarkupSafe": "3.0.3",
+    "PySocks": "1.7.1",
+    "PyYAML": "6.0.3",
+    "accelerate": "1.14.0",
+    "anndata": "0.12.19",
+    "anyio": "4.14.2",
+    "array-api-compat": "1.15.0",
+    "backports.zstd": "1.6.0",
+    "cached-property": "1.5.2",
+    "certifi": "2026.7.22",
+    "charset-normalizer": "3.4.9",
+    "click": "8.4.2",
+    "colorama": "0.4.6",
+    "contourpy": "1.3.3",
+    "cycler": "0.12.1",
+    "donfig": "0.8.1.post1",
+    "exceptiongroup": "1.3.1",
+    "filelock": "3.32.2",
+    "fonttools": "4.63.0",
+    "fsspec": "2026.7.0",
+    "get-annotations": "0.1.2",
+    "gmpy2": "2.3.0",
+    "google-crc32c": "1.8.0",
+    "h11": "0.16.0",
+    "h2": "4.4.1",
+    "h5py": "3.16.0",
+    "hf-xet": "1.5.2",
+    "hpack": "4.2.0",
+    "httpcore": "1.0.9",
+    "httpx": "0.28.1",
+    "huggingface_hub": "1.26.0",
+    "hyperframe": "6.1.0",
+    "idna": "3.18",
+    "joblib": "1.5.3",
+    "kiwisolver": "1.5.0",
+    "legacy-api-wrap": "1.5",
+    "llvmlite": "0.48.0",
+    "matplotlib": "3.11.1",
+    "mpmath": "1.4.1",
+    "msgpack": "1.2.1",
+    "munkres": "1.1.4",
+    "narwhals": "2.24.0",
+    "natsort": "8.4.0",
+    "networkx": "3.6.1",
+    "numba": "0.66.0",
+    "numcodecs": "0.16.5",
+    "numpy": "1.26.4",
+    "optree": "0.19.1",
+    "packaging": "26.3",
+    "pandas": "2.2.2",
+    "patsy": "1.0.2",
+    "pillow": "12.3.0",
+    "psutil": "7.2.2",
+    "pybind11": "2.13.6",
+    "pybind11_global": "2.13.6",
+    "pynndescent": "0.6.0",
+    "pyparsing": "3.3.2",
+    "python-dateutil": "2.9.0.post0",
+    "pytz": "2026.3.post1",
+    "requests": "2.34.2",
+    "safetensors": "0.8.0",
+    "scanpy": "1.10.2",
+    "scikit-learn": "1.9.0",
+    "scipy": "1.14.1",
+    "scverse-misc": "0.0.3",
+    "seaborn": "0.13.2",
+    "session-info": "1.0.0",
+    "session-info2": "0.4.1",
+    "setuptools": "83.0.0",
+    "six": "1.17.0",
+    "sniffio": "1.3.1",
+    "statsmodels": "0.14.6",
+    "stdlib-list": "0.12.0",
+    "sympy": "1.14.0",
+    "threadpoolctl": "3.6.0",
+    "torch": "2.8.0",
+    "tqdm": "4.66.5",
+    "typing_extensions": "4.16.0",
+    "tzdata": "2026.3",
+    "umap-learn": "0.5.12",
+    "unicodedata2": "17.0.1",
+    "urllib3": "2.7.0",
+    "wrapt": "2.3.0",
+    "zarr": "3.1.5"
+  },
+  "model_runner_sha256": "b15b01f967c4a7466c7f0855ee54bcfaec0edcda0f2682acc9bc54c38b04ab34",
+  "box": {
+    "schemaVersion": 3,
+    "boxId": "uce-4layer",
+    "labels": {
+      "model": "snap-stanford-uce-4layer",
+      "runtime": "single-cell-foundation-uce"
+    },
+    "version": "1.0.0-beta.2",
+    "target": {
+      "platform": "macos",
+      "arch": "aarch64",
+      "accelerator": "metal"
+    },
+    "runtime": {
+      "id": "python",
+      "version": "3.11.15",
+      "entryPoint": "venv/bin/python"
+    },
+    "cacheSubdir": "model-cache/uce",
+    "selfTest": {
+      "probe": {
+        "imports": [
+          "torch",
+          "scanpy",
+          "accelerate",
+          "anndata",
+          "numpy",
+          "scipy",
+          "pandas",
+          "h5py",
+          "tqdm"
+        ]
+      },
+      "timeoutSeconds": 180
+    },
+    "provenance": {
+      "scrollId": "uce-4layer-macos-arm64-metal",
+      "scrollVersion": "1.0.0",
+      "builderRevision": "edc55a3221110eafb3ae574e5ee80cf492536015",
+      "sourceTreeDirty": false,
+      "sourceRevision": "8ead6e07af0c80f75653598138bb704e865b45c8",
+      "runtimeVersion": "3.11.15",
+      "pixiVersion": "0.73.0",
+      "dependencyLockSha256": "a539412003c6ac355da2ce1dca05b7aa76ef3274a71150839c0b3396ae824a98",
+      "builtAt": "2026-09-26T15:49:41+02:00"
+    }
+  },
+  "runtime_box_activation": {
+    "schemaVersion": 3,
+    "selectedTarget": {
+      "platform": "macos",
+      "arch": "aarch64",
+      "accelerator": "metal"
+    },
+    "hostEnvironment": "native",
+    "release": {
+      "schemaVersion": 3,
+      "kind": "liatir.runtime-box.release",
+      "boxId": "uce-4layer",
+      "labels": {
+        "model": "snap-stanford-uce-4layer",
+        "runtime": "single-cell-foundation-uce"
+      },
+      "version": "1.0.0-beta.2",
+      "target": {
+        "platform": "macos",
+        "arch": "aarch64",
+        "accelerator": "metal"
+      },
+      "compatibility": {
+        "minMacosVersion": "13.0",
+        "minRamGb": 16.0,
+        "minLiatirVersion": "0.2.1"
+      },
+      "archive": {
+        "format": "zip",
+        "url": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/uce-4layer/1.0.0-beta.2/macos-aarch64-metal/6aeafe5f6d0d29004517eeabaf80072406feeca3581d46a45e682959094f2cb4.zip",
+        "sha256": "6aeafe5f6d0d29004517eeabaf80072406feeca3581d46a45e682959094f2cb4",
+        "sizeBytes": 9899283975
+      },
+      "installedSizeBytes": 11169027258,
+      "payloadDigest": {
+        "format": "sha256-path-list-v1",
+        "sha256": "da7602151c10c771494063f007f23d4819d01444a540cff1226ff8adb9cd73b3"
+      },
+      "runtime": {
+        "id": "python",
+        "version": "3.11.15",
+        "entryPoint": "venv/bin/python"
+      },
+      "cacheSubdir": "model-cache/uce",
+      "selfTest": {
+        "probe": {
+          "imports": [
+            "torch",
+            "scanpy",
+            "accelerate",
+            "anndata",
+            "numpy",
+            "scipy",
+            "pandas",
+            "h5py",
+            "tqdm"
+          ]
+        },
+        "timeoutSeconds": 180
+      },
+      "provenance": {
+        "scrollId": "uce-4layer-macos-arm64-metal",
+        "scrollVersion": "1.0.0",
+        "builderRevision": "edc55a3221110eafb3ae574e5ee80cf492536015",
+        "sourceTreeDirty": false,
+        "sourceRevision": "8ead6e07af0c80f75653598138bb704e865b45c8",
+        "runtimeVersion": "3.11.15",
+        "dependencyLockSha256": "a539412003c6ac355da2ce1dca05b7aa76ef3274a71150839c0b3396ae824a98",
+        "builtAt": "2026-09-26T15:49:41+02:00",
+        "pixiVersion": "0.73.0"
+      }
+    },
+    "signedRelease": {
+      "payloadBase64": "ewogICJzY2hlbWFWZXJzaW9uIjogMywKICAia2luZCI6ICJsaWF0aXIucnVudGltZS1ib3gucmVsZWFzZSIsCiAgImJveElkIjogInVjZS00bGF5ZXIiLAogICJsYWJlbHMiOiB7CiAgICAibW9kZWwiOiAic25hcC1zdGFuZm9yZC11Y2UtNGxheWVyIiwKICAgICJydW50aW1lIjogInNpbmdsZS1jZWxsLWZvdW5kYXRpb24tdWNlIgogIH0sCiAgInZlcnNpb24iOiAiMS4wLjAtYmV0YS4yIiwKICAidGFyZ2V0IjogewogICAgInBsYXRmb3JtIjogIm1hY29zIiwKICAgICJhcmNoIjogImFhcmNoNjQiLAogICAgImFjY2VsZXJhdG9yIjogIm1ldGFsIgogIH0sCiAgImNvbXBhdGliaWxpdHkiOiB7CiAgICAibWluTGlhdGlyVmVyc2lvbiI6ICIwLjIuMSIsCiAgICAibWluTWFjb3NWZXJzaW9uIjogIjEzLjAiLAogICAgIm1pblJhbUdiIjogMTYKICB9LAogICJhcmNoaXZlIjogewogICAgImZvcm1hdCI6ICJ6aXAiLAogICAgInVybCI6ICJodHRwczovL2Fzc2V0cy5tb2RlbHMubGlhdGlyLmNvbS9haS1ydW50aW1lLWJveGVzL2JveGVzL3VjZS00bGF5ZXIvMS4wLjAtYmV0YS4yL21hY29zLWFhcmNoNjQtbWV0YWwvNmFlYWZlNWY2ZDBkMjkwMDQ1MTdlZWFiYWY4MDA3MjQwNmZlZWNhMzU4MWQ0NmE0NWU2ODI5NTkwOTRmMmNiNC56aXAiLAogICAgInNoYTI1NiI6ICI2YWVhZmU1ZjZkMGQyOTAwNDUxN2VlYWJhZjgwMDcyNDA2ZmVlY2EzNTgxZDQ2YTQ1ZTY4Mjk1OTA5NGYyY2I0IiwKICAgICJzaXplQnl0ZXMiOiA5ODk5MjgzOTc1CiAgfSwKICAiaW5zdGFsbGVkU2l6ZUJ5dGVzIjogMTExNjkwMjcyNTgsCiAgInBheWxvYWREaWdlc3QiOiB7CiAgICAiZm9ybWF0IjogInNoYTI1Ni1wYXRoLWxpc3QtdjEiLAogICAgInNoYTI1NiI6ICJkYTc2MDIxNTFjMTBjNzcxNDk0MDYzZjAwN2YyM2Q0ODE5ZDAxNDQ0YTU0MGNmZjEyMjZmZjhhZGI5Y2Q3M2IzIgogIH0sCiAgInJ1bnRpbWUiOiB7CiAgICAiaWQiOiAicHl0aG9uIiwKICAgICJ2ZXJzaW9uIjogIjMuMTEuMTUiLAogICAgImVudHJ5UG9pbnQiOiAidmVudi9iaW4vcHl0aG9uIgogIH0sCiAgImNhY2hlU3ViZGlyIjogIm1vZGVsLWNhY2hlL3VjZSIsCiAgInNlbGZUZXN0IjogewogICAgInByb2JlIjogewogICAgICAiaW1wb3J0cyI6IFsKICAgICAgICAidG9yY2giLAogICAgICAgICJzY2FucHkiLAogICAgICAgICJhY2NlbGVyYXRlIiwKICAgICAgICAiYW5uZGF0YSIsCiAgICAgICAgIm51bXB5IiwKICAgICAgICAic2NpcHkiLAogICAgICAgICJwYW5kYXMiLAogICAgICAgICJoNXB5IiwKICAgICAgICAidHFkbSIKICAgICAgXQogICAgfSwKICAgICJ0aW1lb3V0U2Vjb25kcyI6IDE4MAogIH0sCiAgInByb3ZlbmFuY2UiOiB7CiAgICAic2Nyb2xsSWQiOiAidWNlLTRsYXllci1tYWNvcy1hcm02NC1tZXRhbCIsCiAgICAic2Nyb2xsVmVyc2lvbiI6ICIxLjAuMCIsCiAgICAiYnVpbGRlclJldmlzaW9uIjogImVkYzU1YTMyMjExMTBlYWZiM2FlNTc0ZTVlZTgwY2Y0OTI1MzYwMTUiLAogICAgInNvdXJjZVRyZWVEaXJ0eSI6IGZhbHNlLAogICAgInNvdXJjZVJldmlzaW9uIjogIjhlYWQ2ZTA3YWYwYzgwZjc1NjUzNTk4MTM4YmI3MDRlODY1YjQ1YzgiLAogICAgInJ1bnRpbWVWZXJzaW9uIjogIjMuMTEuMTUiLAogICAgInBpeGlWZXJzaW9uIjogIjAuNzMuMCIsCiAgICAiZGVwZW5kZW5jeUxvY2tTaGEyNTYiOiAiYTUzOTQxMjAwM2M2YWMzNTVkYTJjZTFkY2EwNWI3YWE3NmVmMzI3NGE3MTE1MDgzOWMwYjMzOTZhZTgyNGE5OCIsCiAgICAiYnVpbHRBdCI6ICIyMDI2LTA5LTI2VDE1OjQ5OjQxKzAyOjAwIgogIH0KfQo=",
+      "payloadEncoding": "base64-json-utf8",
+      "payloadSha256": "5d7a3704cf9f1ba1f84dc3f4d1428bc455b5228c53f1a98b75cce07e5f3d39ec",
+      "schemaVersion": 3,
+      "signatures": [
+        {
+          "algorithm": "ed25519",
+          "keyId": "liatir-runtime-box-kms-2026",
+          "signatureBase64": "AGmmTmqoi607u3sx94entsWRqlC9eycxwWnrH5/G0ggH61DYMBhTKrllBZ7BhlBgcL7IzTA59H6tfZfr9NfHBg=="
+        }
+      ]
+    }
+  }
+}

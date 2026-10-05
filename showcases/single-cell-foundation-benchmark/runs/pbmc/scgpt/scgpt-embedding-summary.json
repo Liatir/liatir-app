@@ -1,0 +1,27 @@
+{
+  "cellCount": 11990,
+  "geneCount": 3256,
+  "outputGeneCount": 3346,
+  "matchedGeneCount": 3256,
+  "inputCellCount": 11990,
+  "inputGeneCount": 3346,
+  "embeddingDim": 512,
+  "embeddingKey": "X_scGPT",
+  "embeddingLayer": "final encoder CLS token, L2 normalized",
+  "normalization": "scGPT 51-bin per-cell quantile value encoding",
+  "model": "scGPT Whole-human",
+  "species": "human",
+  "batchSize": 1,
+  "previewRows": 3,
+  "intermediateCount": 0,
+  "accelerator": "CPU",
+  "requestedAccelerator": "cpu",
+  "peakVramBytes": null,
+  "gpuModel": null,
+  "gpuMemoryBytes": null,
+  "computeCapability": null,
+  "reportedCudaCompatibility": null,
+  "warnings": [
+    "scGPT embeddings are exploratory representations and are not cell-type labels."
+  ]
+}

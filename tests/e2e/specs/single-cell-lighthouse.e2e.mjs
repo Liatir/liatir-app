@@ -213,7 +213,25 @@ export const tests = [{
       { timeout: 20_000, timeoutMsg: 'The embedded AnnData artifact was not reusable from Data' },
     );
 
-    await (await browser.$('[data-testid="viewer-open-page"]')).click();
+    await (await browser.$('[data-testid="viewer-fullscreen"]')).click();
+    await browser.waitUntil(
+      async () => browser.execute(() => (
+        document.querySelector('[data-testid="visualization-shell"]')?.getAttribute('data-expanded') === 'true'
+        && document.querySelectorAll('[data-testid="single-cell-point"]').length === 3
+      )),
+      { timeout: 20_000, timeoutMsg: 'The Result preview did not expand with its three cells' },
+    );
+    await (await browser.$('[data-testid="viewer-fullscreen"]')).click();
+    await browser.waitUntil(
+      async () => browser.execute(() => (
+        document.querySelector('[data-testid="visualization-shell"]')?.getAttribute('data-expanded') === 'false'
+        && document.body.style.overflow !== 'hidden'
+      )),
+      { timeout: 20_000, timeoutMsg: 'Closing the Result preview did not restore page scrolling' },
+    );
+    // The Result offers fullscreen; test the existing standalone route using the
+    // two artifacts just registered in Data, rather than a retired header button.
+    await navigateInApp(browser, `/tools/visualization/single-cell?file=${encodeURIComponent(embeddedPath)}&preview=${encodeURIComponent(previewPath)}&embeddingKey=X_lighthouse`);
     await browser.waitUntil(
       async () => browser.execute(() => window.location.pathname === '/tools/visualization/single-cell'),
       { timeout: 20_000, timeoutMsg: 'The standalone Single-cell Viewer did not open' },

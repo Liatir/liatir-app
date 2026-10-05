@@ -1,0 +1,74 @@
+{
+  "dataset": "pancreas",
+  "source": "scIB pancreas, canonical scvi-tools reference-mapping tutorial distribution, Figshare file 24539828",
+  "urls": [
+    "https://api.figshare.com/v2/file/download/24539828"
+  ],
+  "stability_check_only": false,
+  "upstream_shape": [
+    16382,
+    19093
+  ],
+  "cell_count": 16382,
+  "gene_count": 19093,
+  "label_field": "celltype",
+  "batch_field": "tech",
+  "raw_count_source": "counts",
+  "cell_types": {
+    "alpha": 5493,
+    "beta": 4169,
+    "ductal": 2142,
+    "acinar": 1669,
+    "delta": 1055,
+    "gamma": 699,
+    "activated_stellate": 464,
+    "endothelial": 313,
+    "quiescent_stellate": 193,
+    "macrophage": 79,
+    "mast": 42,
+    "epsilon": 32,
+    "schwann": 25,
+    "t_cell": 7
+  },
+  "batches": {
+    "inDrop3": 3605,
+    "smartseq2": 2394,
+    "celseq2": 2285,
+    "inDrop1": 1937,
+    "inDrop2": 1724,
+    "smarter": 1492,
+    "inDrop4": 1303,
+    "celseq": 1004,
+    "fluidigmc1": 638
+  },
+  "source_files": [
+    {
+      "file": "pancreas/scib-pancreas-24539828.h5ad",
+      "sha256": "97e6dfd65553e4d10aa3ef5d904362970a75c677c31d70fabc9234191a09db8c",
+      "bytes": 315955785
+    }
+  ],
+  "gene_identifiers": "gene symbols plus Ensembl gene IDs",
+  "gene_symbol_source": "original var_names",
+  "ensembl_mapped_genes": 17749,
+  "filtering": {
+    "minimum_total_count_exclusive": 0,
+    "require_label_and_batch": true,
+    "gene_filter": null
+  },
+  "excluded_cells": [],
+  "fractional_count_entries": 23809035,
+  "count_integrality": "Source-supplied nonnegative count layer contains fractional values; retained without rounding or reconstruction.",
+  "seed": 23,
+  "test_fraction": 0.2,
+  "split_sha256": "194090a9d944c371e8df45f0795b9b05140b782d760c062c6e38d38f55abf0cd",
+  "prepared_sha256": "aeb6f9a2de14b881a81420018963d2d35e33d705f01ecc73c11a78f012001368",
+  "prepared_path": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/tests/.artifacts/home/single-cell-showcase/.local/share/app.liatir.app/.liatir/.main/data/workspaces/__test__/runs/12b601e2-cd4f-44ba-b3ec-1238b7da569f/output/datasets/pancreas/counts.h5ad",
+  "prepared_bytes": 160257412,
+  "source_count_provenance": {
+    "kind": "canonical-source-count-layer",
+    "source_layer": "counts",
+    "source_sha256": "97e6dfd65553e4d10aa3ef5d904362970a75c677c31d70fabc9234191a09db8c",
+    "prepared_sha256": "aeb6f9a2de14b881a81420018963d2d35e33d705f01ecc73c11a78f012001368"
+  }
+}

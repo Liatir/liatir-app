@@ -1,7 +1,7 @@
 # Single-cell checkpoints and historical imports
 
 Date: 2026-10-05. Scope: the authorized Windows/WSL2 continuation of the
-[single-cell study](../state/liatir_single_cell_showcase_codex_plan.md).
+[single-cell study](../history/liatir_single_cell_showcase_codex_plan.md).
 
 scGPT commits each completed batch to a local SQLite database, using full
 synchronous transactions, contiguous row ranges, float32 bytes and per-batch
@@ -42,4 +42,4 @@ the unchanged frozen Mac runner on the same signed Linux CPU box. Original Mac
 times include the old loader, so implementation as well as host differs.
 
 Implementation and validation evidence live in the
-[continuation checklist](../state/single-cell-showcase-wsl2-execution.md).
+[continuation checklist](../history/single-cell-showcase-wsl2-execution.md).

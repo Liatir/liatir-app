@@ -1,0 +1,26 @@
+{
+  "cellCount": 11990,
+  "geneCount": 3342,
+  "outputGeneCount": 3346,
+  "matchedGeneCount": 3342,
+  "inputCellCount": 11990,
+  "inputGeneCount": 3346,
+  "embeddingDim": 256,
+  "embeddingKey": "X_geneformer",
+  "embeddingLayer": "second-to-last hidden layer, mean pooled",
+  "normalization": "Genecorpus-30M median-scaled rank encoding",
+  "model": "Geneformer V1 10M",
+  "species": "human",
+  "batchSize": 1,
+  "previewRows": 3,
+  "intermediateCount": 0,
+  "accelerator": "CPU",
+  "torchVersion": "2.8.0",
+  "reportedCudaCompatibility": null,
+  "gpuModel": null,
+  "computeCapability": null,
+  "peakVramBytes": null,
+  "warnings": [
+    "Geneformer V1 embeddings are exploratory representations and are not cell-type labels."
+  ]
+}

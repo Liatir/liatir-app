@@ -1,0 +1,205 @@
+{
+  "python": "3.11.15 | packaged by conda-forge | (main, Jun 11 2026, 03:29:05) [Clang 19.1.7 ]",
+  "os": "macOS-14.4.1-arm64-arm-64bit",
+  "architecture": "arm64",
+  "cpu_count": 8,
+  "execution_target": "CPU",
+  "resource_limits": {
+    "maxRssBytes": 2147483648,
+    "maxSwapGrowthBytes": 268435456,
+    "minAvailableBytes": 2147483648,
+    "minDiskBytes": 4294967296
+  },
+  "packages": {
+    "Brotli": "1.2.0",
+    "Jinja2": "3.1.6",
+    "MarkupSafe": "3.0.3",
+    "PySocks": "1.7.1",
+    "PyYAML": "6.0.3",
+    "aiohappyeyeballs": "2.7.1",
+    "aiohttp": "3.14.3",
+    "aiosignal": "1.4.0",
+    "anndata": "0.10.9",
+    "array-api-compat": "1.15.0",
+    "attrs": "26.1.0",
+    "cached-property": "1.5.2",
+    "certifi": "2026.7.22",
+    "charset-normalizer": "3.4.9",
+    "datasets": "2.14.4",
+    "dill": "0.3.7",
+    "exceptiongroup": "1.3.1",
+    "filelock": "3.32.2",
+    "frozenlist": "1.8.0",
+    "fsspec": "2026.7.0",
+    "gmpy2": "2.3.0",
+    "h5py": "3.11.0",
+    "hf-xet": "1.5.2",
+    "huggingface_hub": "0.36.0",
+    "idna": "3.18",
+    "importlib_metadata": "9.0.0",
+    "mpmath": "1.4.1",
+    "multidict": "6.7.1",
+    "multiprocess": "0.70.15",
+    "natsort": "8.4.0",
+    "networkx": "3.6.1",
+    "numpy": "1.26.4",
+    "optree": "0.19.1",
+    "packaging": "26.2",
+    "pandas": "2.2.2",
+    "propcache": "0.5.2",
+    "pyarrow": "23.0.0",
+    "pybind11": "2.13.6",
+    "pybind11_global": "2.13.6",
+    "python-dateutil": "2.9.0.post0",
+    "pytz": "2026.3.post1",
+    "regex": "2026.7.19",
+    "requests": "2.34.2",
+    "safetensors": "0.4.5",
+    "scipy": "1.14.1",
+    "setuptools": "83.0.0",
+    "six": "1.17.0",
+    "sympy": "1.14.0",
+    "tokenizers": "0.19.1",
+    "torch": "2.8.0",
+    "tqdm": "4.70.0",
+    "transformers": "4.44.2",
+    "typing_extensions": "4.16.0",
+    "tzdata": "2026.3",
+    "urllib3": "1.26.20",
+    "xxhash": "3.7.0",
+    "yarl": "1.24.5",
+    "zipp": "4.1.0"
+  },
+  "model_runner_sha256": "18b19728ce956bfddf71d70866afc154664d2f37084a835bf4f291194b24c8dd",
+  "box": {
+    "schemaVersion": 3,
+    "boxId": "geneformer-v1-10m",
+    "labels": {
+      "model": "ctheodoris-geneformer-v1-10m",
+      "runtime": "single-cell-foundation-geneformer-v1-10m"
+    },
+    "version": "1.0.0-beta.2",
+    "target": {
+      "platform": "macos",
+      "arch": "aarch64",
+      "accelerator": "metal"
+    },
+    "runtime": {
+      "id": "python",
+      "version": "3.11.15",
+      "entryPoint": "venv/bin/python"
+    },
+    "cacheSubdir": "model-cache/geneformer-v1-10m",
+    "selfTest": {
+      "probe": {
+        "imports": [
+          "torch",
+          "transformers",
+          "anndata",
+          "numpy",
+          "scipy",
+          "pandas",
+          "h5py",
+          "safetensors"
+        ]
+      },
+      "timeoutSeconds": 180
+    },
+    "provenance": {
+      "scrollId": "geneformer-v1-10m-macos-arm64-metal",
+      "scrollVersion": "1.0.0",
+      "builderRevision": "2cee27ad1a792ee9c9912aa84ba53e94efce68ba",
+      "sourceTreeDirty": false,
+      "sourceRevision": "04c2b2e84da7c0f385c3f9ad8f3ec24bab6650e5",
+      "runtimeVersion": "3.11.15",
+      "pixiVersion": "0.73.0",
+      "dependencyLockSha256": "3e9841b2296656458715aa1276ece999b2bdfe4566e8dfdf77c0e29496c4d19f",
+      "builtAt": "2026-09-25T15:06:08+02:00"
+    }
+  },
+  "runtime_box_activation": {
+    "schemaVersion": 3,
+    "selectedTarget": {
+      "platform": "macos",
+      "arch": "aarch64",
+      "accelerator": "metal"
+    },
+    "hostEnvironment": "native",
+    "release": {
+      "schemaVersion": 3,
+      "kind": "liatir.runtime-box.release",
+      "boxId": "geneformer-v1-10m",
+      "labels": {
+        "model": "ctheodoris-geneformer-v1-10m",
+        "runtime": "single-cell-foundation-geneformer-v1-10m"
+      },
+      "version": "1.0.0-beta.2",
+      "target": {
+        "platform": "macos",
+        "arch": "aarch64",
+        "accelerator": "metal"
+      },
+      "compatibility": {
+        "minMacosVersion": "13.0",
+        "minRamGb": 8.0,
+        "minLiatirVersion": "0.2.1"
+      },
+      "archive": {
+        "format": "zip",
+        "url": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/geneformer-v1-10m/1.0.0-beta.2/macos-aarch64-metal/3fe5f3cdbe1890602176f885a8507b6f5ceee48c72cd750c89fef6e1cf52d9ba.zip",
+        "sha256": "3fe5f3cdbe1890602176f885a8507b6f5ceee48c72cd750c89fef6e1cf52d9ba",
+        "sizeBytes": 463378960
+      },
+      "installedSizeBytes": 1538447154,
+      "payloadDigest": {
+        "format": "sha256-path-list-v1",
+        "sha256": "92cb051e36f9d2523fe095917a60db6fe4d9c796b29047b79ed81e19852330c3"
+      },
+      "runtime": {
+        "id": "python",
+        "version": "3.11.15",
+        "entryPoint": "venv/bin/python"
+      },
+      "cacheSubdir": "model-cache/geneformer-v1-10m",
+      "selfTest": {
+        "probe": {
+          "imports": [
+            "torch",
+            "transformers",
+            "anndata",
+            "numpy",
+            "scipy",
+            "pandas",
+            "h5py",
+            "safetensors"
+          ]
+        },
+        "timeoutSeconds": 180
+      },
+      "provenance": {
+        "scrollId": "geneformer-v1-10m-macos-arm64-metal",
+        "scrollVersion": "1.0.0",
+        "builderRevision": "2cee27ad1a792ee9c9912aa84ba53e94efce68ba",
+        "sourceTreeDirty": false,
+        "sourceRevision": "04c2b2e84da7c0f385c3f9ad8f3ec24bab6650e5",
+        "runtimeVersion": "3.11.15",
+        "dependencyLockSha256": "3e9841b2296656458715aa1276ece999b2bdfe4566e8dfdf77c0e29496c4d19f",
+        "builtAt": "2026-09-25T15:06:08+02:00",
+        "pixiVersion": "0.73.0"
+      }
+    },
+    "signedRelease": {
+      "payloadBase64": "ewogICJzY2hlbWFWZXJzaW9uIjogMywKICAia2luZCI6ICJsaWF0aXIucnVudGltZS1ib3gucmVsZWFzZSIsCiAgImJveElkIjogImdlbmVmb3JtZXItdjEtMTBtIiwKICAibGFiZWxzIjogewogICAgIm1vZGVsIjogImN0aGVvZG9yaXMtZ2VuZWZvcm1lci12MS0xMG0iLAogICAgInJ1bnRpbWUiOiAic2luZ2xlLWNlbGwtZm91bmRhdGlvbi1nZW5lZm9ybWVyLXYxLTEwbSIKICB9LAogICJ2ZXJzaW9uIjogIjEuMC4wLWJldGEuMiIsCiAgInRhcmdldCI6IHsKICAgICJwbGF0Zm9ybSI6ICJtYWNvcyIsCiAgICAiYXJjaCI6ICJhYXJjaDY0IiwKICAgICJhY2NlbGVyYXRvciI6ICJtZXRhbCIKICB9LAogICJjb21wYXRpYmlsaXR5IjogewogICAgIm1pbkxpYXRpclZlcnNpb24iOiAiMC4yLjEiLAogICAgIm1pbk1hY29zVmVyc2lvbiI6ICIxMy4wIiwKICAgICJtaW5SYW1HYiI6IDgKICB9LAogICJhcmNoaXZlIjogewogICAgImZvcm1hdCI6ICJ6aXAiLAogICAgInVybCI6ICJodHRwczovL2Fzc2V0cy5tb2RlbHMubGlhdGlyLmNvbS9haS1ydW50aW1lLWJveGVzL2JveGVzL2dlbmVmb3JtZXItdjEtMTBtLzEuMC4wLWJldGEuMi9tYWNvcy1hYXJjaDY0LW1ldGFsLzNmZTVmM2NkYmUxODkwNjAyMTc2Zjg4NWE4NTA3YjZmNWNlZWU0OGM3MmNkNzUwYzg5ZmVmNmUxY2Y1MmQ5YmEuemlwIiwKICAgICJzaGEyNTYiOiAiM2ZlNWYzY2RiZTE4OTA2MDIxNzZmODg1YTg1MDdiNmY1Y2VlZTQ4YzcyY2Q3NTBjODlmZWY2ZTFjZjUyZDliYSIsCiAgICAic2l6ZUJ5dGVzIjogNDYzMzc4OTYwCiAgfSwKICAiaW5zdGFsbGVkU2l6ZUJ5dGVzIjogMTUzODQ0NzE1NCwKICAicGF5bG9hZERpZ2VzdCI6IHsKICAgICJmb3JtYXQiOiAic2hhMjU2LXBhdGgtbGlzdC12MSIsCiAgICAic2hhMjU2IjogIjkyY2IwNTFlMzZmOWQyNTIzZmUwOTU5MTdhNjBkYjZmZTRkOWM3OTZiMjkwNDdiNzllZDgxZTE5ODUyMzMwYzMiCiAgfSwKICAicnVudGltZSI6IHsKICAgICJpZCI6ICJweXRob24iLAogICAgInZlcnNpb24iOiAiMy4xMS4xNSIsCiAgICAiZW50cnlQb2ludCI6ICJ2ZW52L2Jpbi9weXRob24iCiAgfSwKICAiY2FjaGVTdWJkaXIiOiAibW9kZWwtY2FjaGUvZ2VuZWZvcm1lci12MS0xMG0iLAogICJzZWxmVGVzdCI6IHsKICAgICJwcm9iZSI6IHsKICAgICAgImltcG9ydHMiOiBbCiAgICAgICAgInRvcmNoIiwKICAgICAgICAidHJhbnNmb3JtZXJzIiwKICAgICAgICAiYW5uZGF0YSIsCiAgICAgICAgIm51bXB5IiwKICAgICAgICAic2NpcHkiLAogICAgICAgICJwYW5kYXMiLAogICAgICAgICJoNXB5IiwKICAgICAgICAic2FmZXRlbnNvcnMiCiAgICAgIF0KICAgIH0sCiAgICAidGltZW91dFNlY29uZHMiOiAxODAKICB9LAogICJwcm92ZW5hbmNlIjogewogICAgInNjcm9sbElkIjogImdlbmVmb3JtZXItdjEtMTBtLW1hY29zLWFybTY0LW1ldGFsIiwKICAgICJzY3JvbGxWZXJzaW9uIjogIjEuMC4wIiwKICAgICJidWlsZGVyUmV2aXNpb24iOiAiMmNlZTI3YWQxYTc5MmVlOWM5OTEyYWE4NGJhNTNlOTRlZmNlNjhiYSIsCiAgICAic291cmNlVHJlZURpcnR5IjogZmFsc2UsCiAgICAic291cmNlUmV2aXNpb24iOiAiMDRjMmIyZTg0ZGE3YzBmMzg1YzNmOWFkOGYzZWMyNGJhYjY2NTBlNSIsCiAgICAicnVudGltZVZlcnNpb24iOiAiMy4xMS4xNSIsCiAgICAicGl4aVZlcnNpb24iOiAiMC43My4wIiwKICAgICJkZXBlbmRlbmN5TG9ja1NoYTI1NiI6ICIzZTk4NDFiMjI5NjY1NjQ1ODcxNWFhMTI3NmVjZTk5OWIyYmRmZTQ1NjZlOGRmZGY3N2MwZTI5NDk2YzRkMTlmIiwKICAgICJidWlsdEF0IjogIjIwMjYtMDktMjVUMTU6MDY6MDgrMDI6MDAiCiAgfQp9Cg==",
+      "payloadEncoding": "base64-json-utf8",
+      "payloadSha256": "94dd428014dc0d9510d1c99770ff21ad11e942ede9ca1d9ec0bd2aa625e9cb9b",
+      "schemaVersion": 3,
+      "signatures": [
+        {
+          "algorithm": "ed25519",
+          "keyId": "liatir-runtime-box-kms-2026",
+          "signatureBase64": "NWW1lcxjIXtwgu4W2e3vtYkkKvujDk5HglPqIrIma9Qcn1no/svaWlLl3CokRfNRw2JrXsNNKZa6oy/45wN4Ag=="
+        }
+      ]
+    }
+  }
+}

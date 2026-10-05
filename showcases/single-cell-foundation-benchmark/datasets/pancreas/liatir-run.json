@@ -1,0 +1,13 @@
+{
+  "run_id": "12b601e2-cd4f-44ba-b3ec-1238b7da569f",
+  "dataset": "pancreas",
+  "stability_check": false,
+  "resource_limits": {
+    "maxRssBytes": 17179869184,
+    "maxSwapGrowthBytes": 268435456,
+    "minAvailableBytes": 6442450944,
+    "minDiskBytes": 8589934592
+  },
+  "execution_profile": "pc-cuda",
+  "threads": 6
+}

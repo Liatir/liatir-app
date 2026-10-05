@@ -25,7 +25,8 @@ export const tests = [
         { timeout: 20_000, timeoutMsg: 'Dependencies page did not load' },
       );
       await browser.waitUntil(
-        async () => browser.execute(() => document.body.innerText.toLowerCase().includes('python')),
+        async () => browser.execute(() => document.body.innerText.toLowerCase().includes('python')
+          && document.body.innerText.includes('Included with Liatir')),
         { timeout: 60_000, timeoutMsg: 'Python dependency result did not appear' },
       );
 
@@ -38,7 +39,7 @@ export const tests = [
       expect(state.text).toContain('python');
       expect(state.text).toContain('AI Models');
       expect(state.text).toContain('Tool Runtimes');
-      expect(state.text).toContain('Check update only reads a small signed manifest');
+      expect(state.text).toContain('Included with Liatir');
       expect(state.text).toContain('pVACtools pVACseq');
       expect(state.text).not.toContain('No Tool Runtime has passed its component-specific release gate yet.');
       await expectNoVisibleRuntimeError(browser);

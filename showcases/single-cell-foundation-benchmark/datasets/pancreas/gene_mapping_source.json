@@ -1,0 +1,8 @@
+{
+  "url": "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_47/gencode.v47.basic.annotation.gtf.gz",
+  "file": "gencode.v47.basic.annotation.gtf.gz",
+  "sha256": "8858ec2557c2904f91e44aeda762759cd998ce663774245710cb52ad4dc334ee",
+  "bytes": 33706193,
+  "release": "GENCODE human v47 GRCh38 basic",
+  "policy": "Exact case-sensitive symbol; only unique Ensembl mappings; no guessing."
+}

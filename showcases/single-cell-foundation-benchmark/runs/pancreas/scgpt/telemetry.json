@@ -1,0 +1,24 @@
+{
+  "wall_seconds": 515.536567396,
+  "peak_rss_bytes": 2518573056,
+  "rss_measurement": "OS root-process high-water mark; excludes child processes",
+  "peak_accelerator_bytes": 3510297600,
+  "peak_accelerator_reason": "PyTorch CUDA peak allocated tensor memory; excludes display, driver and other processes.",
+  "execution_target": "CUDA",
+  "model_runtime_bytes": 27751283099,
+  "disk_scope": "signed installed box including model and runtime, excluding run scratch directories",
+  "status": "completed",
+  "checkpoint_attempts": [
+    {
+      "id": "200ed4fb-7df4-4c7b-a723-0e53d5f38c9b",
+      "started_at": 1791217966.0180478,
+      "updated_at": 1791218475.3787842,
+      "elapsed_seconds": 513.860411033,
+      "peak_rss_bytes": 2518573056,
+      "status": "completed",
+      "peak_accelerator_bytes": 3510297600
+    }
+  ],
+  "embedding_dimensions": 512,
+  "embedding_bytes": 31318387
+}

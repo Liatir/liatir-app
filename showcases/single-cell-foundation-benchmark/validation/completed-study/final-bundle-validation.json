@@ -1,0 +1,14 @@
+{
+  "status": "passed",
+  "configurations": 12,
+  "completed": 10,
+  "blocked": [
+    "pancreas/uce",
+    "pbmc/uce"
+  ],
+  "csv_json_values_identical": true,
+  "bundle_crc_verified": true,
+  "bundle_sha256": "184475f893e7f23efd24d095dccaccac8deefb79a525c0c7aa3d55a193f06de3",
+  "bundle_bytes": 405019914,
+  "figures": 22
+}

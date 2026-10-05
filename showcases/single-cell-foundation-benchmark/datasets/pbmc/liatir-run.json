@@ -1,0 +1,11 @@
+{
+  "run_id": "c8dcfc55-cb26-4074-a877-5ec423b62817",
+  "dataset": "pbmc",
+  "stability_check": false,
+  "resource_limits": {
+    "maxRssBytes": 2147483648,
+    "maxSwapGrowthBytes": 268435456,
+    "minAvailableBytes": 2147483648,
+    "minDiskBytes": 4294967296
+  }
+}

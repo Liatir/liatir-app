@@ -1,0 +1,78 @@
+{
+  "appLogPath": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/tests/.artifacts/tauri-logs/tauri-2026-10-05T16-57-43-729Z.log",
+  "artifactsDir": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/tests/.artifacts",
+  "heavy": false,
+  "specs": [
+    "tests/e2e/specs/dependencies.e2e.mjs",
+    "tests/e2e/specs/execution-spine.e2e.mjs",
+    "tests/e2e/specs/single-cell-lighthouse.e2e.mjs"
+  ],
+  "startedAt": "2026-10-05T16:57:43.740Z",
+  "finishedAt": "2026-10-05T16:58:07.276Z",
+  "summary": {
+    "durationMs": 23536,
+    "failed": 0,
+    "passed": 8,
+    "skipped": 0,
+    "total": 8
+  },
+  "tests": [
+    {
+      "durationMs": 6524,
+      "heavy": false,
+      "name": "loads dependency checks through the real Tauri bridge",
+      "specPath": "tests/e2e/specs/dependencies.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 242,
+      "heavy": false,
+      "name": "runs a bundled Native Tool from inside the application, not from PATH",
+      "specPath": "tests/e2e/specs/dependencies.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 69,
+      "heavy": false,
+      "name": "keeps independently owned logical Jobs isolated and first-writer terminal",
+      "specPath": "tests/e2e/specs/execution-spine.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 2626,
+      "heavy": false,
+      "name": "runs and cancels standalone API Connectors without cross-run blocking",
+      "specPath": "tests/e2e/specs/execution-spine.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 2761,
+      "heavy": false,
+      "name": "runs and cancels a standalone Native Tool with one Job and Result identity",
+      "specPath": "tests/e2e/specs/execution-spine.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 2367,
+      "heavy": false,
+      "name": "settles WASM Plugin success, failure and off-page cancellation through one spine",
+      "specPath": "tests/e2e/specs/execution-spine.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 5452,
+      "heavy": false,
+      "name": "retains and resumes a cancelled native download with an HTTP Range request",
+      "specPath": "tests/e2e/specs/execution-spine.e2e.mjs",
+      "status": "passed"
+    },
+    {
+      "durationMs": 1836,
+      "heavy": false,
+      "name": "opens embedded AnnData, reuses it from Data, and creates the lighthouse preset",
+      "specPath": "tests/e2e/specs/single-cell-lighthouse.e2e.mjs",
+      "status": "passed"
+    }
+  ],
+  "visual": false
+}

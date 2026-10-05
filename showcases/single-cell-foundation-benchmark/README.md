@@ -9,7 +9,8 @@ plan. [protocol.md](protocol.md) specifies the fixed scientific parameters.
 1. Install the available selected models through **AI Models**. Signed targets differ
    by platform; an unsupported model stays visible as a blocked configuration.
 2. Open **Tools → Single-cell study**. Choose PBMC or Pancreas and the methods.
-3. Disable **Small stability check** for the complete dataset. Launch the study.
+3. Disable **Check stability on a small sample first** for the complete dataset.
+   On the approved PC choose **Use NVIDIA graphics card and more memory**. Launch.
 4. Follow it in **Jobs**. Its **Results** entry contains the individual measurements,
    cell-type and batch plots, runtime/memory comparisons and ZIP export.
 
@@ -18,30 +19,40 @@ Every invocation belongs to its workspace and has its own saved run identity.
 Leaving the screen does not stop it. A finished study can be resumed; completed
 methods are reused only after verifying code, data, split and embedding checksums.
 
-**Current execution status:** full PBMC measurements exist; pancreas stopped
-after four completed representation stages. It has no final common evaluation.
-The Mac scGPT worker saved only at the end, so its interrupted partial work
-was lost. The updated worker commits each completed batch to a checked local
-database; fixture interruption, corruption, changed identity and concurrent-writer
-checks pass. The detached driver survives its launcher exiting. The real signed
-Linux model interruption check passed: 16 resumed cells matched the frozen runner
-exactly, and a changed seed was rejected. Full native pancreas continuation is now
-continuing on Windows/WSL2, reusing its four completed Mac representations. Its
-first attempt stopped at the approved swap-growth limit; 1,181 committed cells
-were retained. A Windows-owned WSL session passed a 95-second launcher-exit check
-and now protects the continuation with a separate zero-swap workload group.
-Reproduction, source-count checks and repository gates require its successful
-native export. Final study completion remains pending.
-All nine completed representations were imported and checked on Windows/WSL2;
-their original Mac inputs, costs and provenance remain attached. See the
-[Windows/WSL2 handoff](../../.context/state/single-cell-showcase-wsl2-handoff.md).
+**Scientific results:** both complete datasets have measurements: PBMC 11,990
+cells × 3,346 genes and pancreas 16,382 cells × 19,093 genes. PCA, Geneformer,
+Harmony, scVI and scGPT completed for each dataset. UCE remains an explicit
+blocker: its checkpoint exceeded the original Mac budget, and no signed Linux
+target is published for this PC. Increasing PC RAM does not provide that target.
+The twelve-row [CSV](results/summary.csv), [JSON](results/summary.json),
+[figures](results/figures/) and [report](report/results.md) expose all outcomes.
 
-The approved local operating budget is CPU only, one numerical thread, one-cell
-pretrained-model batches and a 2 GiB process-family memory limit. An independent
-monitor also checks host memory, swap growth and free disk. A blocked method has
-null scientific scores, an explicit cause and retained logs. The pinned UCE loader's
-checkpoint storage alone exceeds this budget; its preflight records that boundary
-without attempting the known oversized allocation.
+Nine completed Mac representations were reused byte for byte. Only unfinished
+pancreas scGPT inference ran again, inside the actual compiled Linux Liatir app
+in WSL2, with its window on a virtual display. Its new CUDA run took
+515.536567396 seconds, using six numerical threads and groups of sixteen cells.
+Both datasets passed independent metric reproduction and exact original-source
+count checks. Native Results, charts and export passed; the corrected relevant
+UI matrix passed all three suites (48 ordinary native cases, plus index and
+restart checks). This is development-app verification, not a Windows release gate.
+
+The updated scGPT worker saves each complete batch to a checked local database.
+Real signed-model interruption/resume, changed-identity refusal and exact
+resumed/uninterrupted GPU equality passed before full inference. The Windows
+supervisor held WSL alive across chat interruption; the complete GPU database
+now retains all 16,382 cells. Earlier Mac interrupted logs and the PC's separate
+2,066-cell CPU checkpoint remain historical evidence, without mixing CPU and
+GPU vectors or charging old partial work to the new complete runtime.
+See the [continuation record](../../.context/history/single-cell-showcase-wsl2-execution.md).
+
+The original Mac budget was CPU, one numerical thread, one-cell model batches
+and 2 GiB process-family memory. The explicitly approved PC profile uses six
+threads, CUDA, batches of sixteen, a 16 GiB process-family ceiling and a 6 GiB
+whole-GPU ceiling. It requires 6 GiB available system RAM, 8 GiB free disk and
+at most 256 MiB host swap growth; its workload group cannot swap. An additional
+5.5 GiB PyTorch allocator ceiling leaves graphics memory for the system. The
+default cautious profile remains available. Actual producer limits stay attached
+to each method. Blocked rows contain null scores, causes and retained logs.
 
 ## Native execution driver
 
@@ -85,13 +96,17 @@ again into the ZIP.
 ## Recompute saved measurements
 
 Use Python 3.11 and the exact packages in `requirements.txt`, in an isolated
-environment. Set the numerical thread variables to one. With the repository root
-as the working directory, the following checks the assembled export and recomputes
+environment. The helper starts a separate process per dataset with its recorded
+thread settings (one for PBMC, six for pancreas); use a host with six cores.
+The tracked tables alone omit large matrices and embeddings. Use the complete
+local export in `transfer/completed-study-final-wsl2-2026-10-05`, or extract its
+`single-cell-study.zip` into a fresh directory. With the repository root
+as the working directory, the following checks that export and recomputes
 every biological and batch score from saved embeddings and the fixed split:
 
 ```sh
 python showcases/single-cell-foundation-benchmark/reproduce.py \
-  showcases/single-cell-foundation-benchmark \
+  showcases/single-cell-foundation-benchmark/transfer/completed-study-final-wsl2-2026-10-05 \
   --output tests/.artifacts/single-cell-reproduction
 ```
 
@@ -104,9 +119,11 @@ not claim that pretrained inference or scVI training was rerun.
 `finish_study.py` coordinates assembly of two completed native exports, independent
 metric reproduction, exact canonical source-count checks and artifact validation.
 Pass both native output directories, a fresh `--output` directory and `--cache`
-for the checksummed public sources. It uses the same frozen resource limits and
-does not repeat representations. Its full scientific execution remains pending;
-the existence of the helper is not validation evidence.
+for the checksummed public sources. It keeps producer limits separate and does
+not repeat representations. Its complete scientific execution passed on the
+two native exports; [tested reproduction](report/reproduction-validation.md)
+records the commands and real outcomes. Final curation also retains original
+partial attempts, reviewed figures and repository gate evidence in the bundle.
 
 `verify_counts.py` separately checks every prepared count against the downloaded
 canonical sources, without rounding or reconstructing measurements. For an assembled
