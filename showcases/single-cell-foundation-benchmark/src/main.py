@@ -26,7 +26,8 @@ def run_stage(inputs):
         (root / "protocol.md").write_text(inputs["protocol"])
         (root / "requirements.txt").write_text(inputs.get("requirements", ""))
         write_json(root / "liatir-run.json", {"run_id": inputs.get("runId"), "dataset": dataset,
-                   "stability_check": bool(inputs.get("stabilityCheck")), "resource_limits": inputs["resourceLimits"]})
+                   "stability_check": bool(inputs.get("stabilityCheck")), "resource_limits": inputs["resourceLimits"],
+                   "execution_profile": inputs.get("executionProfile", "cautious-cpu"), "threads": inputs.get("threads", 1)})
         (root / "code").mkdir(exist_ok=True)
         for source in Path(__file__).parent.glob("*.py"):
             shutil.copyfile(source, root / "code" / source.name)
@@ -82,8 +83,11 @@ class Tee:
 
 def main(inputs):
     root = Path(inputs["outputDir"])
+    threads = int(inputs.get("threads", 1))
+    if not 1 <= threads <= (os.cpu_count() or 1):
+        raise ValueError("The requested numerical thread count exceeds this host.")
     for name in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS", "NUMBA_NUM_THREADS"):
-        os.environ[name] = "1"
+        os.environ[name] = str(threads)
     os.environ["JAX_PLATFORMS"] = "cpu"
     directory = root / "runs" / inputs["dataset"] / inputs["method"] if inputs["action"] == "baseline" else root / "stages" / inputs["action"]
     with ResourceGuard(directory, inputs["resourceLimits"]):

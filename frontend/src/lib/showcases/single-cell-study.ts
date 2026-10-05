@@ -3,6 +3,8 @@ import {
   LIATIR_SINGLE_CELL_STUDY_DATASETS,
   LIATIR_SINGLE_CELL_STUDY_METHODS,
   LIATIR_SINGLE_CELL_STUDY_LIMITS,
+  LIATIR_SINGLE_CELL_STUDY_PC_LIMITS,
+  LIATIR_SINGLE_CELL_STUDY_PC_EXECUTION,
   liatirExecutionMetadata,
   type JsonValue,
   type LiatirSingleCellStudyRequest,
@@ -32,6 +34,10 @@ const scripts: Record<string, string> = {
 
 /** Each invocation owns a durable Liatir run; navigation never owns the in-flight promise. */
 export async function launchSingleCellStudy(request: LiatirSingleCellStudyRequest): Promise<string> {
+  if (request.executionProfile && !['cautious-cpu', 'pc-cuda'].includes(request.executionProfile)) throw new Error('Choose a supported execution profile.');
+  const pc = request.executionProfile === 'pc-cuda';
+  const limits = pc ? LIATIR_SINGLE_CELL_STUDY_PC_LIMITS : LIATIR_SINGLE_CELL_STUDY_LIMITS;
+  const execution = pc ? LIATIR_SINGLE_CELL_STUDY_PC_EXECUTION : { accelerator: 'cpu', threads: 1, batchSize: 1 };
   if (!LIATIR_SINGLE_CELL_STUDY_DATASETS.some((d) => d.id === request.dataset)) throw new Error('Select a study dataset.');
   if (!request.methods.length || new Set(request.methods).size !== request.methods.length
     || request.methods.some((id) => !LIATIR_SINGLE_CELL_STUDY_METHODS.some((m) => m.id === id))) {
@@ -82,7 +88,7 @@ export async function launchSingleCellStudy(request: LiatirSingleCellStudyReques
         await run.appendLog(`${action}${extra.method ? `: ${extra.method}` : ''}`);
         const result = await runLiatirPlugin(plugin,
           { action, outputDir, dataset: request.dataset, cacheDir: `${data}/showcases/single-cell-datasets`,
-            resourceLimits: LIATIR_SINGLE_CELL_STUDY_LIMITS, ...extra },
+            resourceLimits: limits, threads: execution.threads, ...extra },
           (stream, line) => { void run.appendLog(line, stream); },
           { workspaceId: run.identity.workspaceId, label: `${label} · ${action}${extra.method ? ` ${extra.method}` : ''}`,
             kind: 'lia-plugin', metadata, signal: run.signal, onSpawn: (jobId) => { void run.attachJob(jobId); } },
@@ -91,6 +97,7 @@ export async function launchSingleCellStudy(request: LiatirSingleCellStudyReques
         return result.result as Record<string, unknown>;
       };
       const prepared = await stage('prepare', { protocol, requirements, runId: id, modelScripts: scripts, methods: request.methods,
+        executionProfile: request.executionProfile ?? 'cautious-cpu',
         stabilityCheck: Boolean(request.stabilityCheck),
         ...(request.importStudyFile ? { importStudyFile: request.importStudyFile, transferManifest: JSON.parse(transferManifest) } : {}),
         ...(request.resumeFromRunId ? { resumeRoot: `${data}/workspaces/${run.identity.workspaceId}/runs/${request.resumeFromRunId}/output` } : {}) });
@@ -120,7 +127,7 @@ export async function launchSingleCellStudy(request: LiatirSingleCellStudyReques
         }
         const config = { method: method.id, modelId: method.modelId, seed: 23, zero_shot: true,
           sourceCountProvenance: sourceCountProvenance ?? null,
-          batchSize: 1, accelerator: 'cpu', threads: 1, resource_limits: LIATIR_SINGLE_CELL_STUDY_LIMITS };
+          ...execution, execution_profile: request.executionProfile ?? 'cautious-cpu', resource_limits: limits };
         let jobId: string | null = null;
         let result;
         try {
@@ -134,12 +141,13 @@ export async function launchSingleCellStudy(request: LiatirSingleCellStudyReques
           }
           result = await runAIPython(model, monitor, {
             modelScript: scripts[method.id], runtimePath: model.runtimePath!, modelCacheDir: cachePathForModel(model)!,
-            resourceGuard, resourceLimits: LIATIR_SINGLE_CELL_STUDY_LIMITS,
+            resourceGuard, resourceLimits: { ...limits, ...(pc ? { maxGpuUsedBytes: LIATIR_SINGLE_CELL_STUDY_PC_EXECUTION.maxGpuUsedBytes } : {}) },
+            threads: execution.threads,
             uceCheckpointPreflight: method.id === 'uce',
             profileInference: method.id === 'scgpt' && Boolean(request.stabilityCheck),
             inputFile: prepared.prepared_path as string, outputDir: `${outputDir}/runs/${request.dataset}/${method.id}`,
             ...(sourceCountProvenance ? { sourceCountProvenance } : {}),
-            species: 'human', batchSize: 1, accelerator: 'cpu', maxCsvRows: 3, randomSeed: 23,
+            species: 'human', batchSize: execution.batchSize, accelerator: execution.accelerator, maxCsvRows: 3, randomSeed: 23,
             verifyEncoderParity: method.id === 'geneformer' && Boolean(request.stabilityCheck),
           }, { jobLabel: `${label} · ${method.label}`, metadata, timeoutSeconds: 24 * 3600,
             workspaceId: run.identity.workspaceId,

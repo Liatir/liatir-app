@@ -75,10 +75,26 @@ stopped by the unchanged swap-growth guard. Its 1,181 committed scGPT cells
 remain intact. A Windows-owned foreground WSL supervisor now passed a real
 95-second launcher-exit/idle-lifetime check; its unique workload cgroup refuses
 swap without changing global WSL settings or raising scientific limits.
-The corrected native continuation is active, parent
-`22c037dc-6d1b-4b3a-9234-5246b8258f25`. It reused all 1,181 batches exactly
-and marked the stopped attempt separately; its worker and cgroup report zero
-swap. The new seven-suite verify gate passed before launch. Assembly,
+The corrected native CPU continuation, parent
+`22c037dc-6d1b-4b3a-9234-5246b8258f25`, reused all 1,181 batches exactly.
+It was then cancelled through the native execution store after the user explicitly
+approved increasing PC resources and using the local GPU. All 2,066 committed
+cells are preserved; neither that checkpoint nor the Mac records are relabeled.
+The [PC resource decision](../decisions/2026-10-05-single-cell-pc-resources.md)
+supersedes the old continuation limits: six threads, guarded 16 GiB RAM / 6 GiB
+GPU budgets, with system headroom and no workload swap. The published signed
+scGPT CUDA target is activated through the actual native Liatir API. The native
+128-cell pancreas diagnostic passed exact GPU interruption/resume equality,
+changed-seed rejection, CPU/GPU compatibility and an observed GPU guard refusal.
+Six threads / groups of 16 fit the safety margin; groups of 32 exceeded the
+allocator ceiling and were rejected. The user accepts the virtual app window.
+The updated seven-suite gate passed again (87 files / 676 tests) before the
+full accelerated native parent `12b601e2-cd4f-44ba-b3ec-1238b7da569f` started.
+Windows execution `9d50a8e0-464d-4bc9-a49d-01c15b087234` owns its foreground
+WSL session and dependent finisher, with a 16 GiB / zero-swap cgroup. Readback
+verified the CUDA target, six numerical threads, batch 16 and exact original
+pancreas input hash; all four completed Mac methods are byte-identical.
+Earlier CPU attempts are preserved separately in the new export. Assembly,
 independent metric reproduction, source-count checks and full scientific
 regressions remain pending, with their finisher dependent on actual native success.
 Follow the

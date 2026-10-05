@@ -44,9 +44,13 @@ def assemble(roots, destination):
             raise ValueError("Diagnostic samples cannot enter the full-study summary.")
         if dataset not in DATASETS or dataset in selected:
             raise ValueError("Provide exactly one full run for each required dataset.")
-        if limits is not None and limits != recorded["resource_limits"]:
-            raise ValueError("The two runs used different operating limits.")
-        limits = recorded["resource_limits"]
+        # Assembly does no inference. Keep each producer's limits in its records
+        # and apply the stricter common safeguards to this copying/report phase.
+        current_limits = recorded["resource_limits"]
+        limits = current_limits.copy() if limits is None else {
+            key: (max if key.startswith("min") else min)(limits[key], value)
+            for key, value in current_limits.items()
+        }
         summary = read_json(root / "results/summary.json")
         if sorted(row["method"] for row in summary) != sorted(METHODS):
             raise ValueError(f"The six requested methods are not all recorded: {dataset}")

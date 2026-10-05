@@ -33,9 +33,9 @@ def restore(root, source, dataset, stability_check, transfer_manifest=None, requ
     recorded = read_json(source / "liatir-run.json")
     if recorded["dataset"] != dataset or bool(recorded.get("stability_check")) != stability_check:
         raise ValueError("Checkpoint dataset or stability-test scope does not match.")
-    if (root / "liatir-run.json").exists() and recorded.get("resource_limits") != read_json(root / "liatir-run.json").get("resource_limits"):
-        raise ValueError("The saved study used different operating limits.")
     transfer = verify_transfer(source, recorded, transfer_manifest) if transfer_manifest else None
+    if not transfer and (root / "liatir-run.json").exists() and recorded.get("resource_limits") != read_json(root / "liatir-run.json").get("resource_limits"):
+        raise ValueError("The saved study used different operating limits.")
     # A verified historical export runs no historical inference. Its exact source,
     # environment and measurements stay attached; only compatible evaluation is new.
     code = [root / "code" / name for name in ("common.py", "evaluation.py")] if transfer else sorted((root / "code").glob("*.py"))
@@ -78,6 +78,7 @@ def restore(root, source, dataset, stability_check, transfer_manifest=None, requ
         target = root / "runs" / dataset / method
         shutil.copytree(directory, target, copy_function=copy_artifact)
         provenance["reused_from_run_id"] = recorded["run_id"]
+        provenance["source_resource_limits"] = recorded.get("resource_limits") if transfer else provenance.get("source_resource_limits", recorded.get("resource_limits"))
         provenance["source_study_environment"] = read_json(source / "study-environment.json") if transfer else provenance.get("source_study_environment")
         provenance["source_frozen_code_directory"] = str(source / "code")
         write_json(target / "provenance.json", provenance)

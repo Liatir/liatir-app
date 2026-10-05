@@ -8,6 +8,17 @@ export const LIATIR_SINGLE_CELL_STUDY_LIMITS = {
   minDiskBytes: 4 * 1024 ** 3,
   maxSwapGrowthBytes: 256 * 1024 ** 2,
 } as const;
+/** Explicit local PC opt-in; the historical Mac safeguards remain the default. */
+export const LIATIR_SINGLE_CELL_STUDY_PC_LIMITS = {
+  maxRssBytes: 16 * 1024 ** 3,
+  minAvailableBytes: 6 * 1024 ** 3,
+  minDiskBytes: 8 * 1024 ** 3,
+  maxSwapGrowthBytes: 256 * 1024 ** 2,
+} as const;
+export const LIATIR_SINGLE_CELL_STUDY_PC_EXECUTION = {
+  accelerator: 'cuda', threads: 6, batchSize: 16,
+  maxGpuUsedBytes: 6 * 1024 ** 3,
+} as const;
 export const LIATIR_SINGLE_CELL_STUDY_DATASETS = [
   { id: 'pbmc', label: 'PBMC 12k', description: 'Blood immune cells from two experimental batches.' },
   { id: 'pancreas', label: 'scIB Pancreas', description: 'Pancreatic cells measured with different sequencing technologies.' },
@@ -31,4 +42,6 @@ export interface LiatirSingleCellStudyRequest {
   resumeFromRunId?: string;
   /** Import an explicitly verified historical export into a new workspace run. */
   importStudyFile?: string;
+  /** Explicitly opt into the approved PC GPU budget; never inferred from hardware. */
+  executionProfile?: 'cautious-cpu' | 'pc-cuda';
 }

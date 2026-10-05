@@ -1,0 +1,27 @@
+{
+  "appLogPath": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/tests/.artifacts/tauri-logs/tauri-2026-10-05T15-02-36-346Z.log",
+  "artifactsDir": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/tests/.artifacts",
+  "heavy": false,
+  "specs": [
+    "showcases/single-cell-foundation-benchmark/transfer/install-scgpt-cuda.e2e.mjs"
+  ],
+  "startedAt": "2026-10-05T15:02:36.357Z",
+  "finishedAt": "2026-10-05T15:07:11.831Z",
+  "summary": {
+    "durationMs": 275474,
+    "failed": 0,
+    "passed": 1,
+    "skipped": 0,
+    "total": 1
+  },
+  "tests": [
+    {
+      "durationMs": 273830,
+      "heavy": false,
+      "name": "installs the approved signed CUDA scGPT target through the native Liatir API",
+      "specPath": "showcases/single-cell-foundation-benchmark/transfer/install-scgpt-cuda.e2e.mjs",
+      "status": "passed"
+    }
+  ],
+  "visual": false
+}

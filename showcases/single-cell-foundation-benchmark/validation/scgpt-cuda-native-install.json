@@ -1,0 +1,263 @@
+{
+  "status": "installed",
+  "request": {
+    "boxId": "scgpt-whole-human",
+    "modelId": "bowang-scgpt-whole-human",
+    "channel": "beta",
+    "registryBaseUrl": "https://models.liatir.com/v1",
+    "targetCandidates": [
+      {
+        "target": {
+          "platform": "linux",
+          "arch": "x86_64",
+          "accelerator": "cuda",
+          "cudaVersion": "12.9"
+        },
+        "hostEnvironments": [
+          "native",
+          "windows-wsl2"
+        ],
+        "minRamGb": 16,
+        "minNvidiaDriverVersion": "525.60.13"
+      }
+    ],
+    "downloadId": "study-scgpt-cuda-1791212560021"
+  },
+  "result": {
+    "activation": {
+      "hostEnvironment": "native",
+      "release": {
+        "archive": {
+          "format": "zip",
+          "sha256": "3da31f6ef9c6ca48e55af52190451e4ca8ce293cd9421fc88e997c8cfceed932",
+          "sizeBytes": 7857676593,
+          "url": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/scgpt-whole-human/0.2.5-beta.2/linux-x86_64-cuda12.9/3da31f6ef9c6ca48e55af52190451e4ca8ce293cd9421fc88e997c8cfceed932.zip"
+        },
+        "boxId": "scgpt-whole-human",
+        "cacheSubdir": "model-cache/scgpt-whole-human",
+        "compatibility": {
+          "hostEnvironments": [
+            "native",
+            "windows-wsl2"
+          ],
+          "minLiatirVersion": "0.2.1",
+          "minNvidiaDriverVersion": "525.60.13",
+          "minRamGb": 16
+        },
+        "installedSizeBytes": 13278575392,
+        "kind": "liatir.runtime-box.release",
+        "labels": {
+          "model": "bowang-scgpt-whole-human",
+          "runtime": "single-cell-foundation-scgpt-whole-human"
+        },
+        "payloadDigest": {
+          "format": "sha256-path-list-v1",
+          "sha256": "0d041ba730d1e51a1ca018bd9817fc79cd609bd5bd805535e72a59e190acf9cd"
+        },
+        "provenance": {
+          "builderRevision": "5bd54a9f1854b0c01ee55b69099105eb0a52689c",
+          "builtAt": "2026-09-25T00:34:56+02:00",
+          "dependencyLockSha256": "3bc87da78d23f009d4f654f3da734f7ca226489f700f9ad5e355163b4a729194",
+          "pixiVersion": "0.73.0",
+          "runtimeVersion": "3.11.15",
+          "scrollId": "scgpt-whole-human-linux-x86_64-cuda12.9",
+          "scrollVersion": "1.0.0",
+          "sourceRevision": "cebd6fae655b9c585a4807daa3ac31bb764f06b4",
+          "sourceTreeDirty": false
+        },
+        "runtime": {
+          "entryPoint": "venv/bin/python",
+          "id": "python",
+          "version": "3.11.15"
+        },
+        "schemaVersion": 3,
+        "selfTest": {
+          "probe": {
+            "imports": [
+              "torch",
+              "anndata",
+              "numpy",
+              "scipy",
+              "pandas",
+              "h5py",
+              "tqdm"
+            ]
+          },
+          "timeoutSeconds": 180
+        },
+        "target": {
+          "accelerator": "cuda",
+          "arch": "x86_64",
+          "cudaVersion": "12.9",
+          "platform": "linux"
+        },
+        "version": "0.2.5-beta.2"
+      },
+      "schemaVersion": 3,
+      "selectedTarget": {
+        "accelerator": "cuda",
+        "arch": "x86_64",
+        "cudaVersion": "12.9",
+        "platform": "linux"
+      },
+      "signedRelease": {
+        "payloadBase64": "ewogICJzY2hlbWFWZXJzaW9uIjogMywKICAia2luZCI6ICJsaWF0aXIucnVudGltZS1ib3gucmVsZWFzZSIsCiAgImJveElkIjogInNjZ3B0LXdob2xlLWh1bWFuIiwKICAibGFiZWxzIjogewogICAgIm1vZGVsIjogImJvd2FuZy1zY2dwdC13aG9sZS1odW1hbiIsCiAgICAicnVudGltZSI6ICJzaW5nbGUtY2VsbC1mb3VuZGF0aW9uLXNjZ3B0LXdob2xlLWh1bWFuIgogIH0sCiAgInZlcnNpb24iOiAiMC4yLjUtYmV0YS4yIiwKICAidGFyZ2V0IjogewogICAgInBsYXRmb3JtIjogImxpbnV4IiwKICAgICJhcmNoIjogIng4Nl82NCIsCiAgICAiYWNjZWxlcmF0b3IiOiAiY3VkYSIsCiAgICAiY3VkYVZlcnNpb24iOiAiMTIuOSIKICB9LAogICJjb21wYXRpYmlsaXR5IjogewogICAgIm1pbkxpYXRpclZlcnNpb24iOiAiMC4yLjEiLAogICAgIm1pblJhbUdiIjogMTYsCiAgICAibWluTnZpZGlhRHJpdmVyVmVyc2lvbiI6ICI1MjUuNjAuMTMiLAogICAgImhvc3RFbnZpcm9ubWVudHMiOiBbCiAgICAgICJuYXRpdmUiLAogICAgICAid2luZG93cy13c2wyIgogICAgXQogIH0sCiAgImFyY2hpdmUiOiB7CiAgICAiZm9ybWF0IjogInppcCIsCiAgICAidXJsIjogImh0dHBzOi8vYXNzZXRzLm1vZGVscy5saWF0aXIuY29tL2FpLXJ1bnRpbWUtYm94ZXMvYm94ZXMvc2NncHQtd2hvbGUtaHVtYW4vMC4yLjUtYmV0YS4yL2xpbnV4LXg4Nl82NC1jdWRhMTIuOS8zZGEzMWY2ZWY5YzZjYTQ4ZTU1YWY1MjE5MDQ1MWU0Y2E4Y2UyOTNjZDk0MjFmYzg4ZTk5N2M4Y2ZjZWVkOTMyLnppcCIsCiAgICAic2hhMjU2IjogIjNkYTMxZjZlZjljNmNhNDhlNTVhZjUyMTkwNDUxZTRjYThjZTI5M2NkOTQyMWZjODhlOTk3YzhjZmNlZWQ5MzIiLAogICAgInNpemVCeXRlcyI6IDc4NTc2NzY1OTMKICB9LAogICJpbnN0YWxsZWRTaXplQnl0ZXMiOiAxMzI3ODU3NTM5MiwKICAicGF5bG9hZERpZ2VzdCI6IHsKICAgICJmb3JtYXQiOiAic2hhMjU2LXBhdGgtbGlzdC12MSIsCiAgICAic2hhMjU2IjogIjBkMDQxYmE3MzBkMWU1MWExY2EwMThiZDk4MTdmYzc5Y2Q2MDliZDViZDgwNTUzNWU3MmE1OWUxOTBhY2Y5Y2QiCiAgfSwKICAicnVudGltZSI6IHsKICAgICJpZCI6ICJweXRob24iLAogICAgInZlcnNpb24iOiAiMy4xMS4xNSIsCiAgICAiZW50cnlQb2ludCI6ICJ2ZW52L2Jpbi9weXRob24iCiAgfSwKICAiY2FjaGVTdWJkaXIiOiAibW9kZWwtY2FjaGUvc2NncHQtd2hvbGUtaHVtYW4iLAogICJzZWxmVGVzdCI6IHsKICAgICJwcm9iZSI6IHsKICAgICAgImltcG9ydHMiOiBbCiAgICAgICAgInRvcmNoIiwKICAgICAgICAiYW5uZGF0YSIsCiAgICAgICAgIm51bXB5IiwKICAgICAgICAic2NpcHkiLAogICAgICAgICJwYW5kYXMiLAogICAgICAgICJoNXB5IiwKICAgICAgICAidHFkbSIKICAgICAgXQogICAgfSwKICAgICJ0aW1lb3V0U2Vjb25kcyI6IDE4MAogIH0sCiAgInByb3ZlbmFuY2UiOiB7CiAgICAic2Nyb2xsSWQiOiAic2NncHQtd2hvbGUtaHVtYW4tbGludXgteDg2XzY0LWN1ZGExMi45IiwKICAgICJzY3JvbGxWZXJzaW9uIjogIjEuMC4wIiwKICAgICJidWlsZGVyUmV2aXNpb24iOiAiNWJkNTRhOWYxODU0YjBjMDFlZTU1YjY5MDk5MTA1ZWIwYTUyNjg5YyIsCiAgICAic291cmNlVHJlZURpcnR5IjogZmFsc2UsCiAgICAic291cmNlUmV2aXNpb24iOiAiY2ViZDZmYWU2NTViOWM1ODVhNDgwN2RhYTNhYzMxYmI3NjRmMDZiNCIsCiAgICAicnVudGltZVZlcnNpb24iOiAiMy4xMS4xNSIsCiAgICAicGl4aVZlcnNpb24iOiAiMC43My4wIiwKICAgICJkZXBlbmRlbmN5TG9ja1NoYTI1NiI6ICIzYmM4N2RhNzhkMjNmMDA5ZDRmNjU0ZjNkYTczNGY3Y2EyMjY0ODlmNzAwZjlhZDVlMzU1MTYzYjRhNzI5MTk0IiwKICAgICJidWlsdEF0IjogIjIwMjYtMDktMjVUMDA6MzQ6NTYrMDI6MDAiCiAgfQp9Cg==",
+        "payloadEncoding": "base64-json-utf8",
+        "payloadSha256": "9ed266d51cb60ed58ea3c1f15e635b4b6a803ffee26c1532d0b44b899904dbd2",
+        "schemaVersion": 3,
+        "signatures": [
+          {
+            "algorithm": "ed25519",
+            "keyId": "liatir-runtime-box-kms-2026",
+            "signatureBase64": "YJErk9N4+P0xaRgc2mPZH6gKHYBIwoyMUaDX6EoHEwXJmNOVxsr7uhW7UrWATMXz6F9lxAQMgb4c+5YFh2SYCg=="
+          }
+        ]
+      }
+    },
+    "componentId": "bowang-scgpt-whole-human",
+    "componentKind": "ai-model",
+    "pythonPath": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/tests/.artifacts/home/single-cell-showcase/.local/share/app.liatir.app/.liatir/.main/data/ai-runtimes/single-cell-foundation-scgpt-whole-human/venv/bin/python",
+    "rollbackAvailable": true,
+    "runtimeDir": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/tests/.artifacts/home/single-cell-showcase/.local/share/app.liatir.app/.liatir/.main/data/ai-runtimes/single-cell-foundation-scgpt-whole-human",
+    "runtimeId": "single-cell-foundation-scgpt-whole-human",
+    "sizeBytes": 13278580655,
+    "version": "0.2.5-beta.2"
+  },
+  "box": {
+    "schemaVersion": 3,
+    "boxId": "scgpt-whole-human",
+    "labels": {
+      "model": "bowang-scgpt-whole-human",
+      "runtime": "single-cell-foundation-scgpt-whole-human"
+    },
+    "version": "0.2.5-beta.2",
+    "target": {
+      "platform": "linux",
+      "arch": "x86_64",
+      "accelerator": "cuda",
+      "cudaVersion": "12.9"
+    },
+    "runtime": {
+      "id": "python",
+      "version": "3.11.15",
+      "entryPoint": "venv/bin/python"
+    },
+    "cacheSubdir": "model-cache/scgpt-whole-human",
+    "selfTest": {
+      "probe": {
+        "imports": [
+          "torch",
+          "anndata",
+          "numpy",
+          "scipy",
+          "pandas",
+          "h5py",
+          "tqdm"
+        ]
+      },
+      "timeoutSeconds": 180
+    },
+    "provenance": {
+      "scrollId": "scgpt-whole-human-linux-x86_64-cuda12.9",
+      "scrollVersion": "1.0.0",
+      "builderRevision": "5bd54a9f1854b0c01ee55b69099105eb0a52689c",
+      "sourceTreeDirty": false,
+      "sourceRevision": "cebd6fae655b9c585a4807daa3ac31bb764f06b4",
+      "runtimeVersion": "3.11.15",
+      "pixiVersion": "0.73.0",
+      "dependencyLockSha256": "3bc87da78d23f009d4f654f3da734f7ca226489f700f9ad5e355163b4a729194",
+      "builtAt": "2026-09-25T00:34:56+02:00"
+    }
+  },
+  "activation": {
+    "schemaVersion": 3,
+    "selectedTarget": {
+      "platform": "linux",
+      "arch": "x86_64",
+      "accelerator": "cuda",
+      "cudaVersion": "12.9"
+    },
+    "hostEnvironment": "native",
+    "release": {
+      "schemaVersion": 3,
+      "kind": "liatir.runtime-box.release",
+      "boxId": "scgpt-whole-human",
+      "labels": {
+        "model": "bowang-scgpt-whole-human",
+        "runtime": "single-cell-foundation-scgpt-whole-human"
+      },
+      "version": "0.2.5-beta.2",
+      "target": {
+        "platform": "linux",
+        "arch": "x86_64",
+        "accelerator": "cuda",
+        "cudaVersion": "12.9"
+      },
+      "compatibility": {
+        "minRamGb": 16,
+        "minNvidiaDriverVersion": "525.60.13",
+        "hostEnvironments": [
+          "native",
+          "windows-wsl2"
+        ],
+        "minLiatirVersion": "0.2.1"
+      },
+      "archive": {
+        "format": "zip",
+        "url": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/scgpt-whole-human/0.2.5-beta.2/linux-x86_64-cuda12.9/3da31f6ef9c6ca48e55af52190451e4ca8ce293cd9421fc88e997c8cfceed932.zip",
+        "sha256": "3da31f6ef9c6ca48e55af52190451e4ca8ce293cd9421fc88e997c8cfceed932",
+        "sizeBytes": 7857676593
+      },
+      "installedSizeBytes": 13278575392,
+      "payloadDigest": {
+        "format": "sha256-path-list-v1",
+        "sha256": "0d041ba730d1e51a1ca018bd9817fc79cd609bd5bd805535e72a59e190acf9cd"
+      },
+      "runtime": {
+        "id": "python",
+        "version": "3.11.15",
+        "entryPoint": "venv/bin/python"
+      },
+      "cacheSubdir": "model-cache/scgpt-whole-human",
+      "selfTest": {
+        "probe": {
+          "imports": [
+            "torch",
+            "anndata",
+            "numpy",
+            "scipy",
+            "pandas",
+            "h5py",
+            "tqdm"
+          ]
+        },
+        "timeoutSeconds": 180
+      },
+      "provenance": {
+        "scrollId": "scgpt-whole-human-linux-x86_64-cuda12.9",
+        "scrollVersion": "1.0.0",
+        "builderRevision": "5bd54a9f1854b0c01ee55b69099105eb0a52689c",
+        "sourceTreeDirty": false,
+        "sourceRevision": "cebd6fae655b9c585a4807daa3ac31bb764f06b4",
+        "runtimeVersion": "3.11.15",
+        "dependencyLockSha256": "3bc87da78d23f009d4f654f3da734f7ca226489f700f9ad5e355163b4a729194",
+        "builtAt": "2026-09-25T00:34:56+02:00",
+        "pixiVersion": "0.73.0"
+      }
+    },
+    "signedRelease": {
+      "payloadBase64": "ewogICJzY2hlbWFWZXJzaW9uIjogMywKICAia2luZCI6ICJsaWF0aXIucnVudGltZS1ib3gucmVsZWFzZSIsCiAgImJveElkIjogInNjZ3B0LXdob2xlLWh1bWFuIiwKICAibGFiZWxzIjogewogICAgIm1vZGVsIjogImJvd2FuZy1zY2dwdC13aG9sZS1odW1hbiIsCiAgICAicnVudGltZSI6ICJzaW5nbGUtY2VsbC1mb3VuZGF0aW9uLXNjZ3B0LXdob2xlLWh1bWFuIgogIH0sCiAgInZlcnNpb24iOiAiMC4yLjUtYmV0YS4yIiwKICAidGFyZ2V0IjogewogICAgInBsYXRmb3JtIjogImxpbnV4IiwKICAgICJhcmNoIjogIng4Nl82NCIsCiAgICAiYWNjZWxlcmF0b3IiOiAiY3VkYSIsCiAgICAiY3VkYVZlcnNpb24iOiAiMTIuOSIKICB9LAogICJjb21wYXRpYmlsaXR5IjogewogICAgIm1pbkxpYXRpclZlcnNpb24iOiAiMC4yLjEiLAogICAgIm1pblJhbUdiIjogMTYsCiAgICAibWluTnZpZGlhRHJpdmVyVmVyc2lvbiI6ICI1MjUuNjAuMTMiLAogICAgImhvc3RFbnZpcm9ubWVudHMiOiBbCiAgICAgICJuYXRpdmUiLAogICAgICAid2luZG93cy13c2wyIgogICAgXQogIH0sCiAgImFyY2hpdmUiOiB7CiAgICAiZm9ybWF0IjogInppcCIsCiAgICAidXJsIjogImh0dHBzOi8vYXNzZXRzLm1vZGVscy5saWF0aXIuY29tL2FpLXJ1bnRpbWUtYm94ZXMvYm94ZXMvc2NncHQtd2hvbGUtaHVtYW4vMC4yLjUtYmV0YS4yL2xpbnV4LXg4Nl82NC1jdWRhMTIuOS8zZGEzMWY2ZWY5YzZjYTQ4ZTU1YWY1MjE5MDQ1MWU0Y2E4Y2UyOTNjZDk0MjFmYzg4ZTk5N2M4Y2ZjZWVkOTMyLnppcCIsCiAgICAic2hhMjU2IjogIjNkYTMxZjZlZjljNmNhNDhlNTVhZjUyMTkwNDUxZTRjYThjZTI5M2NkOTQyMWZjODhlOTk3YzhjZmNlZWQ5MzIiLAogICAgInNpemVCeXRlcyI6IDc4NTc2NzY1OTMKICB9LAogICJpbnN0YWxsZWRTaXplQnl0ZXMiOiAxMzI3ODU3NTM5MiwKICAicGF5bG9hZERpZ2VzdCI6IHsKICAgICJmb3JtYXQiOiAic2hhMjU2LXBhdGgtbGlzdC12MSIsCiAgICAic2hhMjU2IjogIjBkMDQxYmE3MzBkMWU1MWExY2EwMThiZDk4MTdmYzc5Y2Q2MDliZDViZDgwNTUzNWU3MmE1OWUxOTBhY2Y5Y2QiCiAgfSwKICAicnVudGltZSI6IHsKICAgICJpZCI6ICJweXRob24iLAogICAgInZlcnNpb24iOiAiMy4xMS4xNSIsCiAgICAiZW50cnlQb2ludCI6ICJ2ZW52L2Jpbi9weXRob24iCiAgfSwKICAiY2FjaGVTdWJkaXIiOiAibW9kZWwtY2FjaGUvc2NncHQtd2hvbGUtaHVtYW4iLAogICJzZWxmVGVzdCI6IHsKICAgICJwcm9iZSI6IHsKICAgICAgImltcG9ydHMiOiBbCiAgICAgICAgInRvcmNoIiwKICAgICAgICAiYW5uZGF0YSIsCiAgICAgICAgIm51bXB5IiwKICAgICAgICAic2NpcHkiLAogICAgICAgICJwYW5kYXMiLAogICAgICAgICJoNXB5IiwKICAgICAgICAidHFkbSIKICAgICAgXQogICAgfSwKICAgICJ0aW1lb3V0U2Vjb25kcyI6IDE4MAogIH0sCiAgInByb3ZlbmFuY2UiOiB7CiAgICAic2Nyb2xsSWQiOiAic2NncHQtd2hvbGUtaHVtYW4tbGludXgteDg2XzY0LWN1ZGExMi45IiwKICAgICJzY3JvbGxWZXJzaW9uIjogIjEuMC4wIiwKICAgICJidWlsZGVyUmV2aXNpb24iOiAiNWJkNTRhOWYxODU0YjBjMDFlZTU1YjY5MDk5MTA1ZWIwYTUyNjg5YyIsCiAgICAic291cmNlVHJlZURpcnR5IjogZmFsc2UsCiAgICAic291cmNlUmV2aXNpb24iOiAiY2ViZDZmYWU2NTViOWM1ODVhNDgwN2RhYTNhYzMxYmI3NjRmMDZiNCIsCiAgICAicnVudGltZVZlcnNpb24iOiAiMy4xMS4xNSIsCiAgICAicGl4aVZlcnNpb24iOiAiMC43My4wIiwKICAgICJkZXBlbmRlbmN5TG9ja1NoYTI1NiI6ICIzYmM4N2RhNzhkMjNmMDA5ZDRmNjU0ZjNkYTczNGY3Y2EyMjY0ODlmNzAwZjlhZDVlMzU1MTYzYjRhNzI5MTk0IiwKICAgICJidWlsdEF0IjogIjIwMjYtMDktMjVUMDA6MzQ6NTYrMDI6MDAiCiAgfQp9Cg==",
+      "payloadEncoding": "base64-json-utf8",
+      "payloadSha256": "9ed266d51cb60ed58ea3c1f15e635b4b6a803ffee26c1532d0b44b899904dbd2",
+      "schemaVersion": 3,
+      "signatures": [
+        {
+          "algorithm": "ed25519",
+          "keyId": "liatir-runtime-box-kms-2026",
+          "signatureBase64": "YJErk9N4+P0xaRgc2mPZH6gKHYBIwoyMUaDX6EoHEwXJmNOVxsr7uhW7UrWATMXz6F9lxAQMgb4c+5YFh2SYCg=="
+        }
+      ]
+    }
+  },
+  "finishedAt": "2026-10-05T15:07:11.780Z"
+}

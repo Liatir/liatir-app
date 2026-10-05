@@ -51,6 +51,28 @@ class CheckpointTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     restore(target, source, "pbmc", False)
 
+    def test_new_limits_allow_only_verified_historical_reuse(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            source, target = self.fixture(Path(temporary))
+            for directory in (source, target):
+                for name in ("common.py", "evaluation.py"):
+                    (directory / "code" / name).write_text("# unchanged scientific definition\n")
+            recorded = {"run_id": "original", "dataset": "pbmc", "stability_check": False,
+                        "resource_limits": {"maxRssBytes": 2*1024**3}}
+            write_json(source / "liatir-run.json", recorded)
+            write_json(target / "liatir-run.json", {**recorded, "resource_limits": {"maxRssBytes": 16*1024**3}})
+            with self.assertRaisesRegex(ValueError, "different operating limits"):
+                restore(target, source, "pbmc", False)
+            write_json(source / "study-environment.json", {"cpu": "original Mac", "thread_limits": {"OMP_NUM_THREADS": "1"}})
+            manifest = {"runs": [{"run_id": "original", "dataset": "pbmc", "archive_root": "runs/original/output"}],
+                        "archive_sha256": "verified archive", "files": [
+                            {"path": "runs/original/output/" + p.relative_to(source).as_posix(),
+                             "bytes": p.stat().st_size, "sha256": sha256(p)} for p in source.rglob("*") if p.is_file()]}
+            result = restore(target, source, "pbmc", False, transfer_manifest=manifest)
+            self.assertEqual(result["completed_methods"], ["pca"])
+            self.assertEqual(json.loads((target / "runs/pbmc/pca/provenance.json").read_text())["source_study_environment"]["cpu"], "original Mac")
+            self.assertEqual(json.loads((source / "liatir-run.json").read_text())["resource_limits"], recorded["resource_limits"])
+
 
 if __name__ == "__main__":
     unittest.main()

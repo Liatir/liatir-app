@@ -23,7 +23,7 @@ def scgpt_checkpoint_identity(payload, paths, source_package, accelerator):
         if not runner_path:
             raise ValueError("Cannot establish the scGPT runner identity for durable saving.")
         runner_hash = scgpt_file_hash(runner_path)
-    return {
+    identity = {
         "format_version": 1,
         "input_sha256": scgpt_file_hash(input_file),
         "runner_sha256": runner_hash,
@@ -41,6 +41,16 @@ def scgpt_checkpoint_identity(payload, paths, source_package, accelerator):
         "threads": {name: os.environ.get(name) for name in
                     ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS", "NUMBA_NUM_THREADS")},
     }
+    if accelerator == "CUDA":
+        import torch
+        device = torch.cuda.get_device_properties(0)
+        identity["cuda_device"] = {"name": device.name, "total_memory": device.total_memory,
+                                   "capability": [device.major, device.minor], "runtime": torch.version.cuda,
+                                   "matmul_tf32": torch.backends.cuda.matmul.allow_tf32,
+                                   "cudnn_tf32": torch.backends.cudnn.allow_tf32,
+                                   "deterministic_algorithms": torch.are_deterministic_algorithms_enabled(),
+                                   "cublas_workspace": os.environ.get("CUBLAS_WORKSPACE_CONFIG")}
+    return identity
 
 class ScGPTCheckpoint:
     def __init__(self, directory, identity, started=None):
@@ -54,6 +64,7 @@ class ScGPTCheckpoint:
         self.connection.execute("CREATE TABLE IF NOT EXISTS identity (value TEXT NOT NULL)")
         self.connection.execute("CREATE TABLE IF NOT EXISTS batches (start INTEGER PRIMARY KEY, stop INTEGER NOT NULL, dimensions INTEGER NOT NULL, data BLOB NOT NULL, sha256 TEXT NOT NULL)")
         self.connection.execute("CREATE TABLE IF NOT EXISTS attempts (id TEXT PRIMARY KEY, started_at REAL NOT NULL, updated_at REAL NOT NULL, elapsed REAL NOT NULL, peak_rss INTEGER, status TEXT NOT NULL)")
+        self.connection.execute("CREATE TABLE IF NOT EXISTS accelerator_peaks (attempt_id TEXT PRIMARY KEY, bytes INTEGER NOT NULL)")
         self.connection.commit()
         # Hold a writer lock throughout inference. A second process cannot own the same checkpoint.
         self.connection.execute("BEGIN IMMEDIATE")
@@ -122,6 +133,10 @@ class ScGPTCheckpoint:
     def update_attempt(self, status):
         self.connection.execute("UPDATE attempts SET updated_at=?, elapsed=?, peak_rss=?, status=? WHERE id=?",
                                 (time.time(), time.monotonic()-self.started, self.peak_rss(), status, self.attempt))
+        if json.loads(self.identity_json).get("accelerator") == "CUDA":
+            import torch
+            self.connection.execute("INSERT OR REPLACE INTO accelerator_peaks VALUES (?,?)",
+                                    (self.attempt, torch.cuda.max_memory_allocated(0)))
 
     def finish(self):
         if self.completed != self.cells:
@@ -134,6 +149,10 @@ class ScGPTCheckpoint:
                   "peak_rss_bytes": max((row["peak_rss_bytes"] for row in rows if row["peak_rss_bytes"] is not None), default=None),
                   "unmeasured_time_reason": "Interrupted attempts record elapsed time through their last committed batch; any unsaved tail is unknown.",
                   "identity": json.loads(self.identity_json)}
+        peaks = dict(self.connection.execute("SELECT attempt_id, bytes FROM accelerator_peaks"))
+        for row in rows:
+            row["peak_accelerator_bytes"] = peaks.get(row["id"])
+        result["peak_accelerator_bytes"] = max(peaks.values(), default=None)
         temporary = self.directory / "scgpt-checkpoint-accounting.json.tmp"
         with temporary.open("w", encoding="utf-8") as stream:
             json.dump(result, stream, indent=2)

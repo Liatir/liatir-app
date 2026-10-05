@@ -5,6 +5,11 @@ remains [the complete study plan](./liatir_single_cell_showcase_codex_plan.md).
 This handoff does not close that plan. Read the [execution record](./single-cell-showcase-execution.md)
 and [showcase README](../../showcases/single-cell-foundation-benchmark/README.md)
 before continuing.
+The user's later explicit PC resource authorization is recorded in the
+[2026-10-05 resource decision](../decisions/2026-10-05-single-cell-pc-resources.md).
+It supersedes this handoff's requirement to retain the Mac's execution limits
+on the PC. Preserve all historical Mac resources and costs; use the new guarded
+PC profile only for newly executed stages.
 
 ## Transfer contents
 

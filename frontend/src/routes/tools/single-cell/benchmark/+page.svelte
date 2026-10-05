@@ -20,6 +20,7 @@
   let stabilityCheck = $state(true);
   let error = $state('');
   let importStudyFile = $state('');
+  let usePcGpu = $state(false);
   const runs = $derived(executionRuns.records.filter((run) => run.identity.entityId === LIATIR_SINGLE_CELL_STUDY_ID
     && run.identity.workspaceId === workspaceStore.activeId));
   onMount(() => { void executionRuns.init(); void analysisRuns.init(); });
@@ -27,6 +28,7 @@
     launching = true;
     error = '';
     try { await launchSingleCellStudy(resume ?? { dataset, methods: [...methods], stabilityCheck,
+      executionProfile: usePcGpu ? 'pc-cuda' : 'cautious-cpu',
       ...(importStudyFile ? { importStudyFile } : {}) }); }
     catch (failure) { error = String(failure); }
     finally { launching = false; }
@@ -54,7 +56,8 @@
         {/each}
       </fieldset>
       <p class="text-xs text-text-muted">PCA compresses variable genes; Harmony adjusts experimental batch differences; scVI learns from this dataset. The other models use their existing training without further fitting. Install them on the <a class="underline" href="/ai">AI Models</a> page before including them.</p>
-      <p class="text-xs text-text-muted">Computation uses only the processor, with one cell at a time for the pretrained models. A separate monitor stops a task when memory or disk space runs low. It may take hours. You can leave this page and follow it in Jobs.</p>
+      <label class="flex items-center gap-2 text-sm"><input type="checkbox" data-testid="study-pc-gpu" bind:checked={usePcGpu} />Use NVIDIA graphics card and more memory</label>
+      <p class="text-xs text-text-muted">{usePcGpu ? 'Requires the installed NVIDIA version of each requested model and a computer with at least 24 GB of memory. It processes several cells together and keeps memory free for the system.' : 'Uses the processor and one cell at a time for the pretrained models, with a small memory budget.'} A separate monitor stops a task when memory or disk space runs low. You can leave this page and follow it in Jobs.</p>
       <label class="flex items-center gap-2 text-sm"><input type="checkbox" data-testid="study-stability" bind:checked={stabilityCheck} />Check stability on a small sample first</label>
       <p class="text-xs text-text-muted">A stability check is a diagnostic, not the complete study. First use downloads public data and study software.</p>
       <div class="space-y-2">

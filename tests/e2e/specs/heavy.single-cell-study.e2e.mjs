@@ -21,6 +21,8 @@ export const tests = [{
     await (await browser.$('[data-testid="single-cell-study"]')).waitForDisplayed();
     const stability = await browser.$('[data-testid="study-stability"]');
     if (await stability.isSelected() !== (process.env.LIATIR_STUDY_STABILITY === '1')) await stability.click();
+    const gpu = await browser.$('[data-testid="study-pc-gpu"]');
+    if (await gpu.isSelected() !== (process.env.LIATIR_STUDY_PC_GPU === '1')) await gpu.click();
     await browser.execute((value) => {
       const select = document.querySelector('[data-testid="study-dataset"]');
       select.value = value;

@@ -40,6 +40,16 @@ class ResourceGuardTests(unittest.TestCase):
         sample = dict(rss_bytes=100, available_bytes=100, disk_free_bytes=100, swap_used_bytes=111)
         self.assertIn("swap grew", violation(sample, 100, limits))
 
+    def test_gpu_usage_and_headroom_are_stop_conditions(self):
+        gib = 1024**3
+        limits = dict(maxRssBytes=1000, minAvailableBytes=1, minDiskBytes=1,
+                      maxSwapGrowthBytes=10, maxGpuUsedBytes=6*gib)
+        sample = dict(rss_bytes=100, available_bytes=100, disk_free_bytes=100,
+                      swap_used_bytes=100, gpu_used_bytes=5*gib, gpu_total_bytes=8*gib)
+        self.assertIsNone(violation(sample, 100, limits))
+        self.assertIn("gpu_used_bytes", violation({**sample, "gpu_used_bytes": 7*gib}, 100, limits))
+        self.assertIn("headroom", violation({**sample, "gpu_total_bytes": 6*gib}, 100, limits))
+
 
 if __name__ == "__main__":
     unittest.main()

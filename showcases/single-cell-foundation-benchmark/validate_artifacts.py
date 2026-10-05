@@ -29,9 +29,20 @@ def validate(root, output):
         for name in ("config.json", "environment.json", "metrics.json", "telemetry.json", "provenance.json"):
             require((directory / name).is_file(), f"Missing {identity}/{name}")
         require((directory / "logs").is_dir(), f"Missing logs: {identity}")
-        require(row["execution_target"] == "CPU", f"An unapproved execution target appears: {identity}")
-        require(row["peak_accelerator_bytes"] is None and bool(row["peak_accelerator_reason"]),
-                f"Unexplained accelerator measurement: {identity}")
+        config = read_json(directory / "config.json")
+        environment = read_json(directory / "environment.json")
+        if row["execution_target"] == "CUDA":
+            require(config.get("execution_profile") == "pc-cuda" and config.get("accelerator") == "cuda"
+                    and environment["execution_target"] == "CUDA", f"Unapproved CUDA execution: {identity}")
+            monitor = read_json(directory / "resource-monitor.json")
+            require(monitor["status"] == "completed" and monitor["peak_gpu_used_bytes"] <= monitor["limits"]["maxGpuUsedBytes"],
+                    f"GPU safeguards did not complete: {identity}")
+            require(isinstance(row["peak_accelerator_bytes"], int) and row["peak_accelerator_bytes"] > 0
+                    and bool(row["peak_accelerator_reason"]), f"Missing measured CUDA memory: {identity}")
+        else:
+            require(row["execution_target"] == "CPU", f"An unapproved execution target appears: {identity}")
+            require(row["peak_accelerator_bytes"] is None and bool(row["peak_accelerator_reason"]),
+                    f"Unexplained accelerator measurement: {identity}")
         if row["status"] == "completed":
             require(all(isinstance(row[k], (int, float)) and math.isfinite(row[k]) for k in BIO),
                     f"Missing or nonfinite biological score: {identity}")

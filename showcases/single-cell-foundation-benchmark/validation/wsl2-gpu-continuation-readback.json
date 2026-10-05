@@ -1,0 +1,60 @@
+{
+  "status": "verified_active_configuration",
+  "native_run": {
+    "run_id": "12b601e2-cd4f-44ba-b3ec-1238b7da569f",
+    "dataset": "pancreas",
+    "stability_check": false,
+    "resource_limits": {
+      "maxRssBytes": 17179869184,
+      "maxSwapGrowthBytes": 268435456,
+      "minAvailableBytes": 6442450944,
+      "minDiskBytes": 8589934592
+    },
+    "execution_profile": "pc-cuda",
+    "threads": 6
+  },
+  "pancreas_execution": {
+    "id": "0151bed8-9cc5-4873-bf59-f14351c655ff",
+    "pid": 3336,
+    "execution": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/showcases/single-cell-foundation-benchmark/transfer/executions/0151bed8-9cc5-4873-bf59-f14351c655ff"
+  },
+  "import_origin": {
+    "source_run_id": "6071da5e-c592-4ee3-8544-7bbe5b12be8f",
+    "source_dataset": "pancreas",
+    "source_root": "/home/lorenzo/liatir-single-cell-wsl2-2026-10-05/showcases/single-cell-foundation-benchmark/transfer/mac-handoff-2026-10-05/runs/6071da5e-c592-4ee3-8544-7bbe5b12be8f/output",
+    "archive_sha256": "2caacd2af314d5de0e3fbe8c02377fbff33af1d32846412db17eaa5a631e911b",
+    "reused_methods": [
+      "pca",
+      "geneformer",
+      "harmony",
+      "scvi"
+    ],
+    "scope": "Verified historical artifacts, not newly executed Jobs."
+  },
+  "windows_execution_id": "9d50a8e0-464d-4bc9-a49d-01c15b087234",
+  "cgroup": "/system.slice/liatir-single-cell-69374c90-5851-4f14-b986-caf41d197735.service",
+  "memory_swap_max": "0",
+  "memory_max": "17179869184",
+  "actual_execution_target": "CUDA",
+  "actual_thread_limits": {
+    "OMP_NUM_THREADS": "6",
+    "OPENBLAS_NUM_THREADS": "6",
+    "MKL_NUM_THREADS": "6",
+    "NUMBA_NUM_THREADS": "6"
+  },
+  "gpu": {
+    "name": "NVIDIA GeForce RTX 4060 Ti",
+    "total_bytes": 8585084928,
+    "cuda_runtime": "12.9",
+    "allocator_limit_bytes": 5905580032
+  },
+  "runner_sha256": "35544712015f03c57b9a9d7f42f57932a79623a8f992b4eafe775496e2a2f2b1",
+  "reused_mac_methods_byte_verified": [
+    "pca",
+    "geneformer",
+    "harmony",
+    "scvi"
+  ],
+  "historical_cpu_checkpoint_preserved": true,
+  "sibling_module_http_check_passed": true
+}

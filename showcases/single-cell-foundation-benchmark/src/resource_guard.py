@@ -20,7 +20,18 @@ def write_record(path, value):
     temporary.replace(path)
 
 
-def snapshot(pid, directory):
+def gpu_snapshot():
+    command = shutil.which("nvidia-smi") or "/usr/lib/wsl/lib/nvidia-smi"
+    output = subprocess.check_output([command, "--id=0", "--query-gpu=memory.used,memory.total",
+                                      "--format=csv,noheader,nounits"], text=True, timeout=3)
+    used, total = [int(value.strip()) * 1024**2 for value in output.strip().split(",")]
+    if not 0 <= used <= total:
+        raise RuntimeError("Invalid NVIDIA memory measurement.")
+    return {"gpu_used_bytes": used, "gpu_total_bytes": total,
+            "gpu_memory_scope": "Whole NVIDIA device 0, including display and other processes"}
+
+
+def snapshot(pid, directory, limits=None):
     if sys.platform == "darwin":
         vm = subprocess.check_output(["/usr/bin/vm_stat"], text=True, timeout=3)
         page_size = int(re.search(r"page size of (\d+)", vm).group(1))
@@ -46,12 +57,20 @@ def snapshot(pid, directory):
         family = expanded
     rss = sum(kib * 1024 for child, _, kib in processes if child in family)
     residents = {str(child): kib * 1024 for child, _, kib in processes if child in family}
-    return {"rss_bytes": rss, "tracked_pids": sorted(family), "process_rss_bytes": residents,
+    sample = {"rss_bytes": rss, "tracked_pids": sorted(family), "process_rss_bytes": residents,
             "available_bytes": available, "swap_used_bytes": swap_used,
             "disk_free_bytes": shutil.disk_usage(directory).free}
+    if limits and "maxGpuUsedBytes" in limits:
+        sample.update(gpu_snapshot())
+    return sample
 
 
 def violation(sample, initial_swap, limits):
+    if "maxGpuUsedBytes" in limits:
+        if sample["gpu_used_bytes"] > limits["maxGpuUsedBytes"]:
+            return f"Resource limit: gpu_used_bytes={sample['gpu_used_bytes']}, maxGpuUsedBytes={limits['maxGpuUsedBytes']}"
+        if sample["gpu_total_bytes"] - limits["maxGpuUsedBytes"] < 1024**3:
+            return "Resource limit: the GPU budget must leave at least 1 GiB of device headroom."
     comparisons = [("rss_bytes", "maxRssBytes", True), ("available_bytes", "minAvailableBytes", False),
                    ("disk_free_bytes", "minDiskBytes", False)]
     for key, limit_key, maximum in comparisons:
@@ -68,11 +87,15 @@ def watch(pid, directory, limits, initial_swap):
     path = directory / "resource-monitor.json"
     record = {"pid": pid, "limits": limits, "status": "monitoring", "peak_rss_bytes": 0,
               "initial_swap_bytes": initial_swap, "started_at": time.time()}
+    if "maxGpuUsedBytes" in limits:
+        record["peak_gpu_used_bytes"] = 0
     while os.getppid() == pid:
         try:
-            current = snapshot(pid, directory)
+            current = snapshot(pid, directory, limits)
             record.update(last_sample=current, updated_at=time.time(),
                           peak_rss_bytes=max(record["peak_rss_bytes"], current["rss_bytes"]))
+            if "maxGpuUsedBytes" in limits:
+                record["peak_gpu_used_bytes"] = max(record["peak_gpu_used_bytes"], current["gpu_used_bytes"])
             reason = violation(current, initial_swap, limits)
         except Exception as error:
             # Losing the monitor is a failure, not permission to continue unbounded.
@@ -114,7 +137,7 @@ class ResourceGuard:
 
     def __enter__(self):
         self.directory.mkdir(parents=True, exist_ok=True)
-        current = snapshot(os.getpid(), self.directory)
+        current = snapshot(os.getpid(), self.directory, self.limits)
         reason = violation(current, current["swap_used_bytes"], self.limits)
         if reason:
             write_record(self.directory / "resource-monitor.json",

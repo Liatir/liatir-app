@@ -2,6 +2,20 @@
 
 Scientific parameters frozen before inspecting scores, seed 23. Six methods on the two datasets in the
 authoritative plan. No model or metric is selected using its observed score.
+The original Mac resource regime below remains historical. On 2026-10-05 the
+user explicitly approved a PC resource amendment: local NVIDIA CUDA scGPT,
+six numerical threads and model batches of 16, a 16 GiB process-family ceiling,
+6 GiB minimum WSL available memory, 8 GiB minimum disk headroom, unchanged
+256 MiB maximum host swap growth and a 6 GiB whole-GPU memory ceiling. The
+Windows-owned WSL cgroup refuses swap and is capped at 16 GiB. Scientific inputs,
+seeds, model weights, tokenization and evaluation definitions are unchanged.
+Use the explicit NVIDIA option in Liatir; it never changes resources automatically.
+A bounded real-data diagnostic must verify CUDA, memory headroom, batch behavior
+and interruption/resume before the full new PC calculation. Reused Mac stages
+retain their own original limits and measurements; they are not rerun or relabeled.
+CPU partial checkpoints cannot be merged into a CUDA checkpoint with a different
+identity. Preserve those attempts and their costs separately from the new GPU run.
+
 Protocol 2 changes execution resources after two macOS watchdog panics during the
 initial Metal attempts: CPU only, one thread, model batch size one. No biological
 scores existed at the time of this change. The old attempts are retained as failures.

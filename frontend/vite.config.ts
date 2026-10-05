@@ -1,6 +1,7 @@
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 import tailwindcss from '@tailwindcss/vite';
+import { fileURLToPath } from 'node:url';
 
 export default defineConfig({
   plugins: [
@@ -14,5 +15,7 @@ export default defineConfig({
     // (che farebbe caricare a Tauri il contenuto sbagliato).
     port: 5173,
     strictPort: true,
+    // Shared packages and the bundled study sources live beside the frontend.
+    fs: { allow: [fileURLToPath(new URL('../', import.meta.url))] },
   },
 });

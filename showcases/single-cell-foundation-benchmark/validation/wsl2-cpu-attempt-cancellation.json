@@ -1,0 +1,13 @@
+{
+  "time": 1791212357.0851798,
+  "reason": "Explicit user authorization to increase PC limits and use local GPU.",
+  "native_cancel_response": {
+    "value": {
+      "after": "cancelling",
+      "before": "running",
+      "runId": "22c037dc-6d1b-4b3a-9234-5246b8258f25"
+    }
+  },
+  "run_id": "22c037dc-6d1b-4b3a-9234-5246b8258f25",
+  "cpu_execution_id": "15ddb224-6bee-4a50-8f9e-350f2f113c77"
+}

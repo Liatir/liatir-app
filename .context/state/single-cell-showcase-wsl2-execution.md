@@ -428,3 +428,89 @@ and parent records in the assembled bundle, checking their bytes against the
 original transfer manifest, without rewriting any method's scientific records.
 Keep unknown scGPT runtime null with its verified lower bound and reason; explain
 its omission from any plot requiring an exact runtime. Do not invent a duration.
+
+## Explicit PC resource amendment, 2026-10-05
+
+The user clarified that local limits may increase and the otherwise idle PC
+should be used fully with a crash-prevention margin. Follow the
+[recorded decision](../decisions/2026-10-05-single-cell-pc-resources.md), which
+supersedes the previous unchanged-resource restriction for new PC stages.
+They subsequently accepted retaining the virtual native app window. Every
+representation still runs through Liatir's signed runtime and Jobs APIs.
+
+- [x] Measured six available i7-8700K cores, 31.93 GiB host RAM, 24 GiB WSL
+  ceiling and RTX 4060 Ti / 8,188 MiB; current driver 610.62. No global WSL
+  settings changed. The catalog contains signed scGPT CUDA 12.9 beta.2.
+- [x] Cancelled active CPU parent 22c037dc through the native execution store.
+  Native driver and dependent finisher recorded actual exit 1, as expected after
+  cancellation. Preserve these outcomes; they are not model infeasibility.
+- [x] Copied the released CPU checkpoint: 2,066 cells, database SHA-256
+  `a3a13dc015e070d7ecea088945642250597b05cbc557e95334c3ad79f4c9277e`.
+  Original run and all Mac results remain intact. Never merge this CPU database
+  into an incompatible CUDA identity.
+- [ ] Native signed CUDA installation: Windows execution
+  `c018c3b1-3a32-423b-aefe-e6df96ad63d0`, unique unit
+  `liatir-scgpt-cuda-install-c6966204-9663-4db5-a30f-2dd73ef5ad54`,
+  MemorySwapMax=0 / MemoryMax=16 GiB. Verify exact activation revision/target,
+  model hashes, CUDA capability and actual exit before using it.
+- [ ] Validate the explicit PC profile and whole-GPU watchdog. Exercise an
+  observed GPU limit refusal/stop, real-data batch behavior, kill/resume equality
+  and changed-identity rejection on a bounded fixture through native Liatir.
+  Select batch size using throughput and measured memory; no score-based tuning.
+- [ ] Run the updated seven-suite gate and full scientific regressions. Ensure
+  historical imports accept different new limits while unchanged normal resumes
+  still reject them. The common/evaluation definitions remain byte-identical.
+- [ ] Restart only unfinished pancreas scGPT using the verified historical Mac
+  export and new PC resources, reusing its four completed methods. Keep the
+  Windows-owned foreground WSL session, no-swap cgroup and independent guards.
+- [ ] Complete all original evaluation, native Results/export, assembly,
+  reproduction, source counts, relevant native UI checks, visual review and
+  curation. Preserve Mac / PC resources and earlier failed/interrupted costs.
+
+Stop on incompatible signed target, failed diagnostic or guard breach; retain
+actual logs and partial saves. Diagnose before one bounded corrected retry.
+No paid jobs, GPU CI, new target publishing or release is authorized.
+
+PC preparation evidence: the signed CUDA target activated through the native
+installer, exact catalog archive `3da31f6e…`; its native gate passed and the
+Windows supervisor recorded actual exit 0. The updated repository gate passed
+87 files / 676 tests, all seven suites, followed by the pinned scientific tests.
+Native CUDA diagnostics passed on the exact first 128 original pancreas cells:
+intentional interruption after 16 committed cells, changed-seed rejection and
+exact resumed/uninterrupted GPU equality. The maximum CPU/GPU absolute
+difference was 2.682209014892578e-7, minimum cosine 0.9999997615814209; these
+are compatibility diagnostics, not a reason to merge the different checkpoints.
+
+The final diagnostic observed the GPU guard refusing a deliberately impossible
+one-byte GPU budget. Batch 16 processed 128 cells in 4.201826709 seconds for
+tokenization/encoding/copy/commits, process-family peak 1,159,299,072 bytes,
+whole-GPU peak 4,777,312,256 bytes, no workload swap. Batch 32 was stopped by
+PyTorch's independent 5.5 GiB allocator ceiling before completing a batch;
+retain this diagnosed allocation failure and select 16 for the full run. No
+system crash occurred. Windows diagnostic execution
+`9097732b-28da-471f-abb3-4ca12acb67d3` recorded actual exit 0.
+
+Observed dev-only defect: after browser-API generation, Vite attempted sibling
+output-parser JavaScript files outside its default frontend-only serving list.
+Allow this actual repository workspace explicitly; do not weaken the native
+origin capability. Regression evidence must include direct sibling-module
+availability and the native full-study/Results flow. One bounded recheck before
+the accelerated full run. No change to inference mathematics or frozen common
+evaluation definitions is required.
+
+The corrected seven-gate recheck passed, report
+`2026-10-05T16-30-51-766Z`, followed by scientific regressions and a successful
+shared sibling-module HTTP check. The full GPU parent is
+`12b601e2-cd4f-44ba-b3ec-1238b7da569f`; Windows execution
+`9d50a8e0-464d-4bc9-a49d-01c15b087234` owns unit
+`liatir-single-cell-69374c90-5851-4f14-b986-caf41d197735` and its dependent
+finisher `b0b53790-de71-4860-8778-f915bea04801`. Readback confirmed the exact
+CUDA 12.9 / RTX target, six threads, batch 16, 16 GiB RAM / 6 GiB GPU guards
+and cgroup MemorySwapMax=0. The executed scGPT runner SHA-256 equals current
+source: `35544712015f03c57b9a9d7f42f57932a79623a8f992b4eafe775496e2a2f2b1`.
+The new run imports the verified original Mac 6071da5e export directly; the
+old Windows input cache is orchestration history, not its scientific source.
+All four reused embeddings, telemetry and configurations match the Mac bytes.
+The preserved 2,066-cell CPU checkpoint and cancellation record are attached
+under historical-attempts, without merging vectors or altering measurements.
+This records a verified running study, not final completion.

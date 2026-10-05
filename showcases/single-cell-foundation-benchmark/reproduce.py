@@ -11,6 +11,7 @@ import math
 import os
 from pathlib import Path
 import shutil
+import subprocess
 import sys
 
 SOURCE = Path(__file__).parent / "src"
@@ -100,10 +101,20 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("runs", type=Path, nargs="+")
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--record-directory", type=Path, help=argparse.SUPPRESS)
     arguments = parser.parse_args()
-    for variable in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS", "NUMBA_NUM_THREADS"):
-        os.environ[variable] = "1"
-    os.environ["JAX_PLATFORMS"] = "cpu"
+    if arguments.record_directory:
+        if len(arguments.runs) != 1:
+            raise ValueError("A reproduction worker requires one source export.")
+        record = arguments.record_directory.resolve()
+        threads = int(read(record / "liatir-run.json").get("threads", 1))
+        if not 1 <= threads <= (os.cpu_count() or 1):
+            raise ValueError("The recorded numerical thread count is unavailable on this host.")
+        for variable in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS", "NUMBA_NUM_THREADS"):
+            os.environ[variable] = str(threads)
+        os.environ["JAX_PLATFORMS"] = "cpu"
+        reproduce(arguments.runs[0].resolve(), arguments.output.resolve(), record)
+        sys.exit(0)
     arguments.output.mkdir(parents=True, exist_ok=False)
     for run in arguments.runs:
         root = run.resolve()
@@ -114,4 +125,7 @@ if __name__ == "__main__":
             if not records:
                 raise ValueError("Provide a native run or the assembled scientific export.")
         for record in records:
-            reproduce(root, arguments.output.resolve(), record)
+            # Libraries initialize thread pools on first import. A separate
+            # worker preserves each dataset's recorded numerical environment.
+            subprocess.run([sys.executable, str(Path(__file__).resolve()), str(root),
+                            "--output", str(arguments.output.resolve()), "--record-directory", str(record)], check=True)

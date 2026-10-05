@@ -8,7 +8,8 @@ from common import METHODS, read_json, sha256, write_json
 BIO = ["ari", "nmi", "cell_type_silhouette", "knn_macro_f1", "logistic_macro_f1"]
 BATCH = ["batch_silhouette", "asw_batch", "graph_connectivity", "ilisi_scaled"]
 COMPUTE = ["wall_seconds", "peak_rss_bytes", "peak_accelerator_bytes", "execution_target",
-           "model_runtime_bytes", "embedding_dimensions", "embedding_bytes", "wall_seconds_lower_bound", "wall_seconds_reason"]
+           "model_runtime_bytes", "embedding_dimensions", "embedding_bytes", "wall_seconds_lower_bound", "wall_seconds_reason",
+           "numerical_threads", "model_batch_size", "max_rss_limit_bytes", "max_gpu_used_limit_bytes"]
 IDENTITY = ["runtime_box_id", "runtime_box_version", "runtime_archive_sha256", "runtime_payload_sha256",
             "runner_sha256", "host_os", "host_architecture", "host_cpu", "host_ram_bytes", "python_version"]
 
@@ -44,6 +45,12 @@ def report(root):
             metrics = read_json(directory / "metrics.json") if (directory / "metrics.json").exists() else {}
             measured = read_json(directory / "telemetry.json") if (directory / "telemetry.json").exists() else {}
             env = read_json(directory / "environment.json") if (directory / "environment.json").exists() else {}
+            config = read_json(directory / "config.json") if (directory / "config.json").exists() else {}
+            recorded_run = root / "datasets" / dataset_dir.name / "liatir-run.json"
+            if not recorded_run.exists():
+                recorded_run = root / "liatir-run.json"
+            producer_limits = config.get("resource_limits") or provenance.get("source_resource_limits") or (
+                read_json(recorded_run).get("resource_limits", {}) if recorded_run.exists() else {})
             study_environment = root / "datasets" / dataset_dir.name / "study-environment.json"
             if not study_environment.exists():
                 study_environment = root / "study-environment.json"
@@ -55,6 +62,9 @@ def report(root):
                    "error": provenance.get("error"),
                    **{key: metrics.get(key) for key in BIO + BATCH + ["evaluation_cells", "train_cells", "test_cells"]},
                    **{key: measured.get(key) for key in COMPUTE},
+                   "numerical_threads": config.get("threads", 1), "model_batch_size": config.get("batchSize", config.get("batch_size")),
+                   "max_rss_limit_bytes": producer_limits.get("maxRssBytes"),
+                   "max_gpu_used_limit_bytes": config.get("maxGpuUsedBytes"),
                    "peak_accelerator_reason": measured.get("peak_accelerator_reason", "Method did not run."),
                    "input_sha256": provenance.get("input_sha256"),
                    "embedding_sha256": provenance.get("embedding", {}).get("sha256"),
@@ -109,7 +119,7 @@ def report(root):
             xs = [r[cost] / divisor for r in subset]
             ys = [r["logistic_macro_f1"] for r in subset]
             names = [r["method"] for r in subset]
-            host_names = ["Mac" if r["host_os"] and "macOS" in r["host_os"] else "WSL2" if r["host_os"] and "WSL" in r["host_os"] else r["host_architecture"] or "unknown host" for r in subset]
+            host_names = [("Mac" if r["host_os"] and "macOS" in r["host_os"] else "WSL2" if r["host_os"] and "WSL" in r["host_os"] else r["host_architecture"] or "unknown host") + f"/{r['execution_target']}" for r in subset]
             axis.scatter(xs, ys, label=dataset)
             offsets = {"pca": (-6, -14), "harmony": (6, 8), "scvi": (-6, 8),
                        "geneformer": (6, -14), "scgpt": (6, 8), "uce": (6, -14)}
@@ -158,6 +168,7 @@ def report(root):
     (report_dir / "reproduction.md").write_text(
         "# Reproduction\n\n"
         "In Liatir open Tools → Single-cell study, choose the recorded dataset and methods, and run. "
+        "For the approved PC continuation select Use NVIDIA graphics card and more memory; this uses the separately recorded PC resource regime. "
         "Install available selected AI Models through AI Models. Unsupported signed targets remain explicit blockers. "
         "To continue a saved study, use Import saved study and choose its liatir-run.json. "
         "Completed results retain their original inputs, code, measurements and computer. "

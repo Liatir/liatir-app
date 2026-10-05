@@ -263,6 +263,7 @@ batch_checkpoint = ScGPTCheckpoint(output_dir, checkpoint_identity, scgpt_attemp
 checkpoint_embeddings, completed_cells = batch_checkpoint.load([str(adata.obs_names[i]) for i in kept_positions], int(model_config["embsize"]))
 if completed_cells:
     print(f"scGPT: reused {completed_cells}/{len(kept_positions)} committed cells", file=sys.stderr, flush=True)
+inference_started = time.monotonic()
 with torch.no_grad():
     for start in range(completed_cells, len(kept_positions), batch_size):
         batch = [sequence_for_cell(cell_index) for cell_index in kept_positions[start : start + batch_size]]
@@ -287,6 +288,13 @@ with torch.no_grad():
         checkpoint_embeddings[start:start + len(batch_values)] = batch_values
         if (start + batch_size) % 128 == 0 or start + batch_size >= len(kept_positions):
             print(f"scGPT: {min(start + batch_size, len(kept_positions))}/{len(kept_positions)} cells", file=sys.stderr, flush=True)
+
+(output_dir / "scgpt-inference-timing.json").write_text(json.dumps({
+    "computed_cells": len(kept_positions) - completed_cells,
+    "seconds": time.monotonic() - inference_started,
+    "batch_size": batch_size, "accelerator": accelerator,
+    "scope": "Batch tokenization, model encoding, device-to-host copy and durable batch commits; excludes model loading and final serialization.",
+}, indent=2))
 
 embeddings = checkpoint_embeddings
 del expression, model
