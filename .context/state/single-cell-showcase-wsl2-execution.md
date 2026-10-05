@@ -177,3 +177,22 @@ growth. The expanded current product scGPT Python also passed syntax checking.
 `syngraphe.cmd check` passed on Windows (the PowerShell shim is blocked by the
 host's script execution policy; using the ordinary command shim changes no policy).
 No full model inference, final pancreas evaluation or native UI success is claimed.
+
+## Persisted implementation checkpoint
+
+Commit `0a0cd9267f8c8aada99eb36903fe8d01e316d4c3` contains the repairs,
+import path, regression tests and retained validation records, directly on top
+of the requested `e0654c8`. It is local; no push, release or paid action occurred.
+The user's unrelated root `.gitignore` change and original untracked archive
+remain untouched. The Linux checkout remains at the original handoff HEAD
+with synchronized source changes and ignored transfer/build data.
+
+Do not launch its current `src-tauri/target/debug/liatir`: that file is an older
+cached executable, not a successful build of this revision. Accept a native
+binary only after an actual successful guarded compiler exit and recorded
+binary/bridge hashes. The required real 16-cell signed-model durability spec
+is `tests/e2e/specs/heavy.single-cell-durability.e2e.mjs`; use the persistent
+`tests/.artifacts/home/single-cell-showcase` test profile so its normal model
+activation can subsequently serve the imported study. No full inference may
+start before that spec passes. The 4 GiB compilation-only question remains
+pending; elapsed waiting does not authorize a changed limit.
