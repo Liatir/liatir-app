@@ -14,7 +14,7 @@ depends on the dataset and the property being measured; there is no overall
 winner claim.
 
 [Study source, full results and evidence](https://github.com/Liatir/liatir-app/tree/main/showcases/single-cell-foundation-benchmark)
-· [Reproducibility archive and citation](https://doi.org/10.5281/zenodo.23187931)
+· [Complete study archive and citation](https://doi.org/10.5281/zenodo.23187931)
 
 ## Scientific question
 
@@ -244,9 +244,19 @@ saved study reuses verified completed work and preserves its original history.
 
 [Reproducing the study in Liatir](https://github.com/Liatir/liatir-app/blob/main/showcases/single-cell-foundation-benchmark/report/reproduction.md)
 
+## Complete study bundle
+
 **GitHub** tracks the protocol, source, dataset/provenance manifests, small result
-tables, all figures and validation evidence. **Zenodo** holds the complete large
-reproducibility bundle, approximately 1.8 GB, including data and saved results that
-are deliberately outside Git. Download the original study artifacts and cite them
-through [10.5281/zenodo.23187931](https://doi.org/10.5281/zenodo.23187931).
-Use the record's citation metadata when citing the archive.
+tables, all figures and validation evidence. [**Zenodo**](https://doi.org/10.5281/zenodo.23187931) holds the complete large
+reproducibility bundle you can download, approximately 1.8 GB, including data and saved results that
+are deliberately outside Git.
+
+## DOI
+
+<big>
+
+[10.5281/zenodo.23187931](https://doi.org/10.5281/zenodo.23187931)
+
+</big>
+
+<small style="opacity: 0.35; color: white;"> Use the record's citation metadata when citing the archive </small>
