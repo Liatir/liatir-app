@@ -91,8 +91,11 @@ link the owner-supplied [Zenodo archive DOI](https://doi.org/10.5281/zenodo.2318
 The approximately 1.8 GB external archive is separate from the original 405 MB
 scientific ZIP; no upload or scientific rerun was performed. All 412 protected
 scientific files stayed byte-identical. Public docs build and all seven repository
-verify suites passed, including 87 unit files / 676 tests. These integration changes
-are local on the handoff branch; merge and website deployment are not claimed.
+verify suites passed, including 87 unit files / 676 tests. On 2026-10-06 the owner
+explicitly authorized committing and pushing the integration. Commit
+`9e2f5c0142778c4c7358ffd81aa1a07c6969c296` was pushed to
+`origin/handoff/single-cell-wsl2-2026-10-05` and the remote branch hash was verified.
+Merge and website deployment are not claimed.
 Showcase reproduction guidance follows the visual Liatir workflow through AI
 Models, Tools, Jobs and Results, using general stages rather than detailed button
 sequences. Terminal and developer setup instructions were removed from the user

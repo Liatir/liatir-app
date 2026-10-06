@@ -95,5 +95,14 @@ scGPT cell types, and biological performance versus runtime. No plot was regener
   retrieval sections, no whitespace findings and an empty Git index.
 
 Repository context checks, internal docs build and the final diff/ignored-artifact
-review complete the integration handoff. These changes are local; no merge, remote
-push, website deployment, release or artifact publication is claimed.
+review complete the integration handoff.
+
+## Publication receipt
+
+On 2026-10-06 the owner explicitly authorized committing and pushing all integration
+changes. Commit `9e2f5c0142778c4c7358ffd81aa1a07c6969c296` contains the 21 reviewed
+files and was pushed normally to `git@github.com:Liatir/liatir-app.git`, branch
+`handoff/single-cell-wsl2-2026-10-05`. A fresh remote read verified the exact branch
+hash. No large scientific artifacts or ZIP archives were staged. This context-only
+receipt follows that verified push on the same branch. Merge, website deployment,
+release and artifact publication are not claimed.
