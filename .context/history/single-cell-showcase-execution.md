@@ -121,14 +121,14 @@ Geneformer saved only its start log, and no final model telemetry exists.
 
 The read-only check after the user's warning found no study driver, native test app,
 study Python process or task-owned caffeinate process. Disk had only 5.2 GiB free.
-Evidence: [crash correlation and suspension](../../showcases/single-cell-foundation-benchmark/validation/host-crash-suspension.json).
+Evidence: [crash correlation and suspension](https://github.com/Liatir/liatir-app/blob/86a4542a2554032c8d1f79d6f07ef855e07af712/showcases/single-cell-foundation-benchmark/validation/host-crash-suspension.json).
 Keep partial artifacts; do not classify the study as complete or claim scientific
 model infeasibility from this alone. Before a future resumed calculation, resolve
 host stability and a bounded execution strategy. No further build, model execution,
 or full test suite was launched after the warning. Changes remain uncommitted;
 latest report/source refinements have not passed the final gates.
 The lightweight `syngraphe check` was run: it reports `LINK001` on the authoritative
-plan's then-missing [report/results.md](../../showcases/single-cell-foundation-benchmark/report/results.md).
+plan's then-missing [report/results.md](https://github.com/Liatir/liatir-app/blob/86a4542a2554032c8d1f79d6f07ef855e07af712/showcases/single-cell-foundation-benchmark/report/results.md).
 The transfer now includes a substantive interim report with actual PBMC scores;
 it explicitly leaves the complete study unfinished.
 
@@ -371,4 +371,4 @@ embeddings outside Git with checksums; commit only small reproducibility artifac
   not cover this asset-resolution boundary.
 
 
-Closed on 2026-10-05. The original instructions and interrupted execution below/above are historical. The final [Windows/WSL2 execution record](./single-cell-showcase-wsl2-execution.md) and [report](../../showcases/single-cell-foundation-benchmark/report/results.md) document complete study delivery, validated reproduction and diagnosed UCE blockers.
+Closed on 2026-10-05. The original instructions and interrupted execution below/above are historical. The final [Windows/WSL2 execution record](./single-cell-showcase-wsl2-execution.md) and [report](https://github.com/Liatir/liatir-app/blob/86a4542a2554032c8d1f79d6f07ef855e07af712/showcases/single-cell-foundation-benchmark/report/results.md) document complete study delivery, validated reproduction and diagnosed UCE blockers.

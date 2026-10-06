@@ -76,6 +76,7 @@ export default defineConfig({
       ] },
       { text: 'Get started', link: '/getting-started/install' },
       { text: 'Introduction', link: '/introduction/overview' },
+      { text: 'Showcases', link: '/showcases/overview' },
       { text: 'Download', link: '/download' },
     ],
 
@@ -93,6 +94,14 @@ export default defineConfig({
         items: [
           { text: 'What is Liatir', link: '/introduction/overview' },
           { text: 'How Liatir Works', link: '/introduction/architecture' },
+        ],
+      },
+      {
+        text: 'Showcases',
+        collapsed: true,
+        items: [
+          { text: 'Scientific Showcases', link: '/showcases/overview' },
+          { text: 'Single-cell foundation models vs established baselines', link: '/showcases/single-cell-foundation-benchmark' },
         ],
       },
       {

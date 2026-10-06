@@ -3,7 +3,7 @@
 The user requested this transfer on 2026-10-05. The authoritative objective
 remains [the complete study plan](./liatir_single_cell_showcase_codex_plan.md).
 This historical handoff has been fulfilled; final closure evidence is in the [Windows/WSL2 execution record](./single-cell-showcase-wsl2-execution.md). Read the [execution record](./single-cell-showcase-execution.md)
-and [showcase README](../../showcases/single-cell-foundation-benchmark/README.md)
+and [showcase README](https://github.com/Liatir/liatir-app/blob/86a4542a2554032c8d1f79d6f07ef855e07af712/showcases/single-cell-foundation-benchmark/README.md)
 for historical preparation details.
 The user's later explicit PC resource authorization is recorded in the
 [2026-10-05 resource decision](../decisions/2026-10-05-single-cell-pc-resources.md).
@@ -18,7 +18,7 @@ Code, small numerical records and these instructions travel on the Git branch
 Large scientific inputs and embeddings remain outside Git, as the study plan
 requires. The separately copied archive is named
 `single-cell-wsl2-handoff-2026-10-05.tar.gz`. The tracked
-[transfer manifest](../../showcases/single-cell-foundation-benchmark/validation/windows-wsl2-handoff-manifest.json)
+[transfer manifest](https://github.com/Liatir/liatir-app/blob/86a4542a2554032c8d1f79d6f07ef855e07af712/showcases/single-cell-foundation-benchmark/validation/windows-wsl2-handoff-manifest.json)
 records its SHA-256, every included file, exclusions and verification outcome.
 
 Copy that archive to the new checkout's ignored showcase `transfer` directory.
@@ -136,4 +136,4 @@ Full pancreas completion, independent final reproduction, twelve-row assembly
 and the broader relevant UI gates remain open. There is no final completion claim.
 
 
-Closed on 2026-10-05. The original instructions and interrupted execution below/above are historical. The final [Windows/WSL2 execution record](./single-cell-showcase-wsl2-execution.md) and [report](../../showcases/single-cell-foundation-benchmark/report/results.md) document complete study delivery, validated reproduction and diagnosed UCE blockers.
+Closed on 2026-10-05. The original instructions and interrupted execution below/above are historical. The final [Windows/WSL2 execution record](./single-cell-showcase-wsl2-execution.md) and [report](https://github.com/Liatir/liatir-app/blob/86a4542a2554032c8d1f79d6f07ef855e07af712/showcases/single-cell-foundation-benchmark/report/results.md) document complete study delivery, validated reproduction and diagnosed UCE blockers.

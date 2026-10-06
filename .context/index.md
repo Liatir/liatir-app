@@ -43,9 +43,11 @@ Markdown and stays complete and meaningful without the tool.
 
 ## Historical
 
+- [Scientific Showcases documentation integration](./history/single-cell-showcase-docs-integration.md).
+
 - [Completed single-cell study](./history/liatir_single_cell_showcase_codex_plan.md),
   [Windows/WSL2 execution evidence](./history/single-cell-showcase-wsl2-execution.md),
-  and [final measured report](../showcases/single-cell-foundation-benchmark/report/results.md).
+  and [final measured report](https://github.com/Liatir/liatir-app/blob/86a4542a2554032c8d1f79d6f07ef855e07af712/showcases/single-cell-foundation-benchmark/report/results.md).
 
 - `.context/history/` — completed, superseded or closed operational
   context: the [status log](./history/status-log-2026-07-to-2026-09.md) that

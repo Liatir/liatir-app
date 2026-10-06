@@ -242,7 +242,7 @@ The task is complete only when:
 - the Liatir showcase can launch and display the benchmark;
 - reproduction instructions have been tested;
 - repository tests relevant to the changed areas pass;
-- [report/results.md](../../showcases/single-cell-foundation-benchmark/report/results.md) summarizes the measurements **without overstating conclusions**.
+- [report/results.md](https://github.com/Liatir/liatir-app/blob/86a4542a2554032c8d1f79d6f07ef855e07af712/showcases/single-cell-foundation-benchmark/report/results.md) summarizes the measurements **without overstating conclusions**.
 
 At the end, provide a concise execution summary containing:
 
@@ -264,8 +264,8 @@ configurations, twelve complete rows, real costs, 22 reviewed figures, native
 Liatir launch/Jobs/Results/export, independent reproduction and relevant source/
 native tests passed. The closed
 [execution record](./single-cell-showcase-wsl2-execution.md),
-[final report](../../showcases/single-cell-foundation-benchmark/report/results.md)
-and [completion evidence](../../showcases/single-cell-foundation-benchmark/validation/completed-study/completion.json)
+[final report](https://github.com/Liatir/liatir-app/blob/86a4542a2554032c8d1f79d6f07ef855e07af712/showcases/single-cell-foundation-benchmark/report/results.md)
+and [completion evidence](https://github.com/Liatir/liatir-app/blob/86a4542a2554032c8d1f79d6f07ef855e07af712/showcases/single-cell-foundation-benchmark/validation/completed-study/completion.json)
 retain exact sources, original Mac results, new PC resources, failures, validation
 scopes and portable export hashes. Final context validation is part of closure.
 The full approved objective above is preserved as historical authority.

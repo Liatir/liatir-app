@@ -23,7 +23,7 @@ The persistence and import rules are recorded in
   semantic matrix/split/embedding alignment check also passed below.
 - [x] Verify both matrices/splits and nine completed embeddings semantically,
   including shape, finite values, unique cells and exact split cell order.
-  [Linux evidence](../../showcases/single-cell-foundation-benchmark/validation/imported-matrices-wsl2.json)
+  [Linux evidence](https://github.com/Liatir/liatir-app/blob/86a4542a2554032c8d1f79d6f07ef855e07af712/showcases/single-cell-foundation-benchmark/validation/imported-matrices-wsl2.json)
   confirms PBMC 11,990 × 3,346 and pancreas 16,382 × 19,093, all CSR counts
   finite/nonnegative, valid column bounds, exact split order and nine ordered
   finite embeddings. No inference or metric computation was repeated.
@@ -127,7 +127,7 @@ preparation, not a dependency upgrade.
 
 The prepared complete verify gate passed all seven suites (82 seconds),
 peak aggregate RSS 1,765,474,304 bytes, zero swap growth. Evidence:
-[machine report](../../showcases/single-cell-foundation-benchmark/validation/test-verify-wsl2.json).
+[machine report](https://github.com/Liatir/liatir-app/blob/86a4542a2554032c8d1f79d6f07ef855e07af712/showcases/single-cell-foundation-benchmark/validation/test-verify-wsl2.json).
 Current focused Python checks passed all three scGPT checkpoint tests and
 both transfer tests. Broad Python discovery in the deliberately minimal
 NumPy-only fixture environment cannot load `test_study.py` because pandas
@@ -218,7 +218,7 @@ capability bytes were restored. The newly compiled binary SHA-256 is
 `e2b164637da607377c25a29aef62aecf42725f2ffa5bb46c4b039703868e4ccb`;
 the current bridge SHA-256 is
 `4b520fd7e2fbf8c42ab0e2f8fe7bd134be48f1cd3eac46be6261a5d8a52f9cf9`.
-Evidence: [native build](../../showcases/single-cell-foundation-benchmark/validation/wsl2-native-build.json).
+Evidence: [native build](https://github.com/Liatir/liatir-app/blob/86a4542a2554032c8d1f79d6f07ef855e07af712/showcases/single-cell-foundation-benchmark/validation/wsl2-native-build.json).
 This is the current native development binary with authorized localhost UI
 and existing WebDriver support, not a release package.
 
@@ -263,7 +263,7 @@ Mac runner exactly on the same signed Linux CPU runtime. Value SHA-256:
 `ff3e2d9a0b2acd8fa3bea7be1dfa2b44ea1db68d3376dbdd1bc0a5c1ed3e965b`.
 The checkpoint recorded interrupted/completed attempts; peak worker RSS was
 744,640,512 bytes. Evidence:
-[signed-model durability](../../showcases/single-cell-foundation-benchmark/validation/scgpt-durability-wsl2.json).
+[signed-model durability](https://github.com/Liatir/liatir-app/blob/86a4542a2554032c8d1f79d6f07ef855e07af712/showcases/single-cell-foundation-benchmark/validation/scgpt-durability-wsl2.json).
 
 Next native imports: PBMC source `7afd5cd1-2911-45c7-be7f-28cb212734ca`
 reuses all five successful methods and its finalized UCE refusal, without
@@ -599,9 +599,9 @@ UCE remains explicitly blocked by the historical Mac 2 GiB allocation boundary
 and the PC's missing signed Linux target; increasing PC RAM does not supply a
 platform target. Negative results and all previous failed/interrupted work remain.
 
-[Completion evidence](../../showcases/single-cell-foundation-benchmark/validation/completed-study/completion.json),
-[portable-copy audit](../../showcases/single-cell-foundation-benchmark/validation/completed-study/portable-copy.json)
-and [final bundle validator](../../showcases/single-cell-foundation-benchmark/validation/completed-study/final-bundle-validation.json)
+[Completion evidence](https://github.com/Liatir/liatir-app/blob/86a4542a2554032c8d1f79d6f07ef855e07af712/showcases/single-cell-foundation-benchmark/validation/completed-study/completion.json),
+[portable-copy audit](https://github.com/Liatir/liatir-app/blob/86a4542a2554032c8d1f79d6f07ef855e07af712/showcases/single-cell-foundation-benchmark/validation/completed-study/portable-copy.json)
+and [final bundle validator](https://github.com/Liatir/liatir-app/blob/86a4542a2554032c8d1f79d6f07ef855e07af712/showcases/single-cell-foundation-benchmark/validation/completed-study/final-bundle-validation.json)
 record 382 exact copied files, 1,335,332,301 total exported bytes and a
 405,019,914-byte ZIP, SHA-256
 `184475f893e7f23efd24d095dccaccac8deefb79a525c0c7aa3d55a193f06de3`.
@@ -645,8 +645,8 @@ accept carriage returns only at line endings in whitespace checks. A read-only
 Git object audit passed for all 155 staged dataset/run/result files, including
 22 figures, against the canonical portable-export bytes. No frozen file was
 edited to satisfy a formatting preference.
-Read [the final measured report](../../showcases/single-cell-foundation-benchmark/report/results.md)
-and [tested reproduction](../../showcases/single-cell-foundation-benchmark/report/reproduction-validation.md).
+Read [the final measured report](https://github.com/Liatir/liatir-app/blob/86a4542a2554032c8d1f79d6f07ef855e07af712/showcases/single-cell-foundation-benchmark/report/results.md)
+and [tested reproduction](https://github.com/Liatir/liatir-app/blob/86a4542a2554032c8d1f79d6f07ef855e07af712/showcases/single-cell-foundation-benchmark/report/reproduction-validation.md).
 
 Continuation commits before final curation:
 `0a0cd92`, `67d5aef`, `97388df`, `2254fe2`, `c50c869`, `af7b6c3`,

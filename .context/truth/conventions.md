@@ -76,6 +76,22 @@ Comments, UI text, code, CLI output, and developer-facing docs are always in
 - `docs/` — public: how to *use* Liatir, written for no-code users.
 - `quenta-knowledge/` — curated scientific content.
 
+Scientific Showcases are the public scientific-study exception to the usage-guide
+surface: `docs/showcases/` presents measured methods, results and limitations;
+`showcases/` holds the canonical technical packages. Large matrices, embeddings
+and reproducibility archives stay outside Git and are linked through each study's
+external artifact record. Public figure copies must remain byte-identical to the
+validated figures in the technical package. Showcase pages belong in navigation,
+`site-meta.ts` section metadata and both generated Quenta corpora; regenerate the
+corpora and Markdown/LLM indexes rather than editing their output.
+
+Showcase reproduction is a user workflow in the visual Liatir app. Explain the
+main stages through AI Models, Tools, Jobs and Results; do not turn it into
+terminal commands, environment setup or a developer verification guide. Prefer
+stable workflow descriptions over detailed button sequences unless the interface
+has been checked directly. Preserve the underlying scientific source and historical
+validation evidence separately.
+
 `.context/` is also a VitePress site (`npm run docs:internal:dev`), so it stays
 readable as plain Markdown but gains search and navigation when wanted.
 

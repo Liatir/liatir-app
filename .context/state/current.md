@@ -51,7 +51,7 @@ and changed-identity/guard refusal passed before full inference. Historical Mac
 interruption and the separate 2,066-cell PC CPU checkpoint remain attached.
 
 The twelve-row tables, all biological/batch/compute measurements, 22 reviewed
-figures and [measured report](../../showcases/single-cell-foundation-benchmark/report/results.md)
+figures and [measured report](https://github.com/Liatir/liatir-app/blob/86a4542a2554032c8d1f79d6f07ef855e07af712/showcases/single-cell-foundation-benchmark/report/results.md)
 are tracked. Independent metric reproduction passed at 1e-9 / 1e-8 tolerances;
 canonical count/split checks were exact. The final seven-gate verify passed
 87 unit files / 676 tests, and all 18 scientific regressions passed. Three relevant
@@ -65,8 +65,8 @@ The complete portable export is in both checkouts' ignored showcase
 SHA-256 verified, and the portable tools validated the actual Windows ZIP,
 405,019,914 bytes, SHA-256
 `184475f893e7f23efd24d095dccaccac8deefb79a525c0c7aa3d55a193f06de3`.
-See [completion evidence](../../showcases/single-cell-foundation-benchmark/validation/completed-study/completion.json),
-[tested reproduction](../../showcases/single-cell-foundation-benchmark/report/reproduction-validation.md)
+See [completion evidence](https://github.com/Liatir/liatir-app/blob/86a4542a2554032c8d1f79d6f07ef855e07af712/showcases/single-cell-foundation-benchmark/validation/completed-study/completion.json),
+[tested reproduction](https://github.com/Liatir/liatir-app/blob/86a4542a2554032c8d1f79d6f07ef855e07af712/showcases/single-cell-foundation-benchmark/report/reproduction-validation.md)
 and the [closed execution record](../history/single-cell-showcase-wsl2-execution.md).
 Study completion on 2026-10-05 performed no paid job, GPU CI, new target
 publication, release or remote push. On 2026-10-06 the user explicitly authorized
@@ -81,6 +81,23 @@ The regular push succeeded and the remote revision was verified as
 `0688d0be9f25a51b1857f84563038bbd4c55df03`, including the scientific completion
 commit `86a4542a2554032c8d1f79d6f07ef855e07af712`. This verification receipt is
 published by the following context-only commit on the same branch.
+
+The study now has an official public **Scientific Showcases** section, with an
+[overview](https://liatir.com/showcases/overview) and
+[study page](https://liatir.com/showcases/single-cell-foundation-benchmark), first-class
+navigation and machine-readable indexes. The root README and
+[technical package navigation](https://github.com/Liatir/liatir-app/blob/main/showcases/single-cell-foundation-benchmark/README.md)
+link the owner-supplied [Zenodo archive DOI](https://doi.org/10.5281/zenodo.23187931).
+The approximately 1.8 GB external archive is separate from the original 405 MB
+scientific ZIP; no upload or scientific rerun was performed. All 412 protected
+scientific files stayed byte-identical. Public docs build and all seven repository
+verify suites passed, including 87 unit files / 676 tests. These integration changes
+are local on the handoff branch; merge and website deployment are not claimed.
+Showcase reproduction guidance follows the visual Liatir workflow through AI
+Models, Tools, Jobs and Results, using general stages rather than detailed button
+sequences. Terminal and developer setup instructions were removed from the user
+reproduction path; frozen scientific source and validation evidence are retained.
+See the [integration record](../history/single-cell-showcase-docs-integration.md).
 
 ## What is open, in order
 

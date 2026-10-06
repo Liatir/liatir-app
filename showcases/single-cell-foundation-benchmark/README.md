@@ -1,23 +1,59 @@
-# Single-cell foundation-model showcase
+# Single-cell foundation models vs established baselines
 
 This is a first-party Liatir workflow comparing six ways of representing a cell's
-gene expression. The authoritative scope is the repository's single-cell showcase
-plan. [protocol.md](protocol.md) specifies the fixed scientific parameters.
+gene expression. The completed study did **not** show a uniform advantage for
+pretrained representations: scGPT was competitive on PBMC, while established
+approaches remained particularly strong on Pancreas. Two datasets and one seed
+do not establish general superiority. The authoritative scope is the repository's
+single-cell showcase plan. [protocol.md](protocol.md) specifies the fixed scientific
+parameters.
+
+[Read the Scientific Showcase](https://liatir.com/showcases/single-cell-foundation-benchmark)
+· [All showcases](../README.md)
+· [Complete reproducibility archive and citation](https://doi.org/10.5281/zenodo.23187931)
+
+## Study navigation
+
+| Find | Tracked material |
+| --- | --- |
+| Protocol and methods | [Frozen protocol](protocol.md) |
+| Datasets and provenance | [Source manifest](datasets/manifest.json), [prepared dataset records](datasets/), [per-method provenance and environments](runs/) |
+| Results | [Measured report](report/results.md), [full-precision CSV](results/summary.csv), [JSON](results/summary.json), [compute measurements](results/compute_metrics.csv) |
+| Figures | [All 22 validated figures](results/figures/) |
+| Interpretation and limitations | [Report](report/results.md#interpretation-and-verification-boundaries), [limitations](report/limitations.md) |
+| Reproduction | [Reproducing the study in Liatir](report/reproduction.md) |
+| Validation and failed attempts | [Tested outcomes](report/reproduction-validation.md), [completion receipt](validation/completed-study/completion.json), [completion evidence](validation/completed-study/), [historical attempts](validation/) |
+| Large artifact download and citation | [Zenodo DOI](https://doi.org/10.5281/zenodo.23187931) |
+
+## Source and artifact bundle
+
+GitHub tracks source, protocol, dataset/provenance manifests, small scientific
+tables, figures and validation records. Prepared matrices, embeddings, model
+weights and transfer archives stay outside Git. The designated download and
+citation record for the complete approximately 1.8 GB reproducibility archive is
+[Zenodo](https://doi.org/10.5281/zenodo.23187931).
+
+The original inner `single-cell-study.zip` is a different artifact from the
+complete external archive: it is 405,019,914 bytes, with SHA-256
+`184475f893e7f23efd24d095dccaccac8deefb79a525c0c7aa3d55a193f06de3`,
+as recorded in the unchanged completion evidence. That hash must not be used to
+identify the larger Zenodo download. See [reproduction in Liatir](report/reproduction.md)
+for the visual study workflow and continuing saved work.
 
 ## Run in Liatir
 
-1. Install the available selected models through **AI Models**. Signed targets differ
-   by platform; an unsupported model stays visible as a blocked configuration.
-2. Open **Tools → Single-cell study**. Choose PBMC or Pancreas and the methods.
-3. Disable **Check stability on a small sample first** for the complete dataset.
-   On the approved PC choose **Use NVIDIA graphics card and more memory**. Launch.
-4. Follow it in **Jobs**. Its **Results** entry contains the individual measurements,
-   cell-type and batch plots, runtime/memory comparisons and ZIP export.
+Use the [Liatir reproduction guide](report/reproduction.md) for the main stages:
 
-The small stability check is a diagnostic, not the full scientific comparison.
-Every invocation belongs to its workspace and has its own saved run identity.
-Leaving the screen does not stop it. A finished study can be resumed; completed
-methods are reused only after verifying code, data, split and embedding checksums.
+1. Choose a workspace and make the required models available through **AI Models**.
+2. In **Tools**, open the single-cell study, choose one of the two datasets and
+   include the six study methods. Use the complete dataset and an execution setting
+   supported by your computer.
+3. Start the study, follow progress in **Jobs**, then inspect and export it through
+   **Results**. Repeat for the other dataset.
+
+The small stability check is a diagnostic rather than the full scientific comparison.
+Each study belongs to its workspace and retains its own execution history.
+Saved work is reused only after the app verifies the recorded inputs and results.
 
 **Scientific results:** both complete datasets have measurements: PBMC 11,990
 cells × 3,346 genes and pancreas 16,382 cells × 19,093 genes. PCA, Geneformer,
@@ -54,85 +90,9 @@ at most 256 MiB host swap growth; its workload group cannot swap. An additional
 default cautious profile remains available. Actual producer limits stay attached
 to each method. Blocked rows contain null scores, causes and retained logs.
 
-## Native execution driver
-
-The driver operates the same controls in the compiled native app; it does not run
-the science in a browser or replace Liatir's Jobs and Results. After preparing the
-repository's native UI test binary, set `LIATIR_STUDY_MODEL_ROOT` to the existing
-signed-model activation directory, then run each dataset sequentially:
-
-```sh
-node scripts/run-single-cell-showcase.mjs pbmc pca,geneformer,harmony,scvi,scgpt,uce
-node scripts/run-single-cell-showcase.mjs pancreas pca,geneformer,harmony,scvi,scgpt,uce
-```
-
-Use `--detach` to keep the native driver independent of the launching chat or
-terminal session. It records its own execution identity, exact request, continuous
-log and actual exit under the ignored `transfer/executions` directory. For a
-verified saved study, set `LIATIR_STUDY_IMPORT_FILE` to its `liatir-run.json`, or
-choose that file using **Import saved study** in Liatir. Import verifies original
-input, split, code and embedding identities before reusing completed work. It
-creates fresh workspace/run/Job records and keeps the original source separately.
-It never turns the lost Mac progress log into a reusable scGPT result.
-
-On Windows, a detached Linux process alone does not guarantee that WSL stays
-alive after the launching shell closes. Use `scripts/run-single-cell-wsl2.mjs`
-from Windows with the distribution, Linux user, absolute Linux checkout and
-the foreground continuation entry under its showcase `transfer` directory.
-This Windows supervisor holds a WSL session until that entry actually exits.
-Its unique systemd workload group refuses swapping; the original independent
-RSS, available-memory, disk and host-wide swap-growth guards remain active.
-It does not modify global WSL configuration. The recorded request and actual
-exit live under `transfer/windows-executions`.
-
-Full native run identities and sources are retained in
-`validation/native-study-runs.json`. Original count inputs and large embeddings
-are excluded from Git; manifests record SHA-256 identities. The local scientific
-ZIP contains prepared counts, compact embeddings, source code, configuration,
-environment, logs, metrics, figures and reports. Intermediate model-produced count
-copies and trained weights are referenced by checksum and size rather than copied
-again into the ZIP.
-
-## Recompute saved measurements
-
-Use Python 3.11 and the exact packages in `requirements.txt`, in an isolated
-environment. The helper starts a separate process per dataset with its recorded
-thread settings (one for PBMC, six for pancreas); use a host with six cores.
-The tracked tables alone omit large matrices and embeddings. Use the complete
-local export in `transfer/completed-study-final-wsl2-2026-10-05`, or extract its
-`single-cell-study.zip` into a fresh directory. With the repository root
-as the working directory, the following checks that export and recomputes
-every biological and batch score from saved embeddings and the fixed split:
-
-```sh
-python showcases/single-cell-foundation-benchmark/reproduce.py \
-  showcases/single-cell-foundation-benchmark/transfer/completed-study-final-wsl2-2026-10-05 \
-  --output tests/.artifacts/single-cell-reproduction
-```
-
-Choose a new output directory for each verification. The helper checks frozen
-evaluation code, package versions, data and split checksums first. Numeric agreement
-requires absolute tolerance 1e-9 and relative tolerance 1e-8; missing values and
-their reasons must agree exactly. This verifies evaluation reproducibility. It does
-not claim that pretrained inference or scVI training was rerun.
-
-`finish_study.py` coordinates assembly of two completed native exports, independent
-metric reproduction, exact canonical source-count checks and artifact validation.
-Pass both native output directories, a fresh `--output` directory and `--cache`
-for the checksummed public sources. It keeps producer limits separate and does
-not repeat representations. Its complete scientific execution passed on the
-two native exports; [tested reproduction](report/reproduction-validation.md)
-records the commands and real outcomes. Final curation also retains original
-partial attempts, reviewed figures and repository gate evidence in the bundle.
-
-`verify_counts.py` separately checks every prepared count against the downloaded
-canonical sources, without rounding or reconstructing measurements. For an assembled
-export pass `--dataset pbmc` or `--dataset pancreas`, `--cache` with Liatir's
-`single-cell-datasets` cache directory and a new `--output` JSON path.
-`validate_artifacts.py` verifies all twelve configurations, CSV/JSON equality,
-checksums, figures and ZIP integrity. Tested command outcomes belong in
-`report/reproduction-validation.md` and `validation/`; helper existence is not
-evidence of a successful verification.
+The [complete artifact record](https://doi.org/10.5281/zenodo.23187931) preserves
+the original study data and results. [Tested validation evidence](report/reproduction-validation.md)
+records the checks performed on the completed study.
 
 ## Interpretation
 

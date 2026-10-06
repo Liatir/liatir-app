@@ -6,133 +6,86 @@
 
 # Liatir
 
-Tauri 2 desktop runtime base for bioinformatics applications.
+Liatir is a local-first desktop environment for bioinformatics, built with Rust,
+Tauri 2 and SvelteKit. It brings native tools, locally managed **AI Models**,
+`.lia` **Plugins**, visual pipelines and scientific viewers into one application,
+with API Connectors, external workflow integrations and a controlled local MCP
+interface for connecting other applications.
 
-Provides a sandboxed WASM plugin system, a native sidecar abstraction, and a
-sequential pipeline orchestrator — ready to wire up real bio tools.
+Local analyses keep working offline once their dependencies are installed.
+Workspaces retain inputs, execution logs, results and provenance. Shared types
+and input/output contracts live in `packages/liatir-core`.
 
----
+[Product documentation](https://liatir.com/introduction/overview)
+· [Downloads and platform status](https://liatir.com/download)
+· [Plugin development](https://liatir.com/plugins/getting-started)
 
-## Architecture
+## Scientific Showcases
 
-```
-src-tauri/src/bridge/
-  plugins.rs      ← WASM runtime (wasmtime + WASI p1). Full implementation.
-  sidecar.rs      ← Native binary runner (tauri_plugin_shell). Scaffold.
-  fs.rs           ← Sandboxed file system commands.
-  ...             ← Other Tauri bridge modules (window, notifications, etc.)
+[Liatir Scientific Showcases](https://liatir.com/showcases/overview) document
+scientific questions, methods, measured results and limitations, with technical
+packages in [showcases/](showcases/README.md).
 
-src-ts/
-  modules/rs/
-    plugins/      ← TS bridge to the WASM runtime.
-    sidecar/      ← TS bridge to the sidecar runner.
-  modules/bio/
-    pipeline/     ← Pipeline orchestrator (pure TS). Chains WASM + sidecar steps.
-```
+### Single-cell foundation models vs established baselines
 
----
+A completed comparison of pretrained Geneformer and scGPT representations with
+PCA, Harmony and scVI on PBMC and Pancreas single-cell data. Ten configurations
+completed; two UCE configurations remain blocked with documented causes.
 
-## WASM plugins (`Liatir.plugins`)
+**Observed result:** pretrained models did not show a uniform advantage. scGPT
+was competitive on PBMC (logistic macro-F1 0.95685), while PCA and scVI remained
+strong on Pancreas (0.97788 and 0.97184; scGPT 0.89987). Macro-F1 measures
+cell-type prediction with equal weight per type. This is a two-dataset, one-seed
+study; scVI was trained on the evaluation datasets.
 
-The WASM runtime is fully operational. Plugins are `.wasm` files that receive a
-JSON payload on stdin and write a JSON result to stdout.
+![Cell-type prediction versus representation runtime, shown separately for Pancreas and PBMC.](showcases/single-cell-foundation-benchmark/results/figures/biological-performance-vs-wall_seconds.png)
 
-```ts
-// Add a plugin (file picker dialog).
-await Liatir.plugins.add("qc.wasm");
+*Original validated figure. Pancreas scGPT ran on a PC GPU; the other completed
+representations used Mac CPU. These times do not establish a same-host speed
+ranking.*
 
-// Call it.
-const result = await Liatir.plugins.call("qc.wasm", {
-  fn: "run",
-  args: { input: "sample.fastq" },
-}, /* timeoutMs */ 30_000);
-```
+[Read the study](https://liatir.com/showcases/single-cell-foundation-benchmark)
+· [Source, results and validation evidence](showcases/single-cell-foundation-benchmark/README.md)
+· [Complete reproducibility artifacts and citation: Zenodo DOI](https://doi.org/10.5281/zenodo.23187931)
 
-Each call runs in an isolated job directory that is deleted after execution.
-Plugins have access to a persistent `/storage` directory across calls.
+The source, small results, figures and evidence are tracked here. The complete
+approximately 1.8 GB archive is kept outside Git and linked through the Zenodo
+record.
 
----
+## Repository layout
 
-## Sidecar binaries (`Liatir.sidecar`)
-
-For native tools that cannot be compiled to WASM (e.g. samtools, minimap2).
-
-**To add a real sidecar:**
-
-1. Place the platform binary under `src-tauri/binaries/` following Tauri's
-   naming convention (`<name>-<target-triple>`).
-2. Declare it in `tauri.conf.json`:
-   ```json
-   "bundle": {
-     "externalBin": ["binaries/samtools"]
-   }
-   ```
-3. Add the `shell:allow-execute` permission for the binary in the capability
-   file (`src-tauri/permissions/liatir-bridge.toml`).
-
-Then call it from TS:
-
-```ts
-const result = await Liatir.sidecar.run("samtools", ["view", "-c", "sample.bam"]);
-```
-
----
-
-## Pipeline orchestrator (`Liatir.pipeline`)
-
-Chains WASM and sidecar steps in sequence. Stops at the first failure unless
-`continueOnError` is set.
-
-```ts
-const result = await Liatir.pipeline.run([
-  {
-    kind: "wasm",
-    label: "QC",
-    module: "qc.wasm",
-    payload: { fn: "run", args: { input: "sample.fastq" } },
-    timeoutMs: 60_000,
-  },
-  {
-    kind: "sidecar",
-    label: "Align",
-    binary: "minimap2",
-    args: ["-ax", "sr", "ref.fa", "sample.fastq"],
-  },
-]);
-
-console.log(result.ok, result.steps.map(s => s.status));
-```
-
-**Extension points** (see `src-ts/modules/bio/pipeline/_types.ts` TODOs):
-- Add bio pipeline presets as named functions (e.g. `shortReadQC`, `alignShortReads`)
-- Add new step kinds (e.g. `"http-fetch"` for downloading reference genomes)
-- Wire step output as input to the next step (currently each step is independent)
-
----
-
-## File layout for bio data
-
-The sandboxed FS root is `~/.liatir/.main/` (data) and cache equivalent.
-WASM plugin storage lives at `~/.liatir/.main/_external_modules_storage/<plugin>/`.
-
----
+| Path | Purpose |
+| --- | --- |
+| [packages/liatir-core](packages/liatir-core/) | Shared types and scientific input/output contracts. |
+| [src-tauri](src-tauri/) | Native app, bridge commands and process management. |
+| [src-ts](src-ts/) | TypeScript bridge and Plugin runtime. |
+| [frontend](frontend/) | SvelteKit interface, pipelines, tools and viewers. |
+| [runtime-boxes](runtime-boxes/) | Installable runtime definitions, catalog and release evidence. |
+| [docs](docs/) | Public product documentation and Scientific Showcases. |
+| [showcases](showcases/README.md) | Canonical scientific study packages. |
+| [.context](.context/index.md) | Shared architecture, decisions and current project status. |
 
 ## Development
 
-```sh
-# Configure for local dev (writes window.env + tauri.conf.json)
-bash scripts/local-dev-conf.sh
+Read [AGENTS.md](AGENTS.md) and [.context/index.md](.context/index.md) before
+substantial changes. Install Node.js, Rust and the Tauri system prerequisites,
+then use the repository scripts:
 
-# Start Tauri dev
-cargo tauri dev
+```sh
+npm ci
+npm ci --prefix frontend
+npm run localdevconf
+npm run dev
 ```
 
----
+Use `npm run dev:frontend` for the interface alone. `npm run test:fast` runs
+unit and contract checks; `npm run test:verify` is the normal completion gate.
+Native app changes also require the relevant `npm run test:ui` suites. Heavy AI
+tests are explicitly opt-in.
 
-## npm run liatir:publish flags
+`npm run native-tools:build` prepares the bundled Native Tools for this host;
+ordinary development does not build them automatically. See
+[AGENTS.md](AGENTS.md) for platform constraints and the complete build/test commands.
+Build the public documentation with `npm run docs:build`.
 
-- npm run liatir:publish -- --minor
-- npm run liatir:publish -- --major
-- npm run liatir:publish -- --patch
-- npm run liatir:publish -- --bump minor
-- npm run liatir:publish -- --version 1.10.0
+Liatir's application is licensed under [GNU GPL v3](LICENSE).

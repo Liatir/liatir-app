@@ -56,6 +56,7 @@ export function addCanonical(pageData: PageData): void {
 const SECTIONS: Array<{ dir: string; title: string }> = [
   { dir: 'getting-started', title: 'Getting started' },
   { dir: 'introduction', title: 'Introduction' },
+  { dir: 'showcases', title: 'Scientific Showcases' },
   { dir: 'data', title: 'Data' },
   { dir: 'tools', title: 'Tools' },
   { dir: 'ai', title: 'AI Models and AI Tools' },
