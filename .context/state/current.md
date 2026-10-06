@@ -1,6 +1,6 @@
 # Current project status
 
-Last updated 2026-10-05. This page says where Liatir stands and what comes next. How each piece got
+Last updated 2026-10-06. This page says where Liatir stands and what comes next. How each piece got
 here is in the [status log, July to September 2026](../history/status-log-2026-07-to-2026-09.md)
 and in the plans under `history/`; the readiness of each product area, with its evidence, is in
 [Beta 1 readiness](./roadmap/beta-readiness.md).
@@ -68,7 +68,15 @@ SHA-256 verified, and the portable tools validated the actual Windows ZIP,
 See [completion evidence](../../showcases/single-cell-foundation-benchmark/validation/completed-study/completion.json),
 [tested reproduction](../../showcases/single-cell-foundation-benchmark/report/reproduction-validation.md)
 and the [closed execution record](../history/single-cell-showcase-wsl2-execution.md).
-No paid job, GPU CI, new target publication, release or remote push was performed.
+Study completion on 2026-10-05 performed no paid job, GPU CI, new target
+publication, release or remote push. On 2026-10-06 the user explicitly authorized
+publishing all completed study commits to
+`origin/handoff/single-cell-wsl2-2026-10-05`. The pending root ignore rules for the
+original Mac archive and directory now use Git's forward-slash paths. Scientific
+results and their validated portable ZIP remain unchanged. The full ignored
+export is the recommended complete backup; its ZIP suffices for inspecting and
+reproducing the measured scores. The separate canonical source cache exists
+only in the Linux checkout and is needed for offline original-source checks.
 
 ## What is open, in order
 
