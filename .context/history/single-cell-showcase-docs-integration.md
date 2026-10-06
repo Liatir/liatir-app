@@ -104,5 +104,14 @@ changes. Commit `9e2f5c0142778c4c7358ffd81aa1a07c6969c296` contains the 21 revie
 files and was pushed normally to `git@github.com:Liatir/liatir-app.git`, branch
 `handoff/single-cell-wsl2-2026-10-05`. A fresh remote read verified the exact branch
 hash. No large scientific artifacts or ZIP archives were staged. This context-only
-receipt follows that verified push on the same branch. Merge, website deployment,
+receipt follows that verified push on the same branch. Website deployment,
 release and artifact publication are not claimed.
+
+## Main integration
+
+On 2026-10-06 the owner explicitly authorized merging the full completed handoff
+into `main`. The branch fast-forwarded from `e2b876cc36180d04eba23941861dc81fa9ec4a4f` to
+`1c4ae750be98b1175ca924ae71386a98efda0164`, bringing all 14 commits into `main`
+without conflicts or changes to the validated tree. The existing successful docs
+builds and repository verification cover that unchanged source. This follow-up
+updates only the two context records. Website deployment is not claimed.

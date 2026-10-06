@@ -95,7 +95,10 @@ verify suites passed, including 87 unit files / 676 tests. On 2026-10-06 the own
 explicitly authorized committing and pushing the integration. Commit
 `9e2f5c0142778c4c7358ffd81aa1a07c6969c296` was pushed to
 `origin/handoff/single-cell-wsl2-2026-10-05` and the remote branch hash was verified.
-Merge and website deployment are not claimed.
+On the same date the owner authorized merging the full handoff into `main`.
+The fast-forward merge brought all 14 handoff commits into `main` without conflicts
+or changes to the validated source and scientific results. Website deployment is
+not claimed.
 Showcase reproduction guidance follows the visual Liatir workflow through AI
 Models, Tools, Jobs and Results, using general stages rather than detailed button
 sequences. Terminal and developer setup instructions were removed from the user
