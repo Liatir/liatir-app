@@ -77,6 +77,10 @@ results and their validated portable ZIP remain unchanged. The full ignored
 export is the recommended complete backup; its ZIP suffices for inspecting and
 reproducing the measured scores. The separate canonical source cache exists
 only in the Linux checkout and is needed for offline original-source checks.
+The regular push succeeded and the remote revision was verified as
+`0688d0be9f25a51b1857f84563038bbd4c55df03`, including the scientific completion
+commit `86a4542a2554032c8d1f79d6f07ef855e07af712`. This verification receipt is
+published by the following context-only commit on the same branch.
 
 ## What is open, in order
 
