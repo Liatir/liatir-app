@@ -71,6 +71,7 @@ export default defineConfig({
         { text: 'Plugins', link: '/plugins/overview' },
         { text: 'Pipelines', link: '/pipeline/overview' },
         { text: 'Local MCP', link: '/mcp/overview' },
+        { text: 'Showcases', link: '/showcases/overview' },
         { text: 'Donate', link: '/donate' },
         { text: 'Brand assets', link: '/branding' },
       ] },
@@ -100,7 +101,7 @@ export default defineConfig({
         text: 'Showcases',
         collapsed: true,
         items: [
-          { text: 'Scientific Showcases', link: '/showcases/overview' },
+          { text: 'Overview', link: '/showcases/overview' },
           { text: 'Single-cell foundation models vs established baselines', link: '/showcases/single-cell-foundation-benchmark' },
         ],
       },
