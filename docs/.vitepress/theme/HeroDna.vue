@@ -52,13 +52,13 @@ onMounted(() => {
     return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${alpha})`
   }
 
-  // Desktop adds height and a slight tilt; excess turns stay cropped inside the hero.
+  // Tablet and desktop share the approved proportions; excess turns stay cropped inside the hero.
   function drawHelix(cfg: HelixConfig) {
     const { nodes, turns, cx, R, scale } = cfg
-    const desktop = width >= 1024
-    const verticalScale = scale * (desktop ? 1.25 : 1)
-    const strokeScale = scale * (desktop ? 1.4 : 1)
-    const angle = desktop ? Math.PI / 18 : 0
+    const verticalScale = scale * 1.25
+    const strokeScale = scale * 1.4
+    const strandEmphasis = 2
+    const angle = Math.PI / 18
     const cos = Math.cos(angle)
     const sin = Math.sin(angle)
     const margin = 60
@@ -113,7 +113,7 @@ onMounted(() => {
         const b = strands[s][i + 1]
         const depth = ((a.z + b.z) / 2 + 1) / 2
         ctx.strokeStyle = hexToRgba(brandColor, (0.06 + 0.22 * depth) * cfg.alphaScale)
-        ctx.lineWidth = 1.2 * strokeScale
+        ctx.lineWidth = 1.2 * strokeScale * strandEmphasis
         ctx.beginPath()
         ctx.moveTo(a.x, a.y)
         ctx.lineTo(b.x, b.y)
@@ -125,7 +125,7 @@ onMounted(() => {
     const all = strands.flat().sort((m, n) => m.z - n.z)
     for (const p of all) {
       const persp = (p.z + 1) / 2
-      const r = (1.5 + 2.7 * persp) * (1 + p.glow * 0.9) * scale
+      const r = (1.5 + 2.7 * persp) * (1 + p.glow * 0.9) * scale * strandEmphasis
       if (p.glow > 0.02) {
         ctx.fillStyle = hexToRgba(brandColor, p.glow * 0.22 * cfg.alphaScale)
         ctx.beginPath()

@@ -114,9 +114,12 @@ ports its drawing geometry, fading and mouse response:
 with text on the left and one larger helix on the right, which is now applied;
 the second helix is removed. Enlargement scales the vertical span, line widths
 and dots by the same factor as the radius, so fewer turns are visible without
-flattening the helix and the lines are thicker. At widths of 1024 pixels and
-above, the owner's final refinement adds 25% vertical development, 40% thicker
-lines and a 10-degree tilt around the helix center. Tablet geometry is preserved.
+flattening the helix and the lines are thicker. At widths of 768 pixels and
+above, the owner's refinement adds 25% vertical development and a 10-degree
+tilt around the helix center. Base-pair lines retain the 40% thickness increase;
+both strand backbones and dot diameters are now doubled relative to that
+refinement, as explicitly requested. The owner approved this appearance and
+requested the same proportions, tilt, strand thickness and dot sizing on tablets.
 The existing grid is retained and the old moving blocks are replaced. Homepage
 text, logo and site navigation are preserved.
 The owner accepted the integration and requested a constant slow
