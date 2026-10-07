@@ -1,6 +1,6 @@
 # Current project status
 
-Last updated 2026-10-06. This page says where Liatir stands and what comes next. How each piece got
+Last updated 2026-10-07. This page says where Liatir stands and what comes next. How each piece got
 here is in the [status log, July to September 2026](../history/status-log-2026-07-to-2026-09.md)
 and in the plans under `history/`; the readiness of each product area, with its evidence, is in
 [Beta 1 readiness](./roadmap/beta-readiness.md).
@@ -104,6 +104,36 @@ Models, Tools, Jobs and Results, using general stages rather than detailed butto
 sequences. Terminal and developer setup instructions were removed from the user
 reproduction path; frozen scientific source and validation evidence are retained.
 See the [integration record](../history/single-cell-showcase-docs-integration.md).
+
+## Public homepage DNA preview integration
+
+On 2026-10-07 the owner supplied the authoritative HTML preview after rejecting
+the earlier homepage artwork. [HeroDna](../../../docs/.vitepress/theme/HeroDna.vue)
+ports its drawing geometry, fading and mouse response:
+58 nodes and 3.1 turns in the full model. The owner subsequently authorized the desktop composition
+with text on the left and one larger helix on the right, which is now applied;
+the second helix is removed. Enlargement scales the vertical span, line widths
+and dots by the same factor as the radius, so fewer turns are visible without
+flattening the helix and the lines are thicker. At widths of 1024 pixels and
+above, the owner's final refinement adds 25% vertical development, 40% thicker
+lines and a 10-degree tilt around the helix center. Tablet geometry is preserved.
+The existing grid is retained and the old moving blocks are replaced. Homepage
+text, logo and site navigation are preserved.
+The owner accepted the integration and requested a constant slow
+rotation and monochrome artwork in the brand color. All strands, base pairs and
+glows now read `--vp-c-brand-1`; rotation is 0.25 radians per second (about 25
+seconds per turn), independent of screen refresh rate, with no mouse-triggered
+acceleration. The remaining mouse response and reduced-motion behavior are
+retained. The owner's mobile readability refinement now removes the DNA canvas
+entirely at widths up to 767 pixels and pauses its drawing and animation there;
+this supersedes the initial 7% opacity. Text stays centered on mobile; only the
+hero status row's GitHub link and its separator are hidden at that breakpoint.
+The Plugins card, "Can be extended endlessly", now uses the puzzle-piece icon in
+[HomeIcon](../../../docs/.vitepress/theme/HomeIcon.vue), selected by
+[home content](../../../docs/.vitepress/theme/home-content.ts). The API connectors
+card retains its plug icon; the owner's existing card copy is preserved.
+Keep future artwork changes faithful to the supplied design and these accepted
+refinements. No tests, builds or browser checks were run, as requested.
 
 ## What is open, in order
 

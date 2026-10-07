@@ -81,8 +81,8 @@ export const capabilities: HomeCard[] = [
   },
   {
     icon: 'workflow',
-    title: 'The Nextflow you already have',
-    text: 'Already trust a Nextflow pipeline? Liatir runs it as a step like any other, with the same Jobs, Results and provenance. Nothing to rewrite, nothing to abandon.',
+    title: 'The workflows you already have',
+    text: 'Already using Nextflow or similar? Liatir can run external workflows as a step like any other. Nothing to rewrite, nothing to abandon.',
   },
   {
     icon: 'flow',
@@ -95,9 +95,9 @@ export const capabilities: HomeCard[] = [
     text: 'Wire an external service into a workflow and drop it into a pipeline as an ordinary node — configured visually, not hand-coded.',
   },
   {
-    icon: 'layers',
-    title: 'One data library',
-    text: 'Import a file once and use it everywhere. Liatir tracks every file by path, shows type-aware previews, and tells you when one moves or disappears.',
+    icon: 'puzzle',
+    title: 'Can be extended endlessly',
+    text: 'Build anything on top of Liatir: .lia plugins can run with Node, Python, or WASM. They can run as pipeline nodes or by itself.',
   },
   {
     icon: 'eye',

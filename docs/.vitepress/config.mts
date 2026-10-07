@@ -256,10 +256,11 @@ export default defineConfig({
         icon:"github",
         link: "https://github.com/Liatir/liatir-app"
       },
-      {
-      icon: "patreon",
-      link: "https://www.patreon.com/16427094/join"
-    }],
+      // {
+      //   icon: "patreon",
+      //   link: "https://www.patreon.com/16427094/join"
+      // }
+    ],
 
     footer: {
       message: 'Liatir — powerful bioinformatics on your machine.<br></br>By using this app, you agree to our <a href="/privacy">Privacy Policy</a> and <a href="/terms">Terms of Service</a>.',

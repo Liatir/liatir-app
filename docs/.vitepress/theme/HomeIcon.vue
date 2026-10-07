@@ -47,6 +47,9 @@ defineProps<{ name: string }>()
       <path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 01-12 0z" />
       <path d="M12 17v4" />
     </template>
+    <template v-else-if="name === 'puzzle'">
+      <path d="M9 5V3.5a2.5 2.5 0 015 0V5h4a1 1 0 011 1v4h1.5a2.5 2.5 0 010 5H19v4a1 1 0 01-1 1h-4v-1.5a2.5 2.5 0 00-5 0V20H5a1 1 0 01-1-1v-4h1.5a2.5 2.5 0 000-5H4V6a1 1 0 011-1z" />
+    </template>
     <template v-else-if="name === 'layers'">
       <path d="M12 3l9 5-9 5-9-5z" />
       <path d="M3 13l9 5 9-5" />
