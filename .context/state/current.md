@@ -205,7 +205,9 @@ and zero remaining test clicks verified. All seven `test:verify` gates passed
 (88 unit files / 687 tests), as did the public docs build, terminal-driven browser
 checks and Syngraphe. The site was deployed directly from the reviewed working
 tree based on `63bf9f3`. The owner subsequently authorized committing and pushing
-all reviewed changes to `origin/main`; source publication is pending.
+all reviewed changes to `origin/main`. Implementation commit
+`fdc9821022c21cccdb3b387e485ddc0063f43e95` was pushed normally and the exact
+remote branch hash read back. This context-only publication receipt follows it.
 See [implementation and terminal query](../truth/download-click-tracking.md).
 
 ## Operational facts still in force

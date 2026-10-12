@@ -76,3 +76,14 @@ are unrelated to these public-site buttons.
   Unrelated pre-existing Quenta seed drift regenerated during verification was
   restored to the original tracked content; privacy pages are excluded from that
   retrieval corpus. No desktop behavior or scientific content was changed.
+
+## Source publication receipt — 2026-10-12
+
+At the owner's explicit request, all 11 reviewed files were committed as
+`fdc9821022c21cccdb3b387e485ddc0063f43e95` (`Track website download clicks in
+Cloudflare D1`) and pushed normally to `origin/main` at
+`https://github.com/Liatir/liatir-app.git`. A fresh `git ls-remote` read returned
+that exact revision for `refs/heads/main`; the local working tree was clean.
+The source implementation is now retained for future Git-backed site builds.
+This context-only receipt follows the verified implementation push. The existing
+successful test and live-activation evidence above covers the unchanged code.
