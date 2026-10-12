@@ -130,8 +130,8 @@ describe('documentation HTTP representations', () => {
     expect(result.headers.get('Vary')).toBe('Origin')
   })
 
-  it('leaves static assets and directly requested Markdown HTML fallbacks untouched', async () => {
-    for (const pathname of ['/static/logo.svg', '/missing.md']) {
+  it('leaves APIs, static assets and directly requested Markdown HTML fallbacks untouched', async () => {
+    for (const pathname of ['/api/download-click', '/static/logo.svg', '/missing.md']) {
       const result = await onRequest(context(pathname, { accept: 'text/markdown' }))
       expect(result.headers.get('Link')).toBeNull()
       expect(result.headers.get('Content-Type')).toBe('text/html')

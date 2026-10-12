@@ -21,7 +21,7 @@ function variesOnAccept(response) {
 export async function onRequest({ request, next, env }) {
   const url = new URL(request.url)
   // Only reading requests can be answered with Markdown.
-  if (!['GET', 'HEAD'].includes(request.method)) return next()
+  if (url.pathname.startsWith('/api/') || !['GET', 'HEAD'].includes(request.method)) return next()
 
   if (url.pathname.endsWith('.md')) {
     const asset = await next()

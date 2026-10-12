@@ -27,6 +27,9 @@ Markdown and stays complete and meaningful without the tool.
 
 ## When relevant
 
+- [Website download click counts](./truth/download-click-tracking.md) — minimal
+  Cloudflare D1 counters and terminal access.
+
 - `.context/state/roadmap/` — the live plans and ledgers: the
   canonical [Scientific AI Workbench product plan](./state/roadmap/scientific-ai-workbench.md),
   [Beta 1 readiness](./state/roadmap/beta-readiness.md), the

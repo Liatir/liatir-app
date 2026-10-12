@@ -6,3 +6,13 @@ compatibility_date = "2024-11-01"
 
 # VitePress build output, relative to this file.
 pages_build_output_dir = ".vitepress/dist"
+
+[[d1_databases]]
+binding = "DOWNLOAD_CLICKS"
+database_name = "liatir-download-clicks"
+database_id = "b379d786-b9a2-42a3-bb2e-744441b7fd5e"
+migrations_dir = "migrations"
+
+# Preview clicks must never enter the production counts.
+[env.preview]
+d1_databases = []

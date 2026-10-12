@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { withBase } from 'vitepress'
 
 /** The public repository that carries only release downloads. */
 const RELEASES_REPOSITORY = 'Liatir/liatir-releases'
@@ -24,10 +25,20 @@ function megabytes(file: Asset | undefined): string {
 
 const mac = computed(() => asset('_aarch64.dmg'))
 const linux = computed(() => [
-  { label: 'AppImage', note: 'Any distribution', file: asset('.AppImage') },
-  { label: '.deb', note: 'Debian, Ubuntu', file: asset('.deb') },
-  { label: '.rpm', note: 'Fedora, openSUSE', file: asset('.rpm') },
+  { button: 'linux-appimage', label: 'AppImage', note: 'Any distribution', file: asset('.AppImage') },
+  { button: 'linux-deb', label: '.deb', note: 'Debian, Ubuntu', file: asset('.deb') },
+  { button: 'linux-rpm', label: '.rpm', note: 'Fedora, openSUSE', file: asset('.rpm') },
 ])
+
+/** Counting must never delay or prevent a download. */
+function trackClick(event: MouseEvent, button: string, enabled = true) {
+  if (!enabled || (event.type === 'auxclick' && event.button !== 1)) return
+  void fetch(`${withBase('/api/download-click')}?button=${button}`, {
+    method: 'POST',
+    credentials: 'omit',
+    keepalive: true,
+  }).catch(() => {})
+}
 
 function detectPlatform(): Platform | null {
   const agent = navigator.userAgent
@@ -77,6 +88,8 @@ onMounted(async () => {
           :class="{ disabled: !mac }"
           :href="mac?.browser_download_url"
           :aria-disabled="!mac"
+          @click="trackClick($event, 'macos-dmg', !!mac)"
+          @auxclick="trackClick($event, 'macos-dmg', !!mac)"
         >Download for Mac</a>
         <p class="meta">{{ mac ? `.dmg · ${megabytes(mac)}` : ' ' }}</p>
       </section>
@@ -88,6 +101,8 @@ onMounted(async () => {
         <a
           class="btn btn-brand"
           :href="MICROSOFT_STORE_URL"
+          @click="trackClick($event, 'windows-store')"
+          @auxclick="trackClick($event, 'windows-store')"
           target="_blank"
           rel="noopener"
         >Get it from Microsoft Store</a>
@@ -106,6 +121,8 @@ onMounted(async () => {
             :class="[index === 0 ? 'btn-brand' : 'btn-alt', { disabled: !option.file }]"
             :href="option.file?.browser_download_url"
             :aria-disabled="!option.file"
+            @click="trackClick($event, option.button, !!option.file)"
+            @auxclick="trackClick($event, option.button, !!option.file)"
           >
             <span>{{ option.label }}</span>
             <small>{{ option.note }}{{ option.file ? ` · ${megabytes(option.file)}` : '' }}</small>

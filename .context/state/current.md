@@ -1,6 +1,6 @@
 # Current project status
 
-Last updated 2026-10-07. This page says where Liatir stands and what comes next. How each piece got
+Last updated 2026-10-12. This page says where Liatir stands and what comes next. How each piece got
 here is in the [status log, July to September 2026](../history/status-log-2026-07-to-2026-09.md)
 and in the plans under `history/`; the readiness of each product area, with its evidence, is in
 [Beta 1 readiness](./roadmap/beta-readiness.md).
@@ -108,7 +108,7 @@ See the [integration record](../history/single-cell-showcase-docs-integration.md
 ## Public homepage DNA preview integration
 
 On 2026-10-07 the owner supplied the authoritative HTML preview after rejecting
-the earlier homepage artwork. [HeroDna](../../../docs/.vitepress/theme/HeroDna.vue)
+the earlier homepage artwork. [HeroDna](../../docs/.vitepress/theme/HeroDna.vue)
 ports its drawing geometry, fading and mouse response:
 58 nodes and 3.1 turns in the full model. The owner subsequently authorized the desktop composition
 with text on the left and one larger helix on the right, which is now applied;
@@ -132,8 +132,8 @@ entirely at widths up to 767 pixels and pauses its drawing and animation there;
 this supersedes the initial 7% opacity. Text stays centered on mobile; only the
 hero status row's GitHub link and its separator are hidden at that breakpoint.
 The Plugins card, "Can be extended endlessly", now uses the puzzle-piece icon in
-[HomeIcon](../../../docs/.vitepress/theme/HomeIcon.vue), selected by
-[home content](../../../docs/.vitepress/theme/home-content.ts). The API connectors
+[HomeIcon](../../docs/.vitepress/theme/HomeIcon.vue), selected by
+[home content](../../docs/.vitepress/theme/home-content.ts). The API connectors
 card retains its plug icon; the owner's existing card copy is preserved.
 Keep future artwork changes faithful to the supplied design and these accepted
 refinements. No tests, builds or browser checks were run, as requested.
@@ -190,6 +190,23 @@ refinements. No tests, builds or browser checks were run, as requested.
 
 One decision is still owed: whether UCE `beta.1`, unselected and v2-incompatible, belongs in the
 revocations.
+
+## Website download click tracking
+
+On 2026-10-12, the owner requested minimal Cloudflare-backed download click counts
+and terminal-only execution. The five final download buttons now send a non-blocking
+POST to the existing Pages site. A single EU-jurisdiction D1 table aggregates UTC
+day, selected button and click count; it stores no visitor identity or individual
+events. Preview deployments omit the production binding. The database identity and
+remote schema have been verified. Production deployment
+`a61178d8-c3fd-4005-96ec-27394c12e389` is active on `liatir.com`; a live POST returned
+204 and incremented the expected D1 row. The single synthetic click was subtracted
+and zero remaining test clicks verified. All seven `test:verify` gates passed
+(88 unit files / 687 tests), as did the public docs build, terminal-driven browser
+checks and Syngraphe. The site was deployed directly from the reviewed working
+tree based on `63bf9f3`. The owner subsequently authorized committing and pushing
+all reviewed changes to `origin/main`; source publication is pending.
+See [implementation and terminal query](../truth/download-click-tracking.md).
 
 ## Operational facts still in force
 

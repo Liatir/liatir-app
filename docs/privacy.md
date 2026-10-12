@@ -11,7 +11,7 @@ description: Privacy Policy for Liatir
 
 </small>
 
-**Last updated:** September 29, 2026
+**Last updated:** October 12, 2026
 
 This Privacy Policy explains how **Liatir** (“**Liatir**”, “**we**”, “**us**”, or “**our**”) collects, uses, stores, shares, and protects personal data when you visit or interact with **https://liatir.com** (the “**Website**”).
 
@@ -145,6 +145,16 @@ If you contact us by email, form, or another communication channel, we may proce
 - any other information you choose to include.
 
 Please do not send sensitive personal data unless it is strictly necessary.
+
+### 3.7 Download Button Counts
+
+When you click a Liatir download button, we increment a daily count for that button
+in Cloudflare D1. We store only the day (UTC), the selected download button, and
+the total number of clicks. We do not store individual click records, IP addresses,
+browser information, referrers, or visitor identifiers in this counter, and it does
+not create cookies or access local storage. These counts measure button clicks,
+not completed downloads or installations. Cloudflare still processes the hosting
+and security data described in section 3.1.
 
 ## 4. Cookies and Similar Technologies
 
