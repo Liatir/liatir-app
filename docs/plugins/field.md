@@ -1,12 +1,12 @@
 ---
 title: Declaring plugin fields
-description: Field builders for .lia plugin input and output schemas, in Node, Python, and WASM.
+description: Field builders for .lia plugin input and output schemas, in Node, Python, R, Native, and WASM.
 ---
 
 # Declaring plugin fields
 
 `field` contains the builders for declaring plugin inputs and outputs. The
-builder set is the same across the three runtimes; only the call syntax differs.
+builder set is the same across the five runtimes; only the call syntax differs.
 
 The declared schema is used in three places:
 
@@ -110,10 +110,12 @@ outputs: {
 
 ## Shared options
 
-Every builder takes the same options in all three runtimes. In Node they are
+Every builder takes the same options in all five runtimes. In Node they are
 passed in an options object (`field.string({ label, required })`); in Python as
 keyword arguments (`field.string(label=..., required=True)`); in WASM as chained
-methods (`field::string().label(...).required(true)`).
+methods (`field::string().label(...).required(true)`). Native Rust uses the same
+methods; R uses named arguments (`field$string(label="Text", required=TRUE)`).
+See [R and Native Plugins](./r-and-native) for complete examples.
 
 | Option | WASM method | Description |
 | --- | --- | --- |

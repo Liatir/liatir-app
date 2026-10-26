@@ -28,6 +28,7 @@
     // Only Python plugins have an environment that can be missing or broken; the check is per plugin and not
     // awaited, so the list renders immediately and each row resolves its own status.
     for (const plugin of liaPluginsStore.plugins) {
+      if ((plugin.runtime === 'r' || plugin.runtime === 'native') && !liaPluginsStore.subprocessStates[plugin.id]) void liaPluginsStore.refreshRuntime(plugin.id);
       if (plugin.runtime === 'python') {
         void liaPluginsStore.ensurePythonRuntimeStatus(plugin.id);
       }
@@ -83,6 +84,8 @@
   function runtimeLabel(runtime: LiatirPlugin['runtime']) {
     if (runtime === 'wasm') return 'WASM .lia';
     if (runtime === 'python') return 'Python .lia';
+    if (runtime === 'r') return 'R .lia';
+    if (runtime === 'native') return 'Native .lia';
     return 'Node .lia';
   }
 
@@ -95,6 +98,10 @@
    * Python failure message is usually a traceback full of them.
    */
   function runtimeStatusLabel(mod: LiatirPlugin): string {
+    if (mod.runtime === 'r' || mod.runtime === 'native') {
+      const state = liaPluginsStore.subprocessStates[mod.id];
+      return state?.error ? sanitizeLocalPathsForDisplay(state.error) : state?.busy ? 'Checking runtime…' : state?.ready ? 'Ready' : mod.runtime === 'native' ? 'Executable access required' : 'Prepare R packages';
+    }
     if (mod.runtime === 'node') return 'Uses system Node.js';
     if (mod.runtime === 'wasm') return 'Sandboxed runtime';
     const state = liaPluginsStore.pythonRuntimeStates[mod.id];
@@ -132,7 +139,7 @@
 <div class="flex flex-col h-full">
   <PageHeader
     title="Plugins"
-    description="Imported .lia plugins for Node, Python, and WASM runtimes"
+    description="Imported .lia plugins for Node, Python, R, Native and WASM runtimes"
     info=".lia plugins are local extensions packaged with a manifest that declares runtime, inputs, and outputs. Node plugins can use the desktop bridge, Python plugins run in managed Python environments, and WASM plugins run as portable sandboxed tools. Import a .lia file here to inspect, organize, and run it with your parameters."
   >
     {#snippet actions()}
@@ -146,6 +153,10 @@
   </PageHeader>
   
   <PageContent>
+    {#if liaPluginsStore.loadError}
+      <p role="alert" class="text-sm text-red-500">Could not load Plugins: {sanitizeLocalPathsForDisplay(liaPluginsStore.loadError ?? '')}</p>
+    {/if}
+
 
   <div class="flex-1 overflow-y-auto p-6 space-y-5">
     {#if liaPluginsStore.plugins.length === 0}
@@ -190,6 +201,8 @@
             { value: 'all', label: 'All runtimes' },
             { value: 'node', label: 'Node' },
             { value: 'python', label: 'Python' },
+            { value: 'r', label: 'R' },
+            { value: 'native', label: 'Native' },
             { value: 'wasm', label: 'WASM' },
           ] as runtime}
             <button

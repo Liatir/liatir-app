@@ -109,9 +109,9 @@ runtime tests without mixing their risk profiles:
 - model installation requires the additional `LIATIR_HEAVY_AI_INSTALL=1`;
 - every suite writes a dedicated log file;
 - every run writes `tests/.artifacts/reports/latest.json` and
-  `tests/.artifacts/reports/latest.md`;
+  the latest Markdown report;
 - every run writes `tests/.artifacts/reports/latest-failures.json` and
-  `tests/.artifacts/reports/latest-failures.md`;
+  the latest failures Markdown report;
 - timestamped report copies are kept under the same reports directory.
 - artifacts older than `LIATIR_TEST_ARTIFACT_TTL_DAYS` are pruned
   automatically from reports, screenshots, Tauri logs, visual diffs, and stale
@@ -138,7 +138,7 @@ Use `LIATIR_HEAVY_AI_MODELS` as a comma-separated list when a heavy test should
 target specific model IDs. Keep defaults conservative, then expand targeted
 runs as runtime boxes stabilize.
 
-When a suite fails, first open `tests/.artifacts/reports/latest-failures.md`.
+When a suite fails, first open the latest failures Markdown report.
 It summarizes the failed suite, command, log path, E2E report path, failing E2E
 test names, and screenshots when available. The complete machine-readable data
 lives in `tests/.artifacts/reports/latest-failures.json`.

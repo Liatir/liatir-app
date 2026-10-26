@@ -220,11 +220,12 @@ api.invoke('lia_liatir_run', {
 ```
 
 Validates the bundle signature and executes the runtime declared by its
-manifest. Node and Python return a Job spawn acknowledgement; the caller must
+manifest. Node, Python, R and Native return a Job spawn acknowledgement; the caller must
 wait for terminal `lia_jobs_status`, drain `lia_jobs_get_output`, and read the
 `__LIATIR_RESULT__` marker before treating the Plugin as settled. The optional
 workspace, label, kind and metadata fields attribute that Job to its owning run.
-WASM returns its settled outcome directly.
+WASM uses an in-process Job with the same settlement marker. Legacy synchronous
+responses remain accepted by the frontend.
 
 ```typescript
 const result = await api.invoke('lia_liatir_run', {
@@ -242,3 +243,19 @@ const result = await api.invoke('lia_liatir_run', {
 ::: warning Node.js required
 `lia_liatir_run` will fail if `node` is not in PATH. Check availability with `lia_deps_check` before calling.
 :::
+
+
+### R and Native Plugin management
+
+The shared `LiatirPluginRuntimesAPI` in `packages/liatir-core/src/index.ts` is
+exposed as `window.Liatir.pluginRuntimes`:
+
+- `status(path)` calls `lia_liatir_runtime_status`: R interpreter/library readiness
+  or Native host-target/trust readiness, without executing analysis code.
+- `prepare(path)` calls `lia_liatir_runtime_prepare`: restore the bundled R lock
+  into its isolated library; returned status must be ready before claiming success.
+- `trustNative(path)` calls `lia_liatir_native_trust`: explicitly authorize the
+  exact Native bundle bytes. Only the desktop bridge may perform this action.
+
+Plugin IPC can inspect status but cannot prepare global R libraries or grant
+executable trust. Both runtimes propagate the existing dev session context.

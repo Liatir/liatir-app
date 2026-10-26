@@ -43,9 +43,9 @@ The backend is split into bridge modules under `src-tauri/src/bridge/`.
 | Module | Responsibility |
 |--------|----------------|
 | `managed_bins.rs` | Filesystem ops, file preview, dependency checks |
-| `job_runner.rs` | Process spawning, stdout/stderr streaming, job registry |
-| `ipc_server.rs` | Axum server that proxies `lia_*` calls for Node.js plugins |
-| `lia_runtime.rs` | `.lia` bundle validation, manifest parsing, execution |
+| `jobs.rs` | Process spawning, stdout/stderr streaming, job registry |
+| `ipc_server.rs` | Axum server that proxies `lia_*` calls for Node, Python, R and Native Plugins |
+| `lia_plugins.rs` | `.lia` bundle validation, manifest parsing, execution |
 
 Every `lia_*` command must be:
 
@@ -65,6 +65,11 @@ The IPC server is how `.lia` plugins call back into the Rust backend while they
 execute. The Node adapter reads `.ipc` at plugin startup and authenticates with
 the Bearer token. This lets plugin code call file, job, and result helpers
 without exposing Tauri APIs directly.
+
+R/Native execution and readiness live in `plugin_subprocess.rs`, a child of the
+existing Plugin dispatcher. Their Jobs use the existing authenticated IPC; the
+shared core contract also exposes the desktop `pluginRuntimes` management API.
+See the [decision](../../decisions/r-and-native-plugin-processes.md).
 
 ## Tauri capability system
 

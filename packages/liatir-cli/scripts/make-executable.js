@@ -1,3 +1,4 @@
+import { build } from "esbuild";
 import { chmodSync, cpSync, existsSync, rmSync } from "fs";
 import { resolve } from "path";
 import { fileURLToPath } from "url";
@@ -20,3 +21,12 @@ try {
 } catch {
   // Windows no-op.
 }
+
+// Inline the shared runtime helpers: @liatir/core is private and is never an
+// installed dependency of the public CLI. Keep all third-party packages external.
+await build({
+  entryPoints: [resolve(distRoot, "commands/build.js")],
+  outfile: resolve(distRoot, "commands/build.js"),
+  bundle: true, allowOverwrite: true, platform: "node", format: "esm", packages: "external",
+  alias: { "@liatir/core": resolve(__dirname, "../../liatir-core/dist/plugin-runtime.js") },
+});

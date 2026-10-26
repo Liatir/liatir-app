@@ -1,3 +1,4 @@
+import { liatirPluginPipelineInputs } from "@liatir/core";
 import type { LiatirPlugin, PluginInputFieldDef, PluginOutputFieldDef } from '$lib/stores/lia-plugins.svelte';
 import type {
   InputFieldSchema,
@@ -24,7 +25,7 @@ export function pluginStepId(pluginId: string): string {
 function mapInputs(schema: Record<string, PluginInputFieldDef>): Record<string, InputFieldSchema> {
   const out: Record<string, InputFieldSchema> = {};
   for (const [k, f] of Object.entries(schema)) {
-    out[k] = { type: f.type, label: f.label, required: f.required, default: f.default, accept: f.accept };
+    out[k] = { ...f };
   }
   return out;
 }
@@ -33,11 +34,7 @@ function mapInputs(schema: Record<string, PluginInputFieldDef>): Record<string, 
 function mapOutputs(schema: Record<string, PluginOutputFieldDef>): Record<string, OutputFieldSchema> {
   const out: Record<string, OutputFieldSchema> = {};
   for (const [k, f] of Object.entries(schema)) {
-    const type: OutputFieldSchema['type'] =
-      f.type === 'file' || f.type === 'number' || f.type === 'json' || f.type === 'stats'
-        ? f.type
-        : 'string';
-    out[k] = { type, label: f.label, ext: f.ext ?? f.accept, description: f.description, format: f.format };
+    out[k] = { ...f, ext: f.ext ?? f.accept };
   }
   return out;
 }
@@ -53,7 +50,7 @@ function isJsonValue(value: unknown): value is JsonValue {
 /** Build the pipeline step definition (form + handles) for an imported .lia plugin. */
 export function pluginToDefinition(plugin: LiatirPlugin): PipelineStepDefinition {
   const isWasm = plugin.runtime === 'wasm';
-  const runtimeLabel = plugin.runtime === 'python' ? 'Python plugin' : isWasm ? 'WASM custom tool (sandboxed)' : 'Liatir plugin';
+  const runtimeLabel = plugin.runtime === 'r' ? 'R plugin' : plugin.runtime === 'native' ? 'Native plugin' : plugin.runtime === 'python' ? 'Python plugin' : isWasm ? 'WASM custom tool (sandboxed)' : 'Liatir plugin';
   return {
     id: pluginStepId(plugin.id),
     type: isWasm ? 'wasm-plugin' : 'lia-plugin',
@@ -77,7 +74,7 @@ export function pluginToRegistryEntry(plugin: LiatirPlugin): PipelineRegistryEnt
     run: async (inputs, _outputDir, onLog, context) => {
       const out = await runLiatirPlugin(
         plugin,
-        inputs,
+        liatirPluginPipelineInputs(plugin.inputSchema, inputs),
         (_stream, line) => onLog(line),
         context?.runKind === 'pipeline-step'
           ? {

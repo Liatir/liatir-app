@@ -88,7 +88,16 @@ pub(crate) fn track_dev_job(app: &AppHandle, session_id: &str, job_id: &str) {
     let mut sessions = registry.0.lock().unwrap();
     if let Some(record) = sessions.get_mut(session_id) {
         record.job_ids.insert(job_id.to_string());
+    } else {
+        // Preparation can outlive a closed Dev Runner. Never leave its late
+        // child running after the session's cleanup has already happened.
+        drop(sessions);
+        let _ = super::jobs::lia_jobs_kill_blocking(app.clone(), job_id.to_string());
     }
+}
+
+pub(crate) fn session_is_active(app: &AppHandle, session_id: &str) -> bool {
+    app.state::<PluginDevRegistry>().0.lock().unwrap().contains_key(session_id)
 }
 
 fn now_ms() -> u64 {

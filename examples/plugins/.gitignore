@@ -1,0 +1,7 @@
+**/target/
+**/Cargo.lock
+**/src/liatir.rs
+**/src/liatir_bridge.rs
+**/src/liatir.R
+**/.liatir/
+**/.lia-dev/

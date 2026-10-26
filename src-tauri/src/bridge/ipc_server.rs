@@ -17,6 +17,8 @@ const DEV_CONTEXT_PAYLOAD_KEY: &str = "__liatirDevContext";
 /// library, app lifecycle) and have no sandbox-scoped meaning. Everything
 /// else is either already rewritten into the sandbox workspace or harmless.
 const DEV_BLOCKED_COMMANDS: &[&str] = &[
+    "lia_liatir_runtime_prepare",
+    "lia_liatir_native_trust",
     "lia_app_exit",
     "lia_fs_clear_data",
     "lia_fs_clear_cache",
@@ -64,12 +66,11 @@ fn ensure_dev_job_access(
     ctx: Option<&IpcDevContext>,
     job_id: &str,
 ) -> anyhow::Result<()> {
-    if ctx.is_none() {
-        return Ok(());
-    }
+    let Some(ctx) = ctx else { return Ok(()); };
     let entry = crate::bridge::jobs::lia_jobs_status(app.clone(), job_id.to_string())
         .map_err(|e| anyhow::anyhow!(e))?;
-    if entry.workspace_id.as_deref() != Some(crate::bridge::jobs::SANDBOX_WORKSPACE_ID) {
+    if entry.workspace_id.as_deref() != Some(crate::bridge::jobs::SANDBOX_WORKSPACE_ID)
+        || entry.metadata.as_ref().and_then(|m| m.get("pluginDevSessionId")).and_then(Value::as_str) != Some(ctx.session_id.as_str()) {
         return Err(anyhow::anyhow!(
             "job {job_id} is outside the sandbox workspace and cannot be accessed from a liatir dev session"
         ));
@@ -139,18 +140,17 @@ fn scope_dev_fs_payload(cmd: &str, payload: Value, ctx: Option<&IpcDevContext>) 
     let Value::Object(mut map) = payload else {
         return payload;
     };
-    if map
-        .get("pluginStoragePlugin")
-        .and_then(Value::as_str)
-        .map(|value| !value.trim().is_empty())
-        .unwrap_or(false)
-    {
-        return Value::Object(map);
-    }
+    let plugin_scope = map.remove("pluginStoragePlugin").and_then(|value| value.as_str().map(str::to_string));
+    let plugin_prefix = plugin_scope.as_deref().map(|plugin| {
+        // Use a digest for the subdirectory so plugin names never become paths.
+        use sha2::{Digest, Sha256};
+        format!("{}/plugin-storage/{:x}", crate::bridge::plugin_dev::session_sandbox_rel(&ctx.session_id), Sha256::digest(plugin.as_bytes()))
+    });
 
     for key in ["rel", "src", "dest"] {
         if let Some(Value::String(value)) = map.get(key).cloned() {
-            map.insert(key.to_string(), Value::String(scoped_dev_rel(ctx, &value)));
+            let scoped = if let Some(prefix) = &plugin_prefix { format!("{prefix}/{}", value.trim_matches('/')) } else { scoped_dev_rel(ctx, &value) };
+            map.insert(key.to_string(), Value::String(scoped));
         }
     }
     Value::Object(map)
@@ -572,10 +572,7 @@ async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<
         }
 
         "lia_jobs_begin_logical" => {
-            let name = payload["name"]
-                .as_str()
-                .ok_or_else(|| anyhow::anyhow!("name required"))?
-                .to_string();
+            let name = payload["name"].as_str().ok_or_else(|| anyhow::anyhow!("name required"))?.to_string();
             let workspace_id = dev_context
                 .as_ref()
                 .map(|_| crate::bridge::jobs::SANDBOX_WORKSPACE_ID.to_string())
@@ -646,10 +643,14 @@ async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<
         }
 
         "lia_jobs_list" => {
-            let workspace_id = payload["workspaceId"].as_str().map(String::from);
-            let include_dev = payload["includeDev"].as_bool();
-            let list = crate::bridge::jobs::lia_jobs_list(app.clone(), workspace_id, include_dev)
+            let workspace_id = dev_context.as_ref().map(|_| crate::bridge::jobs::SANDBOX_WORKSPACE_ID.to_string())
+                .or_else(|| payload["workspaceId"].as_str().map(String::from));
+            let include_dev = if dev_context.is_some() { Some(true) } else { payload["includeDev"].as_bool() };
+            let mut list = crate::bridge::jobs::lia_jobs_list(app.clone(), workspace_id, include_dev)
                 .map_err(|e| anyhow::anyhow!(e))?;
+            if let Some(ctx) = dev_context.as_ref() {
+                list.retain(|entry| entry.metadata.as_ref().and_then(|m| m.get("pluginDevSessionId")).and_then(Value::as_str) == Some(ctx.session_id.as_str()));
+            }
             Ok(serde_json::to_value(list)?)
         }
 
@@ -714,10 +715,8 @@ async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<
         }
 
         "lia_deps_check" => {
-            let name = payload["name"]
-                .as_str()
-                .ok_or_else(|| anyhow::anyhow!("name required"))?
-                .to_string();
+            let name = payload.get("binary").or_else(|| payload.get("name")).and_then(Value::as_str)
+                .ok_or_else(|| anyhow::anyhow!("binary required"))?.to_string();
             let result = crate::bridge::deps::lia_deps_check(app.clone(), name)
                 .await
                 .map_err(|e| anyhow::anyhow!(e))?;
@@ -725,10 +724,9 @@ async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<
         }
 
         "lia_deps_check_many" => {
-            let names: Vec<String> = payload["names"]
-                .as_array()
+            let names: Vec<String> = payload.get("binaries").or_else(|| payload.get("names")).and_then(Value::as_array)
                 .map(|a| a.iter().filter_map(|v| v.as_str().map(String::from)).collect())
-                .ok_or_else(|| anyhow::anyhow!("names required"))?;
+                .ok_or_else(|| anyhow::anyhow!("binaries required"))?;
             let result = crate::bridge::deps::lia_deps_check_many(app.clone(), names)
                 .await
                 .map_err(|e| anyhow::anyhow!(e))?;
@@ -750,6 +748,14 @@ async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<
                 .await
                 .map_err(|e| anyhow::anyhow!(e))
         }
+
+        "lia_liatir_runtime_status" => {
+            let path = payload["path"].as_str().ok_or_else(|| anyhow::anyhow!("path required"))?.to_string();
+            crate::bridge::lia_plugins::lia_liatir_runtime_status(app.clone(), path).await.map_err(|e| anyhow::anyhow!(e))
+        }
+        // Runtime preparation and executable trust are intentional desktop actions,
+        // never callable by code already running through the Plugin bridge.
+        "lia_liatir_runtime_prepare" | "lia_liatir_native_trust" => Err(anyhow::anyhow!("This command requires the Plugins desktop screen")),
 
         "lia_liatir_python_runtime_status" => {
             let path = payload["path"]
@@ -797,6 +803,7 @@ async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<
                         path,
                         inputs,
                         crate::bridge::lia_plugins::LiaPluginRunOptions {
+                            python_env_root: crate::bridge::lia_plugins::PYTHON_PLUGIN_DEV_ENV_ROOT.to_string(),
                             workspace_id: Some(crate::bridge::jobs::SANDBOX_WORKSPACE_ID.to_string()),
                             env: Some(env),
                             job_kind: "lia-plugin-dev-child".to_string(),
@@ -1088,5 +1095,33 @@ async fn dispatch(app: &AppHandle, cmd: &str, payload: Value) -> anyhow::Result<
         }
 
         _ => Err(anyhow::anyhow!("unknown command: {cmd}")),
+    }
+}
+
+#[cfg(test)]
+mod plugin_scope_tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn malformed_development_context_never_falls_back_to_unscoped_access() {
+        for context in [json!(null), json!({"scope":"other"}), json!({"scope":"plugin-dev","sessionId":"../escape"})] {
+            assert!(dev_context_from_payload(&json!({DEV_CONTEXT_PAYLOAD_KEY:context})).is_err());
+        }
+        assert!(dev_context_from_payload(&json!({})).unwrap().is_none());
+    }
+
+    #[test]
+    fn plugin_storage_is_separate_for_each_dev_session_and_cleanable_with_it() {
+        let payload = json!({"pluginStoragePlugin":"demo.wasm","permanent":true,"rel":"file.txt"});
+        let first = IpcDevContext { session_id: "first".into() };
+        let second = IpcDevContext { session_id: "second".into() };
+        let a = scope_dev_fs_payload("lia_fs_write_text", payload.clone(), Some(&first));
+        let b = scope_dev_fs_payload("lia_fs_write_text", payload.clone(), Some(&second));
+        assert!(a.get("pluginStoragePlugin").is_none());
+        assert!(a["rel"].as_str().unwrap().starts_with(&crate::bridge::plugin_dev::session_sandbox_rel("first")));
+        assert!(b["rel"].as_str().unwrap().starts_with(&crate::bridge::plugin_dev::session_sandbox_rel("second")));
+        assert_ne!(a["rel"], b["rel"]);
+        assert_eq!(scope_dev_fs_payload("lia_fs_write_text",payload.clone(),None),payload);
     }
 }

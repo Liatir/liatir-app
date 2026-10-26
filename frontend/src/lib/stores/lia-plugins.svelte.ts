@@ -1,8 +1,13 @@
+import { liatirPluginRuntime } from '@liatir/core';
 import { liatir } from '$lib/api';
 import { appStorage } from './app-storage';
 import { getDataPrefix } from './workspace.svelte';
 import type {
   LiatirInputFieldSchema,
+  LiatirPluginManifest,
+  LiatirPluginRuntimeStatus,
+  LiatirRPluginRuntimeSpec,
+  LiatirNativePluginRuntimeSpec,
   LiatirOutputFieldSchema,
   LiatirPluginRuntime,
   LiatirPythonPluginRuntimeSpec,
@@ -24,6 +29,8 @@ export interface LiatirPlugin {
   /** Execution runtime declared in the manifest: Node subprocess, Python venv, or sandboxed WASM. */
   runtime: PluginRuntime;
   python?: LiatirPythonPluginRuntimeSpec;
+  r?: LiatirRPluginRuntimeSpec;
+  native?: LiatirNativePluginRuntimeSpec;
   path: string;
   inputSchema: Record<string, PluginInputFieldDef>;
   outputSchema: Record<string, PluginOutputFieldDef>;
@@ -77,8 +84,7 @@ function normalizeTags(tags: unknown): string[] {
 }
 
 function normalizeRuntime(runtime: unknown): PluginRuntime {
-  if (runtime === 'wasm' || runtime === 'python') return runtime;
-  return 'node';
+  return liatirPluginRuntime(runtime);
 }
 
 function normalizeCategory(category: unknown, runtime: PluginRuntime): string {
@@ -89,6 +95,8 @@ function normalizeCategory(category: unknown, runtime: PluginRuntime): string {
     if (cleanCategory === 'Modules') return 'Plugins';
     return cleanCategory;
   }
+  if (runtime === 'r') return 'R Plugins';
+  if (runtime === 'native') return 'Native Plugins';
   if (runtime === 'python') return 'Python Plugins';
   return runtime === 'wasm' ? 'WASM Plugins' : 'Node Plugins';
 }
@@ -99,6 +107,8 @@ function normalizePersistedPlugin(plugin: LiatirPlugin): LiatirPlugin {
     ...plugin,
     runtime,
     python: runtime === 'python' ? plugin.python : undefined,
+    r: runtime === 'r' ? plugin.r : undefined,
+    native: runtime === 'native' ? plugin.native : undefined,
     category: normalizeCategory(plugin.category, runtime),
     tags: normalizeTags(plugin.tags),
     inputSchema: plugin.inputSchema ?? {},
@@ -143,7 +153,11 @@ function stateFromPythonPrepare(prepared: PythonEnvPrepareResponse): PythonPlugi
 function createLiaPluginsStore() {
   let plugins = $state<LiatirPlugin[]>([]);
   let pythonRuntimeStates = $state<Record<string, PythonPluginRuntimeState>>({});
+  let subprocessStates = $state<Record<string, LiatirPluginRuntimeStatus & { busy?: boolean }>>({});
+  const subprocessTasks = new Map<string, Promise<void>>();
+  let loadError = $state<string | null>(null);
   let initialized = false;
+  let generation = 0;
 
   async function persist() {
     await appStorage.writeText(getFile(), JSON.stringify(plugins));
@@ -151,6 +165,29 @@ function createLiaPluginsStore() {
 
   return {
     get plugins() { return plugins; },
+    get loadError() { return loadError; },
+    get subprocessStates() { return subprocessStates; },
+    async refreshRuntime(id: string, action: 'status' | 'prepare' | 'trustNative' = 'status'): Promise<void> {
+      const plugin = plugins.find(item => item.id === id);
+      const api = liatir();
+      if (!api || !plugin || (plugin.runtime !== 'r' && plugin.runtime !== 'native')) return;
+      const pending = subprocessTasks.get(id);
+      if (pending) return pending;
+      const currentGeneration = generation;
+      const runtime = plugin.runtime;
+      subprocessStates = { ...subprocessStates, [id]: { ...subprocessStates[id], runtime, ready: false, busy: true } };
+      // Start only after the task owns its map entry; late results compare that ownership.
+      const task = Promise.resolve().then(async () => {
+        let state: LiatirPluginRuntimeStatus;
+        try { state = await api.pluginRuntimes[action](plugin.path); }
+        catch (error) { state = { runtime, ready: false, error: String(error) }; }
+        if (generation === currentGeneration && subprocessTasks.get(id) === task && plugins.some(item => item.id === id && item.path === plugin.path)) {
+          subprocessStates = { ...subprocessStates, [id]: state };
+        }
+      }).finally(() => { if (generation === currentGeneration && subprocessTasks.get(id) === task) subprocessTasks.delete(id); });
+      subprocessTasks.set(id, task);
+      return task;
+    },
     get pythonRuntimeStates() { return pythonRuntimeStates; },
 
     async init() {
@@ -172,10 +209,14 @@ function createLiaPluginsStore() {
           plugins = parsed.map(normalizePersistedPlugin);
           await persist();
         }
-      } catch { plugins = []; }
+      } catch (error) { plugins = []; loadError = String(error); }
     },
 
     reset() {
+      loadError = null;
+      generation += 1;
+      subprocessStates = {};
+      subprocessTasks.clear();
       initialized = false;
       plugins = [];
       pythonRuntimeStates = {};
@@ -192,17 +233,7 @@ function createLiaPluginsStore() {
       const path = result?.paths?.[0];
       if (!path) return null;
 
-      const manifest = await api.invoke('lia_liatir_read_manifest', { path }) as {
-        name: string;
-        version: string;
-        description?: string;
-        runtime?: PluginRuntime;
-        category?: string;
-        tags?: string[];
-        inputSchema?: Record<string, PluginInputFieldDef>;
-        outputSchema?: Record<string, PluginOutputFieldDef>;
-        python?: LiatirPythonPluginRuntimeSpec;
-      };
+      const manifest = await api.invoke('lia_liatir_read_manifest', { path }) as Omit<LiatirPluginManifest, 'inputSchema'> & { inputSchema: Record<string, PluginInputFieldDef> };
       // Manifest declares the runtime; default to Node for backward compatibility.
       const runtime = normalizeRuntime(manifest.runtime);
       const category = normalizeCategory(manifest.category, runtime);
@@ -211,6 +242,9 @@ function createLiaPluginsStore() {
       // Deduplicate by path — update if already imported
       const existing = plugins.find(m => m.path === path);
       if (existing) {
+        const { [existing.id]: _oldState, ...remaining } = subprocessStates;
+        subprocessStates = remaining;
+        subprocessTasks.delete(existing.id);
         plugins = plugins.map(m => m.path === path
           ? {
               ...m,
@@ -219,6 +253,8 @@ function createLiaPluginsStore() {
               description: manifest.description ?? '',
               runtime,
               python: runtime === 'python' ? manifest.python : undefined,
+              r: runtime === 'r' ? manifest.r : undefined,
+              native: runtime === 'native' ? manifest.native : undefined,
               category,
               tags: [...new Set([...manifestTags, ...(m.tags ?? [])])],
               inputSchema: manifest.inputSchema ?? {},
@@ -239,6 +275,8 @@ function createLiaPluginsStore() {
         tags: manifestTags,
         runtime,
         python: runtime === 'python' ? manifest.python : undefined,
+        r: runtime === 'r' ? manifest.r : undefined,
+        native: runtime === 'native' ? manifest.native : undefined,
         path,
         inputSchema: manifest.inputSchema ?? {},
         outputSchema: manifest.outputSchema ?? {},

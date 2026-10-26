@@ -495,6 +495,9 @@ fn main() {
 
       // .lia plugins
       lia_liatir_read_manifest,
+      lia_liatir_runtime_status,
+      lia_liatir_runtime_prepare,
+      lia_liatir_native_trust,
       lia_liatir_python_runtime_status,
       lia_liatir_python_runtime_prepare,
       lia_liatir_run,

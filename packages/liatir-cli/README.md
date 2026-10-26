@@ -91,3 +91,14 @@ liatir init plugin-name --no-wasm-target
 The fields declared in `inputs` and `outputs` become the plugin's pipeline
 contract. Liatir uses them to render forms, validate required inputs, expose
 outputs to later steps, and store file outputs in Results.
+
+## R and Native Plugins
+
+`liatir init <name> --r --yes` creates an R Plugin; `--native` creates a Native
+Rust Plugin. Both support `liatir build` and the existing app-backed `liatir dev`.
+R requires a compatible `Rscript` (`LIATIR_RSCRIPT` overrides discovery in the CLI).
+Its first build writes a reproducible `renv.lock`; subsequent builds restore it.
+Native builds select an exact OS/architecture executable and generate their I/O
+schema by introspection. Native executable permission is granted in the app and
+binds the entire bundle. See the repository's `docs/plugins/r-and-native.md` for
+the language-independent protocol and cross-target contract metadata.

@@ -13,7 +13,7 @@ If `AGENT-POLICY.md` is present, read it before planning multi-step or expensive
 
 Operational instructions for AI coding agents working in this repository. Read this before implementing anything.
 
-**Liatir** is a **local-first** Rust/Tauri desktop app for bioinformatics: native tools, visual pipelines, `.lia` Node/WASM plugins, API Connectors, AI Models and AI Tools, all speaking a single shared I/O contract.
+**Liatir** is a **local-first** Rust/Tauri desktop app for bioinformatics: native tools, visual pipelines, `.lia` Node/Python/R/Native/WASM plugins, API Connectors, AI Models and AI Tools, all speaking a single shared I/O contract.
 
 **Liatir is for non-technical users first.** This outranks technical elegance in every UX decision.
 

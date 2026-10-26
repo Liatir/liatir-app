@@ -76,6 +76,8 @@
 
   function runtimeLabel(value: PluginRuntime) {
     if (value === 'python') return 'Python';
+    if (value === 'r') return 'R';
+    if (value === 'native') return 'Native';
     if (value === 'wasm') return 'WASM';
     return 'Node';
   }

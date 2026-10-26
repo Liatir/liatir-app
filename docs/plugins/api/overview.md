@@ -13,6 +13,8 @@ This is the API you need to use in order to develop a `.lia` plugin that can run
 - **Node** declares it with `definePlugin({...})` from `@liatir/api`.
 - **Python** declares it with `define_plugin(...)` from the CLI-managed
   `liatir` module scaffolded next to the entry point.
+- **R** uses the CLI-managed `liatir.R` module.
+- **Native** uses a compiled executable and the shared contract protocol.
 - **WASM** declares it with `define_plugin()` from the CLI-managed
   `src/liatir.rs` module.
 
@@ -23,19 +25,25 @@ attaches the implementation to that contract. `liatir build` reads the contract
 back and generates `manifest.json` from it — **there is no schema to write or keep
 in sync by hand**.
 
-This is the **same API shape in all three runtimes**:
+This is the **same API shape in all five runtimes**:
 
 - **Node** — `definePlugin({ inputs, outputs }).main(handler)` from `@liatir/api`.
 - **Python** — `define_plugin(inputs=..., outputs=...)` + `@plugin.main` from the
   CLI-managed `liatir` module.
 - **WASM (Rust)** — `define_plugin().input(...).output(...).main(handler)` from the
   CLI-managed `liatir` module.
+- **R** — `define_plugin(inputs=..., outputs=...)` + `plugin$main(handler)`.
+- **Native (Rust)** — the same contract builder as WASM, with full bridge access.
+  Other compiled languages implement the [executable protocol](/plugins/r-and-native).
 
 - [Plugin context](/plugins/plugin-context) 
 - [Defining plugin](/plugins/define-plugin)
 - [Declaring I/O fields](/plugins/field)
 
 ## API bridge
+
+R and Native expose the same bridge namespaces as Node and Python; see
+[R and Native Plugins](/plugins/r-and-native) for their syntax and transport.
 
 The `Liatir` object passed to `.main(...)` is the Node plugin bridge. It connects
 the plugin process to the running Liatir desktop app through local IPC.

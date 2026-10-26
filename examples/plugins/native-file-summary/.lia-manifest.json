@@ -1,0 +1,8 @@
+{
+  "name": "Native text file summary",
+  "version": "1.0.0",
+  "description": "Count UTF-8 text lines, words and bytes with Rust.",
+  "category": "File processing",
+  "runtime": "native",
+  "native": { "protocol": 1, "cargo": true }
+}

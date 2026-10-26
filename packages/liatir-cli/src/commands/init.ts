@@ -4,11 +4,12 @@ import { execFile } from "child_process";
 import { promisify } from "util";
 import { createInterface, type Interface } from "readline/promises";
 import { stdin as processStdin, stdout as processStdout } from "process";
+import type { LiatirPluginRuntime } from "@liatir/core";
 import { readAsset } from "./_assets.js";
 
 const execFileAsync = promisify(execFile);
 
-type Runtime = "node" | "wasm" | "python";
+type Runtime = LiatirPluginRuntime;
 type NodeLanguage = "typescript" | "javascript";
 type NodeTemplate = "minimal" | "file-processor" | "bio-cli";
 
@@ -54,8 +55,11 @@ const DEFAULT_PROJECT_NAME = "my-liatir-plugin";
 const DEFAULT_CATEGORY = "General";
 
 const RUNTIME_CHOICES: Choice<Runtime>[] = [
+  { value: "r", label: "R .lia plugin", description: "Use R and locked CRAN or Bioconductor packages." },
+  { value: "native", label: "Native .lia plugin", description: "Use a compiled executable with the full Liatir bridge." },
   {
     value: "node",
+    recommended: true,
     label: "Node TypeScript .lia plugin",
     description: "Use JavaScript/TypeScript and the full Liatir desktop bridge.",
   },
@@ -122,8 +126,8 @@ function requireFlagValue(args: string[], index: number, flag: string): string {
 }
 
 function parseRuntime(value: string): Runtime {
-  if (value === "node" || value === "wasm" || value === "python") return value;
-  throw new Error(`Invalid runtime "${value}". Expected "node", "wasm", or "python".`);
+  if (value === "node" || value === "wasm" || value === "python" || value === "r" || value === "native") return value;
+  throw new Error(`Invalid runtime "${value}". Expected "node", "wasm", "python", "r", or "native".`);
 }
 
 function parseTemplate(value: string): NodeTemplate {
@@ -179,6 +183,12 @@ function parseInitArgs(args: string[]): ParsedInitArgs {
         break;
       case "--wasm":
         setRuntime(parsed, "wasm");
+        break;
+      case "--r":
+        setRuntime(parsed, "r");
+        break;
+      case "--native":
+        setRuntime(parsed, "native");
         break;
       case "--python":
         setRuntime(parsed, "python");
@@ -968,11 +978,35 @@ export async function init(args: string[] | string, runtime?: Runtime): Promise<
 
   await fs.mkdir(path.join(config.dir, "src"), { recursive: true });
 
-  if (config.runtime === "wasm") {
+  if (config.runtime === "r" || config.runtime === "native") {
+    await scaffoldSubprocess(config);
+  } else if (config.runtime === "wasm") {
     await scaffoldWasm(config);
   } else if (config.runtime === "python") {
     await scaffoldPython(config);
   } else {
     await scaffoldNode(config);
   }
+}
+
+async function scaffoldSubprocess(config: InitConfig): Promise<void> {
+  const isR = config.runtime === "r";
+  const manifest = {
+    name: config.displayName, version: "1.0.0", description: config.description,
+    category: config.category, tags: config.tags, runtime: config.runtime,
+    ...(isR ? { r: { entry: "src/main.R", minVersion: "4.1", packages: [] } }
+      : { native: { protocol: 1, cargo: true } }),
+  };
+  await fs.writeFile(path.join(config.dir, ".lia-manifest.json"), JSON.stringify(manifest, null, 2) + "\n");
+  await fs.writeFile(path.join(config.dir, ".gitignore"), GITIGNORE + ".Rproj.user/\nrenv/library/\n");
+  if (isR) {
+    await fs.writeFile(path.join(config.dir, "src", "liatir.R"), await readAsset("liatir.R"));
+    await fs.writeFile(path.join(config.dir, "src", "main.R"), await readAsset("main.R"));
+  } else {
+    await fs.writeFile(path.join(config.dir, "Cargo.toml"), CARGO_TOML(config.rustCrateName));
+    await fs.writeFile(path.join(config.dir, "src", "main.rs"), await readAsset("native-main.rs"));
+    await fs.writeFile(path.join(config.dir, "src", "liatir.rs"), await readAsset("liatir.rs"));
+    await fs.writeFile(path.join(config.dir, "src", "liatir_bridge.rs"), await readAsset("liatir_bridge.rs"));
+  }
+  console.log(`Created ${config.projectName}/ (${isR ? "R" : "Native Rust"} .lia plugin)\n\nNext steps:\n  cd ${shellQuote(config.nextStepDir)}\n  liatir build\n  liatir dev`);
 }

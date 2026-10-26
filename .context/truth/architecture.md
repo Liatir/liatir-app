@@ -1,7 +1,7 @@
 # Core Architecture Principles
 
 Liatir is a local-first Rust/Tauri desktop app for bioinformatics. Native tools,
-visual pipelines, `.lia` Node/WASM plugins, API Connector, AI Models, and AI
+visual pipelines, `.lia` Node/Python/R/Native/WASM plugins, API Connector, AI Models, and AI
 Tools must work through one shared I/O contract defined in
 `packages/liatir-core`.
 
@@ -104,3 +104,7 @@ for demo cases.
 - [Testing Liatir](./testing/overview.md) — the suites, profiles and gates.
 - [Demo files](./demo-files.md) — the real datasets the Sandbox ships, their
   provenance and how the installed copy stays current.
+
+The [R and Native Plugin decision](../decisions/r-and-native-plugin-processes.md)
+records their shared subprocess lifecycle, code contracts, interpreter/dependency
+isolation and executable permission boundary.

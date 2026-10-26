@@ -1581,6 +1581,15 @@ function buildQc(core) {
   };
 }
 
+// src-ts/modules/rs/pluginRuntimes/_main.ts
+function buildPluginRuntimes(core) {
+  return {
+    status: (path) => core.invoke("lia_liatir_runtime_status", { path }),
+    prepare: (path) => core.invoke("lia_liatir_runtime_prepare", { path }),
+    trustNative: (path) => core.invoke("lia_liatir_native_trust", { path })
+  };
+}
+
 // src-ts/bridge.ts
 (() => {
   if (typeof window === "undefined") return;
@@ -1621,6 +1630,7 @@ function buildQc(core) {
     singleCellIndexes: buildSingleCellIndexes(core),
     snpEffSuite: buildSnpEffSuite(core),
     runtimeBoxes: buildRuntimeBoxes(core),
+    pluginRuntimes: buildPluginRuntimes(core),
     qc: buildQc(core),
     tauri: windowTauriProxy,
     onReady: liaReadyEventListener,
@@ -1675,6 +1685,7 @@ export {
   buildMenu,
   buildNetwork,
   buildNotifications,
+  buildPluginRuntimes,
   buildQc,
   buildRuntimeBoxes,
   buildShortcuts,

@@ -46,6 +46,8 @@ Usage:
   liatir init [name]          Scaffold a .lia plugin or WASM plugin interactively
   liatir init <name> --yes    Use recommended defaults without prompts
   liatir init <name> --wasm   Scaffold a WASM Rust .lia tool
+  liatir init <name> --r      Scaffold an R .lia plugin
+  liatir init <name> --native Scaffold a Native Rust .lia plugin
   liatir init <name> --python Scaffold a Python .lia plugin
   liatir init <name> --js     Scaffold a JavaScript Node .lia plugin
   liatir dev                  Open a temporary Liatir Dev Runner session

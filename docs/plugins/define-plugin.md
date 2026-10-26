@@ -1,6 +1,6 @@
 ---
 title: Define plugin
-description: Declares the input/output contract and entry point of a .lia plugin, in Node, Python, or WASM.
+description: Declares the input/output contract and entry point of a .lia plugin, in Node, Python, R, Native, or WASM.
 ---
 
 # Define plugin entry point
@@ -10,17 +10,20 @@ attaches the implementation to that contract. `liatir build` reads the contract
 back and generates `manifest.json` from it — there is no schema to write or keep
 in sync by hand.
 
-This is the **same API in all three runtimes**:
+This is the **same API in all five runtimes**:
 
 - **Node** — `definePlugin({ inputs, outputs }).main(handler)` from `@liatir/api`.
 - **Python** — `define_plugin(inputs=..., outputs=...)` + `@plugin.main` from the
   CLI-managed `liatir` module.
 - **WASM (Rust)** — `define_plugin().input(...).output(...).main(handler)` from the
   CLI-managed `liatir` module.
+- **R** — `define_plugin(inputs=..., outputs=...)` + `plugin$main(handler)`.
+- **Native (Rust)** — the same contract builder as WASM, with full bridge access.
+  Other compiled languages implement the [executable protocol](/plugins/r-and-native).
 
 For Python and WASM the `liatir` module is **not a package you install**: `liatir
 init` scaffolds it into your project (`src/liatir.py` / `src/liatir.rs`) and
-`liatir build` keeps it in sync with your CLI version. Its API version is the CLI
+`liatir build` keeps it in sync with your CLI version. The managed file is synchronized with the installed CLI
 version.
 
 ## Node (TypeScript)

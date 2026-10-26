@@ -4,6 +4,7 @@ import { pathToFileURL } from "url";
 import { build as esbuild } from "esbuild";
 import { execFile } from "child_process";
 import { promisify } from "util";
+import { createHash } from "node:crypto";
 import type {
   LiatirFieldSchema,
   LiatirInputFieldSchema,
@@ -11,9 +12,12 @@ import type {
   LiatirPluginManifest,
   LiatirPluginRuntime,
   LiatirPythonPluginRuntimeSpec,
+  LiatirRPluginRuntimeSpec,
+  LiatirNativePluginRuntimeSpec,
   LiatirPythonRequirement,
   LiatirPythonRuntimePackage,
 } from "@liatir/core";
+import { liatirPluginRuntime, liatirNativeTarget, liatirNativeTargetSupported } from "@liatir/core";
 import { typecheckIfConfigured } from "./_typecheck.js";
 import { resolveNodeEntryPoint, type NodeEntryPoint } from "./_entry.js";
 import { assetPath, assetsDir, syncManagedSdkFile } from "./_assets.js";
@@ -31,6 +35,7 @@ const execFileAsync = promisify(execFile);
 type RuntimeField = LiatirFieldSchema & {
   ext?: string[];
   format?: LiatirOutputFieldSchema["format"];
+  artifact?: LiatirInputFieldSchema["artifact"] | LiatirOutputFieldSchema["artifact"];
   __t?: unknown;
 };
 
@@ -111,6 +116,9 @@ function serializeInputSchema(schema: Record<string, RuntimeField> | undefined):
     if (fld.required !== undefined) def.required = fld.required;
     if (fld.default !== undefined) def.default = fld.default;
     if (fld.accept !== undefined) def.accept = fld.accept;
+    if (fld.options !== undefined) def.options = fld.options;
+    if (fld.connectable !== undefined) def.connectable = fld.connectable;
+    if (fld.artifact !== undefined) def.artifact = fld.artifact;
     out[k] = def;
   }
   return out;
@@ -136,6 +144,9 @@ function serializeOutputSchema(schema: Record<string, RuntimeField> | undefined)
     if (fld.required !== undefined) def.required = fld.required;
     if (fld.default !== undefined) def.default = fld.default;
     if (fld.accept !== undefined) def.accept = fld.accept;
+    if (fld.options !== undefined) def.options = fld.options;
+    if (fld.connectable !== undefined) def.connectable = fld.connectable;
+    if (fld.artifact !== undefined) def.artifact = fld.artifact as typeof def.artifact;
     if (fld.ext !== undefined) def.ext = fld.ext;
     if (fld.format !== undefined) def.format = fld.format;
     out[k] = def;
@@ -478,13 +489,12 @@ function wasmMetadata(raw: Record<string, unknown>): ManifestMetadata {
 }
 
 function manifestRuntime(raw: RawManifest | null): LiatirPluginRuntime | undefined {
-  const runtime = raw?.runtime;
-  return runtime === "node" || runtime === "wasm" || runtime === "python" ? runtime : undefined;
+  return raw?.runtime === undefined ? undefined : liatirPluginRuntime(raw.runtime);
 }
 
 function validateRelativePath(value: string, fieldName: string): string {
   const normalized = value.replace(/\\/g, "/").replace(/^\.\/+/, "");
-  if (!normalized || normalized.startsWith("/") || normalized.includes("../") || normalized === "..") {
+  if (!normalized || /^[a-z]:/i.test(normalized) || normalized.split("/").some(part => !part || part === "." || part === "..")) {
     throw new Error(`${fieldName} must be a relative path inside the plugin project.`);
   }
   return normalized;
@@ -539,7 +549,7 @@ async function noPluginProjectError(cwd: string): Promise<Error> {
   return new Error(
     `No Liatir plugin project found in ${path.basename(cwd) || cwd}.\n\n` +
     `Run this command from a plugin root. Expected one of:\n` +
-    `- .lia-manifest.json with runtime "python" or "wasm"\n` +
+    `- .lia-manifest.json with runtime "python", "wasm", "r" or "native"\n` +
     `- package.json with src/index.ts or src/index.js for a Node plugin\n` +
     `- Cargo.toml plus .lia-manifest.json for a WASM plugin` +
     nearbyText
@@ -557,7 +567,7 @@ async function readRequirementsFile(cwd: string): Promise<string[] | undefined> 
 }
 
 async function filesUnder(root: string): Promise<string[]> {
-  const ignored = new Set(["__pycache__", ".git", ".lia-dev", ".liatir", ".mypy_cache", ".pytest_cache", ".venv", "venv"]);
+  const ignored = new Set(["__pycache__", ".git", ".lia-dev", ".liatir", ".mypy_cache", ".pytest_cache", ".venv", "venv", "renv", ".Rproj.user", "target", "node_modules"]);
   const entries = await fs.readdir(root, { withFileTypes: true });
   const files: string[] = [];
   for (const entry of entries) {
@@ -606,11 +616,15 @@ async function buildPluginBundle(options: BuildOptions = {}): Promise<BuildResul
   const hasPackageJson = await exists(path.join(cwd, "package.json"));
   const hasCargoToml = await exists(path.join(cwd, "Cargo.toml"));
 
+  if (runtime === "r" || runtime === "native") {
+    return buildSubprocess(cwd, rawManifest!, runtime, options);
+  }
+
   if (runtime === "python") {
     return buildPython(cwd, rawManifest!, options);
   }
 
-  if (runtime === "wasm" || (rawManifest && hasCargoToml)) {
+  if (runtime === "wasm" || (!runtime && rawManifest && hasCargoToml)) {
     return buildWasm(cwd, rawManifest ?? undefined, options);
   }
 
@@ -621,7 +635,7 @@ async function buildPluginBundle(options: BuildOptions = {}): Promise<BuildResul
   if (rawManifest) {
     throw new Error(
       `Unsupported .lia-manifest.json runtime in ${path.basename(cwd) || cwd}.\n` +
-      `Expected runtime "python", "wasm", or "node".`
+      `Expected runtime "python", "wasm", "node", "r", or "native".`
     );
   }
 
@@ -890,7 +904,10 @@ async function createBundle(
     { name: "_sig", content: Buffer.from("LIATIR/1", "utf8") },
     { name: "manifest.json", content: Buffer.from(JSON.stringify(manifest, null, 2), "utf8") },
   ];
+  const payloadNames = new Set(entries.map(entry => entry.name));
   for (const payload of payloads) {
+    if (payloadNames.has(payload.name)) throw new Error(`Duplicate bundle payload: ${payload.name}`);
+    payloadNames.add(payload.name);
     entries.push({
       name: validateRelativePath(payload.name, "payload path"),
       content: await fs.readFile(payload.path),
@@ -914,4 +931,111 @@ async function createBundle(
   const content = await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" });
   await fs.mkdir(path.dirname(outputPath), { recursive: true });
   await fs.writeFile(outputPath, content);
+}
+
+async function buildSubprocess(cwd: string, raw: RawManifest, runtime: "r" | "native", options: BuildOptions): Promise<BuildResult> {
+  let contract: CodeContract;
+  const payloads: BundlePayload[] = [];
+  let r: LiatirRPluginRuntimeSpec | undefined;
+  let native: LiatirNativePluginRuntimeSpec | undefined;
+  if (runtime === "r") {
+    if (!isRecord(raw.r)) throw new Error("R plugins require an r runtime specification.");
+    if (raw.r.packages !== undefined && (!Array.isArray(raw.r.packages) || raw.r.packages.some(item => typeof item !== "string" || !item.trim()))) {
+      throw new Error("r.packages must be an array of package names.");
+    }
+    if (raw.r.minVersion !== undefined && (typeof raw.r.minVersion !== "string" || !/^\d+(\.\d+){0,2}$/.test(raw.r.minVersion))) {
+      throw new Error("r.minVersion must be an R version such as 4.1.");
+    }
+    const source = validateRelativePath(cleanOptionalString(raw.r.entry) ?? "src/main.R", "r.entry");
+    const entry = path.join(cwd, source);
+    const sourceRoot = path.dirname(entry);
+    await syncManagedSdkFile(path.join(sourceRoot, "liatir.R"), "liatir.R");
+    const binary = process.env.LIATIR_RSCRIPT ?? "Rscript";
+    const library = path.join(cwd, ".liatir", "r-build-library");
+    await fs.mkdir(library, { recursive: true });
+    const env = { ...process.env, R_LIBS_USER: library, RENV_CONFIG_AUTOLOADER_ENABLED: "FALSE" };
+    // Preparation creates/restores the dependency lock, independently of analysis code.
+    await execFileAsync(binary, ["--vanilla", assetPath("prepare-r.R"), cwd, path.join(cwd, ".lia-manifest.json"), library],
+      { env, maxBuffer: 16 * 1024 * 1024 });
+    const { stdout } = await execFileAsync(binary, ["--vanilla", entry], {
+      env: { ...env, LIATIR_EMIT_CONTRACT: "1" }, timeout: 30_000, maxBuffer: 8 * 1024 * 1024, cwd: sourceRoot,
+    });
+    const parsed = parseContractOutput(stdout);
+    if (!parsed || parsed === "legacy") throw new Error("R entry must call plugin$main(...) from liatir.R.");
+    contract = parsed;
+    for (const file of await filesUnder(sourceRoot)) {
+      payloads.push({ name: `r/${path.relative(sourceRoot, file).split(path.sep).join("/")}`, path: file });
+    }
+    if (!payloads.some(payload => payload.name === "r/renv.lock" && payload.path === path.join(cwd, "renv.lock"))) {
+      payloads.push({ name: "r/renv.lock", path: path.join(cwd, "renv.lock") });
+    }
+    payloads.push({ name: "r/_prepare.R", path: assetPath("prepare-r.R") });
+    r = { entry: `r/${path.basename(entry)}`, minVersion: cleanOptionalString(raw.r.minVersion) ?? "4.1",
+      packages: cleanStringArray(raw.r.packages), lockfile: "r/renv.lock" };
+  } else {
+    if (!isRecord(raw.native) || raw.native.protocol !== 1) throw new Error("Native plugins require native.protocol = 1.");
+    let targets: Record<string, unknown>;
+    const host = liatirNativeTarget(process.platform, process.arch);
+    if (raw.native.cargo === true) {
+      await syncManagedSdkFile(path.join(cwd, "src", "liatir.rs"), "liatir.rs");
+      await syncManagedSdkFile(path.join(cwd, "src", "liatir_bridge.rs"), "liatir_bridge.rs");
+      const { stdout } = await execFileAsync("cargo", ["build", "--release", "--message-format=json"], { cwd, maxBuffer: 16 * 1024 * 1024 });
+      const bins = stdout.split(/\r?\n/).filter(Boolean).map(line => JSON.parse(line)).filter(row =>
+        row.reason === "compiler-artifact" && row.executable && row.target?.kind?.includes("bin"));
+      if (bins.length !== 1) throw new Error("Native scaffold must build exactly one executable.");
+      targets = { [host]: path.relative(cwd, bins[0].executable).split(path.sep).join("/") };
+      if (isRecord(raw.native.targets)) targets = { ...raw.native.targets, ...targets };
+    } else {
+      if (!isRecord(raw.native.targets)) throw new Error("Native plugins must declare native.targets or native.cargo = true.");
+      targets = raw.native.targets;
+    }
+    native = { protocol: 1, targets: {} };
+    const contracts: CodeContract[] = [];
+    for (const [target, source] of Object.entries(targets).sort()) {
+      if (!liatirNativeTargetSupported(target)) throw new Error(`Unsupported Native target: ${target}`);
+      if (typeof source !== "string") throw new Error(`Native target ${target} requires an executable path.`);
+      const relative = validateRelativePath(source, `native.targets.${target}`);
+      const executable = path.join(cwd, relative);
+      const dest = `native/${target}/${path.basename(relative)}`;
+      native.targets[target] = dest;
+      payloads.push({ name: dest, path: executable });
+      // All targets carry the same contract, embedded in the executable. Cross-built
+      // targets supply it using a small non-executable sidecar produced on that host.
+      const executableSha256 = createHash("sha256").update(await fs.readFile(executable)).digest("hex");
+      let stdout: string;
+      if (target === host) {
+        ({ stdout } = await execFileAsync(executable, [], {
+          cwd, env: { ...process.env, LIATIR_EMIT_CONTRACT: "1" }, timeout: 15_000, maxBuffer: 8 * 1024 * 1024,
+        }));
+      } else {
+        const emitted: unknown = JSON.parse(await fs.readFile(executable + ".contract.json", "utf8"));
+        if (!isRecord(emitted) || emitted.executableSha256 !== executableSha256) {
+          throw new Error(`Stale Native contract metadata for ${target}. Build this executable on its target with liatir build.`);
+        }
+        stdout = CONTRACT_MARKER + JSON.stringify(emitted.contract);
+      }
+      const parsed = parseContractOutput(stdout);
+      if (!parsed || parsed === "legacy") throw new Error(`Native target ${target} did not emit a contract.`);
+      if (target === host) {
+        const emitted = JSON.stringify({ executableSha256, contract: { liatirContract: 1, inputs: parsed.inputs, outputs: parsed.outputs } }, null, 2) + "\n";
+        const metadataPath = executable + ".contract.json";
+        // An unchanged generated file must not trigger another liatir dev rebuild.
+        if (await fs.readFile(metadataPath, "utf8").catch(() => null) !== emitted) await fs.writeFile(metadataPath, emitted);
+      }
+      contracts.push(parsed);
+    }
+    if (!contracts.length) throw new Error("Native plugins need at least one target.");
+    contract = contracts[0];
+    const canonical = (value: unknown): string => JSON.stringify(value, (_key, item) =>
+      isRecord(item) ? Object.fromEntries(Object.entries(item).sort(([a], [b]) => a.localeCompare(b))) : item);
+    if (contracts.some(other => canonical(other) !== canonical(contract))) throw new Error("Native targets declare different I/O contracts.");
+  }
+  const manifest: LiatirPluginManifest = { ...wasmMetadata(raw), runtime,
+    inputSchema: serializeInputSchema(contract.inputs), outputSchema: serializeOutputSchema(contract.outputs),
+    ...(r ? { r } : {}), ...(native ? { native } : {}) };
+  const outputName = options.outputName ?? `${bareName(path.basename(cwd))}.lia`;
+  const outputPath = path.join(options.outputDir ?? path.join(cwd, ".liatir"), outputName);
+  await createBundle(outputPath, manifest, payloads, options);
+  if (!options.quiet) console.log(`Built ${runtime} Plugin → ${outputName}`);
+  return { path: outputPath, manifest, runtime };
 }

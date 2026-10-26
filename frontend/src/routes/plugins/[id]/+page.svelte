@@ -41,6 +41,10 @@
   // Node.js availability
   let nodeAvailable = $state<boolean | null>(null);
 
+  const subprocessState = $derived(mod ? liaPluginsStore.subprocessStates[mod.id] : undefined);
+  const subprocessRequired = $derived(mod?.runtime === 'r' || mod?.runtime === 'native');
+  const subprocessReady = $derived(!subprocessRequired || subprocessState?.ready === true);
+
   const pythonRuntimeState = $derived(mod?.runtime === 'python' ? liaPluginsStore.pythonRuntimeStates[mod.id] ?? null : null);
   const pythonRuntimeBusy = $derived(pythonRuntimeState?.phase === 'checking' || pythonRuntimeState?.phase === 'preparing');
   const pythonRuntimeReady = $derived(mod?.runtime !== 'python' || pythonRuntimeState?.phase === 'ready');
@@ -81,6 +85,8 @@
       nodeAvailable = check.available;
     }
 
+    if (mod.runtime === 'r' || mod.runtime === 'native') await liaPluginsStore.refreshRuntime(mod.id);
+
     if (mod.runtime === 'python') {
       await liaPluginsStore.ensurePythonRuntimeStatus(mod.id);
     }
@@ -113,6 +119,7 @@
   const canRun = $derived(
     !running &&
     !pythonRuntimeBusy &&
+    subprocessReady &&
     pythonRuntimeReady &&
     nodeAvailable !== false &&
     !!mod &&
@@ -292,6 +299,8 @@
   function runtimeLabel(runtime: LiatirPlugin['runtime']) {
     if (runtime === 'wasm') return 'WASM .lia';
     if (runtime === 'python') return 'Python .lia';
+    if (runtime === 'r') return 'R .lia';
+    if (runtime === 'native') return 'Native .lia';
     return 'Node .lia';
   }
 
@@ -352,6 +361,32 @@
             <div>
               <p class="text-sm font-medium text-text-secondary">Node.js not found</p>
               <p class="text-xs text-text-subtle mt-0.5">.lia plugins require Node.js ≥18. Install it from <span class="font-mono">nodejs.org</span> or via your package manager.</p>
+            </div>
+          </div>
+        </Card>
+      {/if}
+
+      {#if subprocessRequired}
+        <Card>
+          <div class="px-4 py-4 space-y-3">
+            <p class="text-sm font-medium text-text-secondary">{runtimeLabel(mod.runtime)} · {subprocessState?.busy ? 'Preparing' : subprocessState?.ready ? 'Ready' : 'Needs setup'}</p>
+            {#if mod.runtime === 'native'}
+              <p class="text-xs text-text-muted">This Plugin runs executable code with access to your files and the Liatir bridge. Only allow code from an author you trust. A changed bundle needs your permission again.</p>
+            {:else}
+              <p class="text-xs text-text-muted">R runs this Plugin's analysis. Preparation installs its exact package versions in a separate library. Once prepared, it can run offline.</p>
+            {/if}
+            {#if subprocessState?.error}
+              <p class="text-xs text-red-500">{sanitizeLocalPathsForDisplay(subprocessState.error)}</p>
+            {/if}
+            {#if subprocessState?.version}<p class="text-xs text-text-muted">R {subprocessState.version}</p>{/if}
+            {#if subprocessState?.missingPackages?.length}<p class="text-xs text-text-muted">Packages to prepare: {subprocessState.missingPackages.join(', ')}</p>{/if}
+            <div class="flex gap-2">
+              <Button variant="secondary" size="sm" disabled={subprocessState?.busy || running} onclick={() => mod && liaPluginsStore.refreshRuntime(mod.id)}>Refresh status</Button>
+              {#if !subprocessState?.ready}
+                <Button variant="primary" size="sm" disabled={subprocessState?.busy || running || !!subprocessState?.error} onclick={() => mod && liaPluginsStore.refreshRuntime(mod.id, mod.runtime === 'native' ? 'trustNative' : 'prepare')}>
+                  {mod.runtime === 'native' ? 'Allow executable access' : 'Prepare R packages'}
+                </Button>
+              {/if}
             </div>
           </div>
         </Card>
@@ -490,7 +525,7 @@
               onclick={run}
               testId="plugin-run-button"
             >
-              {running ? 'Running…' : mod.runtime === 'python' && !pythonRuntimeReady ? 'Prepare runtime first' : 'Run'}
+              {running ? 'Running…' : subprocessRequired && !subprocessReady ? 'Complete setup first' : mod.runtime === 'python' && !pythonRuntimeReady ? 'Prepare runtime first' : 'Run'}
             </Button>
             {#if running}
               <Button variant="secondary" size="sm" onclick={cancelRun} testId="plugin-cancel-button">Cancel</Button>

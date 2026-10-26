@@ -247,6 +247,7 @@ export const LIATIR_API: Record<string, ApiNode> = {
       spawnPython: { type: "method", detail: "(input: RuntimeComponentPythonSpawnInput): Promise<{ jobId: string; }>" },
       cancelDownload: { type: "method", detail: "(downloadId: string): Promise<boolean>" },
   } },
+  pluginRuntimes: { type: "property", detail: "LiatirPluginRuntimesAPI" },
   qc: { type: "property", detail: "QcInterface", children: {
       fastqc: { type: "property", detail: "FastqcInterface", children: {
           run: { type: "method", detail: "(args: FastqcArgs, execution?: FastqcExecutionOptions): Promise<LiatirToolOutput>" },

@@ -132,3 +132,7 @@ is nothing to install or update separately. Check out the [plugin context guide]
 - [Desktop API](/plugins/api/desktop/app)
 - [Jobs API](/plugins/api/jobs/spawn)
 - [Dependencies API](/plugins/api/deps/check)
+## R and Native runtimes
+
+See [R and Native Plugins](./r-and-native) for scaffolding, dependency locks,
+executable targets, bridge access and the Native permission model.

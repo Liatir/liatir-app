@@ -14,6 +14,10 @@ using snake_case method names (e.g. `ctx.liatir.jobs.list()`,
 areas below except the typed bio helpers (`align`/`qc`/`variants`), which Python
 reaches through `ctx.liatir.invoke`. WASM plugins are sandboxed and do not have API bridge access.
 
+R and Native expose these same areas through `ctx$liatir` (R) and `ctx.liatir`
+(Rust). See [R and Native Plugins](./r-and-native) for method conventions and
+the language-independent authenticated IPC protocol.
+
 ## Available areas
 
 | Area | Use it for |

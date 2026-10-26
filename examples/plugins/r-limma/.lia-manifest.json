@@ -1,0 +1,8 @@
+{
+  "name": "R differential expression with limma",
+  "version": "1.0.0",
+  "description": "Compare two groups of log2 expression measurements with limma.",
+  "category": "Transcriptomics",
+  "runtime": "r",
+  "r": { "entry": "src/main.R", "minVersion": "4.1", "packages": ["bioc::limma"] }
+}

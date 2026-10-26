@@ -49,6 +49,8 @@ const IGNORED_DIRS = new Set([
   "build",
   "dist",
   "node_modules",
+  "renv",
+  ".Rproj.user",
   "target",
   "venv",
 ]);

@@ -27,6 +27,8 @@ Markdown and stays complete and meaningful without the tool.
 
 ## When relevant
 
+- [R and Native Plugin runtime implementation](./state/r-and-native-plugin-runtime-support.md).
+
 - [Website download click counts](./truth/download-click-tracking.md) — minimal
   Cloudflare D1 counters and terminal access.
 

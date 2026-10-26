@@ -14,11 +14,11 @@ export interface PluginRunOptions {
 }
 
 /**
- * Execute a .lia plugin (Node, Python, or WASM runtime) and collect its result.
+ * Execute a .lia plugin (Node, Python, R, Native or WASM runtime) and collect its result.
  *
  * Single source of truth for plugin execution, shared by the standalone runner
  * page and the pipeline engine. `lia_liatir_run` instruments the runtime:
- *  - Node/Python → return `{ jobId }`; buffered output is polled until exit and
+ *  - Node/Python/R/Native → return `{ jobId }`; buffered output is polled until exit and
  *                  the runner marker is parsed for the structured result.
  *  - WASM        → runs as an in-process Job with the same buffered
  *                  settlement and cancellation contract.
@@ -84,5 +84,9 @@ export async function runLiatirPlugin(
     throwIfRunCancelled(options.signal);
   }
 
+  if (exitCode === 0 && (plugin.runtime === 'r' || plugin.runtime === 'native') &&
+      (result === null || typeof result !== 'object' || Array.isArray(result))) {
+    throw new Error('Plugin finished without a valid result. Ask its author to check the Plugin.');
+  }
   return { result, stdout, stderr, exitCode };
 }

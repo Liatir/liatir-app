@@ -26,3 +26,4 @@ export * from "./modules/rs/runtimeBoxes/_main";
 export * from "./modules/rs/mcp/_main";
 export * from "./modules/qc/_main";
 export * from "./modules/qc/fastqc/_main";
+export * from "./modules/rs/pluginRuntimes/_main";

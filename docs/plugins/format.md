@@ -6,21 +6,24 @@ payload.
 
 ## Runtime variants
 
-There are three supported runtimes: **Node**, **Python**, and **WASM**. All
-three declare the I/O contract the same way — once, in the code, with the
+There are five supported runtimes: **Node**, **Python**, **R**, **Native**, and **WASM**. All
+five declare the I/O contract the same way — once, in the code, with the
 `define_plugin` API — and `liatir build` generates the bundle manifest schema
 from it. There is no schema to keep in sync by hand:
 
 - **Node** declares it with `definePlugin({...})` from `@liatir/api`.
 - **Python** declares it with `define_plugin(...)` from the CLI-managed
   `liatir` module scaffolded next to the entry point.
+- **R** declares it with `define_plugin(...)` from the CLI-managed `liatir.R`.
+- **Native** emits a code-declared contract through its executable; the Rust SDK
+  shares the same field builders and validation as WASM.
 - **WASM** declares it with `define_plugin()` from the CLI-managed
   `src/liatir.rs` module.
 
 Node plugins have no `.lia-manifest.json` at all (metadata lives in
-`package.json`). Python and WASM projects keep a small `.lia-manifest.json`
-for metadata (name, version, description, category, tags) — plus, for Python,
-the runtime spec (entry point, packages, requirements). Legacy Python/WASM
+`package.json`). Python, R, Native and WASM projects keep a small `.lia-manifest.json`
+for metadata (name, version, description, category, tags) and their runtime specs
+(Python/R dependencies or Native executable variants). Legacy Python/WASM
 plugins that still declare `inputSchema`/`outputSchema` in the manifest keep
 building; when a code contract exists, it wins and the manifest schema is
 ignored.
@@ -249,3 +252,8 @@ When the packaged `.lia` runs, Liatir creates an isolated managed Python runtime
 for that plugin bundle and installs the declared packages or requirements there.
 Legacy plugins with a plain `main(input)` function and a manifest-owned
 `inputSchema`/`outputSchema` keep working.
+
+## R and Native runtimes
+
+See [R and Native Plugins](./r-and-native) for scaffolding, dependency locks,
+executable targets, bridge access and the Native permission model.

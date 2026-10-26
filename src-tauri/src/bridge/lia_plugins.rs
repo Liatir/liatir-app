@@ -12,6 +12,10 @@ use super::python_env::{
     PythonEnvStatus, PythonRequirement,
 };
 
+#[path = "plugin_subprocess.rs"]
+mod subprocess;
+type BundleArchive = zip::ZipArchive<std::io::Cursor<std::sync::Arc<[u8]>>>;
+
 const SIG: &str = "LIATIR/1";
 const PYTHON_PLUGIN_ENV_ROOT: &str = "plugin-runtimes";
 pub(crate) const PYTHON_PLUGIN_DEV_ENV_ROOT: &str = "plugin-dev-runtimes";
@@ -60,12 +64,25 @@ struct PythonPluginRuntimeContext {
     env_id: String,
 }
 
-fn open_validated(path: &str) -> Result<zip::ZipArchive<std::fs::File>, String> {
-    let file = std::fs::File::open(path)
-        .map_err(|e| format!("Cannot open: {e}"))?;
-    let mut zip = zip::ZipArchive::new(file)
+fn open_validated(path: &str) -> Result<BundleArchive, String> {
+    let size = std::fs::metadata(path).map_err(|e| format!("Cannot open: {e}"))?.len();
+    if size > 512 * 1024 * 1024 { return Err("Plugin bundle exceeds the 512 MiB limit".into()); }
+    let bytes = std::fs::read(path).map_err(|e| format!("Cannot open: {e}"))?;
+    let mut zip = zip::ZipArchive::new(std::io::Cursor::new(std::sync::Arc::<[u8]>::from(bytes)))
         .map_err(|_| "Not a valid .lia plugin (not a zip)".to_string())?;
 
+    let mut names = std::collections::HashSet::new();
+    let mut expanded_size = 0u64;
+    for index in 0..zip.len() {
+        let entry = zip.by_index(index).map_err(|e| e.to_string())?;
+        validate_relative_path(entry.name().trim_end_matches('/'))?;
+        if !names.insert(entry.name().to_string()) { return Err("Duplicate Plugin bundle entry".into()); }
+        if entry.unix_mode().map(|mode| mode & 0o170000 == 0o120000).unwrap_or(false) {
+            return Err("Plugin bundle symlinks are not allowed".into());
+        }
+        expanded_size = expanded_size.checked_add(entry.size()).ok_or("Plugin size overflow")?;
+        if expanded_size > 1024 * 1024 * 1024 { return Err("Expanded Plugin bundle exceeds 1 GiB".into()); }
+    }
     // Validate signature
     let mut sig_entry = zip.by_name("_sig")
         .map_err(|_| "Not a valid .lia plugin (missing signature)".to_string())?;
@@ -84,7 +101,7 @@ fn open_validated(path: &str) -> Result<zip::ZipArchive<std::fs::File>, String> 
 }
 
 fn read_zip_entry_bytes(
-    zip: &mut zip::ZipArchive<std::fs::File>,
+    zip: &mut BundleArchive,
     name: &str,
 ) -> Result<Option<Vec<u8>>, String> {
     match zip.by_name(name) {
@@ -101,7 +118,7 @@ fn read_zip_entry_bytes(
 /// Canonical digest signed by the CLI and re-derived here. Deterministic across
 /// implementations: for every entry except the signature-meta entries, sorted
 /// by name, append `"{name}\n{sha256hex(content)}\n"`, then SHA-256 the whole.
-fn bundle_signing_digest(zip: &mut zip::ZipArchive<std::fs::File>) -> Result<Vec<u8>, String> {
+fn bundle_signing_digest(zip: &mut BundleArchive) -> Result<Vec<u8>, String> {
     let mut rows: Vec<(String, Vec<u8>)> = Vec::new();
     for index in 0..zip.len() {
         let mut entry = zip.by_index(index).map_err(|e| e.to_string())?;
@@ -157,7 +174,7 @@ fn hex_lower(bytes: &[u8]) -> String {
 /// - no signature entries  → Ok (unsigned/dev/legacy bundle, allowed)
 /// - complete + valid       → Ok
 /// - incomplete or invalid  → Err (tamper-evident)
-fn verify_bundle_signature(zip: &mut zip::ZipArchive<std::fs::File>) -> Result<(), String> {
+fn verify_bundle_signature(zip: &mut BundleArchive) -> Result<(), String> {
     use base64::{engine::general_purpose::STANDARD, Engine as _};
     use ed25519_dalek::{Signature, Verifier, VerifyingKey};
 
@@ -207,7 +224,7 @@ fn verify_bundle_signature(zip: &mut zip::ZipArchive<std::fs::File>) -> Result<(
 
 fn validate_relative_path(value: &str) -> Result<PathBuf, String> {
     let path = Path::new(value);
-    if value.trim().is_empty() || path.is_absolute() {
+    if value.trim().is_empty() || path.is_absolute() || value.contains('\\') || value.contains(':') || value.split('/').any(|part| part.is_empty() || part == "." || part == "..") {
         return Err(format!("unsafe plugin payload path: {value}"));
     }
     for component in path.components() {
@@ -307,13 +324,18 @@ fn parse_python_spec(manifest: &Value) -> Result<PythonPluginSpec, String> {
     Ok(spec)
 }
 
-fn read_manifest(zip: &mut zip::ZipArchive<std::fs::File>) -> Result<Value, String> {
+fn read_manifest(zip: &mut BundleArchive) -> Result<Value, String> {
     let mut entry = zip
         .by_name("manifest.json")
         .map_err(|_| "manifest.json not found in bundle".to_string())?;
     let mut buf = String::new();
     entry.read_to_string(&mut buf).map_err(|e| e.to_string())?;
-    serde_json::from_str(&buf).map_err(|e| format!("Invalid manifest JSON: {e}"))
+    drop(entry);
+    let manifest: Value = serde_json::from_str(&buf).map_err(|e| format!("Invalid manifest JSON: {e}"))?;
+    subprocess::runtime(&manifest)?;
+    if !manifest.is_object() { return Err("Plugin manifest must be an object".into()); }
+    subprocess::validate_manifest(zip, &manifest)?;
+    Ok(manifest)
 }
 
 pub(crate) fn read_manifest_from_bundle(path: &str) -> Result<Value, String> {
@@ -327,10 +349,7 @@ pub(crate) fn python_env_id_for_manifest(manifest: &Value) -> Result<String, Str
 }
 
 fn python_runtime_context(manifest: Value) -> Result<PythonPluginRuntimeContext, String> {
-    let runtime = manifest
-        .get("runtime")
-        .and_then(|r| r.as_str())
-        .unwrap_or("node");
+    let runtime = subprocess::runtime(&manifest)?;
     if runtime != "python" {
         return Err("This .lia plugin does not declare the Python runtime.".to_string());
     }
@@ -382,7 +401,7 @@ fn prepare_python_plugin_env(
 }
 
 fn extract_python_payload(
-    zip: &mut zip::ZipArchive<std::fs::File>,
+    zip: &mut BundleArchive,
     target_root: &Path,
 ) -> Result<(), String> {
     std::fs::create_dir_all(target_root).map_err(|e| e.to_string())?;
@@ -489,6 +508,27 @@ pub async fn lia_liatir_python_runtime_prepare(
     .map_err(|e| e.to_string())?
 }
 
+/// Readiness for first-class R and Native Plugins. Never executes analysis code.
+#[tauri::command]
+pub async fn lia_liatir_runtime_status(app: AppHandle, path: String) -> Result<Value, String> {
+    tauri::async_runtime::spawn_blocking(move || subprocess::status(&app, &path)).await.map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+pub async fn lia_liatir_runtime_prepare(app: AppHandle, path: String) -> Result<Value, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        subprocess::prepare(&app, &path, &LiaPluginRunOptions::default())?;
+        subprocess::status(&app, &path)
+    }).await.map_err(|e| e.to_string())?
+}
+
+/// User consent is desktop-only. Plugin IPC deliberately has no trust-grant route.
+#[tauri::command]
+pub async fn lia_liatir_native_trust(app: AppHandle, path: String) -> Result<Value, String> {
+    subprocess::trust(&app, &path)?;
+    subprocess::status(&app, &path)
+}
+
 /// Run a .lia plugin with the runtime declared by its manifest.
 /// Returns the same {jobId} value as lia_jobs_spawn.
 #[tauri::command]
@@ -551,10 +591,11 @@ pub(crate) async fn run_lia_plugin_bundle(
 
     // Read the manifest to pick the runtime (node | python | wasm). Default: node.
     let manifest = read_manifest(&mut zip)?;
-    let runtime = manifest
-        .get("runtime")
-        .and_then(|r| r.as_str())
-        .unwrap_or("node");
+    let runtime = subprocess::runtime(&manifest)?;
+
+    if runtime == "r" || runtime == "native" {
+        return subprocess::run(app, zip, manifest, inputs, options).await;
+    }
 
     // ── WASM runtime: extract plugin.wasm and run it in the sandbox ─────────
     if runtime == "wasm" {

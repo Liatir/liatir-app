@@ -1,4 +1,4 @@
-// Liatir WASM plugin SDK — managed by @liatir/cli.
+// Liatir Rust plugin SDK — managed by @liatir/cli.
 //
 // `liatir init` writes this file into src/ so `mod liatir;` resolves, and
 // `liatir build` keeps it in sync with your CLI version. Do not edit it:
@@ -16,6 +16,10 @@
 use serde_json::{Map, Value};
 use std::io::Read;
 use std::path::PathBuf;
+
+#[cfg(not(target_family = "wasm"))]
+#[path = "liatir_bridge.rs"]
+pub mod bridge;
 
 pub const SDK_VERSION: &str = "0.1.0";
 const CONTRACT_VERSION: u32 = 1;
@@ -92,6 +96,11 @@ impl Field {
         self.set("format", Value::String(format.to_string()))
     }
 
+    /// Shared scientific artifact declaration or requirement from @liatir/core.
+    pub fn artifact(self, value: Value) -> Self {
+        self.set("artifact", value)
+    }
+
     /// Shorthand for .format("integer").
     pub fn integer(self) -> Self {
         self.format("integer")
@@ -131,6 +140,8 @@ pub mod field {
 pub struct Context {
     input: Map<String, Value>,
     raw_input: Value,
+    #[cfg(not(target_family = "wasm"))]
+    pub liatir: bridge::Liatir,
 }
 
 impl Context {
@@ -180,6 +191,7 @@ impl Context {
     }
 
     /// Persistent per-plugin storage mounted by the Liatir sandbox.
+    #[cfg(target_family = "wasm")]
     pub fn storage_dir(&self) -> PathBuf {
         PathBuf::from("/storage")
     }
@@ -410,9 +422,12 @@ impl Plugin {
         F: FnOnce(&Context) -> Result<Value, Box<dyn std::error::Error>>,
     {
         let mut buffer = String::new();
-        std::io::stdin()
-            .read_to_string(&mut buffer)
-            .map_err(|error| format!("failed to read stdin: {error}"))?;
+        if let Ok(path) = std::env::var("LIATIR_INPUT_FILE") {
+            buffer = std::fs::read_to_string(path).map_err(|error| error.to_string())?;
+        } else {
+            std::io::stdin().read_to_string(&mut buffer)
+                .map_err(|error| format!("failed to read stdin: {error}"))?;
+        }
         let trimmed = buffer.trim();
         let raw_input: Value = if trimmed.is_empty() {
             Value::Object(Map::new())
@@ -422,7 +437,10 @@ impl Plugin {
         };
 
         let input = self.validate_input(&raw_input)?;
-        let ctx = Context { input, raw_input };
+        let ctx = Context { input, raw_input,
+            #[cfg(not(target_family = "wasm"))]
+            liatir: bridge::Liatir,
+        };
         let result = handler(&ctx).map_err(|error| error.to_string())?;
         self.validate_output(result)
     }
@@ -442,7 +460,12 @@ impl Plugin {
 
         match self.run(handler) {
             // The result is the only stdout write: Liatir parses stdout as JSON.
-            Ok(value) => println!("{value}"),
+            Ok(value) => {
+                #[cfg(target_family = "wasm")]
+                println!("{value}");
+                #[cfg(not(target_family = "wasm"))]
+                println!("__LIATIR_RESULT__{value}");
+            },
             Err(message) => {
                 eprintln!("[liatir] {message}");
                 std::process::exit(1);

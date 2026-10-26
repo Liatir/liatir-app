@@ -1,6 +1,6 @@
 ---
 title: Plugin context
-description: How the plugin handler receives its validated input in Node, Python, and WASM.
+description: How the plugin handler receives its validated input in Node, Python, R, Native, and WASM.
 ---
 
 # Plugin context
@@ -116,3 +116,12 @@ In **Python and WASM**, the SDK validates the input before the handler runs
 returns (JSON, and no key outside the declared outputs). In **Node**, validation
 happens at build time — `liatir build` and `liatir dev` inspect the exported
 plugin shape after bundling — not on each run.
+
+
+## R and Native
+
+R handlers receive `ctx$input`, `ctx$raw_input` and `ctx$liatir`. The Native Rust
+reference SDK exposes typed input getters and `ctx.liatir`, with the complete
+jobs, dependencies, filesystem, app info, logging, progress, paths and raw invoke
+bridge. Both share the existing `.lia` input/output contract. See
+[R and Native Plugins](./r-and-native) for authoring and execution details.

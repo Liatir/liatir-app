@@ -1,3 +1,4 @@
+import type { LiatirPluginRuntimesAPI } from "@liatir/core";
 import type { DesktopInterface } from "../modules/desktop/_types";
 import type { JobsInterface } from "../modules/rs/jobs/_types";
 import type { DepsInterface } from "../modules/rs/deps/_types";
@@ -35,6 +36,7 @@ export type LiatirBrowserAPI = {
   snpEffSuite: SnpEffSuiteInterface;
   /** Explicit install, update, rollback and removal for signed Runtime Components. */
   runtimeBoxes: RuntimeBoxesInterface;
+  pluginRuntimes: LiatirPluginRuntimesAPI;
 
   // --- Bio analysis namespaces (scipy-style) ---
 

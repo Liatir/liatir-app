@@ -1,6 +1,6 @@
 # Plugins (.lia)
 
-Build anything on top of Liatir: `.lia` plugins can run with Node, Python, or WASM, so you can choose the runtime that fits the job.
+Build anything on top of Liatir: `.lia` plugins can run with Node, Python, R, Native, or WASM, so you can choose the runtime that fits the job.
 They appear in the Plugins area and can run as pipeline nodes or by itself, just like Liatir native tools.
 
 A `.lia` plugin file is a bundle built with `@liatir/cli` and imported into Liatir. It declares:
@@ -8,7 +8,7 @@ A `.lia` plugin file is a bundle built with `@liatir/cli` and imported into Liat
 - metadata such as name, version, description, category, and tags;
 - input fields shown in the UI;
 - output fields that later pipeline steps can consume;
-- the runtime: `node`, `python`, or `wasm`.
+- the runtime: `node`, `python`, `r`, `native`, or `wasm`.
 
 :::info
 
@@ -188,3 +188,8 @@ Node or Python plugins:
     display: none !important;
   }
 </style>
+
+## R and Native runtimes
+
+See [R and Native Plugins](./r-and-native) for scaffolding, dependency locks,
+executable targets, bridge access and the Native permission model.
