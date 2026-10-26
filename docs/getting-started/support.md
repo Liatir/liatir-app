@@ -18,6 +18,10 @@ Liatir remains in control of authorization, Jobs and Results.
   refused with an explanation; copy them to a drive on the computer first.
 - SnpEff and SnpSift are installed together on demand rather than bundled. They
   are Java programs, so Java 21 or newer must still be installed on your machine.
+- R Plugins require a compatible local R installation and their prepared
+  packages. Native Plugins need an executable for the exact operating system
+  and processor, plus explicit permission for the imported bundle. See
+  [R and Native Plugins](/plugins/r-and-native).
 - Liatir does not yet install Nextflow/Java or configure HPC and cloud
   executors.
 - On Windows, GPU AI Models run their Linux CUDA Runtime Box through WSL2. The
@@ -75,6 +79,16 @@ error and diagnostics; do not loosen version or signature checks.
 Verify that both `nextflow` and `java` are installed on the supported execution
 host and available on `PATH`. On Windows, install them inside an x86_64 WSL2
 distribution rather than as an unofficial native Windows wrapper.
+
+### An R or Native Plugin is not ready
+
+Open the Plugin's page and read its runtime status. For R, install the required
+R version and choose **Prepare R packages**; the first preparation may need an
+internet connection and compilation tools. Prepared packages can be used offline.
+For Native, use a bundle built for your computer and review it before choosing
+**Allow executable access**. A changed bundle needs permission again. Older app
+or CLI versions may not recognize these runtimes; use matching builds with
+R/Native support. See the [runtime guide](/plugins/r-and-native).
 
 ### A run was interrupted
 

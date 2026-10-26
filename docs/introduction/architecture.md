@@ -53,14 +53,16 @@ This is why long-running work appears in **Jobs** while it is active and in
 ## Plugins and extension points
 
 If Liatir does not include a workflow you need, a `.lia` plugin can add it. A
-plugin behaves like a normal analysis step in the UI and in pipelines.
+plugin behaves like a normal analysis step in the UI and in pipelines. Node,
+Python, R and Native Plugins can use the app bridge for Jobs, storage, logs and
+progress. WebAssembly Plugins run in an isolated environment without that bridge.
 
 Plugin development is documented in the [Plugins](/plugins/overview) section.
 That is the right place for extension-specific code and bundle details.
 
-## Dependencties
+## Dependencies
 
-Bioinformatics workflows can depend on external tools, Python runtimes, model
+Bioinformatics workflows can depend on external tools, Python or R runtimes, model
 weights, GPUs, and large local files. Liatir tries to make those dependencies
 visible instead of hiding them behind a black box.
 

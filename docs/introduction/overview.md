@@ -18,7 +18,7 @@ Most modern bioinformatics platforms are cloud-based: you upload files to a remo
 Liatir ships its common bioinformatics programs — samtools, bcftools, seqkit, fastp, bwa and minimap2 — so there is nothing to install or keep up to date. SnpEff and SnpSift are downloaded together only when needed, verified, and then managed by Liatir; their Java 21 runtime remains a system requirement. You choose the parameters, while run history and parsed results are stored automatically.
 
 ### Plugins
-A `.lia` plugin is a self-contained extension that adds custom analysis steps. Plugins can be written in Python, Node, or compiled to WebAssembly, and appear as normal tools in the UI and in pipelines. See the [Plugins](/plugins/overview) section to build one.
+A `.lia` plugin is a self-contained extension that adds custom analysis steps. Plugins can use Node, Python, R, Native executables, or WebAssembly. They appear as normal tools in the UI and in pipelines. See the [Plugins](/plugins/overview) section to build one.
 
 ### AI Models
 AI Models are signed local Runtime Boxes that Liatir installs and manages for you. The current AI Tool uses Geneformer, scGPT, or UCE for single-cell embeddings.

@@ -337,3 +337,36 @@ Syngraphe integrity and whitespace checks also passed.
 
 The documentation delivery stays on the current feature branch. Its commit
 identity is supplied in the delivery message and recoverable from Git history.
+
+## Main integration review (2026-10-26)
+
+The owner authorized merging the complete feature branch into local `main`,
+superseding the original branch-only delivery boundary. Remote `main` was fetched
+and matches local `main`; the candidate includes runtime implementation
+`aeacb806`, the owner's architecture illustration update `a08fb663`, and complete
+Plugin documentation `449964c1`.
+
+- [x] Review the branch diff, shared runtime selection and CLI packaging, public
+  Plugin guides, bridge references, examples and architecture illustration.
+- [x] Correct the introductory runtime list and add R/Native prerequisites and
+  troubleshooting to the general architecture/support pages.
+- [x] Refresh both documentation builds and generated Quenta content after the
+  bounded correction; complete verify and Syngraphe before local integration.
+
+The documentation defect was an older three-runtime sentence outside the Plugin
+section. Cheap rechecks cover every public runtime enumeration and generated
+Markdown; one docs rebuild after the correction and the required verify gate
+are sufficient. Linux/Windows runtime execution limitations remain unchanged.
+
+Final integration checks passed: `test:verify` report
+`2026-10-26T15-00-00-661Z` has seven passed suites and 708 unit tests; both
+VitePress sites build, generated public Markdown includes the introduction and
+support corrections, and Syngraphe reports no problems. The source SVG was also
+rendered locally and its five Plugin runtime boxes inspected. Quenta's generated
+documentation corpus matches the final public sources (376 chunks).
+
+The reviewed revision is ready for a local fast-forward into `main`; the branch
+has no competing main commits after fetching origin. The user's authorization
+covers the complete branch, including their infographic commit. No CI, release,
+deployment or remote push is part of this integration. The final main identity
+and clean working-tree state are verified directly after the Git operation.

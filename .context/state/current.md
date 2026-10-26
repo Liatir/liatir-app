@@ -8,7 +8,8 @@ and in the plans under `history/`; the readiness of each product area, with its 
 ## Active implementation
 
 [R and Native Plugin runtimes](./r-and-native-plugin-runtime-support.md) are implemented
-on `feat/r-native-plugin-runtimes`: CLI scaffolding/build/dev, managed R libraries,
+in implementation commit `aeacb806` and documentation commit `449964c1`: CLI
+scaffolding/build/dev, managed R libraries,
 Native executable variants and permission, complete Plugin bridge access, Jobs and
 mixed-runtime pipeline files use the existing contracts. macOS arm64 validation passed
 all seven verify suites (91 files / 708 unit tests), 119 Rust tests, and all seven
@@ -20,7 +21,9 @@ The documentation follow-up integrates R and Native throughout all 22 public
 Plugin pages, the CLI README and Quenta's generated documentation corpus. The
 public site build, executable/compiled examples and all seven verify suites
 passed (708 unit tests); evidence is recorded in the same plan.
-No publication, release, remote push or merge into `main` is part of this work.
+On 2026-10-26 the owner authorized local integration into `main` after a quick
+review. The review also aligns the introductory and support pages with the five
+runtimes. No release, publication or remote push is requested.
 
 ## Where Liatir stands
 
