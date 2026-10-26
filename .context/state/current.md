@@ -32,7 +32,8 @@ C++ examples use the existing authenticated protocol, with a downloadable exampl
 client; the app and CLI gain no new runtime dependency. Browser interaction,
 C++ compilation/execution, both site builds and all seven verify suites pass
 (709 tests); nested Markdown headings have regression coverage.
-No release, publication or remote push is requested.
+On 2026-10-26 the owner authorized pushing all current `main` commits to
+`origin/main`. Desktop and npm releases remain separate actions.
 
 ## Where Liatir stands
 

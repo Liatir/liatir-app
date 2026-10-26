@@ -443,3 +443,14 @@ The C++ examples were compiled/executed as macOS Native processes; no C++ WASI
 cross-toolchain or other-platform execution is claimed by these checks. Existing
 Rust/WASM support and the shared I/O contract are unchanged. The correction is
 committed on local main with no publication or remote push.
+
+## Remote push authorization (2026-10-26)
+
+The owner requested pushing all completed work. Fetched `origin/main` is
+`e7f6a929`, an ancestor of the reviewed local `59052590`; there is no competing
+remote history. The push targets `Liatir/liatir-app`, `refs/heads/main`, without
+force or tags. The configured public SDK mirror will run because the CLI README
+changed; Runtime Box/GPU and desktop-release workflows do not match this push.
+Existing verification covers the delivered code; this final context update
+records the authorization. Verify the remote ref against local main immediately
+after the push. No manual release, deployment or CI dispatch is requested.
