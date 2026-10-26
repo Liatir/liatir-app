@@ -41,7 +41,7 @@ source("liatir.R")
 <Tab title="Native/WASM">
 
 ::: info
-Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+Liatir provides managed Rust and C++ libraries for Native/WASM Plugins.
 WASM targets must support WASI Preview 1 and remain isolated from the app bridge.
 :::
 
@@ -56,8 +56,8 @@ use liatir::field;
 <Tab title="C++">
 
 ```cpp
-#include <nlohmann/json.hpp>
-using json = nlohmann::json;
+#include "liatir.hpp"
+using liatir::json;
 ```
 
 </Tab>
@@ -132,7 +132,7 @@ inputs = list(
 <Tab title="Native/WASM">
 
 ::: info
-Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+Liatir provides managed Rust and C++ libraries for Native/WASM Plugins.
 WASM targets must support WASI Preview 1 and remain isolated from the app bridge.
 :::
 
@@ -151,11 +151,9 @@ WASM targets must support WASI Preview 1 and remain isolated from the app bridge
 <Tab title="C++">
 
 ```cpp
-json inputs = {{"fastq", {
-    {"type", "file"}, {"label", "FASTQ file"}, {"description", "Input reads."},
-    {"required", true}, {"accept", {"fastq", "fq", "fastq.gz", "fq.gz"}}
-}}};
-// Emit inputs in the version 1 contract; validate file input values as strings.
+.input("fastq", liatir::field::file()
+    .label("FASTQ file").description("Input reads.").required(true)
+    .accept({"fastq", "fq", "fastq.gz", "fq.gz"}))
 ```
 
 </Tab>
@@ -196,7 +194,8 @@ methods; R uses named arguments (`field$string(label="Text", required=TRUE)`).
 See [complete entry points](./define-plugin) for examples. Advanced field metadata
 is part of the shared schema, but convenience methods differ by SDK; for example,
 Rust exposes `.artifact(json!(...))` but has no `.options()` builder method.
-C++ examples declare these same properties directly in JSON.
+C++ uses the same chained options, with C++ initializer lists for extensions:
+`.accept({"csv"})` and `.ext({"txt"})`.
 
 | Option | Rust method (Native / WASM) | Description |
 | --- | --- | --- |
@@ -267,7 +266,7 @@ list(image = list(content = png_base64, fileName = "plot.png", base64 = TRUE))
 <Tab title="Native/WASM">
 
 ::: info
-Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+Liatir provides managed Rust and C++ libraries for Native/WASM Plugins.
 WASM targets must support WASI Preview 1 and remain isolated from the app bridge.
 :::
 

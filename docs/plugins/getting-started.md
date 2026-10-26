@@ -24,8 +24,8 @@ A runtime is the environment that executes your Plugin's code.
 | Node | TypeScript/JavaScript and npm libraries. | Node.js and npm. | Yes |
 | Python | Scientific Python and Python packages. | A compatible Python for local contract extraction; the app prepares a managed environment for packaged runs. | Yes |
 | R | R statistics, CRAN and Bioconductor packages. | R >= 4.1; `Rscript` on PATH or `LIATIR_RSCRIPT`. | Yes |
-| Native | Compiled programs, with a Rust starter. | Rust/Cargo for the starter, or your language's compiler. | Yes |
-| WASM | Portable computation in an isolated environment. | Rust/Cargo and the `wasm32-wasip1` target. | No |
+| Native | Compiled Rust or C++ programs. | Rust/Cargo, or CMake and a C++17 compiler with libcurl development files. | Yes |
+| WASM | Portable computation in an isolated environment. | Rust/Cargo with `wasm32-wasip1`, or CMake with WASI SDK for C++. | No |
 
 The bridge lets a Plugin use Liatir Jobs, storage, logs and progress. Node,
 Python, R and Native also have ordinary operating-system access. WASM has no
@@ -33,7 +33,8 @@ bridge or arbitrary host filesystem/network access.
 
 Run `liatir init` without arguments for guided setup. It asks for the project
 folder, runtime and metadata. Node additionally offers TypeScript or JavaScript
-and npm installation; WASM offers to install its Rust compilation target.
+and npm installation. Native/WASM offer Rust or C++; Rust WASM offers to
+install its compilation target. C++ WASM uses an existing WASI SDK installation.
 Node metadata lives in `package.json`; the other runtimes use
 `.lia-manifest.json`.
 
@@ -47,7 +48,9 @@ liatir init plugin-name --node --js
 liatir init plugin-name --python
 liatir init plugin-name --r
 liatir init plugin-name --native        # Rust executable
+liatir init plugin-name --native --cpp  # C++ executable
 liatir init plugin-name --wasm          # Rust/WASM
+liatir init plugin-name --wasm --cpp    # C++/WASM
 liatir init plugin-name --runtime r     # equivalent runtime selector
 liatir init plugin-name --template <TEMPLATE_NAME>
 liatir init plugin-name --category "Quality Control" --tags "FASTQ,QC"
@@ -66,7 +69,8 @@ and generates the bundle's manifest; do not maintain a separate schema.
 | Node | `src/index.ts` or `src/index.js` | `definePlugin({ inputs, outputs }).main(handler)` |
 | Python | `src/main.py` | `define_plugin(...)` and `@plugin.main` |
 | R | `src/main.R` | `define_plugin(...)` and `plugin$main(handler)` |
-| Native / WASM Rust | `src/main.rs` | `define_plugin().input(...).output(...).main(handler)` |
+| Native/WASM (Rust) | `src/main.rs` | `define_plugin().input(...).output(...).main(handler)` |
+| Native/WASM (C++) | `src/main.cpp` | `liatir::define_plugin().input(...).output(...).main(handler)` |
 
 The CLI supplies and refreshes the non-Node SDK files. See
 [API packages](/plugins/api-packages), [complete entry points](/plugins/define-plugin)
@@ -94,10 +98,15 @@ The Plugin's page shows any preparation needed before running it:
 | Native | Import an executable for the exact OS/processor and choose **Allow executable access** after reviewing it. |
 | WASM | Uses the built-in isolated runner; no separate interpreter or executable permission is needed. |
 
+C++ authors need CMake >= 3.21; Native also needs a C++17 compiler and libcurl
+headers/libraries. For WASM, set `WASI_SDK_PATH` to WASI SDK. The first C++ build
+can fetch the pinned JSON library; later builds reuse it. `LIATIR_CMAKE` can
+select a CMake executable outside PATH. See [SDK packages](./api-packages).
+
 Package preparation may require internet access and compilation tools; prepared
 runs work offline. R's first build creates `renv.lock`, which must be committed
 with the project. Native permission applies to the exact imported bundle and
-must be granted again after a change. The Native Rust starter builds the author's
+must be granted again after a change. The Native starters build the author's
 host target by default; include and test additional targets before distribution.
 See the [bundle format](./format) for dependency locks and executable packaging.
 

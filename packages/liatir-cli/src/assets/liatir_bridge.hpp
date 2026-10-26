@@ -1,10 +1,11 @@
-// C++ documentation example client for Liatir's existing Native bridge protocol.
+// Liatir C++ Native bridge SDK — managed by @liatir/cli.
 #pragma once
 #include <curl/curl.h>
 #include <nlohmann/json.hpp>
 #include <chrono>
 #include <cstdlib>
 #include <fstream>
+#include <filesystem>
 #include <functional>
 #include <memory>
 #include <stdexcept>
@@ -12,11 +13,22 @@
 #include <thread>
 
 namespace liatir {
-using json = nlohmann::json;
+using json = nlohmann::ordered_json;
 
 inline std::string env(const char* name) {
     const char* value = std::getenv(name);
     return value ? value : "";
+}
+inline std::filesystem::path env_path(const char* name) {
+#ifdef _WIN32
+    // Windows environment paths are UTF-16, while Plugin JSON paths are UTF-8.
+    const std::string key(name);
+    const std::wstring wide_key(key.begin(), key.end());
+    const auto* value = _wgetenv(wide_key.c_str());
+    return value ? std::filesystem::path(value) : std::filesystem::path();
+#else
+    return std::filesystem::u8path(env(name));
+#endif
 }
 inline bool is_dev() { return env("LIATIR_RUN_SCOPE") == "plugin-dev"; }
 inline std::string job_id() {
@@ -31,13 +43,15 @@ inline json invoke(const std::string& command, json payload = json::object()) {
         payload["__liatirDevContext"] = {{"scope", "plugin-dev"},
             {"sessionId", env("LIATIR_DEV_SESSION_ID")}, {"workspaceId", env("LIATIR_WORKSPACE_ID")}};
     }
-    std::ifstream connection(env("LIATIR_IPC_FILE"));
+    std::ifstream connection(env_path("LIATIR_IPC_FILE"));
     if (!connection) throw std::runtime_error("Missing Liatir app connection");
     const auto ipc = json::parse(connection);
-    const auto port = ipc.at("port").get<int>();
+    const auto& port_value = ipc.at("port");
     const auto token = ipc.at("token").get<std::string>();
-    if (port < 1 || port > 65535 || token.empty() || token.find_first_of("\r\n") != std::string::npos)
+    if (!port_value.is_number_integer() || port_value < 1 || port_value > 65535 ||
+        token.empty() || token.find_first_of("\r\n") != std::string::npos)
         throw std::runtime_error("Invalid Liatir app connection");
+    const auto port = port_value.get<int>();
 
     struct CurlLifetime {
         CurlLifetime() {

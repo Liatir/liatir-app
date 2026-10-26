@@ -5,3 +5,5 @@
 **/src/liatir.R
 **/.liatir/
 **/.lia-dev/
+**/src/liatir.hpp
+**/src/liatir_bridge.hpp

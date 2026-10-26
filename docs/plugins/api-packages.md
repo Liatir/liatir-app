@@ -8,26 +8,36 @@ connects its code to Liatir. All five runtimes use the same I/O contract.
 | Node | `definePlugin`, `field`, `output` from `@liatir/api` | npm dependency installed by `liatir init`. |
 | Python | `define_plugin`, `field` from `liatir` | CLI-managed `src/liatir.py`. |
 | R | `define_plugin`, `field` after `source("liatir.R")` | CLI-managed `src/liatir.R`. |
-| Native | Rust: `define_plugin`, `field` from `mod liatir`; other languages use the shared executable protocol. | CLI-managed `src/liatir.rs` and `src/liatir_bridge.rs`. |
-| WASM | Rust: `define_plugin`, `field` from `mod liatir`; other languages target WASI Preview 1 with the same contract. | CLI-managed `src/liatir.rs`, without the app bridge. |
+| Native | Rust or C++ builders for the shared contract and app bridge. | CLI-managed `src/liatir.rs` / `src/liatir_bridge.rs`, or `src/liatir.hpp` / `src/liatir_bridge.hpp`. |
+| WASM | Rust or C++ builders for the shared contract, without the app bridge. | CLI-managed `src/liatir.rs` or `src/liatir.hpp`. |
 
-For Python, R, Native Rust and WASM, `liatir build` refreshes the managed files
-from your installed CLI. Keep your own logic in the entry point or separate
-modules: edits to managed SDK files are overwritten. These runtimes do not need
-the Node `@liatir/api` package. R still needs a compatible R installation and its
-prepared packages; Rust projects need Rust and Cargo to build.
+`liatir init` supplies the Python, R, Rust and C++ libraries and `liatir build`
+refreshes them from your installed CLI. Keep your logic in the entry point or
+separate modules; managed files are overwritten during updates. No separate
+Liatir pip, R or Cargo package is needed. These Plugins do not use the Node
+`@liatir/api` dependency.
 
-`liatir update` updates the CLI/API dependencies of a **Node project**. To update
-the other managed SDKs, update your installed CLI and rebuild the Plugin.
+The supported authoring languages are JavaScript/TypeScript, Python, R, Rust and
+C++, with the Liatir library supplied for each. Native and WASM offer Rust and
+C++; the low-level execution protocol is not a promise of support for other
+languages.
 
-Native and WASM can use any compatible language, including C++. Rust is the
-supplied CLI starter, not a language requirement. See the
-[Rust and C++ entry points](./define-plugin#native-wasm); C++ compilation uses
-your own toolchain, and WASM must target WASI Preview 1.
+```sh
+liatir init my-plugin --native --cpp --yes
+liatir init my-plugin --wasm --cpp --yes
+```
 
-Native executables written in other languages can implement the
-[executable protocol](/plugins/format#executable-protocol-version-1)
-directly, including contract emission, validation and authenticated bridge calls.
+C++ scaffolding needs a CLI build containing the managed C++ SDK; older CLI
+releases may not recognize `--cpp`. C++ builds need CMake >= 3.21. Native additionally needs a C++17 compiler and
+libcurl development headers/libraries; WASM needs WASI SDK, selected through
+`WASI_SDK_PATH`. CMake uses installed nlohmann/json 3.12 or fetches its pinned
+release on the first build. Prepared author dependencies can be reused offline.
+These tools are author prerequisites; users of a packaged Plugin do not need a
+compiler.
+
+`liatir update` updates a Node project's CLI/API packages. For the other
+languages, update your installed CLI and run `liatir build` to refresh the
+managed library. See [complete entry points](./define-plugin#native-wasm).
 
 ## Related
 

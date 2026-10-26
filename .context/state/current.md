@@ -28,10 +28,15 @@ with its dependency, executable and transport details moved into the existing
 setup, format and bridge guides. The shared contract remains unchanged.
 Compiled-language API examples now use `Native/WASM` with nested Rust/C++ tabs,
 a short compatibility notice and an explicit Native-only bridge distinction.
-C++ examples use the existing authenticated protocol, with a downloadable example
-client; the app and CLI gain no new runtime dependency. Browser interaction,
-C++ compilation/execution, both site builds and all seven verify suites pass
-(709 tests); nested Markdown headings have regression coverage.
+C++ authoring now uses a CLI-managed SDK: `liatir init --native --cpp` and
+`--wasm --cpp` supply contract/validation headers and a CMake project. Builds
+refresh the library and reuse existing extraction, packaging, bridge and Results
+contracts. Documentation names only supplied languages (JavaScript/TypeScript,
+Python, R, Rust and C++). Rust defaults, the shared I/O contract and app startup
+prerequisites remain unchanged. Final verify passed all seven suites (92 unit
+files / 718 tests), both docs sites build, and two new native desktop scenarios
+passed, including a C++ Native -> WASM file pipeline. Native host signoff here
+is macOS arm64; the plan records the remaining platform/release boundaries.
 On 2026-10-26 the owner authorized pushing all current `main` commits to
 `origin/main`. Desktop and npm releases remain separate actions.
 

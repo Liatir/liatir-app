@@ -34,7 +34,7 @@ kill(job_id)
 <Tab title="Native/WASM">
 
 ::: info
-Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+Liatir provides managed Rust and C++ libraries for Native/WASM Plugins.
 This app bridge is Native-only; WASM stays isolated.
 :::
 
@@ -113,7 +113,7 @@ if (isTRUE(killed)) message("Job terminated successfully")
 <Tab title="Native/WASM">
 
 ::: info
-Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+Liatir provides managed Rust and C++ libraries for Native/WASM Plugins.
 This app bridge is Native-only; WASM stays isolated.
 :::
 

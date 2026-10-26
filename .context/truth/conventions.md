@@ -84,10 +84,13 @@ combined guide or navigation category. This is the owner's explicit clarificatio
 of 2026-10-26. Interpreter/package and executable-target differences belong in
 the appropriate sections of those common guides. Compiled-language API tabs
 are labeled `Native/WASM`, with nested `Rust` and `C++` examples. A short notice
-above the language tabs states that any compatible language can be used. Bridge
-pages must also explicitly state that bridge calls are Native-only: WASM remains
-isolated. Keep real compilation prerequisites and the CLI's Rust/Cargo build
-boundary clear; do not imply a CLI-managed C++ SDK exists.
+above the language tabs names the supplied Rust/C++ libraries. Document support
+only for the libraries actually shipped: Node JavaScript/TypeScript, Python, R,
+Rust and C++. Do not promise arbitrary-language Native/WASM support based only
+on the low-level protocol. The CLI supplies and updates the managed C++ SDK,
+including contract validation. Bridge calls remain Native-only; WASM stays
+isolated. Keep author prerequisites clear: Rust uses Cargo, C++ uses CMake,
+Native C++ needs libcurl development files, and C++ WASM needs WASI SDK.
 
 Scientific Showcases are the public scientific-study exception to the usage-guide
 surface: `docs/showcases/` presents measured methods, results and limitations;

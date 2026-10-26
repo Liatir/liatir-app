@@ -3,7 +3,7 @@ import { fileURLToPath } from "url";
 
 // Present in the first line of every CLI-managed SDK file; syncManagedSdkFile
 // refuses to overwrite files without it, so a user's own module named
-// liatir.py/liatir.rs is never clobbered.
+// liatir.py/liatir.rs/liatir.hpp is never clobbered.
 const MANAGED_HEADER = "managed by @liatir/cli";
 
 /**
@@ -33,7 +33,7 @@ export function readAsset(name: string): Promise<string> {
 }
 
 /**
- * Keep a CLI-managed SDK file (liatir.py / liatir.rs) inside a plugin project
+ * Keep a CLI-managed SDK file (Python, R, Rust or C++) inside a plugin project
  * in sync with this CLI version. Refuses to touch a file that does not carry
  * the managed header (it belongs to the user, not to the CLI). Returns true
  * when the file was created or updated.

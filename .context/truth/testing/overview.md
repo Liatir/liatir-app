@@ -4,6 +4,12 @@ Liatir is a local Tauri desktop app. Production-grade tests must exercise the
 native bridge whenever a feature depends on filesystem access, dependencies,
 jobs, AI runtimes, viewer capture, sidecars, or `.lia` execution.
 
+C++ Plugin SDK compiler checks use `LIATIR_CMAKE` (an installed CMake executable)
+and, for WASM, `WASI_SDK_PATH`. The compiler-dependent unit/desktop cases opt in
+through these variables; flag/scaffold regressions run without them. This keeps
+C++17/libcurl/WASI author prerequisites optional for unrelated workflows. Full
+C++ signoff must run both targets, including the Native -> WASM file pipeline.
+
 ## Test Layers
 
 - `npm run test:fast`

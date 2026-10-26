@@ -4,7 +4,7 @@
 
 Implement two new first-class `.lia` plugin runtimes: **R** and **Native**, with full Liatir bridge access, SDK support, CLI integration, and seamless compatibility with the existing plugin and pipeline architecture.
 
-The goal is to let developers create R/Bioconductor plugins or use virtually any compiled language (Rust, C++, Go, Zig, Fortran, etc.) without changing how Liatir nodes communicate.
+The goal is to let developers create R/Bioconductor Plugins and use the supplied Rust/C++ libraries for Native/WASM Plugins without changing how Liatir nodes communicate. The owner narrowed public language support to the libraries actually provided; a generic execution protocol does not imply a supported SDK for other languages.
 
 ## Non-negotiable requirements
 
@@ -454,3 +454,103 @@ changed; Runtime Box/GPU and desktop-release workflows do not match this push.
 Existing verification covers the delivered code; this final context update
 records the authorization. Verify the remote ref against local main immediately
 after the push. No manual release, deployment or CI dispatch is requested.
+
+## Managed C++ SDK and supported-language scope (2026-10-26)
+
+The owner requested a real CLI-managed C++ SDK, including automatic shared I/O
+validation, and removal of claims that arbitrary compiled languages are supported.
+The existing C++ download is only a bridge example and is not sufficient.
+
+Implementation checklist:
+
+- [x] Add C++ as an explicit Native/WASM authoring choice, retaining Rust defaults
+  and every existing scaffold. Supply managed contract/bridge headers and a small
+  entry point; update them with the existing managed-asset mechanism.
+- [x] Reuse the current manifest/contract extraction, signatures, target selection,
+  Dev Runner, Jobs and Results. Add a CMake author build path for C++17; Native
+  links libcurl, WASM uses WASI Preview 1 and excludes the bridge. Build options
+  stay author-side and are not added to the runtime bundle contract.
+- [x] Validate declared types/defaults, required inputs/outputs, file/JSON/stats
+  results and undeclared outputs before accepting success. Test the actual
+  compiled Native and WASM SDKs and CLI build/dev behavior, including failures.
+- [x] Replace the manual C++ documentation client with the managed SDK. Keep
+  Rust/C++ nested tabs and describe only the supplied language libraries. Update
+  the common guides, examples, repository conventions and generated Quenta data.
+- [x] Run focused regressions, required verify, docs builds, relevant desktop
+  integration checks and Syngraphe.
+
+Author prerequisites remain modular: CMake/compiler and C++ dependencies are
+needed only to build C++ Plugins; WASI SDK is needed only for the C++ WASM target.
+No new app-start dependency, shared I/O type, format version, root lockfile,
+release, publishing action or paid CI is authorized by this implementation task.
+Local validation tools may be downloaded into ignored test artifacts, without
+changing the user's system installations. A missing author toolchain must fail
+with an actionable message; never silently fall back to another language.
+
+C++ implementation checkpoint: both real Native and WASI builds succeeded, and
+all new behavioral checks passed except a macOS fixture path comparison (`/var`
+versus `/private/var`). Normalize that assertion through `realpath`, as the
+existing Rust SDK tests already do. The WASI SDK's CMake platform did not retain
+its executable suffix, so set `.wasm` explicitly on the generated target; the
+subsequent real build and contract extraction succeeded. C++ WASM uses the SDK
+failure path without a C++ exception runtime, preserving Preview 1 compatibility.
+Native contract, bridge, SDK refresh, development lifecycle and actual WASM
+execution are covered by the focused compiled SDK suite. Retry the focused suite
+once after the fixture correction, then use the required repository gates.
+
+Validation checkpoint: the focused SDK suite passed all eight cases, including
+actual Native and WASI Preview 1 compilation/execution and the normal CLI dev
+lifecycle. A raw-JSON handler regression was observed failing when the SDK's
+value checks were deliberately disabled; checks were restored before the clean
+public CLI build. The built CLI's managed headers match their source assets.
+Two new native desktop cases passed (zero skips): C++ Native bridge/contract/dev
+ownership, and a C++ Native -> C++ WASM file pipeline with Results association.
+No Rust/Tauri/frontend runtime code changed, so those cases use the existing
+WebDriver-enabled binary with the same app-side execution code.
+
+Compiler-dependent unit and desktop checks opt in through `LIATIR_CMAKE`
+(and `WASI_SDK_PATH` for C++ WASM), keeping optional author dependencies out of
+ordinary verification environments. CLI flag/scaffold and unsupported-language
+regressions always run. Final local gates enable the full author toolchain.
+
+C++ SDK delivery evidence:
+
+- Final verify report `2026-10-26T21-07-17-909Z`: all seven suites passed,
+  92 unit files / 718 tests. Real R, Native C++ and WASI C++ checks were enabled.
+- Both public/internal documentation sites build. All 34 compiled-language tab
+  selectors across 16 API/authoring pages were checked in the browser, including
+  nested selection, notice placement and a narrow viewport. All 34 C++ snippets
+  compile against the managed headers; the documented complete entry point also
+  compiles. Public docs no longer promise arbitrary-language support.
+- Native desktop integration passed two new cases with zero skips/failures:
+  authenticated C++ bridge plus required-input failure/dev ownership, and a real
+  Native C++ -> WASM C++ file pipeline with Jobs and Results associations.
+- The useful C++ file-summary example built and ran, returning a JSON report
+  counting two input lines through the standard file-output contract.
+- SDK source/assets match the built public CLI. TypeScript lint has zero errors
+  and 56 existing warnings. The only new lint error was object stringification in
+  an unsupported-language diagnostic; it now reports a string value or its type,
+  and the full verify gate was repeated successfully after the correction.
+- Syngraphe integrity and whitespace checks pass. No Rust/Tauri runtime change,
+  lockfile, app version, trust root, expensive CI or publication is involved.
+  Native host execution was verified on macOS arm64; Linux/Windows execution
+  remains a platform signoff boundary, as already recorded for these runtimes.
+
+The completion revision is committed on the current local branch; its exact
+identity is supplied in the delivery message and recoverable from Git history.
+Publishing the updated CLI package is a separate release action.
+
+Final source review found an author-SDK path issue worth fixing before delivery:
+JSON paths are UTF-8, while Windows environment paths are UTF-16. Use UTF-8
+filesystem conversion for declared file inputs and the wide environment API for
+Native input/connection files. Add Unicode input filenames to the compiler and
+desktop pipeline checks, then rerun those checks and final gates once. This does
+not claim Windows execution signoff; it avoids baking a known narrow-path
+assumption into the new SDK. The change is limited to C++ headers and fixtures.
+
+The Unicode-path correction passed the final verify rerun (all seven suites,
+718 unit tests), both Native desktop cases again (zero failures/skips), and
+source/packaged-CLI asset consistency checks. SDK npm dry-run inspection verified
+the exact `@liatir/cli` package identity and all four new C++ assets; no package
+was published. All implementation checkpoints are complete on macOS arm64,
+with other-host signoff and the separate package release still outstanding.

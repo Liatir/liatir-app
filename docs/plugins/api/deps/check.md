@@ -35,7 +35,7 @@ check(binary)
 <Tab title="Native/WASM">
 
 ::: info
-Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+Liatir provides managed Rust and C++ libraries for Native/WASM Plugins.
 This app bridge is Native-only; WASM stays isolated.
 :::
 
@@ -95,7 +95,7 @@ if (!isTRUE(samtools$available)) stop("Samtools is not available")
 <Tab title="Native/WASM">
 
 ::: info
-Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+Liatir provides managed Rust and C++ libraries for Native/WASM Plugins.
 This app bridge is Native-only; WASM stays isolated.
 :::
 

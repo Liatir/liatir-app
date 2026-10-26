@@ -1,0 +1,8 @@
+{
+  "name": "C++ file summary",
+  "version": "1.0.0",
+  "description": "Count UTF-8 text lines and return a standard file result.",
+  "runtime": "native",
+  "build": { "language": "cpp" },
+  "native": { "protocol": 1 }
+}

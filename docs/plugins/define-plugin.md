@@ -16,9 +16,9 @@ All five runtimes share the same contract, with language-specific syntax:
 - **Python** — `define_plugin(inputs=..., outputs=...)` + `@plugin.main` from the
   CLI-managed `liatir` module.
 - **R** — `define_plugin(inputs=..., outputs=...)` + `plugin$main(handler)`.
-- **Native/WASM** — any compatible compiled language. Rust uses
+- **Native/WASM** — Rust or C++ using the supplied Liatir libraries. Rust uses
   `define_plugin().input(...).output(...).main(handler)` from the managed SDK;
-  C++ can implement the same code-declared contract directly. See the
+  C++ uses the same builders from `liatir.hpp`. See the
   [Rust and C++ examples](/plugins/define-plugin#native-wasm). Only Native has
   app bridge access.
 
@@ -118,7 +118,7 @@ executes top-level R statements. Declare dependencies in the
 ## Native/WASM
 
 ::: info
-Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+Liatir provides managed Rust and C++ libraries for Native/WASM Plugins.
 WASM targets must support WASI Preview 1 and remain isolated from the app bridge.
 :::
 
@@ -150,63 +150,31 @@ Use `eprintln!` for WASM logs because stdout carries the result JSON.
 </Tab>
 <Tab title="C++">
 
-This C++17 example uses [nlohmann/json](https://github.com/nlohmann/json).
-It declares the same fields, validates its text input and counts UTF-8 code points.
-It uses the existing contract and result protocol, without a Rust dependency.
+`liatir init my-plugin --native --cpp` or `--wasm --cpp` supplies the managed
+`src/liatir.hpp` library, a CMake project and this entry point:
 
 ```cpp
-#include <nlohmann/json.hpp>
-#include <algorithm>
-#include <cstdlib>
-#include <fstream>
-#include <iostream>
-#include <stdexcept>
-using json = nlohmann::json;
+#include "liatir.hpp"
 
 int main() {
-    try {
-        const json inputs = {{"text", {{"type", "string"}, {"label", "Text"},
-            {"required", true}, {"default", "hello from Liatir"}}}};
-        const json outputs = {{"length", {{"type", "number"}, {"label", "Length"},
-            {"format", "integer"}}}};
-        if (std::getenv("LIATIR_EMIT_CONTRACT")) {
-            std::cout << "__LIATIR_CONTRACT__"
-                << json{{"liatirContract", 1}, {"inputs", inputs}, {"outputs", outputs}}.dump() << '\n';
-            return 0;
-        }
-        json input;
-#ifndef __wasi__
-        if (const char* path = std::getenv("LIATIR_INPUT_FILE")) {
-            std::ifstream file(path);
-            if (!file) throw std::runtime_error("Cannot open Plugin input");
-            input = json::parse(file);
-        } else
-#endif
-        { input = json::parse(std::cin); }
-        if (!input.is_object()) throw std::runtime_error("Plugin input must be an object");
-        if (!input.contains("text") || input.at("text").is_null())
-            input["text"] = inputs.at("text").at("default");
-        if (!input.at("text").is_string()) throw std::runtime_error("text must be a string");
-        const auto text = input.at("text").get<std::string>();
-        const auto length = std::count_if(text.begin(), text.end(),
-            [](unsigned char byte) { return (byte & 0xc0) != 0x80; });
-        const json result = {{"length", length}};
-#ifndef __wasi__
-        std::cout << "__LIATIR_RESULT__";
-#endif
-        std::cout << result.dump() << '\n';
-    } catch (const std::exception& error) {
-        std::cerr << error.what() << '\n';
-        return 1;
-    }
+    return liatir::define_plugin()
+        .input("text", liatir::field::string().label("Text").required(true)
+            .default_value("hello from Liatir"))
+        .output("length", liatir::field::number().label("Length").integer())
+        .main([](const liatir::Context& ctx) {
+            const auto& text = ctx.str("text");
+            const auto length = std::count_if(text.begin(), text.end(),
+                [](unsigned char byte) { return (byte & 0xc0) != 0x80; });
+            return liatir::json{{"length", length}};
+        });
 }
 ```
 
-Compile Native code with your C++ toolchain and declare the executable in
-`native.targets`. A WASM build needs a WASI Preview 1 toolchain; it reads stdin
-and returns plain result JSON. The CLI's compiled-language starter and automatic
-WASM build currently use Rust/Cargo; C++ requires your own compilation workflow.
-For larger contracts, validate every field against the same emitted declarations.
+The library extracts the contract without running the handler. On every run it
+applies defaults, checks required fields and types, and validates the returned
+object against the declared outputs. It also rejects undeclared output keys.
+`liatir build` refreshes the managed headers and compiles the project with CMake.
+Native includes the app bridge; WASM excludes it and uses WASI Preview 1.
 
 </Tab>
 </Tabs>
@@ -221,15 +189,14 @@ input/output types or the runtime's bridge availability.
 point, an input/output that is not an object, or a field with an unsupported
 type (see [field builders](/plugins/field) for the allowed types).
 
-In **Python, R, Native Rust and WASM**, the SDK also validates on **every run**: it applies
+In **Python, R, Rust and C++**, the supplied SDK validates on **every run**: it applies
 declared defaults, rejects a missing required input or a wrong-typed value
 before your handler runs, and rejects a returned object that is not JSON or
 carries a key not declared in `outputs`. In **Node**, the contract is enforced
 at build time and through TypeScript; the handler is not re-validated at run
 time.
 
-A custom Native executable must implement its own matching validation. During
-build, R and Native must emit a code-declared contract; they do not support a
+During build, R and Native must emit a code-declared contract; they do not support a
 separate, manually maintained manifest schema as a fallback.
 
 ## Important rules

@@ -11,12 +11,14 @@ const execFileAsync = promisify(execFile);
 
 type Runtime = LiatirPluginRuntime;
 type NodeLanguage = "typescript" | "javascript";
+type CompiledLanguage = "rust" | "cpp";
 type NodeTemplate = "minimal" | "file-processor" | "bio-cli";
 
 interface ParsedInitArgs {
   name?: string;
   runtime?: Runtime;
   language?: NodeLanguage;
+  compiledLanguage?: CompiledLanguage;
   template?: NodeTemplate;
   displayName?: string;
   description?: string;
@@ -35,6 +37,7 @@ interface InitConfig {
   rustCrateName: string;
   runtime: Runtime;
   language: NodeLanguage;
+  compiledLanguage: CompiledLanguage;
   template: NodeTemplate;
   displayName: string;
   description: string;
@@ -65,8 +68,8 @@ const RUNTIME_CHOICES: Choice<Runtime>[] = [
   },
   {
     value: "wasm",
-    label: "WASM Rust .lia tool",
-    description: "Use Rust compiled to WASM for sandboxed local computation.",
+    label: "WASM .lia tool",
+    description: "Use Rust or C++ compiled to WASM for sandboxed local computation.",
   },
   {
     value: "python",
@@ -87,6 +90,11 @@ const LANGUAGE_CHOICES: Choice<NodeLanguage>[] = [
     label: "JavaScript",
     description: "Plain ESM plugin without a TypeScript project.",
   },
+];
+
+const COMPILED_LANGUAGE_CHOICES: Choice<CompiledLanguage>[] = [
+  { value: "rust", label: "Rust", description: "Use Cargo and the managed Liatir SDK.", recommended: true },
+  { value: "cpp", label: "C++", description: "Use CMake, a C++17 compiler and the managed Liatir SDK." },
 ];
 
 const TEMPLATE_CHOICES: Choice<NodeTemplate>[] = [
@@ -205,6 +213,14 @@ function parseInitArgs(args: string[]): ParsedInitArgs {
       case "--javascript":
         setLanguage(parsed, "javascript");
         break;
+      case "--cpp":
+      case "--c++":
+      case "--rust": {
+        const language: CompiledLanguage = flag === "--rust" ? "rust" : "cpp";
+        if (parsed.compiledLanguage && parsed.compiledLanguage !== language) throw new Error("Conflicting compiled language flags.");
+        parsed.compiledLanguage = language;
+        break;
+      }
       case "--template":
         parsed.template = parseTemplate(inlineValue ?? requireFlagValue(args, i, flag));
         if (inlineValue === undefined) i += 1;
@@ -382,8 +398,16 @@ async function resolveInitConfig(parsed: ParsedInitArgs): Promise<InitConfig> {
     const packageName = sanitizePackageName(projectName);
     const rustCrateName = sanitizeRustCrateName(projectName);
 
-    const runtime = parsed.runtime
+    const runtime = parsed.runtime ?? (parsed.compiledLanguage ? "native" : undefined)
       ?? (rl ? await promptChoice(rl, "Runtime", RUNTIME_CHOICES) : recommendedChoice(RUNTIME_CHOICES));
+
+    if (parsed.compiledLanguage && runtime !== "native" && runtime !== "wasm") {
+      throw new Error("--cpp and --rust require the Native or WASM runtime.");
+    }
+    if (parsed.language && parsed.compiledLanguage) throw new Error("Node and compiled language flags cannot be combined.");
+    const compiledLanguage = runtime === "native" || runtime === "wasm"
+      ? parsed.compiledLanguage ?? (rl ? await promptChoice(rl, "Compiled language", COMPILED_LANGUAGE_CHOICES) : "rust")
+      : "rust";
 
     const language = runtime === "node"
       ? parsed.language
@@ -416,7 +440,7 @@ async function resolveInitConfig(parsed: ParsedInitArgs): Promise<InitConfig> {
       ? parsed.installDependencies ?? (rl ? await promptYesNo(rl, "Install dependencies now?", true) : true)
       : false;
 
-    const installWasmTarget = runtime === "wasm"
+    const installWasmTarget = runtime === "wasm" && compiledLanguage === "rust"
       ? parsed.installWasmTarget ?? (rl ? await promptYesNo(rl, "Install Rust target wasm32-wasip1 now?", true) : true)
       : false;
 
@@ -428,6 +452,7 @@ async function resolveInitConfig(parsed: ParsedInitArgs): Promise<InitConfig> {
       rustCrateName,
       runtime,
       language,
+      compiledLanguage,
       template,
       displayName,
       description,
@@ -978,7 +1003,9 @@ export async function init(args: string[] | string, runtime?: Runtime): Promise<
 
   await fs.mkdir(path.join(config.dir, "src"), { recursive: true });
 
-  if (config.runtime === "r" || config.runtime === "native") {
+  if ((config.runtime === "native" || config.runtime === "wasm") && config.compiledLanguage === "cpp") {
+    await scaffoldCpp(config);
+  } else if (config.runtime === "r" || config.runtime === "native") {
     await scaffoldSubprocess(config);
   } else if (config.runtime === "wasm") {
     await scaffoldWasm(config);
@@ -987,6 +1014,24 @@ export async function init(args: string[] | string, runtime?: Runtime): Promise<
   } else {
     await scaffoldNode(config);
   }
+}
+
+async function scaffoldCpp(config: InitConfig): Promise<void> {
+  const manifest = {
+    name: config.displayName, version: "1.0.0", description: config.description,
+    category: config.category, tags: config.tags, runtime: config.runtime,
+    build: { language: "cpp" },
+    ...(config.runtime === "native" ? { native: { protocol: 1 } } : {}),
+  };
+  await fs.writeFile(path.join(config.dir, ".lia-manifest.json"), JSON.stringify(manifest, null, 2) + "\n");
+  for (const [target, asset] of [["src/liatir.hpp", "liatir.hpp"], ["src/main.cpp", "cpp-main.cpp"], ["CMakeLists.txt", "cpp-CMakeLists.txt"]]) {
+    await fs.writeFile(path.join(config.dir, target), await readAsset(asset));
+  }
+  if (config.runtime === "native") await fs.writeFile(path.join(config.dir, "src/liatir_bridge.hpp"), await readAsset("liatir_bridge.hpp"));
+  await fs.writeFile(path.join(config.dir, ".gitignore"), GITIGNORE);
+  console.log(`Created ${config.projectName}/ (${config.runtime === "wasm" ? "WASM" : "Native"} C++ .lia plugin)\n\n` +
+    `Requirements: CMake >= 3.21 and ${config.runtime === "wasm" ? "WASI SDK (set WASI_SDK_PATH)" : "a C++17 compiler and libcurl development headers/libraries"}.\n\n` +
+    `Next steps:\n  cd ${shellQuote(config.nextStepDir)}\n  liatir build\n  liatir dev`);
 }
 
 async function scaffoldSubprocess(config: InitConfig): Promise<void> {

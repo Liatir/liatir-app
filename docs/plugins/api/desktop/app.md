@@ -35,7 +35,7 @@ The `app` API area of the Liatir API provides methods to retrieve system-level i
 <Tab title="Native/WASM">
 
 ::: info
-Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+Liatir provides managed Rust and C++ libraries for Native/WASM Plugins.
 This app bridge is Native-only; WASM stays isolated.
 :::
 
@@ -147,7 +147,7 @@ cat("Platform:", info$os, "\n")
 <Tab title="Native/WASM">
 
 ::: info
-Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+Liatir provides managed Rust and C++ libraries for Native/WASM Plugins.
 This app bridge is Native-only; WASM stays isolated.
 :::
 

@@ -67,7 +67,7 @@ paths <- ctx$liatir$paths()
 <Tab title="Native/WASM">
 
 ::: info
-Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+Liatir provides managed Rust and C++ libraries for Native/WASM Plugins.
 This app bridge is Native-only; WASM stays isolated.
 :::
 
@@ -107,30 +107,27 @@ a Plugin cannot grant itself permission or prepare another runtime through
 
 ## C++ examples
 
-The C++ tabs use a small <a href="/examples/liatir-bridge.hpp" download="liatir-bridge.hpp">example client</a> for the
-same authenticated Native bridge. Save it as `liatir-bridge.hpp` beside your
-source. It uses [libcurl](https://curl.se/libcurl/c/libcurl-tutorial.html) for
-HTTP and [nlohmann/json](https://github.com/nlohmann/json) for JSON. Install their
-development headers/libraries with your C++ toolchain, include the header and
-use C++17 or newer:
+Create a C++ project with `liatir init my-plugin --native --cpp --yes`. The CLI
+supplies `src/liatir.hpp` for the shared contract and validation, plus
+`src/liatir_bridge.hpp` for Native app access. `liatir build` updates both managed
+headers and builds the project. Include the supplied library:
 
 ```cpp
-#include "liatir-bridge.hpp"
+#include "liatir.hpp"
 #include <iostream>
 using liatir::json;
 ```
 
-For example, compile a Native entry point with `c++ -std=c++17 main.cpp -lcurl -o plugin`,
-adding your dependency include/library paths where needed. The sample client
-handles authentication, development identity, errors, scoped paths and waiting
-for Jobs; namespace examples call the existing bridge command names directly.
-It is a documentation example, not a CLI-managed C++ SDK. Do not include this
-HTTP client in WASM: sandboxed Plugins have no app bridge.
+The C++ bridge provides `invoke`, `paths` and `run`. The examples below call the
+same command names as the other language bindings. The SDK handles authentication,
+development identity, errors, scoped paths and waiting for Jobs. CMake links
+libcurl for Native builds. See [author prerequisites](./api-packages).
+WASM includes contract validation but has no app bridge or libcurl dependency.
 
 ## Authenticated bridge protocol
 
 The supplied SDKs handle this transport for Node, Python, R and Native Rust.
-Authors implementing another client can use the same protocol directly.
+The supplied language libraries use this protocol internally.
 
 Read the JSON file named by `LIATIR_IPC_FILE`: `{ "port": 12345, "token": "..." }`.
 Never log its token. Send an HTTP request to `http://127.0.0.1:<port>/invoke`:

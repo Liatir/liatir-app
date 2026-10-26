@@ -26,7 +26,9 @@ liatir init my-plugin --node --js
 liatir init my-plugin --python
 liatir init my-plugin --r
 liatir init my-plugin --native       # Rust executable
+liatir init my-plugin --native --cpp # C++ executable
 liatir init my-plugin --wasm         # Rust/WASM
+liatir init my-plugin --wasm --cpp   # C++/WASM
 liatir init my-plugin --runtime r    # equivalent runtime selector
 ```
 
@@ -46,10 +48,15 @@ import it from **Plugins** in Liatir and complete any required preparation.
 | Node | Node.js/npm; `@liatir/api` supplies `definePlugin` and field builders. |
 | Python | A compatible Python for local contract extraction; the app prepares its managed runtime. CLI supplies `src/liatir.py`. |
 | R | R >= 4.1, found through `Rscript` on PATH or `LIATIR_RSCRIPT`. CLI supplies `src/liatir.R`. |
-| Native | Rust/Cargo for the starter or another compiler implementing the executable protocol. CLI supplies `src/liatir.rs` and `src/liatir_bridge.rs` for Rust. |
-| WASM | Rust/Cargo with `wasm32-wasip1`. CLI supplies `src/liatir.rs`, without the bridge. |
+| Native | Rust/Cargo, or CMake with a C++17 compiler and libcurl development files. CLI supplies the Rust modules or C++ `src/liatir.hpp` / `src/liatir_bridge.hpp`. |
+| WASM | Rust/Cargo with `wasm32-wasip1`, or CMake with WASI SDK (`WASI_SDK_PATH`) for C++. CLI supplies the selected library without the bridge. |
 
 `liatir build` refreshes the managed SDK files; keep your own code elsewhere.
+The supplied authoring libraries cover Node (JavaScript/TypeScript), Python,
+R, Rust and C++. C++ headers are created by `liatir init` and refreshed by
+`liatir build`, including contract extraction and input/output validation. CMake
+uses installed nlohmann/json 3.12 or fetches its pinned release on first build.
+`LIATIR_CMAKE` overrides the CMake executable when needed.
 R and Native require an app and CLI build containing their runtime support.
 Node, Python, R and Native have full Plugin bridge access. WASM has no bridge
 and runs in an isolated environment.
@@ -60,9 +67,9 @@ in Liatir; preparation may need network access and build tools. Prepared runs
 work offline.
 
 Native builds package exact OS/processor targets and read the contract from the
-executable. The Rust starter builds the host target. Users grant **Allow
+executable. Both Rust and C++ starters build the host target. Users grant **Allow
 executable access** for the exact imported bundle; an update needs permission
-again. Other languages can implement the same version 1 executable protocol.
+again. The supplied Rust and C++ libraries enforce the shared version 1 contract.
 Cross-target builds use generated, hash-bound `<executable>.contract.json`
 metadata. See [Plugin bundle format](https://liatir.com/plugins/format)
 for distribution and protocol details.

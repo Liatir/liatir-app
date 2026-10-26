@@ -18,10 +18,9 @@ I/O schema to keep in sync by hand:
 - **Python** declares it with `define_plugin(...)` from the CLI-managed
   `liatir` module scaffolded next to the entry point.
 - **R** declares it with `define_plugin(...)` from the CLI-managed `liatir.R`.
-- **Native** emits a code-declared contract through its executable; the Rust SDK
-  shares the same field builders and validation as WASM.
-- **WASM** declares it with `define_plugin()` from the CLI-managed
-  `src/liatir.rs` module.
+- **Native** emits a code-declared contract through its executable; the Rust
+  and C++ SDKs share their field builders and validation with WASM.
+- **WASM** uses the managed Rust or C++ library and the same code-declared contract.
 
 Node plugins have no `.lia-manifest.json` at all (metadata lives in
 `package.json`). Python, R, Native and WASM projects keep a small `.lia-manifest.json`
@@ -196,8 +195,19 @@ fn main() {
 `liatir build` compiles the crate, reads the contract back from the binary, and
 generates the bundle manifest schema from it. At run time the SDK validates the
 input before your handler runs and the output after it returns; stdout is
-reserved for the result JSON (use `eprintln!` for logs). Legacy tools without
+reserved for the result JSON (use `eprintln!` for Rust logs). Legacy tools without
 the SDK keep working with `inputSchema`/`outputSchema` in the manifest.
+
+### C++ WASM build
+
+`liatir init my-plugin --wasm --cpp` supplies a CMake project with
+`build: { "language": "cpp" }` and `runtime: "wasm"` in the source manifest.
+Set `WASI_SDK_PATH` to an installed WASI SDK, then run `liatir build`.
+The CLI compiles for WASI Preview 1, extracts the code-declared contract and
+packages `plugin.wasm` using the existing bundle format. The C++ library validates
+inputs and outputs like the Rust library. Native bridge code and libcurl are
+excluded; output is plain JSON on stdout and errors use stderr with a nonzero
+exit status. The supplied C++ library does not require WASM exception support.
 
 ## Python contract and manifest
 
@@ -318,8 +328,8 @@ libraries that are removed when the session ends.
 
 ## Native contract and manifest
 
-Native Plugins contain compiled executables, not shared libraries. The Rust
-starter uses the [same field declarations](./define-plugin#native-wasm) as WASM
+Native Plugins contain compiled executables, not shared libraries. The Rust and C++
+starters use the [same field declarations](./define-plugin#native-wasm) as WASM
 and adds full bridge access. Its source `.lia-manifest.json` can be as small as:
 
 ```json
@@ -354,6 +364,25 @@ SHA-256. For another target, copy its executable **and its generated metadata**
 from a build on that target. A stale hash or unequal contracts across targets
 fails the build. Do not write a separate schema by hand.
 
+For a C++ project, the source manifest selects the author-side CMake build:
+
+```json
+{
+  "name": "cpp-length",
+  "version": "1.0.0",
+  "runtime": "native",
+  "build": { "language": "cpp" },
+  "native": { "protocol": 1 }
+}
+```
+
+`liatir init --native --cpp` supplies this project, the CMake recipe and managed
+`src/liatir.hpp` / `src/liatir_bridge.hpp` headers. `liatir build` refreshes the
+library, compiles the host executable and feeds it through the same contract
+extraction and packaging path. Extra `native.targets` use the same generated
+cross-target metadata. The `build` section is author configuration and is not
+included in the generated runtime manifest.
+
 The resulting payload contains `manifest.json` and executable entries such as:
 
 ```text
@@ -380,7 +409,7 @@ not install a separate set of native shared libraries.
 
 ### Executable protocol, version 1
 
-Any compiled language can implement this protocol without the Rust SDK:
+The managed Rust and C++ libraries implement this protocol for Native Plugins:
 
 1. When `LIATIR_EMIT_CONTRACT=1` is set, print one line and exit successfully:
 

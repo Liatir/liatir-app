@@ -48,6 +48,8 @@ Usage:
   liatir init <name> --wasm   Scaffold a WASM Rust .lia tool
   liatir init <name> --r      Scaffold an R .lia plugin
   liatir init <name> --native Scaffold a Native Rust .lia plugin
+  liatir init <name> --native --cpp  Scaffold a Native C++ .lia plugin
+  liatir init <name> --wasm --cpp    Scaffold a WASM C++ .lia plugin
   liatir init <name> --python Scaffold a Python .lia plugin
   liatir init <name> --js     Scaffold a JavaScript Node .lia plugin
   liatir dev                  Open a temporary Liatir Dev Runner session

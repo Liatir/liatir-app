@@ -34,7 +34,7 @@ list()
 <Tab title="Native/WASM">
 
 ::: info
-Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+Liatir provides managed Rust and C++ libraries for Native/WASM Plugins.
 This app bridge is Native-only; WASM stays isolated.
 :::
 
@@ -94,7 +94,7 @@ for (job in jobs) cat(job$id, job$status$type, "\n")
 <Tab title="Native/WASM">
 
 ::: info
-Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+Liatir provides managed Rust and C++ libraries for Native/WASM Plugins.
 This app bridge is Native-only; WASM stays isolated.
 :::
 

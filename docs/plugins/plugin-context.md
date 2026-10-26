@@ -112,7 +112,7 @@ Bridge failures raise R errors; do not catch them and return a successful result
 ## Native/WASM context
 
 ::: info
-Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+Liatir provides managed Rust and C++ libraries for Native/WASM Plugins.
 WASM targets must support WASI Preview 1 and remain isolated from the app bridge.
 :::
 
@@ -173,39 +173,46 @@ bridge-managed storage for paths that must survive the run.
 </Tab>
 <Tab title="C++">
 
-C++ clients read and validate JSON input using the
-[entry-point protocol](./define-plugin#native-wasm). There is no mandatory
-context class or Rust dependency. Native can additionally use the
-[C++ bridge example client](./api-bridge#cpp-examples).
+The handler receives `const liatir::Context& ctx`. Its input has already been
+validated and defaults applied. Use `ctx.input()` for the validated JSON object,
+`ctx.raw_input()` for the original payload, or typed getters:
+
+| Getter | C++ value |
+| --- | --- |
+| `ctx.str(name)` / `ctx.string(name)` | String reference / copied string. |
+| `ctx.f64(name)` / `ctx.i64(name)` | Double / signed 64-bit integer. |
+| `ctx.boolean(name)` | Boolean. |
+| `ctx.path(name)` | File input as `std::filesystem::path`. |
+| `ctx.get(name)` | JSON value; null when absent. |
 
 ```cpp
-const auto text = input.at("text").get<std::string>();
-// input is the JSON object validated by your Plugin entry point.
-json output = {{"text", text}};
-
+const auto& text = ctx.str("text");
 #ifndef __wasi__
-// Native only, using the example bridge client.
 liatir::invoke("lia_plugin_log", {{"jobId", liatir::job_id()},
     {"level", "info"}, {"message", "Processing text"}});
 #endif
+const auto length = std::count_if(text.begin(), text.end(),
+    [](unsigned char byte) { return (byte & 0xc0) != 0x80; });
+return liatir::json{{"length", length}};
 ```
 
-WASM can access only sandbox-mounted files; Native uses its ordinary process
-working directory. Return inline file content or persistent storage paths as
-specified by the [shared file output contract](./field#file-output-values).
+Native bridge calls are available from the managed library. WASM has no bridge;
+`ctx.storage_dir()` is `/storage` in that runtime only. In both targets,
+`ctx.work_dir()` is the temporary Job directory. Use the
+[shared file output contract](./field#file-output-values) for persistent results.
+Use `liatir::fail(message)` to report a handler failure on either target.
 
 </Tab>
 </Tabs>
 
 ## Runtime validation
 
-In **Python, R, Native Rust and WASM**, the SDK validates the input before the handler runs
+In **Python, R, Rust and C++**, the supplied SDK validates the input before the handler runs
 (defaults applied, required and typed fields checked) and the output after it
 returns (JSON, and no key outside the declared outputs). In **Node**, validation
 happens at build time — `liatir build` and `liatir dev` inspect the exported
 plugin shape after bundling — not on each run.
 
 
-Custom Native executables are responsible for the same input/output validation.
 All runtimes use the existing `.lia` contract; see
 [runtime preparation](./getting-started#runtime-preparation) for preparation and executable permissions.

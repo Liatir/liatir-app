@@ -27,7 +27,7 @@ A `.lia` plugin file is a bundle built with `@liatir/cli` and imported into Liat
 | Node | TypeScript/JavaScript and npm libraries. | Yes | Liatir's Node runtime. |
 | Python | Scientific Python libraries. | Yes | A prepared managed Python environment. |
 | R | R statistics, CRAN and Bioconductor. | Yes | R >= 4.1 and the Plugin's prepared packages. |
-| Native | Compiled executables, with a Rust starter. | Yes | An exact OS/processor executable and explicit permission. |
+| Native | Compiled executables, with Rust and C++ libraries. | Yes | An exact OS/processor executable and explicit permission. |
 | WASM | Portable, isolated computation. | No | Liatir's built-in WASM runner. |
 
 Start with Node unless your analysis needs a particular language. R and Native
@@ -189,8 +189,9 @@ Ok(json!({ "length": length }))
 ```
 
 The CLI compiles the host executable and reads its contract; authors can add
-other exact targets to the bundle. Other compiled languages can implement the
-same executable protocol. The user's machine does not need Rust to run an
+other exact targets to the bundle. C++ projects created with
+`liatir init text-summary --native --cpp --yes` use the managed Liatir library
+and CMake build path, with the same contract validation. The user's machine does not need Rust to run an
 already compiled Rust Plugin, but may need any system libraries the executable
 requires.
 
@@ -203,7 +204,8 @@ checks integrity; it does not grant this permission. See
 ## WASM plugins
 
 
-WASM `.lia` plugins are Web Assembly tools compiled to `wasm32-wasip1`. They
+WASM `.lia` plugins are WebAssembly tools compiled for WASI Preview 1. Liatir
+supplies Rust and C++ libraries, selected with `--wasm` or `--wasm --cpp`. They
 declare the same `define_plugin` contract as the other runtimes through the
 CLI-managed `src/liatir.rs` module that `liatir init --wasm` scaffolds and
 `liatir build` keeps in sync:

@@ -22,6 +22,7 @@ import { typecheckIfConfigured } from "./_typecheck.js";
 import { resolveNodeEntryPoint, type NodeEntryPoint } from "./_entry.js";
 import { assetPath, assetsDir, syncManagedSdkFile } from "./_assets.js";
 import { formatProcessError } from "./_process.js";
+import { buildCpp } from "./_cpp.js";
 import {
   buildSignatureEntries,
   defaultKeyPath,
@@ -492,6 +493,13 @@ function manifestRuntime(raw: RawManifest | null): LiatirPluginRuntime | undefin
   return raw?.runtime === undefined ? undefined : liatirPluginRuntime(raw.runtime);
 }
 
+function cppProject(raw: RawManifest): boolean {
+  if (!isRecord(raw.build) || raw.build.language === undefined) return false;
+  const language = raw.build.language;
+  if (language !== "cpp") throw new Error(`Unsupported compiled build.language: ${typeof language === "string" ? language : typeof language}. Expected "cpp", or omit build for Rust.`);
+  return true;
+}
+
 function validateRelativePath(value: string, fieldName: string): string {
   const normalized = value.replace(/\\/g, "/").replace(/^\.\/+/, "");
   if (!normalized || /^[a-z]:/i.test(normalized) || normalized.split("/").some(part => !part || part === "." || part === "..")) {
@@ -749,38 +757,38 @@ async function buildWasm(cwd: string, rawManifest?: RawManifest, options: BuildO
   // SDK projects carry src/liatir.rs: keep it in sync with this CLI version
   // before compiling. Legacy tools without the file are left untouched.
   const sdkModulePath = path.join(cwd, "src", "liatir.rs");
-  if (await exists(sdkModulePath)) {
+  if (!cppProject(m) && await exists(sdkModulePath)) {
     if (await syncManagedSdkFile(sdkModulePath, "liatir.rs") && !options.quiet) {
       console.log("Synced src/liatir.rs (Liatir plugin SDK) with this CLI version.");
     }
   }
 
-  if (!options.quiet) {
-    console.log("Compiling Rust → wasm32-wasip1 (cargo build --release)...");
+  let wasmPath: string;
+  if (cppProject(m)) {
+    wasmPath = await buildCpp(cwd, "wasm");
+  } else {
+    if (!options.quiet) console.log("Compiling Rust → wasm32-wasip1 (cargo build --release)...");
+    try {
+      await execFileAsync("cargo", ["build", "--release", "--target", "wasm32-wasip1"], { cwd });
+    } catch (e) {
+      console.error("cargo build failed. Ensure Rust + the wasm target are installed:\n  rustup target add wasm32-wasip1");
+      throw e;
+    }
+    const releaseDir = path.join(cwd, "target", "wasm32-wasip1", "release");
+    const wasmFile = (await fs.readdir(releaseDir).catch(() => [] as string[])).find(x => x.endsWith(".wasm"));
+    if (!wasmFile) throw new Error(`No .wasm artifact found in ${releaseDir}`);
+    wasmPath = path.join(releaseDir, wasmFile);
   }
-  try {
-    await execFileAsync("cargo", ["build", "--release", "--target", "wasm32-wasip1"], { cwd });
-  } catch (e) {
-    console.error("cargo build failed. Ensure Rust + the wasm target are installed:\n  rustup target add wasm32-wasip1");
-    throw e;
-  }
-
-  const releaseDir = path.join(cwd, "target", "wasm32-wasip1", "release");
-  let wasmFile: string | undefined;
-  try {
-    wasmFile = (await fs.readdir(releaseDir)).find((x) => x.endsWith(".wasm"));
-  } catch { /* handled below */ }
-  if (!wasmFile) throw new Error(`No .wasm artifact found in ${releaseDir}`);
-  const wasmPath = path.join(releaseDir, wasmFile);
 
   const extraction = await extractWasmContract(wasmPath);
   const schemas = resolveDeclaredSchemas({
     extraction,
     rawManifest: m,
-    sdkFilePresent: await exists(sdkModulePath),
-    sdkHint:
-      "Declare the contract once in src/main.rs with the Liatir SDK " +
-      "(`mod liatir;` + define_plugin, scaffolded by `liatir init --wasm`).",
+    sdkFilePresent: cppProject(m) || await exists(sdkModulePath),
+    sdkHint: cppProject(m)
+      ? 'Declare the contract with liatir::define_plugin() from the managed liatir.hpp header.'
+      : "Declare the contract once in src/main.rs with the Liatir SDK " +
+        "(`mod liatir;` + define_plugin, scaffolded by `liatir init --wasm`).",
     quiet: options.quiet ?? false,
   });
 
@@ -976,7 +984,12 @@ async function buildSubprocess(cwd: string, raw: RawManifest, runtime: "r" | "na
     if (!isRecord(raw.native) || raw.native.protocol !== 1) throw new Error("Native plugins require native.protocol = 1.");
     let targets: Record<string, unknown>;
     const host = liatirNativeTarget(process.platform, process.arch);
-    if (raw.native.cargo === true) {
+    if (cppProject(raw)) {
+      if (raw.native.cargo === true) throw new Error("C++ build.language conflicts with native.cargo = true.");
+      const executable = await buildCpp(cwd, "native");
+      targets = { ...(isRecord(raw.native.targets) ? raw.native.targets : {}),
+        [host]: path.relative(cwd, executable).split(path.sep).join("/") };
+    } else if (raw.native.cargo === true) {
       await syncManagedSdkFile(path.join(cwd, "src", "liatir.rs"), "liatir.rs");
       await syncManagedSdkFile(path.join(cwd, "src", "liatir_bridge.rs"), "liatir_bridge.rs");
       const { stdout } = await execFileAsync("cargo", ["build", "--release", "--message-format=json"], { cwd, maxBuffer: 16 * 1024 * 1024 });

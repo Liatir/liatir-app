@@ -1,6 +1,6 @@
-# R and Native Plugins
+# Plugin examples
 
-Build either project using the local CLI after `npm run build --prefix packages/liatir-cli`:
+Build a project using the local CLI after `npm run build --prefix packages/liatir-cli`:
 
 ```sh
 cd examples/plugins/native-file-summary
@@ -19,3 +19,11 @@ contain normalized log2 expression, with at least two `control_*` and two
 `treatment_*` samples. These are already transformed expression measurements,
 not raw counts. Results include limma's moderated statistics and BH-adjusted
 p-values; biological interpretation still depends on the experiment and its design.
+
+The `cpp-file-summary` project uses the CLI-managed C++ library and CMake. Build
+it with `liatir build`; CMake >= 3.21, a C++17 compiler and libcurl development
+files are required. The CLI supplies/refreshes its managed headers. For a WASM
+build, set its manifest runtime to `wasm`, remove `native` and provide WASI SDK
+through `WASI_SDK_PATH`; the same source uses the shared contract without app
+bridge access. Complete generated projects are also available through
+`liatir init <name> --native --cpp` and `--wasm --cpp`.
