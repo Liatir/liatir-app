@@ -1,26 +1,34 @@
 # Liatir API packages
 
-- **Node plugins** use `@liatir/api` Node module as typed API entry point, based on a shared `define_plugin` contract;
+The SDK is the small library that declares a Plugin's inputs and outputs and
+connects its code to Liatir. All five runtimes use the same I/O contract.
 
-- **Python and WASM plugins** use the same `define_plugin` contract, but not as a
-package: the CLI scaffolds a single managed module (`src/liatir.py` /
-`src/liatir.rs`) into the project and `liatir build` keeps it in sync — there
-is nothing to install or update separately. 
+| Runtime | Authoring SDK | How it is supplied |
+| --- | --- | --- |
+| Node | `definePlugin`, `field`, `output` from `@liatir/api` | npm dependency installed by `liatir init`. |
+| Python | `define_plugin`, `field` from `liatir` | CLI-managed `src/liatir.py`. |
+| R | `define_plugin`, `field` after `source("liatir.R")` | CLI-managed `src/liatir.R`. |
+| Native (Rust) | `define_plugin`, `field` from `mod liatir` | CLI-managed `src/liatir.rs` and `src/liatir_bridge.rs`. |
+| WASM (Rust) | `define_plugin`, `field` from `mod liatir` | CLI-managed `src/liatir.rs`, without the app bridge. |
 
+For Python, R, Native Rust and WASM, `liatir build` refreshes the managed files
+from your installed CLI. Keep your own logic in the entry point or separate
+modules: edits to managed SDK files are overwritten. These runtimes do not need
+the Node `@liatir/api` package. R still needs a compatible R installation and its
+prepared packages; Rust projects need Rust and Cargo to build.
 
-<center>
-<small>
+`liatir update` updates the CLI/API dependencies of a **Node project**. To update
+the other managed SDKs, update your installed CLI and rebuild the Plugin.
 
-Check out the [Liatir plugin context guide](/plugins/plugin-context)
-
-</small>
-</center>
+Native executables written in other languages can implement the
+[executable protocol](/plugins/r-and-native#executable-protocol-version-1)
+directly, including contract emission, validation and authenticated bridge calls.
 
 ## Related
 
+- [Getting started](/plugins/getting-started)
 - [Plugin context](/plugins/plugin-context)
 - [Plugin authoring](/plugins/define-plugin)
 - [Declaring fields](/plugins/field)
-- [Desktop API](/plugins/api/desktop/app)
-- [Jobs API](/plugins/api/jobs/spawn)
-- [Dependencies API](/plugins/api/deps/check)
+- [R and Native guide](/plugins/r-and-native)
+- [API bridge](/plugins/api-bridge)

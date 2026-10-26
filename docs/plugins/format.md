@@ -1,14 +1,15 @@
 # Plugin structure
 
-Under the hood, a `.lia` file is a ZIP archive with a fixed structure. Liatir validates
-the bundle signature before reading the manifest or executing any runtime
-payload.
+A `.lia` file is a ZIP archive with a `_sig` entry containing `LIATIR/1`, a
+`manifest.json` and runtime payloads. Signed bundles also contain signature
+entries. Liatir verifies a supplied signature before executing the payload. R and Native keep this format and
+contract version 1; existing Node, Python and WASM bundles remain supported.
 
 ## Runtime variants
 
 There are five supported runtimes: **Node**, **Python**, **R**, **Native**, and **WASM**. All
-five declare the I/O contract the same way — once, in the code, with the
-`define_plugin` API — and `liatir build` generates the bundle manifest schema
+five declare the I/O contract once in code, using their language SDK or the
+Native executable protocol — and `liatir build` generates the bundle manifest schema
 from it. There is no schema to keep in sync by hand:
 
 - **Node** declares it with `definePlugin({...})` from `@liatir/api`.
@@ -253,7 +254,114 @@ for that plugin bundle and installs the declared packages or requirements there.
 Legacy plugins with a plain `main(input)` function and a manifest-owned
 `inputSchema`/`outputSchema` keep working.
 
-## R and Native runtimes
+## R contract and manifest
 
-See [R and Native Plugins](./r-and-native) for scaffolding, dependency locks,
-executable targets, bridge access and the Native permission model.
+The entry point uses `source("liatir.R")`, `define_plugin(...)` and
+`plugin$main(handler)`; see the [complete R example](./define-plugin#r).
+The source `.lia-manifest.json` contains metadata and R requirements:
+
+```json
+{
+  "name": "r-length",
+  "version": "1.0.0",
+  "runtime": "r",
+  "r": {
+    "entry": "src/main.R",
+    "minVersion": "4.1",
+    "packages": []
+  }
+}
+```
+
+The CLI supplies `src/liatir.R`, prepares the author library and extracts the
+contract without running the SDK handler. The first build creates `renv.lock`;
+subsequent builds restore it. Declared dependencies, including Bioconductor
+packages such as `bioc::limma`, must be present in the lock. R has no legacy
+manifest-owned schema fallback.
+
+For this project the ZIP payload contains:
+
+```text
+_sig
+manifest.json
+r/
+  main.R
+  liatir.R
+  renv.lock
+  _prepare.R
+```
+
+The generated manifest has `runtime: "r"`, `r.entry: "r/main.R"`,
+`r.lockfile: "r/renv.lock"` and the code-derived `inputSchema`/`outputSchema`.
+Sibling source files are included under `r/` too. Installed R libraries are
+prepared separately on the user's machine; they are not copied into the bundle.
+See [dependency preparation](./r-and-native#create-an-r-plugin).
+
+## Native contract and manifest
+
+Native Plugins contain compiled executables, not shared libraries. The Rust
+starter uses the [same field declarations](./define-plugin#native-rust) as WASM
+and adds full bridge access. Its source `.lia-manifest.json` can be as small as:
+
+```json
+{
+  "name": "native-length",
+  "version": "1.0.0",
+  "runtime": "native",
+  "native": { "protocol": 1, "cargo": true }
+}
+```
+
+`cargo: true` tells the CLI to compile the host executable. To package executables
+built separately, use `native.targets`, whose values are paths relative to the
+project. It can also add targets alongside a Cargo build:
+
+```json
+{
+  "native": {
+    "protocol": 1,
+    "targets": {
+      "macos-aarch64": "bin/macos-aarch64/tool",
+      "linux-x86_64": "bin/linux-x86_64/tool",
+      "windows-x86_64": "bin/windows-x86_64/tool.exe"
+    }
+  }
+}
+```
+
+Each executable must emit a version 1 code contract. The CLI introspects host
+executables and generates `<executable>.contract.json` with their contract and
+SHA-256. For another target, copy its executable **and its generated metadata**
+from a build on that target. A stale hash or unequal contracts across targets
+fails the build. Do not write a separate schema by hand.
+
+The resulting payload contains `manifest.json` and executable entries such as:
+
+```text
+native/macos-aarch64/tool
+native/linux-x86_64/tool
+native/windows-x86_64/tool.exe
+```
+
+The generated manifest rewrites `native.targets` to these bundle paths and adds
+`inputSchema`/`outputSchema`. The app selects an exact target; it does not fall
+back to a different processor. Supported names combine `macos`, `linux` or
+`windows` with `aarch64` or `x86_64`. Only include targets you have actually built
+and tested.
+
+Native permission is a separate desktop action bound to the complete bundle's
+SHA-256. Importing or verifying a signed bundle does not grant permission to run
+its executable. See [permissions, target metadata and the executable
+protocol](./r-and-native#create-a-native-plugin).
+
+## Run and result lifecycle
+
+All five runtimes share pipeline inputs and outputs, Jobs and Results. R and
+Native receive a private input JSON file and execute in a per-Job temporary
+directory. The app removes that directory at termination, including cancellation
+and failures. Return inline content or persistent bridge-managed paths for
+[file outputs](./field#file-output-values).
+
+R libraries are prepared for the Plugin identity, dependency lock and interpreter;
+Native uses an executable for the exact host target. Neither adds a dependency to
+unrelated Plugins or app startup. See [runtime setup](./r-and-native).

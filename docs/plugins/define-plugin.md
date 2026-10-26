@@ -10,7 +10,7 @@ attaches the implementation to that contract. `liatir build` reads the contract
 back and generates `manifest.json` from it — there is no schema to write or keep
 in sync by hand.
 
-This is the **same API in all five runtimes**:
+All five runtimes share the same contract, with language-specific syntax:
 
 - **Node** — `definePlugin({ inputs, outputs }).main(handler)` from `@liatir/api`.
 - **Python** — `define_plugin(inputs=..., outputs=...)` + `@plugin.main` from the
@@ -21,10 +21,10 @@ This is the **same API in all five runtimes**:
 - **Native (Rust)** — the same contract builder as WASM, with full bridge access.
   Other compiled languages implement the [executable protocol](/plugins/r-and-native).
 
-For Python and WASM the `liatir` module is **not a package you install**: `liatir
-init` scaffolds it into your project (`src/liatir.py` / `src/liatir.rs`) and
-`liatir build` keeps it in sync with your CLI version. The managed file is synchronized with the installed CLI
-version.
+For Python, R, Native Rust and WASM, the SDK is **not a separate package you
+install**: `liatir init` supplies managed source files and `liatir build` refreshes
+them from your installed CLI. See [API packages](/plugins/api-packages) for the
+file names. Put your logic in separate files so SDK updates do not overwrite it.
 
 ## Node (TypeScript)
 
@@ -91,6 +91,56 @@ def main(ctx):
 The handler is decorated with `@plugin.main` and named `main`. It may be a plain
 or `async def` function. The runtime passes the validated input on `ctx.input`.
 
+## R
+
+```r
+source("liatir.R")
+
+plugin <- define_plugin(
+  inputs = list(text = field$string(
+    label = "Text", required = TRUE, default = "hello from Liatir"
+  )),
+  outputs = list(length = field$number(label = "Length", format = "integer"))
+)
+
+plugin$main(function(ctx) {
+  list(length = nchar(ctx$input$text, type = "chars"))
+})
+```
+
+Save this in `src/main.R`. The SDK passes named lists to and from the handler.
+Load scientific packages and perform analysis **inside the handler**: contract
+extraction sources the entry point without calling the handler, but still
+executes top-level R statements. Declare dependencies in the
+[R runtime specification](/plugins/r-and-native#create-an-r-plugin).
+
+## Native (Rust)
+
+```rust
+mod liatir;
+
+use liatir::{define_plugin, field};
+use serde_json::json;
+
+fn main() {
+    define_plugin()
+        .input("text", field::string().label("Text").required(true)
+            .default_value("hello from Liatir"))
+        .output("length", field::number().label("Length").integer())
+        .main(|ctx| {
+            let text = ctx.str("text")?;
+            Ok(json!({ "length": text.chars().count() }))
+        });
+}
+```
+
+Save this in `src/main.rs` in a project created with `liatir init --native`.
+The generated `liatir` module includes the Native bridge; no separate
+`mod liatir_bridge` declaration is needed in your entry point. Use
+`ctx.liatir` when your handler needs app storage, Jobs, logs or progress.
+Other compiled languages implement the same
+[executable protocol](/plugins/r-and-native#executable-protocol-version-1).
+
 ## WASM (Rust)
 
 ```rust
@@ -125,17 +175,21 @@ fn main() {
 point, an input/output that is not an object, or a field with an unsupported
 type (see [field builders](/plugins/field) for the allowed types).
 
-In **Python and WASM**, the SDK also validates on **every run**: it applies
+In **Python, R, Native Rust and WASM**, the SDK also validates on **every run**: it applies
 declared defaults, rejects a missing required input or a wrong-typed value
 before your handler runs, and rejects a returned object that is not JSON or
 carries a key not declared in `outputs`. In **Node**, the contract is enforced
 at build time and through TypeScript; the handler is not re-validated at run
 time.
 
+A custom Native executable must implement its own matching validation. During
+build, R and Native must emit a code-declared contract; they do not support a
+separate, manually maintained manifest schema as a fallback.
+
 ## Important rules
 
 - Do not hand-write `inputSchema` / `outputSchema` — it is generated from the code.
-- Do not write internal result markers to stdout yourself.
+- When using a supplied SDK, let it write the internal result markers.
 - Return an object whose keys match the declared output keys.
 - Node only: do not export `run(inputs)` directly, and do not maintain a Node `.lia-manifest.json`.
 

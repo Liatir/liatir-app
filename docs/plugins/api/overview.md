@@ -42,22 +42,16 @@ This is the **same API shape in all five runtimes**:
 
 ## API bridge
 
-R and Native expose the same bridge namespaces as Node and Python; see
-[R and Native Plugins](/plugins/r-and-native) for their syntax and transport.
+Node, Python, R and Native can all use Liatir Jobs, dependency checks, storage,
+app information, logging, progress, paths and raw command invocation. WASM has
+no bridge.
 
-The `Liatir` object passed to `.main(...)` is the Node plugin bridge. It connects
-the plugin process to the running Liatir desktop app through local IPC.
+| Runtime | Handler access | Calling convention |
+| --- | --- | --- |
+| Node | `Liatir` | Async methods, for example `await Liatir.jobs.list()`. |
+| Python | `ctx.liatir` | Synchronous, snake_case methods. |
+| R | `ctx$liatir` | Synchronous, snake_case methods accessed with `$`. |
+| Native Rust | `ctx.liatir` | Namespace methods, for example `ctx.liatir.jobs().list()?`. |
 
-Python plugins get the same bridge on their handler context as `ctx.liatir`,
-using snake_case method names (e.g. `ctx.liatir.jobs.list()`,
-`ctx.liatir.deps.check(...)`, `ctx.liatir.invoke(...)`). It covers the same
-areas below except the typed bio helpers (`align`/`qc`/`variants`), which Python
-reaches through `ctx.liatir.invoke`. WASM plugins are sandboxed and do not have API bridge access.
-
-| Area | Use it for |
-| --- | --- |
-| `Jobs` | Spawn, wait for, stream, and inspect Liatir jobs. |
-| `Deps` | Check whether command-line binaries are available. |
-| `Desktop fs` | Scoped Liatir storage. |
-| `Desktop app info` | App and OS information. |
-| `Invoke method` | Low-level IPC escape hatch. |
+See [the bridge reference](/plugins/api-bridge) for language conventions,
+response types, all available areas and development-session isolation.

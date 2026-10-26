@@ -24,6 +24,20 @@ status(job_id) -> dict
 ```
 
 </Tab>
+<Tab title="R">
+
+```r
+status(job_id)
+```
+
+</Tab>
+<Tab title="Native (Rust)">
+
+```rust
+status(job_id: &str) -> Result<Value>
+```
+
+</Tab>
 </Tabs>
 
 ## Parameters
@@ -68,6 +82,24 @@ print('Exit code:', job['status'].get('exitCode'))
 ```
 
 </Tab>
+<Tab title="R">
+
+```r
+job <- ctx$liatir$jobs$status(job_id)
+cat("Status:", job$status$type, "\n")
+print(job$status$exitCode)
+```
+
+</Tab>
+<Tab title="Native (Rust)">
+
+```rust
+let job = ctx.liatir.jobs().status(job_id)?;
+println!("Status: {}", job["status"]["type"]);
+println!("Exit code: {}", job["status"]["exitCode"]);
+```
+
+</Tab>
 </Tabs>
 
 ## Return value
@@ -77,4 +109,3 @@ Returns a `JobEntry` object. See [`.jobs.list`](./list.md#jobentry) for the full
 ## Job states
 
 A job can be `running`, `done`, `failed`, or `killed`.
-

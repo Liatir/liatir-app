@@ -30,6 +30,31 @@ description: Progress tracking for plugins — display real-time progress in the
 | `.done()` | Mark progress as complete |
 
 </Tab>
+<Tab title="R">
+
+| Method | Description |
+| --- | --- |
+| `$start(total, label = NULL)` | Initialize progress. |
+| `$advance(n = 1, label = NULL)` | Increment progress. |
+| `$update(current, label = NULL)` | Set an absolute value. |
+| `$done()` | Mark progress complete. |
+
+Call these on `ctx$liatir$progress`.
+
+</Tab>
+<Tab title="Native (Rust)">
+
+| Method | Description |
+| --- | --- |
+| `.start(total: u64, label: Option<&str>)` | Initialize progress. |
+| `.advance(delta: u64, label: Option<&str>)` | Increment progress; pass the increment explicitly. |
+| `.update(current: u64, label: Option<&str>)` | Set an absolute value. |
+| `.done()` | Mark progress complete. |
+
+Call these on `ctx.liatir.progress()`. Each returns `Result<Value>`;
+use `None` for no label and `?` to propagate failure.
+
+</Tab>
 </Tabs>
 
 ### Parameters
@@ -83,6 +108,34 @@ ctx.liatir.progress.done()
 ```
 
 </Tab>
+<Tab title="R">
+
+```r
+files <- ctx$liatir$desktop$fs$data$list_content("input")
+ctx$liatir$progress$start(length(files), "Processing files")
+for (file in files) {
+  ctx$liatir$progress$advance(1, paste("Processing", file$name))
+  # Process the file here.
+}
+ctx$liatir$progress$done()
+```
+
+</Tab>
+<Tab title="Native (Rust)">
+
+```rust
+let files = ctx.liatir.desktop().fs().data().list_content("input")?;
+let files = files.as_array().ok_or("Invalid file list")?;
+ctx.liatir.progress().start(files.len() as u64, Some("Processing files"))?;
+for file in files {
+    let name = file["name"].as_str().ok_or("Missing file name")?;
+    ctx.liatir.progress().advance(1, Some(&format!("Processing {name}")))?;
+    // Process the file here.
+}
+ctx.liatir.progress().done()?;
+```
+
+</Tab>
 </Tabs>
 
 ### Multi-phase pipeline
@@ -128,6 +181,37 @@ ctx.liatir.progress.done()
 ```
 
 </Tab>
+<Tab title="R">
+
+```r
+ctx$liatir$progress$start(100, "Quality control")
+for (i in seq_len(100)) {
+  # Run this quality-control step.
+  ctx$liatir$progress$advance(1)
+}
+ctx$liatir$progress$start(50, "Aligning reads")
+for (i in seq_len(50)) {
+  # Align this chunk.
+  ctx$liatir$progress$advance(1)
+}
+ctx$liatir$progress$done()
+```
+
+</Tab>
+<Tab title="Native (Rust)">
+
+```rust
+for (total, label) in [(100_u64, "Quality control"), (50, "Aligning reads")] {
+    ctx.liatir.progress().start(total, Some(label))?;
+    for _ in 0..total {
+        // Run this analysis step.
+        ctx.liatir.progress().advance(1, None)?;
+    }
+}
+ctx.liatir.progress().done()?;
+```
+
+</Tab>
 </Tabs>
 
 ### Using absolute updates
@@ -163,6 +247,26 @@ ctx.liatir.progress.done()
 ```
 
 </Tab>
+<Tab title="R">
+
+```r
+ctx$liatir$progress$start(1000, "Processing reads")
+ctx$liatir$progress$update(250, "25% complete")
+ctx$liatir$progress$update(1000, "100% complete")
+ctx$liatir$progress$done()
+```
+
+</Tab>
+<Tab title="Native (Rust)">
+
+```rust
+ctx.liatir.progress().start(1000, Some("Processing reads"))?;
+ctx.liatir.progress().update(250, Some("25% complete"))?;
+ctx.liatir.progress().update(1000, Some("100% complete"))?;
+ctx.liatir.progress().done()?;
+```
+
+</Tab>
 </Tabs>
 
 ## Progress states
@@ -176,7 +280,7 @@ ctx.liatir.progress.done()
 ## Notes
 ---
 ::: warning IMPORTANT
-JSON response fields are always camelCase in both Node and Python.
+JSON response fields are always camelCase in Node, Python, R and Native.
 :::
 - Progress updates are emitted as Tauri events (`jobs:progress:{jobId}`) and displayed in real time in the Jobs UI.
 - Call `.start()` to initialize progress with a known total. If you don't know the total upfront, the progress bar shows an indeterminate spinner.

@@ -24,6 +24,20 @@ kill(job_id) -> bool
 ```
 
 </Tab>
+<Tab title="R">
+
+```r
+kill(job_id)
+```
+
+</Tab>
+<Tab title="Native (Rust)">
+
+```rust
+kill(job_id: &str) -> Result<Value>
+```
+
+</Tab>
 </Tabs>
 
 ## Parameters
@@ -66,6 +80,24 @@ killed = ctx.liatir.jobs.kill(job_id)
 
 if killed:
     print('Job terminated successfully')
+```
+
+</Tab>
+<Tab title="R">
+
+```r
+killed <- ctx$liatir$jobs$kill(job_id)
+if (isTRUE(killed)) message("Job terminated successfully")
+```
+
+</Tab>
+<Tab title="Native (Rust)">
+
+```rust
+let killed = ctx.liatir.jobs().kill(job_id)?;
+if killed.as_bool() == Some(true) {
+    println!("Job terminated successfully");
+}
 ```
 
 </Tab>

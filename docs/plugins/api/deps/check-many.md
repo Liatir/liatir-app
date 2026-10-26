@@ -24,6 +24,20 @@ check_many(binaries) -> list[dict]
 ```
 
 </Tab>
+<Tab title="R">
+
+```r
+check_many(binaries)
+```
+
+</Tab>
+<Tab title="Native (Rust)">
+
+```rust
+check_many(binaries: &[&str]) -> Result<Value>
+```
+
+</Tab>
 </Tabs>
 
 ## Example
@@ -47,6 +61,24 @@ deps = ctx.liatir.deps.check_many(['samtools', 'bcftools', 'java'])
 
 for dep in deps:
     print(f"{dep['binary']}: {'✓' if dep['available'] else '✗'}")
+```
+
+</Tab>
+<Tab title="R">
+
+```r
+deps <- ctx$liatir$deps$check_many(c("samtools", "bcftools", "java"))
+for (dep in deps) cat(dep$binary, dep$available, "\n")
+```
+
+</Tab>
+<Tab title="Native (Rust)">
+
+```rust
+let deps = ctx.liatir.deps().check_many(&["samtools", "bcftools", "java"])?;
+for dep in deps.as_array().ok_or("Invalid dependency list")? {
+    println!("{}: {}", dep["binary"], dep["available"]);
+}
 ```
 
 </Tab>

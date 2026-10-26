@@ -27,6 +27,20 @@ clear_done() -> int
 ```
 
 </Tab>
+<Tab title="R">
+
+```r
+clear_done()
+```
+
+</Tab>
+<Tab title="Native (Rust)">
+
+```rust
+clear_done() -> Result<Value>
+```
+
+</Tab>
 </Tabs>
 
 ## Example
@@ -50,6 +64,22 @@ print(f'Removed {removed} completed jobs')
 ```
 
 </Tab>
+<Tab title="R">
+
+```r
+removed <- ctx$liatir$jobs$clear_done()
+cat("Removed", removed, "completed Jobs\n")
+```
+
+</Tab>
+<Tab title="Native (Rust)">
+
+```rust
+let removed = ctx.liatir.jobs().clear_done()?;
+println!("Removed {removed} completed Jobs");
+```
+
+</Tab>
 </Tabs>
 
 ## Return value
@@ -57,3 +87,6 @@ print(f'Removed {removed} completed jobs')
 | Type          | Description                              |
 |---------------|------------------------------------------|
 | `number` / `int` | Number of jobs removed from the registry. |
+
+During `liatir dev`, this helper returns zero and leaves the global registry
+unchanged. Session cleanup belongs to the Dev Runner lifecycle.

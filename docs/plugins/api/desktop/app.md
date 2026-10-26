@@ -1,6 +1,6 @@
 ---
 title: App API
-description: Interface for retrieving system information and controlling the Liatir app.
+description: Interface for retrieving system information from Node, Python, R and Native Plugins.
 ---
 
 
@@ -25,6 +25,20 @@ The `app` API area of the Liatir API provides methods to retrieve system-level i
 | `info()` | Retrieves detailed information about the Liatir app instance, including version, platform, and environment. | `dict`      |
 
 </Tab>
+<Tab title="R">
+
+| Method | Returns |
+| --- | --- |
+| `ctx$liatir$desktop$app$info()` | Named list of app information. |
+
+</Tab>
+<Tab title="Native (Rust)">
+
+| Method | Returns |
+| --- | --- |
+| `ctx.liatir.desktop().app().info()` | `Result<Value>` with app information. |
+
+</Tab>
 </Tabs>
 
 ## AppInfo structure
@@ -33,7 +47,7 @@ The `AppInfo` object returned by `info()` contains the following fields:
 
 | Field             | Type               | Description                                                                                      |
 |-------------------|--------------------|------------------------------------------------------------------------------------------------|
-| `arch`            | string             | The system architecture (e.g., `x64`, `arm64`).                                                |
+| `arch`            | string             | The system architecture (e.g., `x86_64`, `aarch64`).                                                |
 | `current_dir`     | string             | The current working directory of the app process.                                              |
 | `exec_dir`        | string             | The directory where the app executable is located.                                             |
 | `exec_path`       | string             | The full path to the app executable file.                                                      |
@@ -41,7 +55,7 @@ The `AppInfo` object returned by `info()` contains the following fields:
 | `is_debug`        | boolean            | Indicates if the app is running in debug mode.                                                 |
 | `name`            | string             | The display name of the application.                                                           |
 | `now_unix_ms`     | number             | The current timestamp in milliseconds since Unix epoch.                                        |
-| `os`              | string             | The operating system platform (e.g., `win32`, `darwin`).                                       |
+| `os`              | string             | The operating system platform (e.g., `windows`, `macos`, `linux`).                                       |
 | `pid`             | number             | The process ID of the running app instance.                                                    |
 | `primary_screen`  | `AppScreenInfo`    | Information about the primary display screen.                                                  |
 | `screens`         | `AppScreenInfo[]`  | Array of information objects for all connected display screens.                                |
@@ -50,7 +64,7 @@ The `AppInfo` object returned by `info()` contains the following fields:
 | `windows`         | `AppWindowInfo[]`  | Array of information objects for all open app windows.                                        |
 
 ::: warning IMPORTANT
-`AppInfo` fields are always snake_case in both Node and Python, because they
+`AppInfo` fields are always snake_case in Node, Python, R and Native, because they
 come from the JSON response of the Liatir bridge.
 :::
 
@@ -103,10 +117,27 @@ print('Platform:', info['os'])
 ```
 
 </Tab>
+<Tab title="R">
+
+```r
+info <- ctx$liatir$desktop$app$info()
+cat("Platform:", info$os, "\n")
+```
+
+</Tab>
+<Tab title="Native (Rust)">
+
+```rust
+let info = ctx.liatir.desktop().app().info()?;
+println!("Platform: {}", info["os"]);
+```
+
+</Tab>
 </Tabs>
 
 ## Notes
 
 :::tip Efficient usage of `info()`
-Cache the result of `info()` if you need app details multiple times, as the information is static for the session and repeated calls may be unnecessary.
+Cache the result of `info()` if you need app details multiple times, if you only need its platform/version. Window state, display details and the
+timestamp can change, so request fresh information when those values matter.
 :::

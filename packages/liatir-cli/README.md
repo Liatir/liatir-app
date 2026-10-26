@@ -1,104 +1,84 @@
 # Liatir CLI
 
-[Liatir website ↗](https://liatir.com)
+[Liatir website](https://liatir.com) ·
+[Plugin documentation](https://liatir.com/plugins/getting-started)
 
-In order to start developing a **Liatir plugin**, you have to install the **Liatir CLI** from `@liatir/cli`, the Liatir command-line package for scaffolding, developing, and building `.lia` plugins.
+`@liatir/cli` creates, develops and packages `.lia` Plugins for **Node, Python,
+R, Native and WASM**. Every runtime uses the same code-declared input/output
+contract and connects to Liatir pipelines, Jobs and Results.
 
-Liatir commands exposed by the CLI:
-- `liatir init`: this will generate your project folder and scaffolding.
-- `liatir update`: you can use this to update @liatir/cli.
-- `liatir dev`: opens a temporary Liatir Dev Runner session for testing the plugin inside Liatir.
-- `liatir build`: with this command the cli will build your plugin and generate the relative `.lia` file.
-- `liatir -v` (or `liatir version`): prints the CLI version, plus the `@liatir/api` version when it is installed in the current project.
+## Create a Plugin
 
-## Quick initialization
+Install Node.js and npm to run the CLI, then:
 
-1. First run:
-
-```bash
+```sh
 npm install -g @liatir/cli
-
-liatir init my-liatir-plugin --yes   # recommended defaults
-
-cd my-liatir-plugin
-
-npm install
+liatir init my-plugin --yes
+cd my-plugin
 ```
 
-2. Once done, start developing your Liatir plugin.
+The default is Node TypeScript, with npm dependencies installed automatically.
+Run `liatir init` for guided setup, or select a runtime explicitly:
 
-
-## Guided initialization (recommended)
-
-```bash
-npm install -g @liatir/cli
-
-liatir init
+```sh
+liatir init my-plugin --node --ts
+liatir init my-plugin --node --js
+liatir init my-plugin --python
+liatir init my-plugin --r
+liatir init my-plugin --native       # Rust executable
+liatir init my-plugin --wasm         # Rust/WASM
+liatir init my-plugin --runtime r    # equivalent runtime selector
 ```
 
-### The CLI will then walk you through the project setup:
+Other flags include `--template <name>`, `--category <name>`, `--tags "FASTQ,QC"`,
+`--no-install` (Node npm dependencies) and `--no-wasm-target` (WASM target setup).
+Node metadata lives in `package.json`; other runtimes use `.lia-manifest.json`.
 
-1. **Project folder** — the directory to create (e.g. `my-liatir-plugin`).
+## Develop, build and import
 
-2. **Runtime** — how the plugin runs:
-   - **Node** — JavaScript/TypeScript with the full Liatir desktop bridge.
-   - **Python** — Python code with dependencies resolved by Liatir when the packaged plugin runs.
-   - **WASM** — Rust compiled to WASM, for sandboxed local computation.
+With the desktop app running, use `liatir dev`. Its temporary Dev Runner rebuilds
+on save and runs the current Plugin without importing it permanently. All five
+runtimes use this workflow. Run `liatir build` to create the `.lia` file, then
+import it from **Plugins** in Liatir and complete any required preparation.
 
-3. **Node language** *(Node runtime only)*:
-   - **TypeScript** *(recommended)* — best type safety and contract validation while developing.
-   - **JavaScript** — plain ESM plugin, no TypeScript project.
+| Runtime | Requirements and SDK |
+| --- | --- |
+| Node | Node.js/npm; `@liatir/api` supplies `definePlugin` and field builders. |
+| Python | A compatible Python for local contract extraction; the app prepares its managed runtime. CLI supplies `src/liatir.py`. |
+| R | R >= 4.1, found through `Rscript` on PATH or `LIATIR_RSCRIPT`. CLI supplies `src/liatir.R`. |
+| Native | Rust/Cargo for the starter or another compiler implementing the executable protocol. CLI supplies `src/liatir.rs` and `src/liatir_bridge.rs` for Rust. |
+| WASM | Rust/Cargo with `wasm32-wasip1`. CLI supplies `src/liatir.rs`, without the bridge. |
 
-4. **Starter template**:
-   - **Minimal text plugin** *(recommended)* — the smallest example for learning the plugin contract.
-   - **File processor** — reads metadata from a user-selected local file.
-   - **Bio CLI wrapper** — wraps a local bioinformatics command.
+`liatir build` refreshes the managed SDK files; keep your own code elsewhere.
+R and Native require an app and CLI build containing their runtime support.
+Node, Python, R and Native have full Plugin bridge access. WASM has no bridge
+and runs in an isolated environment.
 
-5. **Metadata** — display name, description, and category. All optional; you can change them later in the manifest.
+For R, the first build writes `renv.lock`; commit it with the project. Subsequent
+builds restore it. Users install compatible R and choose **Prepare R packages**
+in Liatir; preparation may need network access and build tools. Prepared runs
+work offline.
 
-6. **Install dependencies** — answer **Yes** to run `npm install` right away.
+Native builds package exact OS/processor targets and read the contract from the
+executable. The Rust starter builds the host target. Users grant **Allow
+executable access** for the exact imported bundle; an update needs permission
+again. Other languages can implement the same version 1 executable protocol.
+Cross-target builds use generated, hash-bound `<executable>.contract.json`
+metadata. See [R and Native documentation](https://liatir.com/plugins/r-and-native)
+for distribution and protocol details.
 
-7. Open the project folder with `cd my-liatir-plugin`.
+## Commands
 
-8. Start developing your Liatir plugin.
+| Command | Purpose |
+| --- | --- |
+| `liatir init` | Create a Plugin project. |
+| `liatir dev` | Open the app-backed temporary Dev Runner. |
+| `liatir build` | Generate the manifest from code and package the `.lia` file. |
+| `liatir update` | Update a Node project's `@liatir/cli` and `@liatir/api` together. |
+| `liatir -v` / `liatir version` | Show CLI and installed project API versions. |
 
-## Initialization flags
-
-```bash
-liatir init                            # full guided initialization
-liatir init plugin-name --yes          # uses recommended defaults
-liatir init plugin-name --node --ts    # Node TypeScript plugin
-liatir init plugin-name --node --js    # Node JavaScript plugin
-liatir init plugin-name --wasm         # Rust/WASM plugin
-liatir init plugin-name --template <TEMPLATE_NAME>
-liatir init plugin-name --category "Quality Control" --tags "FASTQ,QC"
-liatir init plugin-name --no-install
-liatir init plugin-name --no-wasm-target
-```
-
-## Test, build and import
-
-1. While developing, use `liatir dev` to test your plugin as you work. It opens a temporary Dev Runner window in Liatir, rebuilds on save, and lets you run the current bundle without importing it into your real plugin library.
-
-2. When you're happy with it, run `liatir build` to package your plugin into a `.lia` bundle.
-
-3. Open the **Plugins** page in Liatir and import the generated `.lia` file.
-
-4. Now you are ready to run it by itself or integrate it into a pipeline.
-
-## Pipeline integration
-
-The fields declared in `inputs` and `outputs` become the plugin's pipeline
-contract. Liatir uses them to render forms, validate required inputs, expose
-outputs to later steps, and store file outputs in Results.
-
-## R and Native Plugins
-
-`liatir init <name> --r --yes` creates an R Plugin; `--native` creates a Native
-Rust Plugin. Both support `liatir build` and the existing app-backed `liatir dev`.
-R requires a compatible `Rscript` (`LIATIR_RSCRIPT` overrides discovery in the CLI).
-Its first build writes a reproducible `renv.lock`; subsequent builds restore it.
-Native builds select an exact OS/architecture executable and generate their I/O
-schema by introspection. Native executable permission is granted in the app and
-binds the entire bundle. See the repository's `docs/plugins/r-and-native.md` for
-the language-independent protocol and cross-target contract metadata.
+Declare inputs and outputs once using the language SDK; do not maintain a
+parallel manifest schema. Standard file outputs are saved to Results and can
+feed another runtime in the same pipeline. For R and Native, return inline
+content or persistent bridge-managed paths: their temporary Job directory is
+removed at termination.

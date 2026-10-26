@@ -32,6 +32,20 @@ invoke(cmd, payload=None) -> any
 ```
 
 </Tab>
+<Tab title="R">
+
+```r
+invoke(cmd, payload = list())
+```
+
+</Tab>
+<Tab title="Native (Rust)">
+
+```rust
+invoke(cmd: &str, payload: Value) -> Result<Value>
+```
+
+</Tab>
 </Tabs>
 
 ## Example
@@ -40,8 +54,8 @@ invoke(cmd, payload=None) -> any
 <Tab title="Node">
 
 ```ts
-const result = await Liatir.invoke('some_command', {
-  some_input: 42
+const result = await Liatir.invoke('lia_deps_check', {
+  binary: 'samtools'
 });
 
 console.log('Result:', result);
@@ -51,11 +65,27 @@ console.log('Result:', result);
 <Tab title="Python">
 
 ```python
-result = ctx.liatir.invoke('some_command', {
-    'some_input': 42
+result = ctx.liatir.invoke('lia_deps_check', {
+    'binary': 'samtools'
 })
 
 print('Result:', result)
+```
+
+</Tab>
+<Tab title="R">
+
+```r
+result <- ctx$liatir$invoke("lia_deps_check", list(binary = "samtools"))
+print(result$available)
+```
+
+</Tab>
+<Tab title="Native (Rust)">
+
+```rust
+let result = ctx.liatir.invoke("lia_deps_check", json!({ "binary": "samtools" }))?;
+println!("Available: {}", result["available"]);
 ```
 
 </Tab>
@@ -65,3 +95,12 @@ print('Result:', result)
 
 Typed namespaces are more stable and easier to understand and should be preferred. Treat `invoke()` as
 an **escape hatch for advanced integrations**.
+
+Only commands exposed by the Plugin IPC server are callable; this is not access
+to every internal desktop command. For example, the dependency payload uses
+`binary` (one tool) or `binaries` (several), regardless of the caller's language.
+The SDK handles connection authentication and development-session identity.
+Native permission and runtime preparation remain desktop-only actions.
+
+Use the [bridge language conventions](/plugins/api-bridge#language-conventions)
+for error handling and Native Rust imports. WASM has no `invoke` method.

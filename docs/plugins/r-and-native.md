@@ -1,7 +1,15 @@
+---
+title: R and Native Plugins
+description: Create R and compiled Native Plugins with the shared I/O contract, full app bridge, dependency locks and executable permissions.
+---
+
 # R and Native Plugins
 
 R and Native Plugins use the same `.lia` inputs, outputs, Jobs, Results and pipeline
-connections as Node and Python. WASM remains the isolated runtime.
+connections as Node and Python. WASM remains the isolated runtime. Use an app
+and CLI build containing R/Native support; older versions may not recognize them.
+Start with [getting started](./getting-started) and the
+[complete entry points](./define-plugin) for examples in each language.
 
 ## Create an R Plugin
 
@@ -52,7 +60,8 @@ that author library deliberately and run `renv::snapshot()` with the explicit
 package list, including `jsonlite`, before rebuilding.
 
 The bundle carries the lock. **Prepare R packages** on the Plugin's page restores
-its exact versions into a separate library, keyed by lock and interpreter identity.
+its exact versions into a separate library, keyed by Plugin name/version, lock
+and interpreter identity.
 CRAN and Bioconductor sources are recorded by [renv](https://rstudio.github.io/renv/reference/restore.html).
 Preparation may need network access and platform build tools; later runs use the
 prepared library offline. Changing only Plugin code reuses its library. Development
@@ -71,9 +80,12 @@ The default scaffold uses Rust and Cargo. Its field builders and input/output
 validation are shared with the WASM Rust SDK. Native adds `ctx.liatir`, with
 `jobs()`, `deps()`, `desktop().fs()`, `desktop().app()`, `log()`, `progress()`,
 `paths()` and raw `invoke()`. R exposes the same namespaces using `$` and
-snake_case method names, matching Python. The generated SDK files list the exact
-method signatures. File scope helpers include read/write text and bytes, list,
-stat, exists, mkdir, move, copy, remove, path and clear.
+snake_case method names, matching Python. The [bridge reference](./api-bridge)
+includes R and Native examples for every area. Native Rust methods return `Result<serde_json::Value, Box<dyn std::error::Error>>`;
+use `?` in the handler to propagate a failure. R bridge calls return parsed JSON
+values (named lists for objects) and raise errors on failure. File scope helpers
+include read/write text and bytes, list, stat, exists, mkdir, move, copy, remove,
+path and clear.
 
 Native Plugins are separate executable processes, with ordinary operating-system
 access. They are not shared libraries and are not sandboxed. Importing one does
@@ -185,8 +197,8 @@ Native executable trust or call desktop runtime preparation through this endpoin
 
 ## Examples and platform validation
 
-The repository's `examples/plugins` contains a limma differential-expression
-analysis and a Rust text-file summary tool. Both return standard file outputs.
+The repository contains `examples/plugins/r-limma` (a limma differential-expression
+analysis) and `examples/plugins/native-file-summary` (a Rust text-file summary tool). Both return standard file outputs.
 The test suite includes a mixed Node → R → Native → Python pipeline.
 
 Executable target support is defined for macOS, Linux and Windows. A passing

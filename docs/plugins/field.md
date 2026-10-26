@@ -6,7 +6,7 @@ description: Field builders for .lia plugin input and output schemas, in Node, P
 # Declaring plugin fields
 
 `field` contains the builders for declaring plugin inputs and outputs. The
-builder set is the same across the five runtimes; only the call syntax differs.
+field types are shared across all five runtimes; builder syntax follows the language.
 
 The declared schema is used in three places:
 
@@ -26,7 +26,11 @@ import { field, output } from "@liatir/api";
 from liatir import field
 ```
 
-```rust [WASM]
+```r [R]
+source("liatir.R")
+```
+
+```rust [Native / WASM Rust]
 use liatir::field;
 ```
 
@@ -35,8 +39,9 @@ use liatir::field;
 > <small>
 >
 > In Node, `field.*` is the normal builder set and `output.file(...)` types
-> returned file values correctly. In Python and WASM the `liatir` module is
-> scaffolded into your project by `liatir init` (no separate install).
+> returned file values correctly. Python, R and Rust use
+> [CLI-managed SDK files](/plugins/api-packages) supplied by `liatir init`
+> and refreshed by `liatir build` (no separate SDK install).
 >
 > </small>
 
@@ -44,12 +49,15 @@ use liatir::field;
 
 Inputs support:
 
-| Builder | TypeScript value | Notes |
+| Builder | JSON value | Notes |
 | --- | --- | --- |
 | `field.string(...)` | `string` | Text input. |
 | `field.number(...)` | `number` | Numeric input. |
 | `field.boolean(...)` | `boolean` | Toggle input. |
 | `field.file(...)` | `string` | Local file path selected in Liatir. |
+
+Builder names in the tables use Node/Python spelling; R uses `field$string`,
+`field$number`, etc., and Rust uses `field::string()`, `field::number()`, etc.
 
 ::: code-group
 
@@ -75,7 +83,16 @@ inputs={
 }
 ```
 
-```rust [WASM]
+```r [R]
+inputs = list(
+  fastq = field$file(
+    label = "FASTQ file", description = "Input reads.", required = TRUE,
+    accept = c("fastq", "fq", "fastq.gz", "fq.gz")
+  )
+)
+```
+
+```rust [Native / WASM Rust]
 .input("fastq", field::file()
     .label("FASTQ file")
     .description("Input reads.")
@@ -89,14 +106,14 @@ inputs={
 
 Outputs support:
 
-| Builder | TypeScript value | Notes |
+| Builder | JSON value | Notes |
 | --- | --- | --- |
 | `field.string(...)` | `string` | Text output. |
 | `field.number(...)` | `number` | Numeric output. |
 | `field.boolean(...)` | `boolean` | Boolean output. |
-| `output.file(...)` | file value | Existing path or content to save. |
+| `output.file(...)` (Node), `field.file(...)` (Python), `field$file(...)` (R), `field::file()` (Rust) | file value | Existing path or content to save. |
 | `field.json(...)` | JSON value | Structured JSON output. |
-| `field.stats(...)` | `ToolOutput` | Structured Liatir result output. |
+| `field.stats(...)` | object | Structured Liatir result output. |
 
 ```ts
 outputs: {
@@ -110,14 +127,16 @@ outputs: {
 
 ## Shared options
 
-Every builder takes the same options in all five runtimes. In Node they are
+The common options below have equivalents in every supplied SDK. In Node they are
 passed in an options object (`field.string({ label, required })`); in Python as
-keyword arguments (`field.string(label=..., required=True)`); in WASM as chained
+keyword arguments (`field.string(label=..., required=True)`); in Rust as chained
 methods (`field::string().label(...).required(true)`). Native Rust uses the same
 methods; R uses named arguments (`field$string(label="Text", required=TRUE)`).
-See [R and Native Plugins](./r-and-native) for complete examples.
+See [complete entry points](./define-plugin) for examples. Advanced field metadata
+is part of the shared schema, but convenience methods differ by SDK; for example,
+Rust exposes `.artifact(json!(...))` but has no `.options()` builder method.
 
-| Option | WASM method | Description |
+| Option | Rust method (Native / WASM) | Description |
 | --- | --- | --- |
 | `label` | `.label(...)` | Human-readable field label. |
 | `description` | `.description(...)` | Short explanation shown in the UI. |
@@ -164,9 +183,20 @@ return {"report": {"content": "sample,score\nA,0.92\n", "fileName": "report.csv"
 return {"image": {"content": png_base64, "fileName": "plot.png", "base64": True}}
 ```
 
-```rust [WASM]
-// existing path
-Ok(json!({ "report": "/absolute/path/to/report.csv" }))
+```r [R]
+# existing path outside the temporary Job directory
+list(report = list(path = report_path))
+
+# content Liatir saves under Results
+list(report = list(content = "sample,score\nA,0.92\n", fileName = "report.csv"))
+
+# binary content (png_base64 is a base64 string)
+list(image = list(content = png_base64, fileName = "plot.png", base64 = TRUE))
+```
+
+```rust [Native / WASM Rust]
+// existing accessible path; sandbox paths only for WASM
+Ok(json!({ "report": { "path": report_path } }))
 
 // content Liatir saves under Results
 Ok(json!({ "report": { "content": "sample,score\nA,0.92\n", "fileName": "report.csv" } }))
@@ -177,3 +207,12 @@ Ok(json!({ "image": { "content": png_base64, "fileName": "plot.png", "base64": t
 
 :::
 
+In R, use named lists for JSON objects and scalar values for text, numbers and
+booleans. For JSON output arrays with one element, use a list such as `list(1)`
+to preserve the array shape. `json` and `stats` are output types, not input types.
+
+R and Native working directories are temporary and are deleted when their Job
+terminates. Return inline content, as above, or an absolute path in persistent
+bridge-managed storage. A path inside that temporary directory will no longer
+exist when Results are saved. In WASM, use paths accessible through the sandbox's
+mounts; arbitrary host paths are unavailable.

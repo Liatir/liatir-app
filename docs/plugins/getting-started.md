@@ -1,138 +1,123 @@
 # Getting started
 
-In order to start developing a **Liatir plugin**, you have to install the **Liatir CLI** from `@liatir/cli`, the Liatir command-line package for scaffolding, developing, and building `.lia` plugins.
+The Liatir CLI is the command-line tool that creates Plugin projects and builds
+their `.lia` files. Install Node.js and npm to use it, even when the Plugin itself
+uses another language.
 
-Liatir commands exposed by the CLI:
-- `liatir init`: this will generate your project folder and scaffolding.
-- `liatir update`: you can use this to update `@liatir/cli`.
-- `liatir dev`: opens a temporary Liatir Dev Runner session for testing the plugin inside Liatir.
-- `liatir build`: with this command the cli will build your plugin and generate the relative `.lia` file.
-- `liatir -v`: use this command to check the `@liatir/cli` current installed version. This will also return the `@liatir/api` version if present inside the current enviornment (eg. a plugin project folder).
-
-## Quick initialization
-
-1. First run:
-
-```bash
+```sh
 npm install -g @liatir/cli
-
-liatir init my-liatir-plugin --yes   # recommended defaults
-
+liatir init my-liatir-plugin --yes
 cd my-liatir-plugin
-
-npm install
 ```
 
-2. Once done, start developing your Liatir plugin.
+This creates a Node TypeScript Plugin and installs its npm dependencies. Node is
+the recommended starting point unless your analysis needs another language.
+R and Native require an app and CLI build containing their runtime support;
+an older installation may not offer these choices.
 
+## Choose a runtime
 
-## Guided initialization (recommended)
+A runtime is the environment that executes your Plugin's code.
 
-```bash
-npm install -g @liatir/cli
+| Runtime | Use it for | Author prerequisites | App bridge |
+| --- | --- | --- | --- |
+| Node | TypeScript/JavaScript and npm libraries. | Node.js and npm. | Yes |
+| Python | Scientific Python and Python packages. | A compatible Python for local contract extraction; the app prepares a managed environment for packaged runs. | Yes |
+| R | R statistics, CRAN and Bioconductor packages. | R >= 4.1; `Rscript` on PATH or `LIATIR_RSCRIPT`. | Yes |
+| Native | Compiled programs, with a Rust starter. | Rust/Cargo for the starter, or your language's compiler. | Yes |
+| WASM | Portable computation in an isolated environment. | Rust/Cargo and the `wasm32-wasip1` target. | No |
 
-liatir init
-```
+The bridge lets a Plugin use Liatir Jobs, storage, logs and progress. Node,
+Python, R and Native also have ordinary operating-system access. WASM has no
+bridge or arbitrary host filesystem/network access.
 
-### The CLI will then walk you through the project setup:
-
-1. **Project folder** — the directory to create (e.g. `my-liatir-plugin`).
-
-2. **Runtime** — how the plugin runs:
-   - **Node** — JavaScript/TypeScript with the full Liatir desktop bridge.
-   - **Python** — managed Python environment for Python scripts and scientific packages.
-   - **WASM** — Rust compiled to WASM, for sandboxed local computation.
-
-3. **Node language** *(Node runtime only)*:
-   - **TypeScript** *(recommended)* — best type safety and contract validation while developing.
-   - **JavaScript** — plain ESM plugin, no TypeScript project.
-
-<!-- 4. **Starter template**:
-   - **Minimal text plugin** *(recommended)* — the smallest example for learning the plugin contract.
-   - **File processor** — reads metadata from a user-selected local file.
-   - **Bio CLI wrapper** — wraps a local bioinformatics command. -->
-
-4. **Metadata** — display name, description, and category. All optional; you can change them later in the manifest.
-
-5. **Install dependencies** — answer **Yes** to run `npm install` right away.
-
-6. Open the project folder with `cd my-liatir-plugin`.
-
-7. Start developing your Liatir plugin.
-
-:::warning Keep in mind:
-WASM plugins runtime is intentionally **fully sandboxed and isolated** for safety and compliance reasons; therefore, **they cannot communicate with external resources**.
-:::
+Run `liatir init` without arguments for guided setup. It asks for the project
+folder, runtime and metadata. Node additionally offers TypeScript or JavaScript
+and npm installation; WASM offers to install its Rust compilation target.
+Node metadata lives in `package.json`; the other runtimes use
+`.lia-manifest.json`.
 
 ## Initialization flags
 
-```bash
-liatir init                            # full guided initialization
-liatir init plugin-name --yes          # uses recommended defaults
-liatir init plugin-name --node --ts    # Node TypeScript plugin
-liatir init plugin-name --node --js    # Node JavaScript plugin
-liatir init plugin-name --python       # Python plugin
-liatir init plugin-name --wasm         # Rust/WASM plugin
+```sh
+liatir init                            # guided initialization
+liatir init plugin-name --yes          # Node TypeScript defaults
+liatir init plugin-name --node --ts
+liatir init plugin-name --node --js
+liatir init plugin-name --python
+liatir init plugin-name --r
+liatir init plugin-name --native        # Rust executable
+liatir init plugin-name --wasm          # Rust/WASM
+liatir init plugin-name --runtime r     # equivalent runtime selector
 liatir init plugin-name --template <TEMPLATE_NAME>
 liatir init plugin-name --category "Quality Control" --tags "FASTQ,QC"
-liatir init plugin-name --no-install
+liatir init plugin-name --no-install    # skip Node npm installation
 liatir init plugin-name --no-wasm-target
 ```
 
-## The plugin contract
+## Declare inputs and outputs
 
-Whatever runtime you pick, you declare the plugin's inputs and outputs **once,
-in code**, with the same `define_plugin` API. `liatir build` reads that contract
-and generates the bundle manifest from it — there is no schema to write by hand.
+Declare the fields once in code. They define the form users see and the ports
+that connect the Plugin to a pipeline. `liatir build` reads these declarations
+and generates the bundle's manifest; do not maintain a separate schema.
 
-- **Node** — `definePlugin({ inputs, outputs })` from `@liatir/api`.
-- **Python** — `define_plugin(...)` + `@plugin.main` from the `liatir` module
-  scaffolded into `src/`.
-- **WASM** — `define_plugin()` from the `src/liatir.rs` module scaffolded into
-  your project.
+| Runtime | Entry point | Contract declaration |
+| --- | --- | --- |
+| Node | `src/index.ts` or `src/index.js` | `definePlugin({ inputs, outputs }).main(handler)` |
+| Python | `src/main.py` | `define_plugin(...)` and `@plugin.main` |
+| R | `src/main.R` | `define_plugin(...)` and `plugin$main(handler)` |
+| Native / WASM Rust | `src/main.rs` | `define_plugin().input(...).output(...).main(handler)` |
 
-For Python and WASM the `liatir` module is not a package you install: `liatir
-init` writes it into your project and `liatir build` keeps it in sync with your
-CLI version. See the dedicated guide [here](/plugins/define-plugin) for the
-side-by-side examples and the one on how to declare fields [here](/plugins/field).
+The CLI supplies and refreshes the non-Node SDK files. See
+[API packages](/plugins/api-packages), [complete entry points](/plugins/define-plugin)
+and [field declarations](/plugins/field).
 
 ## Test, build and import
 
-1. While developing, use `liatir dev` to test your plugin as you work. It opens a temporary Dev Runner window in Liatir, rebuilds on save, and lets you run the current bundle without importing it into your real plugin library.
+1. Open Liatir and run `liatir dev` from your project. Its temporary Dev Runner
+   rebuilds on save and tests the current bundle without adding it to your
+   permanent Plugin library. All five runtimes use this workflow.
+2. Run `liatir build` to produce the distributable `.lia` file.
+3. Import it on the **Plugins** page in Liatir.
+4. Complete any runtime preparation shown on the Plugin's page, then run it
+   alone or add it to a pipeline.
 
-2. When you're happy with it, run `liatir build` to package your plugin into a `.lia` bundle.
+For **R**, install a compatible R interpreter on the user's machine. The app
+also discovers standard macOS and Windows installations. The first build writes
+`renv.lock`, which records package versions: commit it with your project.
+**Prepare R packages** restores those versions for the imported Plugin. This
+step may need internet access and build tools; prepared runs work offline.
 
-3. Open the **Plugins** page in Liatir and import the generated `.lia` file.
-
-4. Now you are ready to run it by itself or integrate it into a pipeline.
+For **Native**, include an executable for the user's exact operating system and
+processor. After import, the user must choose **Allow executable access**.
+This permission applies to that exact bundle; changing it requires permission
+again. The Rust starter builds only the author's host target by default.
+See [R dependencies and Native distribution](/plugins/r-and-native) before sharing.
 
 ## Pipeline integration
 
-The fields declared in `inputs` and `outputs` become the plugin's pipeline
-contract. Liatir uses them to render forms, validate required inputs, expose
-outputs to later steps, and store file outputs in Results.
+Every runtime uses the same file, text, number and boolean inputs and standard
+outputs. File outputs appear in Results and can feed later steps, including
+steps using a different runtime. Runs appear in Jobs with logs, cancellation and
+their pipeline association.
 
-For the exact bundle format, see [.lia Bundle Format](/plugins/format). For the
-API packages, see [Plugin authoring API](/plugins/define-plugin).
+R and Native run in temporary directories removed when their Job ends. Return
+file content inline, or a path in bridge-managed storage outside that directory;
+see [file output values](/plugins/field#file-output-values).
 
-## Liatir API package
+## CLI commands
 
-- **Node plugins** use `@liatir/api` Node module as typed API entry point, based on a shared `define_plugin` contract;
-
-- **Python and WASM plugins** use the same `define_plugin` contract, but not as a
-package: the CLI scaffolds a single managed module (`src/liatir.py` /
-`src/liatir.rs`) into the project and `liatir build` keeps it in sync — there
-is nothing to install or update separately. Check out the [plugin context guide](/plugins/plugin-context).
+| Command | Purpose |
+| --- | --- |
+| `liatir init` | Create a project for any of the five runtimes. |
+| `liatir dev` | Test in the running app's temporary Dev Runner. |
+| `liatir build` | Extract the code contract and package a `.lia` file. |
+| `liatir update` | Update CLI/API dependencies in a Node project. |
+| `liatir -v` / `liatir version` | Show the CLI version and installed project API version, if present. |
 
 ## Related
 
 - [Plugin context](/plugins/plugin-context)
-- [Plugin authoring](/plugins/define-plugin)
-- [Declaring fields](/plugins/field)
-- [Desktop API](/plugins/api/desktop/app)
-- [Jobs API](/plugins/api/jobs/spawn)
-- [Dependencies API](/plugins/api/deps/check)
-## R and Native runtimes
-
-See [R and Native Plugins](./r-and-native) for scaffolding, dependency locks,
-executable targets, bridge access and the Native permission model.
+- [API bridge](/plugins/api-bridge)
+- [.lia bundle format](/plugins/format)
+- [R and Native guide](/plugins/r-and-native)
