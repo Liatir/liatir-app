@@ -39,12 +39,31 @@ invoke(cmd, payload = list())
 ```
 
 </Tab>
-<Tab title="Native (Rust)">
+<Tab title="Native/WASM">
+
+::: info
+Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+This app bridge is Native-only; WASM stays isolated.
+:::
+
+<Tabs>
+<Tab title="Rust">
 
 ```rust
 invoke(cmd: &str, payload: Value) -> Result<Value>
 ```
 
+</Tab>
+<Tab title="C++">
+
+[C++ example setup](/plugins/api-bridge#cpp-examples).
+
+```cpp
+auto result = liatir::invoke("lia_deps_check", {{"binary", "samtools"}});
+```
+
+</Tab>
+</Tabs>
 </Tab>
 </Tabs>
 
@@ -81,13 +100,33 @@ print(result$available)
 ```
 
 </Tab>
-<Tab title="Native (Rust)">
+<Tab title="Native/WASM">
+
+::: info
+Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+This app bridge is Native-only; WASM stays isolated.
+:::
+
+<Tabs>
+<Tab title="Rust">
 
 ```rust
 let result = ctx.liatir.invoke("lia_deps_check", json!({ "binary": "samtools" }))?;
 println!("Available: {}", result["available"]);
 ```
 
+</Tab>
+<Tab title="C++">
+
+[C++ example setup](/plugins/api-bridge#cpp-examples).
+
+```cpp
+auto result = liatir::invoke("lia_deps_check", {{"binary", "samtools"}});
+std::cout << "Available: " << result.at("available") << "\n";
+```
+
+</Tab>
+</Tabs>
 </Tab>
 </Tabs>
 

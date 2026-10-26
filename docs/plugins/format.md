@@ -319,7 +319,7 @@ libraries that are removed when the session ends.
 ## Native contract and manifest
 
 Native Plugins contain compiled executables, not shared libraries. The Rust
-starter uses the [same field declarations](./define-plugin#native-rust) as WASM
+starter uses the [same field declarations](./define-plugin#native-wasm) as WASM
 and adds full bridge access. Its source `.lia-manifest.json` can be as small as:
 
 ```json

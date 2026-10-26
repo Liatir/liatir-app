@@ -32,12 +32,32 @@ spawn(cmd, args = list(), cwd = NULL, env = NULL, label = NULL, kind = NULL, met
 ```
 
 </Tab>
-<Tab title="Native (Rust)">
+<Tab title="Native/WASM">
+
+::: info
+Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+This app bridge is Native-only; WASM stays isolated.
+:::
+
+<Tabs>
+<Tab title="Rust">
 
 ```rust
 spawn(cmd: &str, args: &[&str], options: Value) -> Result<Value>
 ```
 
+</Tab>
+<Tab title="C++">
+
+[C++ example setup](/plugins/api-bridge#cpp-examples).
+
+```cpp
+auto started = liatir::invoke("lia_jobs_spawn",
+    {{"cmd", "samtools"}, {"args", {"--version"}}, {"label", "Check Samtools version"}});
+```
+
+</Tab>
+</Tabs>
 </Tab>
 </Tabs>
 
@@ -72,10 +92,33 @@ Pass `cwd`, `env`, `label`, `kind` and `metadata` as named arguments.
 Use a named list for environment variables and metadata.
 
 </Tab>
-<Tab title="Native (Rust)">
+<Tab title="Native/WASM">
+
+::: info
+Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+This app bridge is Native-only; WASM stays isolated.
+:::
+
+<Tabs>
+<Tab title="Rust">
 
 Pass the same option names in a JSON object, or `json!({})` for defaults.
 
+</Tab>
+<Tab title="C++">
+
+[C++ example setup](/plugins/api-bridge#cpp-examples).
+
+Pass `cwd`, `env`, `label`, `kind` and `metadata` in the JSON payload:
+
+```cpp
+json options = {{"cmd", "samtools"}, {"args", {"--version"}},
+    {"label", "Check Samtools version"}, {"kind", "diagnostic"}};
+auto started = liatir::invoke("lia_jobs_spawn", options);
+```
+
+</Tab>
+</Tabs>
 </Tab>
 </Tabs>
 
@@ -116,7 +159,15 @@ job_id <- started$jobId
 ```
 
 </Tab>
-<Tab title="Native (Rust)">
+<Tab title="Native/WASM">
+
+::: info
+Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+This app bridge is Native-only; WASM stays isolated.
+:::
+
+<Tabs>
+<Tab title="Rust">
 
 ```rust
 let started = ctx.liatir.jobs().spawn("samtools", &["--version"],
@@ -124,6 +175,21 @@ let started = ctx.liatir.jobs().spawn("samtools", &["--version"],
 let job_id = started["jobId"].as_str().ok_or("Missing jobId")?;
 ```
 
+</Tab>
+<Tab title="C++">
+
+[C++ example setup](/plugins/api-bridge#cpp-examples).
+
+```cpp
+auto started = liatir::invoke("lia_jobs_spawn",
+    {{"cmd", "samtools"}, {"args", {"--version"}},
+     {"label", "Check Samtools version"}, {"kind", "diagnostic"}});
+auto id = started.at("jobId").get<std::string>();
+std::cout << "Started Job: " << id << "\n";
+```
+
+</Tab>
+</Tabs>
 </Tab>
 </Tabs>
 
@@ -144,9 +210,10 @@ come from the JSON response of the Liatir bridge.
 lines to callbacks. A terminal state can be failure or cancellation: inspect
 `status.type` and `status.exitCode` before returning a successful Plugin result.
 
-::: code-group
+<Tabs>
+<Tab title="R">
 
-```r [R]
+```r
 job <- ctx$liatir$jobs$run("samtools", c("--version"),
   on_stdout = function(line) cat(line, "\n"),
   on_stderr = function(line) message(line))
@@ -154,7 +221,18 @@ if (!identical(job$status$type, "done")) stop("Samtools did not finish successfu
 output <- ctx$liatir$jobs$get_output(job$id)
 ```
 
-```rust [Native Rust]
+</Tab>
+<Tab title="Native/WASM">
+
+::: info
+Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+This app bridge is Native-only; WASM stays isolated.
+:::
+
+<Tabs>
+<Tab title="Rust">
+
+```rust
 let job = ctx.liatir.jobs().run("samtools", &["--version"], json!({}),
     |line| println!("{line}"), |line| eprintln!("{line}"))?;
 if job["status"]["type"] != "done" {
@@ -163,6 +241,25 @@ if job["status"]["type"] != "done" {
 let id = job["id"].as_str().ok_or("Missing job id")?;
 let output = ctx.liatir.jobs().get_output(id, None)?;
 ```
+
+</Tab>
+<Tab title="C++">
+
+[C++ example setup](/plugins/api-bridge#cpp-examples).
+
+```cpp
+auto job = liatir::run("samtools", {"--version"}, json::object(),
+    [](const std::string& line) { std::cout << line << "\n"; },
+    [](const std::string& line) { std::cerr << line << "\n"; });
+if (job.at("status").at("type") != "done")
+    throw std::runtime_error("Samtools did not finish successfully");
+auto output = liatir::invoke("lia_jobs_get_output", {{"jobId", job.at("id")}});
+```
+
+</Tab>
+</Tabs>
+</Tab>
+</Tabs>
 
 R `run(cmd, args = list(), cwd = NULL, on_stdout = NULL, on_stderr = NULL)`
 returns a terminal Job as a named list. Native Rust

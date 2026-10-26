@@ -109,7 +109,15 @@ Bridge namespaces are `jobs`, `deps`, `desktop$fs`, `desktop$app`, `log`,
 `ctx$liatir$deps$check_many(c("samtools", "bcftools"))`.
 Bridge failures raise R errors; do not catch them and return a successful result.
 
-## Native and WASM Rust — `ctx`
+## Native/WASM context
+
+::: info
+Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+WASM targets must support WASI Preview 1 and remain isolated from the app bridge.
+:::
+
+<Tabs>
+<Tab title="Rust">
 
 The Rust handler receives a `&Context` with typed getters over the validated
 input, so a wrong-typed or missing input surfaces as an error you can `?`:
@@ -161,6 +169,33 @@ This storage getter exists only in WASM builds.
 `ctx.work_dir()` is `.` in both Rust runtimes. For Native it is the temporary
 Job directory, removed at termination. Return inline file content or use
 bridge-managed storage for paths that must survive the run.
+
+</Tab>
+<Tab title="C++">
+
+C++ clients read and validate JSON input using the
+[entry-point protocol](./define-plugin#native-wasm). There is no mandatory
+context class or Rust dependency. Native can additionally use the
+[C++ bridge example client](./api-bridge#cpp-examples).
+
+```cpp
+const auto text = input.at("text").get<std::string>();
+// input is the JSON object validated by your Plugin entry point.
+json output = {{"text", text}};
+
+#ifndef __wasi__
+// Native only, using the example bridge client.
+liatir::invoke("lia_plugin_log", {{"jobId", liatir::job_id()},
+    {"level", "info"}, {"message", "Processing text"}});
+#endif
+```
+
+WASM can access only sandbox-mounted files; Native uses its ordinary process
+working directory. Return inline file content or persistent storage paths as
+specified by the [shared file output contract](./field#file-output-values).
+
+</Tab>
+</Tabs>
 
 ## Runtime validation
 

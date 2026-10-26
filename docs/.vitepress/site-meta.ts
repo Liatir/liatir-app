@@ -162,12 +162,18 @@ function readPage(srcDir: string, relativePath: string): DocPage {
 export function toPlainMarkdown(source: string, relativePath: string): string {
   const { body } = parseFrontmatter(source)
   const sourceUrl = `${HOSTNAME}/${relativePath}`
+  let tabDepth = 0
   const flatten = (text: string) => text
     .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, '')
     .replace(/^[ \t]*<HomePage\b[^>]*\/?>[ \t]*$/gim, '')
-    .replace(/^[ \t]*<\/?Tabs\b[^>]*>[ \t]*$/gim, '')
-    .replace(/^[ \t]*<Tab\s+title="([^"]*)"[^>]*>[ \t]*$/gim, '### $1')
-    .replace(/^[ \t]*<\/Tab>[ \t]*$/gim, '')
+    .replace(/^[ \t]*<(\/?)(Tabs|Tab)\b([^>]*)>[ \t]*$/gim, (_match, closing, tag, attributes) => {
+      if (tag.toLowerCase() === 'tabs') {
+        tabDepth = Math.max(0, tabDepth + (closing ? -1 : 1))
+        return ''
+      }
+      const title = /\btitle="([^"]*)"/.exec(attributes)?.[1]
+      return closing || title === undefined ? '' : `${'#'.repeat(2 + Math.max(1, tabDepth))} ${title}`
+    })
     .replace(/<PatreonButton\s*\/>/g, '[Support Liatir on Patreon](https://www.patreon.com/16427094/join)')
     .replace(/<iframe\b[^>]*\bsrc=['"]([^'"]+)['"][^>]*>\s*<\/iframe>/gi, '[Support Liatir]($1)')
     .replace(/\]\(([^\s)]+)(\s+"[^"]*")?\)/g, (match, target, title = '') => {

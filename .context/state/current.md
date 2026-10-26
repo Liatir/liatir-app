@@ -26,6 +26,12 @@ introductory/support pages. The owner then clarified that all runtimes must shar
 the same documentation structure: the separate combined runtime page is removed,
 with its dependency, executable and transport details moved into the existing
 setup, format and bridge guides. The shared contract remains unchanged.
+Compiled-language API examples now use `Native/WASM` with nested Rust/C++ tabs,
+a short compatibility notice and an explicit Native-only bridge distinction.
+C++ examples use the existing authenticated protocol, with a downloadable example
+client; the app and CLI gain no new runtime dependency. Browser interaction,
+C++ compilation/execution, both site builds and all seven verify suites pass
+(709 tests); nested Markdown headings have regression coverage.
 No release, publication or remote push is requested.
 
 ## Where Liatir stands

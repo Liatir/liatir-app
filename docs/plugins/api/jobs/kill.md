@@ -31,12 +31,31 @@ kill(job_id)
 ```
 
 </Tab>
-<Tab title="Native (Rust)">
+<Tab title="Native/WASM">
+
+::: info
+Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+This app bridge is Native-only; WASM stays isolated.
+:::
+
+<Tabs>
+<Tab title="Rust">
 
 ```rust
 kill(job_id: &str) -> Result<Value>
 ```
 
+</Tab>
+<Tab title="C++">
+
+[C++ example setup](/plugins/api-bridge#cpp-examples).
+
+```cpp
+bool killed = liatir::invoke("lia_jobs_kill", {{"jobId", job_id}}).get<bool>();
+```
+
+</Tab>
+</Tabs>
 </Tab>
 </Tabs>
 
@@ -91,7 +110,15 @@ if (isTRUE(killed)) message("Job terminated successfully")
 ```
 
 </Tab>
-<Tab title="Native (Rust)">
+<Tab title="Native/WASM">
+
+::: info
+Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+This app bridge is Native-only; WASM stays isolated.
+:::
+
+<Tabs>
+<Tab title="Rust">
 
 ```rust
 let killed = ctx.liatir.jobs().kill(job_id)?;
@@ -100,6 +127,18 @@ if killed.as_bool() == Some(true) {
 }
 ```
 
+</Tab>
+<Tab title="C++">
+
+[C++ example setup](/plugins/api-bridge#cpp-examples).
+
+```cpp
+bool killed = liatir::invoke("lia_jobs_kill", {{"jobId", job_id}}).get<bool>();
+if (killed) std::cout << "Job terminated successfully\n";
+```
+
+</Tab>
+</Tabs>
 </Tab>
 </Tabs>
 

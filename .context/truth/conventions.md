@@ -82,7 +82,12 @@ Node, Python, R, Native and WASM belong in those same pages, with language tabs
 or equivalent runtime sections. Do not give new runtimes their own special
 combined guide or navigation category. This is the owner's explicit clarification
 of 2026-10-26. Interpreter/package and executable-target differences belong in
-the appropriate sections of those common guides.
+the appropriate sections of those common guides. Compiled-language API tabs
+are labeled `Native/WASM`, with nested `Rust` and `C++` examples. A short notice
+above the language tabs states that any compatible language can be used. Bridge
+pages must also explicitly state that bridge calls are Native-only: WASM remains
+isolated. Keep real compilation prerequisites and the CLI's Rust/Cargo build
+boundary clear; do not imply a CLI-managed C++ SDK exists.
 
 Scientific Showcases are the public scientific-study exception to the usage-guide
 surface: `docs/showcases/` presents measured methods, results and limitations;

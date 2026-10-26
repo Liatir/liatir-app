@@ -42,25 +42,55 @@ Native returns JSON values rather than typed response structs.
 | Paths | Locate app data and cache roots using the calls below. |
 | [Invoke](./api/invoke) | Call commands exposed by the Plugin bridge. |
 
-::: code-group
+<Tabs>
+<Tab title="Node">
 
-```ts [Node]
+```ts
 const paths = await Liatir.paths();
 ```
 
-```python [Python]
+</Tab>
+<Tab title="Python">
+
+```python
 paths = ctx.liatir.paths()
 ```
 
-```r [R]
+</Tab>
+<Tab title="R">
+
+```r
 paths <- ctx$liatir$paths()
 ```
 
-```rust [Native Rust]
+</Tab>
+<Tab title="Native/WASM">
+
+::: info
+Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+This app bridge is Native-only; WASM stays isolated.
+:::
+
+<Tabs>
+<Tab title="Rust">
+
+```rust
 let paths = ctx.liatir.paths()?;
 ```
 
-:::
+</Tab>
+<Tab title="C++">
+
+[C++ example setup](#cpp-examples).
+
+```cpp
+auto paths = liatir::paths();
+```
+
+</Tab>
+</Tabs>
+</Tab>
+</Tabs>
 
 ## Run ownership and development
 
@@ -74,6 +104,28 @@ operating-system APIs. Node, Python, R and Native can also use those APIs.
 Native executable trust and desktop runtime preparation are desktop-only actions:
 a Plugin cannot grant itself permission or prepare another runtime through
 `invoke`.
+
+## C++ examples
+
+The C++ tabs use a small <a href="/examples/liatir-bridge.hpp" download="liatir-bridge.hpp">example client</a> for the
+same authenticated Native bridge. Save it as `liatir-bridge.hpp` beside your
+source. It uses [libcurl](https://curl.se/libcurl/c/libcurl-tutorial.html) for
+HTTP and [nlohmann/json](https://github.com/nlohmann/json) for JSON. Install their
+development headers/libraries with your C++ toolchain, include the header and
+use C++17 or newer:
+
+```cpp
+#include "liatir-bridge.hpp"
+#include <iostream>
+using liatir::json;
+```
+
+For example, compile a Native entry point with `c++ -std=c++17 main.cpp -lcurl -o plugin`,
+adding your dependency include/library paths where needed. The sample client
+handles authentication, development identity, errors, scoped paths and waiting
+for Jobs; namespace examples call the existing bridge command names directly.
+It is a documentation example, not a CLI-managed C++ SDK. Do not include this
+HTTP client in WASM: sandboxed Plugins have no app bridge.
 
 ## Authenticated bridge protocol
 

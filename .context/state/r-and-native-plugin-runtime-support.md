@@ -401,3 +401,45 @@ Markdown and AI indexes; no inbound links remain. Dependency, executable and
 bridge protocol details remain in the common guides. Quenta now contains 374
 documentation chunks. Syngraphe and whitespace checks pass. The correction is
 committed on local `main`; its identity is supplied in the delivery message.
+
+## Compiled-language API examples (2026-10-26)
+
+The owner requested `Native/WASM` runtime tabs with nested Rust/C++ examples and
+a short language-compatibility notice above them. Runtime choice must not imply
+Rust is mandatory. Bridge API notices still distinguish Native access from the
+isolated WASM runtime.
+
+- [x] Replace compiled-language tabs across bridge, field, context and entry-point
+  guides, preserving existing Node/Python/R examples and the shared contract.
+- [x] Supply actual C++ examples through the existing protocol. The downloadable
+  documentation client uses libcurl and nlohmann/json; neither becomes an app
+  dependency or a CLI-managed SDK. C++ compilation stays author-managed.
+- [x] Compile all 34 C++ fragments; execute all 31 bridge examples against an
+  authenticated local fixture (202 requests), including development scoping,
+  terminal failures and rejected malformed credentials. Run the complete C++
+  entry point with Unicode, defaults, invalid inputs and contract introspection;
+  package its actual executable successfully with the existing CLI.
+- [x] Preserve nested language headings in generated Markdown. The regression was
+  observed failing with the old flattening; all 11 Markdown tests pass after the
+  depth-aware fix. Fix a previously unclosed code-group in the Jobs run example.
+- [x] Verify nested selection and small-screen rendering in the built site,
+  regenerate Quenta, run both docs builds, full verify and Syngraphe.
+
+The first C++ compile check found a fixture parameter shadowing a snippet-local
+variable; compile fragments in their own nested block. The first site build
+correctly rejected a Markdown link to an unrecognized header extension; use a
+real HTML download link to the existing static header and verify HTTP delivery.
+Both bounded corrections passed their cheap rechecks; do not bypass link checks.
+No runtime, shared schema, lockfile, release or remote publication changes.
+
+Final evidence: a local browser verified 34 nested runtime selectors across 16
+API/authoring pages, Rust/C++ order, notice placement, independent parent/child
+selection, the real C++ header download and a narrow viewport. All 12 bridge
+reference Markdown pages preserve the nested language headings. The complete
+verify profile passed all seven suites in report `2026-10-26T18-50-31-382Z`:
+91 unit files / 709 tests, including the added Markdown regression and real R
+coverage. Both VitePress sites build, and Quenta's 374 chunks were regenerated.
+The C++ examples were compiled/executed as macOS Native processes; no C++ WASI
+cross-toolchain or other-platform execution is claimed by these checks. Existing
+Rust/WASM support and the shared I/O contract are unchanged. The correction is
+committed on local main with no publication or remote push.

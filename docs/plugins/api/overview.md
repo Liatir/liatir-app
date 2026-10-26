@@ -15,8 +15,8 @@ This is the API you need to use in order to develop a `.lia` plugin that can run
   `liatir` module scaffolded next to the entry point.
 - **R** uses the CLI-managed `liatir.R` module.
 - **Native** uses a compiled executable and the shared contract protocol.
-- **WASM** declares it with `define_plugin()` from the CLI-managed
-  `src/liatir.rs` module.
+- **WASM** runs WASI Preview 1 modules built with any compatible language;
+  the CLI supplies a Rust starter.
 
 ## Authoring
 
@@ -30,11 +30,12 @@ This is the **same API shape in all five runtimes**:
 - **Node** — `definePlugin({ inputs, outputs }).main(handler)` from `@liatir/api`.
 - **Python** — `define_plugin(inputs=..., outputs=...)` + `@plugin.main` from the
   CLI-managed `liatir` module.
-- **WASM (Rust)** — `define_plugin().input(...).output(...).main(handler)` from the
-  CLI-managed `liatir` module.
 - **R** — `define_plugin(inputs=..., outputs=...)` + `plugin$main(handler)`.
-- **Native (Rust)** — the same contract builder as WASM, with full bridge access.
-  Other compiled languages implement the [executable protocol](/plugins/format#executable-protocol-version-1).
+- **Native/WASM** — any compatible compiled language. Rust uses
+  `define_plugin().input(...).output(...).main(handler)` from the managed SDK;
+  C++ can implement the same code-declared contract directly. See the
+  [Rust and C++ examples](/plugins/define-plugin#native-wasm). Only Native has
+  app bridge access.
 
 - [Plugin context](/plugins/plugin-context) 
 - [Defining plugin](/plugins/define-plugin)

@@ -32,12 +32,31 @@ The `app` API area of the Liatir API provides methods to retrieve system-level i
 | `ctx$liatir$desktop$app$info()` | Named list of app information. |
 
 </Tab>
-<Tab title="Native (Rust)">
+<Tab title="Native/WASM">
+
+::: info
+Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+This app bridge is Native-only; WASM stays isolated.
+:::
+
+<Tabs>
+<Tab title="Rust">
 
 | Method | Returns |
 | --- | --- |
 | `ctx.liatir.desktop().app().info()` | `Result<Value>` with app information. |
 
+</Tab>
+<Tab title="C++">
+
+[C++ example setup](/plugins/api-bridge#cpp-examples).
+
+```cpp
+auto info = liatir::invoke("lia_app_info");
+```
+
+</Tab>
+</Tabs>
 </Tab>
 </Tabs>
 
@@ -125,13 +144,33 @@ cat("Platform:", info$os, "\n")
 ```
 
 </Tab>
-<Tab title="Native (Rust)">
+<Tab title="Native/WASM">
+
+::: info
+Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+This app bridge is Native-only; WASM stays isolated.
+:::
+
+<Tabs>
+<Tab title="Rust">
 
 ```rust
 let info = ctx.liatir.desktop().app().info()?;
 println!("Platform: {}", info["os"]);
 ```
 
+</Tab>
+<Tab title="C++">
+
+[C++ example setup](/plugins/api-bridge#cpp-examples).
+
+```cpp
+auto info = liatir::invoke("lia_app_info");
+std::cout << "Platform: " << info.at("os") << "\n";
+```
+
+</Tab>
+</Tabs>
 </Tab>
 </Tabs>
 

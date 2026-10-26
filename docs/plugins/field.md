@@ -16,25 +16,54 @@ The declared schema is used in three places:
 
 ## Import
 
-::: code-group
+<Tabs>
+<Tab title="Node">
 
-```ts [Node]
+```ts
 import { field, output } from "@liatir/api";
 ```
 
-```python [Python]
+</Tab>
+<Tab title="Python">
+
+```python
 from liatir import field
 ```
 
-```r [R]
+</Tab>
+<Tab title="R">
+
+```r
 source("liatir.R")
 ```
 
-```rust [Native / WASM Rust]
+</Tab>
+<Tab title="Native/WASM">
+
+::: info
+Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+WASM targets must support WASI Preview 1 and remain isolated from the app bridge.
+:::
+
+<Tabs>
+<Tab title="Rust">
+
+```rust
 use liatir::field;
 ```
 
-:::
+</Tab>
+<Tab title="C++">
+
+```cpp
+#include <nlohmann/json.hpp>
+using json = nlohmann::json;
+```
+
+</Tab>
+</Tabs>
+</Tab>
+</Tabs>
 
 > <small>
 >
@@ -59,9 +88,10 @@ Inputs support:
 Builder names in the tables use Node/Python spelling; R uses `field$string`,
 `field$number`, etc., and Rust uses `field::string()`, `field::number()`, etc.
 
-::: code-group
+<Tabs>
+<Tab title="Node">
 
-```ts [Node]
+```ts
 inputs: {
   fastq: field.file({
     label: "FASTQ file",
@@ -72,7 +102,10 @@ inputs: {
 }
 ```
 
-```python [Python]
+</Tab>
+<Tab title="Python">
+
+```python
 inputs={
     "fastq": field.file(
         label="FASTQ file",
@@ -83,7 +116,10 @@ inputs={
 }
 ```
 
-```r [R]
+</Tab>
+<Tab title="R">
+
+```r
 inputs = list(
   fastq = field$file(
     label = "FASTQ file", description = "Input reads.", required = TRUE,
@@ -92,7 +128,18 @@ inputs = list(
 )
 ```
 
-```rust [Native / WASM Rust]
+</Tab>
+<Tab title="Native/WASM">
+
+::: info
+Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+WASM targets must support WASI Preview 1 and remain isolated from the app bridge.
+:::
+
+<Tabs>
+<Tab title="Rust">
+
+```rust
 .input("fastq", field::file()
     .label("FASTQ file")
     .description("Input reads.")
@@ -100,7 +147,21 @@ inputs = list(
     .accept(&["fastq", "fq", "fastq.gz", "fq.gz"]))
 ```
 
-:::
+</Tab>
+<Tab title="C++">
+
+```cpp
+json inputs = {{"fastq", {
+    {"type", "file"}, {"label", "FASTQ file"}, {"description", "Input reads."},
+    {"required", true}, {"accept", {"fastq", "fq", "fastq.gz", "fq.gz"}}
+}}};
+// Emit inputs in the version 1 contract; validate file input values as strings.
+```
+
+</Tab>
+</Tabs>
+</Tab>
+</Tabs>
 
 ## Output field types
 
@@ -135,6 +196,7 @@ methods; R uses named arguments (`field$string(label="Text", required=TRUE)`).
 See [complete entry points](./define-plugin) for examples. Advanced field metadata
 is part of the shared schema, but convenience methods differ by SDK; for example,
 Rust exposes `.artifact(json!(...))` but has no `.options()` builder method.
+C++ examples declare these same properties directly in JSON.
 
 | Option | Rust method (Native / WASM) | Description |
 | --- | --- | --- |
@@ -155,9 +217,10 @@ A `file` output can return an existing path, or content Liatir should persist
 under workspace Results. The shape is the same in every runtime — a path string,
 `{ path }`, or `{ content, fileName }` (with `base64: true` for binary content).
 
-::: code-group
+<Tabs>
+<Tab title="Node">
 
-```ts [Node]
+```ts
 // existing path
 return { report: "/absolute/path/to/report.csv" };
 
@@ -172,7 +235,10 @@ return {
 };
 ```
 
-```python [Python]
+</Tab>
+<Tab title="Python">
+
+```python
 # existing path
 return {"report": "/absolute/path/to/report.csv"}
 
@@ -183,7 +249,10 @@ return {"report": {"content": "sample,score\nA,0.92\n", "fileName": "report.csv"
 return {"image": {"content": png_base64, "fileName": "plot.png", "base64": True}}
 ```
 
-```r [R]
+</Tab>
+<Tab title="R">
+
+```r
 # existing path outside the temporary Job directory
 list(report = list(path = report_path))
 
@@ -194,7 +263,18 @@ list(report = list(content = "sample,score\nA,0.92\n", fileName = "report.csv"))
 list(image = list(content = png_base64, fileName = "plot.png", base64 = TRUE))
 ```
 
-```rust [Native / WASM Rust]
+</Tab>
+<Tab title="Native/WASM">
+
+::: info
+Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+WASM targets must support WASI Preview 1 and remain isolated from the app bridge.
+:::
+
+<Tabs>
+<Tab title="Rust">
+
+```rust
 // existing accessible path; sandbox paths only for WASM
 Ok(json!({ "report": { "path": report_path } }))
 
@@ -205,7 +285,24 @@ Ok(json!({ "report": { "content": "sample,score\nA,0.92\n", "fileName": "report.
 Ok(json!({ "image": { "content": png_base64, "fileName": "plot.png", "base64": true } }))
 ```
 
-:::
+</Tab>
+<Tab title="C++">
+
+```cpp
+// Existing accessible path; sandbox paths only for WASM.
+return json{{"report", {{"path", report_path}}}};
+
+// Content Liatir saves under Results.
+return json{{"report", {{"content", "sample,score\nA,0.92\n"}, {"fileName", "report.csv"}}}};
+
+// Binary content.
+return json{{"image", {{"content", png_base64}, {"fileName", "plot.png"}, {"base64", true}}}};
+```
+
+</Tab>
+</Tabs>
+</Tab>
+</Tabs>
 
 In R, use named lists for JSON objects and scalar values for text, numbers and
 booleans. For JSON output arrays with one element, use a list such as `list(1)`

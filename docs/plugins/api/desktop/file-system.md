@@ -53,7 +53,15 @@ storage <- fs$plugin_fs("my-plugin")
 ```
 
 </Tab>
-<Tab title="Native (Rust)">
+<Tab title="Native/WASM">
+
+::: info
+Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+This app bridge is Native-only; WASM stays isolated.
+:::
+
+<Tabs>
+<Tab title="Rust">
 
 ```rust
 let fs = ctx.liatir.desktop().fs();
@@ -62,6 +70,20 @@ let cache = fs.cache();
 let storage = fs.plugin_fs("my-plugin")?;
 ```
 
+</Tab>
+<Tab title="C++">
+
+[C++ example setup](/plugins/api-bridge#cpp-examples).
+
+```cpp
+auto roots = liatir::paths();
+json data_scope = {{"permanent", true}};
+json cache_scope = {{"permanent", false}};
+json plugin_scope = {{"permanent", true}, {"pluginStoragePlugin", "my-plugin.wasm"}};
+```
+
+</Tab>
+</Tabs>
 </Tab>
 </Tabs>
 
@@ -137,7 +159,15 @@ by `$plugin_fs(name)`:
 | `clear()` | Clears the data/cache scope; use `clear_storage()` for Plugin storage. |
 
 </Tab>
-<Tab title="Native (Rust)">
+<Tab title="Native/WASM">
+
+::: info
+Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+This app bridge is Native-only; WASM stays isolated.
+:::
+
+<Tabs>
+<Tab title="Rust">
 
 Call these on `ctx.liatir.desktop().fs().data()`, `.cache()`, or the scope
 returned by `.plugin_fs(name)?`. Each returns `Result<Value>`; string parameters
@@ -162,6 +192,33 @@ are `&str` and flags are `bool`. Flags are explicit, with no default arguments.
 Use `""` for the root directory. `move_file` corresponds to `move` in the other
 languages because `move` is a Rust keyword.
 
+</Tab>
+<Tab title="C++">
+
+[C++ example setup](/plugins/api-bridge#cpp-examples).
+
+Use `liatir::invoke(command, payload)` with `permanent: true` for data, or
+`false` for cache. For Plugin storage, also set
+`pluginStoragePlugin: "my-plugin.wasm"`. All paths are relative to that scope.
+
+| Command | Payload fields, in addition to the scope |
+| --- | --- |
+| `lia_fs_list_dir` / `lia_fs_stat` / `lia_fs_exists` | `rel` (`""` means the scope root). |
+| `lia_fs_mkdir` / `lia_fs_rm` | `rel`; removal also takes `recursive`. |
+| `lia_fs_read_text` / `lia_fs_read_bytes` | `rel`; bytes return a base64 string. |
+| `lia_fs_write_text` | `rel`, `contents`, `createDirs`, `append`. |
+| `lia_fs_write_bytes` | `rel`, `dataBase64`, `createDirs`. |
+| `lia_fs_move` | `src`, `dest`, `createDirs`, `overwrite`. |
+| `lia_fs_copy` | `src`, `dest`, `recursive`, `createDirs`, `overwrite`. |
+
+```cpp
+auto entry = liatir::invoke("lia_fs_stat",
+    {{"permanent", true}, {"pluginStoragePlugin", "my-plugin.wasm"}, {"rel", ""}});
+auto root = entry.at("path").get<std::string>();
+```
+
+</Tab>
+</Tabs>
 </Tab>
 </Tabs>
 
@@ -204,10 +261,29 @@ The SDK preserves the backend JSON response without renaming fields.
 `storage$clear_storage()` clears the selected Plugin storage.
 
 </Tab>
-<Tab title="Native (Rust)">
+<Tab title="Native/WASM">
+
+::: info
+Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+This app bridge is Native-only; WASM stays isolated.
+:::
+
+<Tabs>
+<Tab title="Rust">
 
 `storage.clear_storage()?` clears the selected Plugin storage.
 
+</Tab>
+<Tab title="C++">
+
+[C++ example setup](/plugins/api-bridge#cpp-examples).
+
+```cpp
+liatir::invoke("lia_plugin_storage_clear", {{"plugin", "my-plugin.wasm"}});
+```
+
+</Tab>
+</Tabs>
 </Tab>
 </Tabs>
 
@@ -259,7 +335,15 @@ report_path <- storage$stat("notes/todo.txt")$path
 ```
 
 </Tab>
-<Tab title="Native (Rust)">
+<Tab title="Native/WASM">
+
+::: info
+Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+This app bridge is Native-only; WASM stays isolated.
+:::
+
+<Tabs>
+<Tab title="Rust">
 
 ```rust
 let storage = ctx.liatir.desktop().fs().plugin_fs("my-plugin")?;
@@ -271,6 +355,27 @@ let report_path = entry["path"].as_str().ok_or("Missing report path")?;
 // A declared file output can return Ok(json!({ "report": { "path": report_path } })).
 ```
 
+</Tab>
+<Tab title="C++">
+
+[C++ example setup](/plugins/api-bridge#cpp-examples).
+
+```cpp
+json scope = {{"permanent", true}, {"pluginStoragePlugin", "my-plugin.wasm"}};
+auto write = scope;
+write.update({{"rel", "notes/todo.txt"}, {"contents", "Review the documentation"},
+              {"createDirs", true}, {"append", false}});
+liatir::invoke("lia_fs_write_text", write);
+auto read = scope;
+read["rel"] = "notes/todo.txt";
+auto content = liatir::invoke("lia_fs_read_text", read).get<std::string>();
+std::cout << content << "\n";
+auto report_path = liatir::invoke("lia_fs_stat", read).at("path").get<std::string>();
+// A declared file output can return json{{"report", {{"path", report_path}}}}.
+```
+
+</Tab>
+</Tabs>
 </Tab>
 </Tabs>
 

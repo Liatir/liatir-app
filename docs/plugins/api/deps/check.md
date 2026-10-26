@@ -32,12 +32,31 @@ check(binary)
 ```
 
 </Tab>
-<Tab title="Native (Rust)">
+<Tab title="Native/WASM">
+
+::: info
+Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+This app bridge is Native-only; WASM stays isolated.
+:::
+
+<Tabs>
+<Tab title="Rust">
 
 ```rust
 check(binary: &str) -> Result<Value>
 ```
 
+</Tab>
+<Tab title="C++">
+
+[C++ example setup](/plugins/api-bridge#cpp-examples).
+
+```cpp
+auto result = liatir::invoke("lia_deps_check", {{"binary", "samtools"}});
+```
+
+</Tab>
+</Tabs>
 </Tab>
 </Tabs>
 
@@ -73,7 +92,15 @@ if (!isTRUE(samtools$available)) stop("Samtools is not available")
 ```
 
 </Tab>
-<Tab title="Native (Rust)">
+<Tab title="Native/WASM">
+
+::: info
+Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+This app bridge is Native-only; WASM stays isolated.
+:::
+
+<Tabs>
+<Tab title="Rust">
 
 ```rust
 let samtools = ctx.liatir.deps().check("samtools")?;
@@ -82,6 +109,19 @@ if samtools["available"].as_bool() != Some(true) {
 }
 ```
 
+</Tab>
+<Tab title="C++">
+
+[C++ example setup](/plugins/api-bridge#cpp-examples).
+
+```cpp
+auto samtools = liatir::invoke("lia_deps_check", {{"binary", "samtools"}});
+if (!samtools.at("available").get<bool>())
+    throw std::runtime_error("Samtools is not available");
+```
+
+</Tab>
+</Tabs>
 </Tab>
 </Tabs>
 

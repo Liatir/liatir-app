@@ -27,6 +27,23 @@ describe('public documentation Markdown', () => {
     expect(markdown).not.toContain('title: Test')
   })
 
+  it('preserves nested runtime/language tabs across code fences and resets their depth', () => {
+    const source = [
+      '# API', '<Tabs>', '<Tab title="Native/WASM">', 'Use any compatible language.',
+      '<Tabs>', '<Tab title="Rust">', '```rust', 'let value = 1;', '```', '</Tab>',
+      '<Tab title="C++">', '```cpp', 'auto value = 1;', '```', '</Tab>', '</Tabs>',
+      '</Tab>', '<Tab title="Python">', '```python', 'value = 1', '```', '</Tab>', '</Tabs>',
+    ].join('\n')
+    const markdown = toPlainMarkdown(source, 'plugins/api/test.md')
+    expect(markdown).toContain('### Native/WASM')
+    expect(markdown).toContain('#### Rust')
+    expect(markdown).toContain('#### C++')
+    expect(markdown).toContain('### Python')
+    expect(markdown).not.toContain('#### Python')
+    expect(markdown).toContain('```cpp\nauto value = 1;\n```')
+    expect(markdown).not.toMatch(/<\/?Tabs?\b/)
+  })
+
   it('builds only published pages, including directory indexes and optional pages', () => {
     const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'liatir-docs-markdown-'))
     try {

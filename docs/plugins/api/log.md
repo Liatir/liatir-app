@@ -70,7 +70,15 @@ ctx$liatir$log$error("Alignment failed", list(exitCode = 1, tool = "bwa"))
 ```
 
 </Tab>
-<Tab title="Native (Rust)">
+<Tab title="Native/WASM">
+
+::: info
+Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+This app bridge is Native-only; WASM stays isolated.
+:::
+
+<Tabs>
+<Tab title="Rust">
 
 ```rust
 ctx.liatir.log().info("Starting analysis", json!({}))?;
@@ -79,6 +87,24 @@ ctx.liatir.log().warn("Low coverage", json!({ "coverage": 2.1 }))?;
 ctx.liatir.log().error("Alignment failed", json!({ "exitCode": 1 }))?;
 ```
 
+</Tab>
+<Tab title="C++">
+
+[C++ example setup](/plugins/api-bridge#cpp-examples).
+
+```cpp
+liatir::invoke("lia_plugin_log", {{"jobId", liatir::job_id()},
+    {"level", "info"}, {"message", "Starting analysis"}});
+liatir::invoke("lia_plugin_log", {{"jobId", liatir::job_id()},
+    {"level", "debug"}, {"message", "Reference loaded"}, {"meta", {{"path", "ref.fa"}}}});
+liatir::invoke("lia_plugin_log", {{"jobId", liatir::job_id()},
+    {"level", "warn"}, {"message", "Low coverage"}, {"meta", {{"coverage", 2.1}}}});
+liatir::invoke("lia_plugin_log", {{"jobId", liatir::job_id()},
+    {"level", "error"}, {"message", "Alignment failed"}, {"meta", {{"exitCode", 1}}}});
+```
+
+</Tab>
+</Tabs>
 </Tab>
 </Tabs>
 
@@ -124,7 +150,15 @@ ctx$liatir$log$info("All files processed", list(count = length(files)))
 ```
 
 </Tab>
-<Tab title="Native (Rust)">
+<Tab title="Native/WASM">
+
+::: info
+Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+This app bridge is Native-only; WASM stays isolated.
+:::
+
+<Tabs>
+<Tab title="Rust">
 
 ```rust
 let files = ctx.liatir.desktop().fs().data().list_content("input")?;
@@ -137,6 +171,24 @@ for file in files {
 ctx.liatir.log().info("All files processed", json!({ "count": files.len() }))?;
 ```
 
+</Tab>
+<Tab title="C++">
+
+[C++ example setup](/plugins/api-bridge#cpp-examples).
+
+```cpp
+auto files = liatir::invoke("lia_fs_list_dir", {{"rel", "input"}, {"permanent", true}});
+for (const auto& file : files) {
+    liatir::invoke("lia_plugin_log", {{"jobId", liatir::job_id()}, {"level", "info"},
+        {"message", "Processing " + file.at("name").get<std::string>()}});
+    // Process the file here.
+}
+liatir::invoke("lia_plugin_log", {{"jobId", liatir::job_id()}, {"level", "info"},
+    {"message", "All files processed"}, {"meta", {{"count", files.size()}}}});
+```
+
+</Tab>
+</Tabs>
 </Tab>
 </Tabs>
 

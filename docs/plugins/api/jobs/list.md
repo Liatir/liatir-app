@@ -31,12 +31,31 @@ list()
 ```
 
 </Tab>
-<Tab title="Native (Rust)">
+<Tab title="Native/WASM">
+
+::: info
+Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+This app bridge is Native-only; WASM stays isolated.
+:::
+
+<Tabs>
+<Tab title="Rust">
 
 ```rust
 list() -> Result<Value>
 ```
 
+</Tab>
+<Tab title="C++">
+
+[C++ example setup](/plugins/api-bridge#cpp-examples).
+
+```cpp
+auto jobs = liatir::invoke("lia_jobs_list");
+```
+
+</Tab>
+</Tabs>
 </Tab>
 </Tabs>
 
@@ -72,7 +91,15 @@ for (job in jobs) cat(job$id, job$status$type, "\n")
 ```
 
 </Tab>
-<Tab title="Native (Rust)">
+<Tab title="Native/WASM">
+
+::: info
+Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+This app bridge is Native-only; WASM stays isolated.
+:::
+
+<Tabs>
+<Tab title="Rust">
 
 ```rust
 let jobs = ctx.liatir.jobs().list()?;
@@ -81,6 +108,19 @@ for job in jobs.as_array().ok_or("Invalid Job list")? {
 }
 ```
 
+</Tab>
+<Tab title="C++">
+
+[C++ example setup](/plugins/api-bridge#cpp-examples).
+
+```cpp
+auto jobs = liatir::invoke("lia_jobs_list");
+for (const auto& job : jobs)
+    std::cout << job.at("id") << ": " << job.at("status").at("type") << "\n";
+```
+
+</Tab>
+</Tabs>
 </Tab>
 </Tabs>
 

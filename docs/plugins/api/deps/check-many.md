@@ -31,12 +31,32 @@ check_many(binaries)
 ```
 
 </Tab>
-<Tab title="Native (Rust)">
+<Tab title="Native/WASM">
+
+::: info
+Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+This app bridge is Native-only; WASM stays isolated.
+:::
+
+<Tabs>
+<Tab title="Rust">
 
 ```rust
 check_many(binaries: &[&str]) -> Result<Value>
 ```
 
+</Tab>
+<Tab title="C++">
+
+[C++ example setup](/plugins/api-bridge#cpp-examples).
+
+```cpp
+auto result = liatir::invoke("lia_deps_check_many",
+    {{"binaries", {"samtools", "bcftools", "java"}}});
+```
+
+</Tab>
+</Tabs>
 </Tab>
 </Tabs>
 
@@ -72,7 +92,15 @@ for (dep in deps) cat(dep$binary, dep$available, "\n")
 ```
 
 </Tab>
-<Tab title="Native (Rust)">
+<Tab title="Native/WASM">
+
+::: info
+Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+This app bridge is Native-only; WASM stays isolated.
+:::
+
+<Tabs>
+<Tab title="Rust">
 
 ```rust
 let deps = ctx.liatir.deps().check_many(&["samtools", "bcftools", "java"])?;
@@ -81,6 +109,20 @@ for dep in deps.as_array().ok_or("Invalid dependency list")? {
 }
 ```
 
+</Tab>
+<Tab title="C++">
+
+[C++ example setup](/plugins/api-bridge#cpp-examples).
+
+```cpp
+auto deps = liatir::invoke("lia_deps_check_many",
+    {{"binaries", {"samtools", "bcftools", "java"}}});
+for (const auto& dep : deps)
+    std::cout << dep.at("binary") << ": " << dep.at("available") << "\n";
+```
+
+</Tab>
+</Tabs>
 </Tab>
 </Tabs>
 

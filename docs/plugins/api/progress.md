@@ -42,7 +42,15 @@ description: Progress tracking for plugins — display real-time progress in the
 Call these on `ctx$liatir$progress`.
 
 </Tab>
-<Tab title="Native (Rust)">
+<Tab title="Native/WASM">
+
+::: info
+Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+This app bridge is Native-only; WASM stays isolated.
+:::
+
+<Tabs>
+<Tab title="Rust">
 
 | Method | Description |
 | --- | --- |
@@ -54,6 +62,21 @@ Call these on `ctx$liatir$progress`.
 Call these on `ctx.liatir.progress()`. Each returns `Result<Value>`;
 use `None` for no label and `?` to propagate failure.
 
+</Tab>
+<Tab title="C++">
+
+[C++ example setup](/plugins/api-bridge#cpp-examples).
+
+```cpp
+liatir::invoke("lia_plugin_progress", {{"jobId", liatir::job_id()},
+    {"current", 0}, {"total", 100}, {"label", "Processing files"}});
+liatir::invoke("lia_plugin_progress", {{"jobId", liatir::job_id()}, {"delta", 1}});
+liatir::invoke("lia_plugin_progress", {{"jobId", liatir::job_id()}, {"current", 50}});
+liatir::invoke("lia_plugin_progress", {{"jobId", liatir::job_id()}, {"done", true}});
+```
+
+</Tab>
+</Tabs>
 </Tab>
 </Tabs>
 
@@ -121,7 +144,15 @@ ctx$liatir$progress$done()
 ```
 
 </Tab>
-<Tab title="Native (Rust)">
+<Tab title="Native/WASM">
+
+::: info
+Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+This app bridge is Native-only; WASM stays isolated.
+:::
+
+<Tabs>
+<Tab title="Rust">
 
 ```rust
 let files = ctx.liatir.desktop().fs().data().list_content("input")?;
@@ -135,6 +166,25 @@ for file in files {
 ctx.liatir.progress().done()?;
 ```
 
+</Tab>
+<Tab title="C++">
+
+[C++ example setup](/plugins/api-bridge#cpp-examples).
+
+```cpp
+auto files = liatir::invoke("lia_fs_list_dir", {{"rel", "input"}, {"permanent", true}});
+liatir::invoke("lia_plugin_progress", {{"jobId", liatir::job_id()},
+    {"current", 0}, {"total", files.size()}, {"label", "Processing files"}});
+for (const auto& file : files) {
+    // Process the file here.
+    liatir::invoke("lia_plugin_progress", {{"jobId", liatir::job_id()}, {"delta", 1},
+        {"label", "Processing " + file.at("name").get<std::string>()}});
+}
+liatir::invoke("lia_plugin_progress", {{"jobId", liatir::job_id()}, {"done", true}});
+```
+
+</Tab>
+</Tabs>
 </Tab>
 </Tabs>
 
@@ -198,7 +248,15 @@ ctx$liatir$progress$done()
 ```
 
 </Tab>
-<Tab title="Native (Rust)">
+<Tab title="Native/WASM">
+
+::: info
+Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+This app bridge is Native-only; WASM stays isolated.
+:::
+
+<Tabs>
+<Tab title="Rust">
 
 ```rust
 for (total, label) in [(100_u64, "Quality control"), (50, "Aligning reads")] {
@@ -211,6 +269,25 @@ for (total, label) in [(100_u64, "Quality control"), (50, "Aligning reads")] {
 ctx.liatir.progress().done()?;
 ```
 
+</Tab>
+<Tab title="C++">
+
+[C++ example setup](/plugins/api-bridge#cpp-examples).
+
+```cpp
+for (const auto& phase : {std::pair<int, std::string>{100, "Quality control"}, {50, "Aligning reads"}}) {
+    liatir::invoke("lia_plugin_progress", {{"jobId", liatir::job_id()},
+        {"current", 0}, {"total", phase.first}, {"label", phase.second}});
+    for (int i = 0; i < phase.first; ++i) {
+        // Run this analysis step.
+        liatir::invoke("lia_plugin_progress", {{"jobId", liatir::job_id()}, {"delta", 1}});
+    }
+}
+liatir::invoke("lia_plugin_progress", {{"jobId", liatir::job_id()}, {"done", true}});
+```
+
+</Tab>
+</Tabs>
 </Tab>
 </Tabs>
 
@@ -257,7 +334,15 @@ ctx$liatir$progress$done()
 ```
 
 </Tab>
-<Tab title="Native (Rust)">
+<Tab title="Native/WASM">
+
+::: info
+Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+This app bridge is Native-only; WASM stays isolated.
+:::
+
+<Tabs>
+<Tab title="Rust">
 
 ```rust
 ctx.liatir.progress().start(1000, Some("Processing reads"))?;
@@ -266,6 +351,23 @@ ctx.liatir.progress().update(1000, Some("100% complete"))?;
 ctx.liatir.progress().done()?;
 ```
 
+</Tab>
+<Tab title="C++">
+
+[C++ example setup](/plugins/api-bridge#cpp-examples).
+
+```cpp
+liatir::invoke("lia_plugin_progress", {{"jobId", liatir::job_id()},
+    {"current", 0}, {"total", 1000}, {"label", "Processing reads"}});
+liatir::invoke("lia_plugin_progress", {{"jobId", liatir::job_id()},
+    {"current", 250}, {"label", "25% complete"}});
+liatir::invoke("lia_plugin_progress", {{"jobId", liatir::job_id()},
+    {"current", 1000}, {"label", "100% complete"}});
+liatir::invoke("lia_plugin_progress", {{"jobId", liatir::job_id()}, {"done", true}});
+```
+
+</Tab>
+</Tabs>
 </Tab>
 </Tabs>
 

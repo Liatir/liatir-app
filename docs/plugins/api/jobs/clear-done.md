@@ -34,12 +34,31 @@ clear_done()
 ```
 
 </Tab>
-<Tab title="Native (Rust)">
+<Tab title="Native/WASM">
+
+::: info
+Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+This app bridge is Native-only; WASM stays isolated.
+:::
+
+<Tabs>
+<Tab title="Rust">
 
 ```rust
 clear_done() -> Result<Value>
 ```
 
+</Tab>
+<Tab title="C++">
+
+[C++ example setup](/plugins/api-bridge#cpp-examples).
+
+```cpp
+auto removed = liatir::is_dev() ? json(0) : liatir::invoke("lia_jobs_clear_done");
+```
+
+</Tab>
+</Tabs>
 </Tab>
 </Tabs>
 
@@ -72,13 +91,33 @@ cat("Removed", removed, "completed Jobs\n")
 ```
 
 </Tab>
-<Tab title="Native (Rust)">
+<Tab title="Native/WASM">
+
+::: info
+Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+This app bridge is Native-only; WASM stays isolated.
+:::
+
+<Tabs>
+<Tab title="Rust">
 
 ```rust
 let removed = ctx.liatir.jobs().clear_done()?;
 println!("Removed {removed} completed Jobs");
 ```
 
+</Tab>
+<Tab title="C++">
+
+[C++ example setup](/plugins/api-bridge#cpp-examples).
+
+```cpp
+auto removed = liatir::is_dev() ? json(0) : liatir::invoke("lia_jobs_clear_done");
+std::cout << "Removed " << removed << " completed Jobs\n";
+```
+
+</Tab>
+</Tabs>
 </Tab>
 </Tabs>
 

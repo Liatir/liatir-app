@@ -31,12 +31,31 @@ status(job_id)
 ```
 
 </Tab>
-<Tab title="Native (Rust)">
+<Tab title="Native/WASM">
+
+::: info
+Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+This app bridge is Native-only; WASM stays isolated.
+:::
+
+<Tabs>
+<Tab title="Rust">
 
 ```rust
 status(job_id: &str) -> Result<Value>
 ```
 
+</Tab>
+<Tab title="C++">
+
+[C++ example setup](/plugins/api-bridge#cpp-examples).
+
+```cpp
+auto job = liatir::invoke("lia_jobs_status", {{"jobId", job_id}});
+```
+
+</Tab>
+</Tabs>
 </Tab>
 </Tabs>
 
@@ -91,7 +110,15 @@ print(job$status$exitCode)
 ```
 
 </Tab>
-<Tab title="Native (Rust)">
+<Tab title="Native/WASM">
+
+::: info
+Native/WASM Plugins can use any compatible language; Rust and C++ are examples.
+This app bridge is Native-only; WASM stays isolated.
+:::
+
+<Tabs>
+<Tab title="Rust">
 
 ```rust
 let job = ctx.liatir.jobs().status(job_id)?;
@@ -99,6 +126,19 @@ println!("Status: {}", job["status"]["type"]);
 println!("Exit code: {}", job["status"]["exitCode"]);
 ```
 
+</Tab>
+<Tab title="C++">
+
+[C++ example setup](/plugins/api-bridge#cpp-examples).
+
+```cpp
+auto job = liatir::invoke("lia_jobs_status", {{"jobId", job_id}});
+std::cout << "Status: " << job.at("status").at("type") << "\n";
+std::cout << "Exit code: " << job.at("status").value("exitCode", json(nullptr)) << "\n";
+```
+
+</Tab>
+</Tabs>
 </Tab>
 </Tabs>
 
