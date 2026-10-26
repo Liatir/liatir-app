@@ -1,6 +1,6 @@
 import DefaultTheme from 'vitepress/theme'
 import { h } from 'vue'
-import ShareThis from './ShareThis.vue'
+import ShareButton from './ShareButton.vue'
 import HomePage from './HomePage.vue'
 import DownloadPage from './DownloadPage.vue'
 import CookieBanner from './CookieBanner.vue'
@@ -16,8 +16,7 @@ export default {
   // via the persistent `layout-bottom` slot.
   Layout() {
     return h(DefaultTheme.Layout, null, {
-      'layout-bottom': () => h(CookieBanner),
-      'nav-bar-content-after': () => h(ShareThis),
+      'layout-bottom': () => [h(CookieBanner), h(ShareButton)],
       'doc-before': () => h(PageActions),
     })
   },

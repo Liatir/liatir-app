@@ -44,7 +44,6 @@ export default defineConfig({
     ['link', { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' }],
     ['link', { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap' }],
 
-    ['script', { src: "https://platform-api.sharethis.com/js/sharethis.js", async: "true" }],
     // Google Analytics (GA4). Fires on every page load.
     ['script', { async: '', src: 'https://www.googletagmanager.com/gtag/js?id=G-JSH1W9TFP9' }],
     ['script', {}, `

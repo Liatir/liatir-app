@@ -35,6 +35,20 @@ C++ compilation/execution, both site builds and all seven verify suites pass
 On 2026-10-26 the owner authorized pushing all current `main` commits to
 `origin/main`. Desktop and npm releases remain separate actions.
 
+## Website sharing
+
+The owner requested complete removal of the third-party sharing widget. The
+public site now uses its own accessible floating button and the browser's native
+OS share sheet, with an explicitly labeled clipboard action when that API is
+unavailable. Native cancellation leaves the clipboard untouched. The external
+script, old component and vendor styles are removed; mobile keeps the control.
+Both site builds and all seven verify suites pass (709 unit tests), report
+`2026-10-26T20-18-44-392Z`. Browser checks cover native API invocation from a
+trusted click, current title/URL after navigation, duplicate clicks, cancellation,
+errors, explicit clipboard behavior and mobile visibility. No ShareThis request
+or reference remains in the built site. Headless tests substitute the browser
+share API; an actual OS dialog was not opened by automation. Syngraphe passes.
+
 ## Where Liatir stands
 
 **The product works; it is not yet distributable.** The release-blocking scenarios in

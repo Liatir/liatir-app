@@ -129,6 +129,14 @@ generated alternate link; copying and viewing fetch the current site's copy, whi
 links and Copy prompt use the production URL. Provider prompt URL parameters belong to
 the external services, so their acceptance cannot be guaranteed by this repository.
 
+The public theme's `docs/.vitepress/theme/ShareButton.vue` uses the browser's
+native sharing API (`navigator.share`) directly from the user's click, with the current page title
+and URL. It remains visible on mobile. When native sharing is unavailable, the
+same control is explicitly labeled Copy page link and reports clipboard success
+or failure. Cancelling the native sheet has no clipboard side effect. There is
+no third-party sharing script or widget; the former ShareThis integration and
+its styles were removed at the owner's request on 2026-10-26.
+
 Verify the built site with `npm run docs:build` and `npm run docs:preview`: development
 serving exposes source Markdown rather than the generated copies. The public site is a
 browser-only surface, so headless browser checks cover its menus, clipboard, navigation
