@@ -21,7 +21,7 @@ Liatir remains in control of authorization, Jobs and Results.
 - R Plugins require a compatible local R installation and their prepared
   packages. Native Plugins need an executable for the exact operating system
   and processor, plus explicit permission for the imported bundle. See
-  [R and Native Plugins](/plugins/r-and-native).
+  [Plugin runtime preparation](/plugins/getting-started#runtime-preparation).
 - Liatir does not yet install Nextflow/Java or configure HPC and cloud
   executors.
 - On Windows, GPU AI Models run their Linux CUDA Runtime Box through WSL2. The
@@ -88,7 +88,7 @@ internet connection and compilation tools. Prepared packages can be used offline
 For Native, use a bundle built for your computer and review it before choosing
 **Allow executable access**. A changed bundle needs permission again. Older app
 or CLI versions may not recognize these runtimes; use matching builds with
-R/Native support. See the [runtime guide](/plugins/r-and-native).
+R/Native support. See the [Plugin setup guide](/plugins/getting-started#runtime-preparation).
 
 ### A run was interrupted
 

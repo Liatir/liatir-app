@@ -34,7 +34,7 @@ This is the **same API shape in all five runtimes**:
   CLI-managed `liatir` module.
 - **R** — `define_plugin(inputs=..., outputs=...)` + `plugin$main(handler)`.
 - **Native (Rust)** — the same contract builder as WASM, with full bridge access.
-  Other compiled languages implement the [executable protocol](/plugins/r-and-native).
+  Other compiled languages implement the [executable protocol](/plugins/format#executable-protocol-version-1).
 
 - [Plugin context](/plugins/plugin-context) 
 - [Defining plugin](/plugins/define-plugin)

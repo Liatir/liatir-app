@@ -189,7 +189,6 @@ export default defineConfig({
               { text: 'Overview', link: '/plugins/overview' },
               { text: 'Get started', link: '/plugins/getting-started' },
               { text: 'Bundle format', link: '/plugins/format' },
-              { text: 'R and Native', link: '/plugins/r-and-native' },
           {
             text: 'API',
             collapsed: true,

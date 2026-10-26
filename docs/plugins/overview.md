@@ -172,7 +172,7 @@ is required and is not downloaded by Liatir.
 
 `ctx$liatir` gives R full Plugin bridge access: Jobs, dependency checks, scoped
 storage, app information, logs, progress, paths and raw command invocation.
-See [R setup and dependencies](./r-and-native#create-an-r-plugin).
+See [R package preparation](./format#package-preparation).
 
 ## Native plugins
 
@@ -198,7 +198,7 @@ Import does not execute the program. The user grants **Allow executable access**
 for that exact bundle before running it; a changed bundle requires permission
 again. Native programs have ordinary operating-system access. A bundle signature
 checks integrity; it does not grant this permission. See
-[Native distribution and permissions](./r-and-native#create-a-native-plugin).
+[Native packaging](./format#native-contract-and-manifest).
 
 ## WASM plugins
 
@@ -251,5 +251,5 @@ file content inline or use a path in bridge-managed storage; see
 
 - [Getting started](./getting-started)
 - [Complete entry points](./define-plugin)
-- [R and Native dependencies, permissions and protocol](./r-and-native)
+- [Runtime packaging and preparation](./format)
 - [Plugin bridge reference](./api-bridge)

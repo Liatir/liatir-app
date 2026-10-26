@@ -76,6 +76,14 @@ Comments, UI text, code, CLI output, and developer-facing docs are always in
 - `docs/` — public: how to *use* Liatir, written for no-code users.
 - `quenta-knowledge/` — curated scientific content.
 
+Plugin documentation is organized by the common authoring and execution
+capabilities: getting started, contract/fields, context, bundle format and bridge.
+Node, Python, R, Native and WASM belong in those same pages, with language tabs
+or equivalent runtime sections. Do not give new runtimes their own special
+combined guide or navigation category. This is the owner's explicit clarification
+of 2026-10-26. Interpreter/package and executable-target differences belong in
+the appropriate sections of those common guides.
+
 Scientific Showcases are the public scientific-study exception to the usage-guide
 surface: `docs/showcases/` presents measured methods, results and limitations;
 `showcases/` holds the canonical technical packages. Large matrices, embeddings

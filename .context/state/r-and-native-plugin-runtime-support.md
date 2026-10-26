@@ -370,3 +370,34 @@ has no competing main commits after fetching origin. The user's authorization
 covers the complete branch, including their infographic commit. No CI, release,
 deployment or remote push is part of this integration. The final main identity
 and clean working-tree state are verified directly after the Git operation.
+
+## Uniform runtime documentation correction (2026-10-26)
+
+The owner rejected a separate combined runtime guide: R and Native must be
+first-class variants in the existing Plugin documentation, like Node, Python
+and WASM. The initial extra page was an incorrect documentation organization
+choice. The convention is now recorded in shared repository conventions.
+
+- [x] Remove the extra page and its sidebar entry; keep all unique dependency,
+  executable protocol, target/security and bridge transport details in the common
+  getting-started, bundle-format and API-bridge guides.
+- [x] Update inbound links across the API, overview, authoring, support and CLI
+  documentation. Present bridge capabilities uniformly across supported languages.
+- [x] Recheck the shared contract: core owns field/result types, CLI serializers
+  emit those schemas, imported R/Native manifests validate field types, supplied
+  R/Rust SDKs validate values, and the existing pipeline/result path is reused.
+  Custom Native clients implement that same contract and validation themselves.
+- [x] Regenerate Quenta, build both documentation sites, run the required verify
+  gate with real R coverage and Syngraphe.
+
+No runtime code, schema version, dependency, release or remote action changes.
+The existing mixed-runtime execution and invalid-input tests provide contract
+regression coverage; this correction changes only documentation organization.
+
+Validation passed: verify report `2026-10-26T18-10-00-206Z` has seven passed
+suites, 91 unit files / 708 tests with the real R SDK enabled. Both documentation
+sites build. The removed public route is absent from built pages, sitemap,
+Markdown and AI indexes; no inbound links remain. Dependency, executable and
+bridge protocol details remain in the common guides. Quenta now contains 374
+documentation chunks. Syngraphe and whitespace checks pass. The correction is
+committed on local `main`; its identity is supplied in the delivery message.

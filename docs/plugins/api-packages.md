@@ -21,7 +21,7 @@ prepared packages; Rust projects need Rust and Cargo to build.
 the other managed SDKs, update your installed CLI and rebuild the Plugin.
 
 Native executables written in other languages can implement the
-[executable protocol](/plugins/r-and-native#executable-protocol-version-1)
+[executable protocol](/plugins/format#executable-protocol-version-1)
 directly, including contract emission, validation and authenticated bridge calls.
 
 ## Related
@@ -30,5 +30,5 @@ directly, including contract emission, validation and authenticated bridge calls
 - [Plugin context](/plugins/plugin-context)
 - [Plugin authoring](/plugins/define-plugin)
 - [Declaring fields](/plugins/field)
-- [R and Native guide](/plugins/r-and-native)
+- [Runtime packaging](/plugins/format)
 - [API bridge](/plugins/api-bridge)

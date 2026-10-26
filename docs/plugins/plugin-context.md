@@ -173,4 +173,4 @@ plugin shape after bundling — not on each run.
 
 Custom Native executables are responsible for the same input/output validation.
 All runtimes use the existing `.lia` contract; see
-[R and Native Plugins](./r-and-native) for preparation and executable permissions.
+[runtime preparation](./getting-started#runtime-preparation) for preparation and executable permissions.

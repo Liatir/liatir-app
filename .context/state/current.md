@@ -17,13 +17,16 @@ available UI suites. The ordinary native suite passed 51 cases, including the th
 new subprocess/pipeline cases. Linux/Windows execution remains unverified here; R
 requires a compatible local installation. See the plan and
 [decision](../decisions/r-and-native-plugin-processes.md) for checkpoints and limits.
-The documentation follow-up integrates R and Native throughout all 22 public
-Plugin pages, the CLI README and Quenta's generated documentation corpus. The
+The documentation follow-up integrates R and Native throughout the common public
+Plugin guides, the CLI README and Quenta's generated documentation corpus. The
 public site build, executable/compiled examples and all seven verify suites
 passed (708 unit tests); evidence is recorded in the same plan.
-On 2026-10-26 the owner authorized local integration into `main` after a quick
-review. The review also aligns the introductory and support pages with the five
-runtimes. No release, publication or remote push is requested.
+The reviewed branch was integrated into local `main` at `e7f6a929`, including
+introductory/support pages. The owner then clarified that all runtimes must share
+the same documentation structure: the separate combined runtime page is removed,
+with its dependency, executable and transport details moved into the existing
+setup, format and bridge guides. The shared contract remains unchanged.
+No release, publication or remote push is requested.
 
 ## Where Liatir stands
 

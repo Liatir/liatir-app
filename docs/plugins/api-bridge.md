@@ -31,16 +31,36 @@ Native returns JSON values rather than typed response structs.
 
 ## Available areas
 
-| Area | Use it for | R | Native Rust |
-| --- | --- | --- | --- |
-| [Jobs](./api/jobs/spawn) | Start, wait for, inspect and stop processes. | `ctx$liatir$jobs` | `ctx.liatir.jobs()` |
-| [Dependencies](./api/deps/check) | Check available command-line tools. | `ctx$liatir$deps` | `ctx.liatir.deps()` |
-| [Storage](./api/desktop/file-system) | Read/write app data, cache and Plugin storage. | `ctx$liatir$desktop$fs` | `ctx.liatir.desktop().fs()` |
-| [App info](./api/desktop/app) | Read app and system information. | `ctx$liatir$desktop$app` | `ctx.liatir.desktop().app()` |
-| [Logs](./api/log) | Send structured messages to Jobs. | `ctx$liatir$log` | `ctx.liatir.log()` |
-| [Progress](./api/progress) | Update the Job's progress display. | `ctx$liatir$progress` | `ctx.liatir.progress()` |
-| Paths | Locate app data and cache roots. | `ctx$liatir$paths()` | `ctx.liatir.paths()?` |
-| [Invoke](./api/invoke) | Call commands exposed by the Plugin bridge. | `ctx$liatir$invoke(cmd, payload)` | `ctx.liatir.invoke(cmd, payload)?` |
+| Area | Use it for |
+| --- | --- |
+| [Jobs](./api/jobs/spawn) | Start, wait for, inspect and stop processes. |
+| [Dependencies](./api/deps/check) | Check available command-line tools. |
+| [Storage](./api/desktop/file-system) | Read/write app data, cache and Plugin storage. |
+| [App info](./api/desktop/app) | Read app and system information. |
+| [Logs](./api/log) | Send structured messages to Jobs. |
+| [Progress](./api/progress) | Update the Job's progress display. |
+| Paths | Locate app data and cache roots using the calls below. |
+| [Invoke](./api/invoke) | Call commands exposed by the Plugin bridge. |
+
+::: code-group
+
+```ts [Node]
+const paths = await Liatir.paths();
+```
+
+```python [Python]
+paths = ctx.liatir.paths()
+```
+
+```r [R]
+paths <- ctx$liatir$paths()
+```
+
+```rust [Native Rust]
+let paths = ctx.liatir.paths()?;
+```
+
+:::
 
 ## Run ownership and development
 
@@ -55,10 +75,47 @@ Native executable trust and desktop runtime preparation are desktop-only actions
 a Plugin cannot grant itself permission or prepare another runtime through
 `invoke`.
 
-A custom Native executable can use the same
-[authenticated protocol](./r-and-native#authenticated-bridge-protocol) without the
-Rust SDK. Never print the connection token or include it in result files.
+## Authenticated bridge protocol
+
+The supplied SDKs handle this transport for Node, Python, R and Native Rust.
+Authors implementing another client can use the same protocol directly.
+
+Read the JSON file named by `LIATIR_IPC_FILE`: `{ "port": 12345, "token": "..." }`.
+Never log its token. Send an HTTP request to `http://127.0.0.1:<port>/invoke`:
+
+```http
+POST /invoke HTTP/1.0
+Authorization: Bearer <token>
+Content-Type: application/json
+Connection: close
+
+{"cmd":"lia_deps_check","payload":{"binary":"node"}}
+```
+
+Include the correct byte `Content-Length` header. The response is
+`{ "ok": true, "result": ... }` or `{ "ok": false, "error": "..." }`.
+Treat transport failures and `ok: false` as errors. Log/progress calls include
+`jobId: LIATIR_JOB_ID` using the same command payloads in every language.
+Use the [namespace helpers](#available-areas) whenever possible.
+
+During development, every call must include this payload member:
+
+```json
+{
+  "__liatirDevContext": {
+    "scope": "plugin-dev",
+    "sessionId": "<LIATIR_DEV_SESSION_ID>",
+    "workspaceId": "<LIATIR_WORKSPACE_ID>"
+  }
+}
+```
+
+The supplied Node, Python, R and Native Rust SDKs add it automatically when `LIATIR_RUN_SCOPE=plugin-dev`. The server
+scopes filesystem namespaces and child Jobs to the session, rejects global
+commands, and prevents access to another session's Jobs. This scopes bridge
+operations; it is not an OS sandbox for untrusted code. Plugins cannot grant
+Native executable trust or call desktop runtime preparation through this endpoint.
 
 - [API overview](./api/overview)
 - [Plugin context](./plugin-context)
-- [R and Native setup](./r-and-native)
+- [Runtime preparation](./getting-started#runtime-preparation)

@@ -64,7 +64,7 @@ executable. The Rust starter builds the host target. Users grant **Allow
 executable access** for the exact imported bundle; an update needs permission
 again. Other languages can implement the same version 1 executable protocol.
 Cross-target builds use generated, hash-bound `<executable>.contract.json`
-metadata. See [R and Native documentation](https://liatir.com/plugins/r-and-native)
+metadata. See [Plugin bundle format](https://liatir.com/plugins/format)
 for distribution and protocol details.
 
 ## Commands

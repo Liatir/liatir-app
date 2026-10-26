@@ -19,7 +19,7 @@ All five runtimes share the same contract, with language-specific syntax:
   CLI-managed `liatir` module.
 - **R** — `define_plugin(inputs=..., outputs=...)` + `plugin$main(handler)`.
 - **Native (Rust)** — the same contract builder as WASM, with full bridge access.
-  Other compiled languages implement the [executable protocol](/plugins/r-and-native).
+  Other compiled languages implement the [executable protocol](/plugins/format#executable-protocol-version-1).
 
 For Python, R, Native Rust and WASM, the SDK is **not a separate package you
 install**: `liatir init` supplies managed source files and `liatir build` refreshes
@@ -112,7 +112,7 @@ Save this in `src/main.R`. The SDK passes named lists to and from the handler.
 Load scientific packages and perform analysis **inside the handler**: contract
 extraction sources the entry point without calling the handler, but still
 executes top-level R statements. Declare dependencies in the
-[R runtime specification](/plugins/r-and-native#create-an-r-plugin).
+[R runtime specification](/plugins/format#r-contract-and-manifest).
 
 ## Native (Rust)
 
@@ -139,7 +139,7 @@ The generated `liatir` module includes the Native bridge; no separate
 `mod liatir_bridge` declaration is needed in your entry point. Use
 `ctx.liatir` when your handler needs app storage, Jobs, logs or progress.
 Other compiled languages implement the same
-[executable protocol](/plugins/r-and-native#executable-protocol-version-1).
+[executable protocol](/plugins/format#executable-protocol-version-1).
 
 ## WASM (Rust)
 

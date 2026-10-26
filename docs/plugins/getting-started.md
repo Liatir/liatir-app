@@ -82,17 +82,24 @@ and [field declarations](/plugins/field).
 4. Complete any runtime preparation shown on the Plugin's page, then run it
    alone or add it to a pipeline.
 
-For **R**, install a compatible R interpreter on the user's machine. The app
-also discovers standard macOS and Windows installations. The first build writes
-`renv.lock`, which records package versions: commit it with your project.
-**Prepare R packages** restores those versions for the imported Plugin. This
-step may need internet access and build tools; prepared runs work offline.
+## Runtime preparation
 
-For **Native**, include an executable for the user's exact operating system and
-processor. After import, the user must choose **Allow executable access**.
-This permission applies to that exact bundle; changing it requires permission
-again. The Rust starter builds only the author's host target by default.
-See [R dependencies and Native distribution](/plugins/r-and-native) before sharing.
+The Plugin's page shows any preparation needed before running it:
+
+| Runtime | Preparation |
+| --- | --- |
+| Node | Uses Liatir's Node runtime. npm dependencies are bundled by the CLI. |
+| Python | Prepare the Plugin's managed Python environment and declared packages. |
+| R | Install compatible R and choose **Prepare R packages** to restore the bundled dependency lock. |
+| Native | Import an executable for the exact OS/processor and choose **Allow executable access** after reviewing it. |
+| WASM | Uses the built-in isolated runner; no separate interpreter or executable permission is needed. |
+
+Package preparation may require internet access and compilation tools; prepared
+runs work offline. R's first build creates `renv.lock`, which must be committed
+with the project. Native permission applies to the exact imported bundle and
+must be granted again after a change. The Native Rust starter builds the author's
+host target by default; include and test additional targets before distribution.
+See the [bundle format](./format) for dependency locks and executable packaging.
 
 ## Pipeline integration
 
@@ -120,4 +127,4 @@ see [file output values](/plugins/field#file-output-values).
 - [Plugin context](/plugins/plugin-context)
 - [API bridge](/plugins/api-bridge)
 - [.lia bundle format](/plugins/format)
-- [R and Native guide](/plugins/r-and-native)
+- [Runtime packaging](/plugins/format)

@@ -10,7 +10,9 @@ contract version 1; existing Node, Python and WASM bundles remain supported.
 There are five supported runtimes: **Node**, **Python**, **R**, **Native**, and **WASM**. All
 five declare the I/O contract once in code, using their language SDK or the
 Native executable protocol — and `liatir build` generates the bundle manifest schema
-from it. There is no schema to keep in sync by hand:
+from it. The field types and file/result values are the shared Liatir contract,
+regardless of the execution language. There is no parallel runtime-specific
+I/O schema to keep in sync by hand:
 
 - **Node** declares it with `definePlugin({...})` from `@liatir/api`.
 - **Python** declares it with `define_plugin(...)` from the CLI-managed
@@ -295,7 +297,24 @@ The generated manifest has `runtime: "r"`, `r.entry: "r/main.R"`,
 `r.lockfile: "r/renv.lock"` and the code-derived `inputSchema`/`outputSchema`.
 Sibling source files are included under `r/` too. Installed R libraries are
 prepared separately on the user's machine; they are not copied into the bundle.
-See [dependency preparation](./r-and-native#create-an-r-plugin).
+Install R >= 4.1 before building. The CLI finds `Rscript` on PATH or uses
+`LIATIR_RSCRIPT`; the desktop app also discovers standard macOS and Windows
+installations. R is optional for app startup and unrelated Plugins. Liatir does
+not currently download the R interpreter.
+
+### Package preparation
+
+The author library lives in `.liatir/r-build-library`. Commit `renv.lock` with
+the project. If declared packages are missing from an existing lock, the build
+fails. To change package versions, deliberately update that author library and
+run `renv::snapshot()` with the explicit package list, including the SDK's
+`jsonlite` dependency, before rebuilding.
+
+On the Plugin's page, **Prepare R packages** restores the lock into a separate
+library keyed by Plugin name/version, lock and interpreter identity. Preparation
+may need network access and platform compilation tools; prepared runs work
+offline. Code-only changes reuse the library. Development sessions use separate
+libraries that are removed when the session ends.
 
 ## Native contract and manifest
 
@@ -351,8 +370,43 @@ and tested.
 
 Native permission is a separate desktop action bound to the complete bundle's
 SHA-256. Importing or verifying a signed bundle does not grant permission to run
-its executable. See [permissions, target metadata and the executable
-protocol](./r-and-native#create-a-native-plugin).
+its executable. The permission receipt is tied to the complete bundle's SHA-256;
+any changed bundle requires permission again. `liatir dev` runs the local project
+you explicitly opened in its temporary session.
+
+Package required runtime libraries in a self-contained executable or document
+system prerequisites. The current protocol packages executable variants; it does
+not install a separate set of native shared libraries.
+
+### Executable protocol, version 1
+
+Any compiled language can implement this protocol without the Rust SDK:
+
+1. When `LIATIR_EMIT_CONTRACT=1` is set, print one line and exit successfully:
+
+   ```text
+   __LIATIR_CONTRACT__{"liatirContract":1,"inputs":{"file":{"type":"file","required":true}},"outputs":{"length":{"type":"number"}}}
+   ```
+
+   Generate this from the same declarations used to validate execution. Do not
+   perform analysis or bridge calls during introspection.
+
+2. During execution, read the UTF-8 JSON object from `LIATIR_INPUT_FILE`. The app
+   creates this private file for the Job; it avoids command-line size limits and
+   quoting differences. The Rust SDK also accepts stdin when run directly.
+3. Validate input values, run the analysis, validate outputs, and print exactly
+   one `__LIATIR_RESULT__` line followed by the JSON output object. Use ordinary
+   stdout or stderr lines for diagnostic output. Exit nonzero on failure.
+4. The working directory and extracted executable are temporary and are removed
+   when the Job ends. Return file content as `{ "content": "...", "fileName": "..." }`,
+   or use bridge-managed cache/data storage and return an absolute path. Do not
+   return a path inside the temporary working directory. The standard Liatir
+   result handler saves and associates file outputs with their run.
+5. The app injects `LIATIR_JOB_ID` and `LIATIR_IPC_FILE`. Use them for the bridge.
+
+Bridge requests use the same [authenticated app bridge](./api-bridge#authenticated-bridge-protocol)
+as Node, Python and R. This executable protocol transports the existing Plugin
+I/O contract; it does not define another set of field or result types.
 
 ## Run and result lifecycle
 
@@ -364,4 +418,9 @@ and failures. Return inline content or persistent bridge-managed paths for
 
 R libraries are prepared for the Plugin identity, dependency lock and interpreter;
 Native uses an executable for the exact host target. Neither adds a dependency to
-unrelated Plugins or app startup. See [runtime setup](./r-and-native).
+unrelated Plugins or app startup. See [runtime preparation](./getting-started#runtime-preparation).
+
+For R and Native payloads, extraction rejects unsafe archive paths, symlinks and
+duplicate entries, restores Unix executable permissions and enforces limits of
+512 MiB compressed and 1 GiB expanded. Test an executable on every target you
+include; a successful run on one platform does not verify another platform.
