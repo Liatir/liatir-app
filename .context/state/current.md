@@ -13,7 +13,11 @@ findings, decisions and progress are in
 [OpenMM CUDA publication](./roadmap/openmm-cuda-publication.md). The pre-release check found the
 box's NVIDIA driver floor wrong (575.51.03, not 525.60.13 —
 [decision](../decisions/openmm-cuda-needs-the-cuda-12-9-driver.md)) and the CUDA release evidence
-unable to pass; both are corrected and rehearsed on this GPU before any dispatch.
+unable to pass; both are corrected (`f81fef2b`) and rehearsed on this GPU. **Publication is blocked
+on the owner**: billing is disabled on the Google Cloud project `liatir-release-security`, which
+holds the production signer and KMS key, so the signer answers 503 and cannot be redeployed. Every
+Runtime Box release is blocked until billing is re-enabled; the plan lists the exact steps after
+that.
 
 [R and Native Plugin runtimes](./r-and-native-plugin-runtime-support.md) are implemented
 in implementation commit `aeacb806` and documentation commit `449964c1`: CLI

@@ -4,8 +4,10 @@ The persistent operating guide for publishing OpenMM's CUDA Runtime Box, started
 must let another session resume without re-deriving anything: read **Current status** and **Next
 action** first, then the phase you are in.
 
-**Current status: Phases 1 and 2 passed; Phase 3 (commit and push) next.** Nothing has been
-dispatched, signed or published by this plan yet.
+**Current status: blocked on the owner at Phase 4** — billing is disabled on the Google Cloud
+project that holds the production signer (see **Blocker and the exact owner action**). Phases 1–3
+passed, and the official CI validation passed on the committed bytes. Nothing has been signed with
+the production key or published.
 
 ## Objective and support matrix
 
@@ -237,7 +239,74 @@ chaotic, so only energies at identical coordinates are compared.
   `syngraphe check` passes. The runner preflight passed for `liatir-linux-cuda-selfhosted` with
   776 GB free.
 
+- 2026-10-27 — **Phase 3 done.** Commit `f81fef2b1865ceba80f4f69ed43cdc2410799b85` pushed to
+  `origin/main` by a normal fast-forward from `0c58c575`; the remote hash was read back through
+  both `git` and the GitHub API. The push started the hosted OpenMM preflight, run 40575997728.
+
+- 2026-10-27 — Hosted preflight run 40575997728 passed (native job skipped, as on every push).
+  Runner preflight passed; the ephemeral runner registered as `liatir-linux-cuda-selfhosted` and
+  listened from 20:14:12Z. **Phase 4 started**: release run
+  [40576246471](https://github.com/Liatir/liatir-app/actions/runs/40576246471), dispatched with
+  `model_id=openmm-openmm`, `target_id=linux-x86_64-cuda12.9`, `channel=beta` after reading the
+  workflow back at the pushed commit; its identity was verified (workflow path, `main`,
+  `f81fef2b…`, `workflow_dispatch`). The machine is kept free of GPU work while it runs, because
+  the VRAM figures are device-wide deltas.
+
+- 2026-10-27 — **Release attempt 1 (run 40576246471) failed before any build**, at "Fail fast if
+  the deployed signer policy is stale" (20:15:24Z): the signer's `/health` answered HTTP 500, the
+  Google front end's "Please try again in 30 seconds" page, not the signer's own JSON. Nothing was
+  built, signed or uploaded; the public channel `channels/beta/openmm/linux-x86_64-cuda12.9` still
+  answers 404, and Boltz-2's channel still answers 200, so the registry is healthy. Unauthenticated
+  probes then returned one 403 (routing and auth alive) followed by six 503 "The service you
+  requested is not available yet" over three minutes: the Cloud Run service, idle and scaled to
+  zero since its last use on 2026-09-26, is not starting instances. The ephemeral runner took that
+  one job and deregistered normally. Remedy, which is also this plan's "signing-policy deployment":
+  the official `runtime-box-signer-deploy.yml`, dispatched from `f81fef2b` as run
+  [40577081826](https://github.com/Liatir/liatir-app/actions/runs/40577081826). Signer source,
+  deploy script, workflow and `policy.json` are unchanged since the last deployment (`a69a6751`),
+  so it redeploys the same code and policy, without touching KMS, and ends with a real KMS signing
+  smoke test against the app's trust root.
+
+- 2026-10-27 — **Blocked on the owner: billing is disabled on the Google Cloud project
+  `liatir-release-security`.** Signer redeploy run 40577081826 passed its validation job and failed
+  at "Deploy signer source and checked policy only" (20:20:55Z) with `PERMISSION_DENIED: This API
+  method requires billing to be enabled. Please enable billing on project
+  #liatir-release-security`, preceded by "Permission denied while accessing Artifact Registry".
+  That project holds the Cloud Run signer and the production KMS key, so this — not the signer
+  code — is why the service answers 503. No production signature is possible until the owner
+  re-enables billing; no agent can or should do that. Nothing public changed in either run.
+
+- 2026-10-27 — **CI validation passed while billing is off**: run
+  [40577574105](https://github.com/Liatir/liatir-app/actions/runs/40577574105) (`runtime-box-openmm.yml`,
+  `linux-x86_64-cuda12.9`, `native-lifecycle`, ephemeral development key) on this machine, from the
+  clean tree at `f81fef2b`, in about 15 minutes. Scrollcase v3 build 333 s, archive
+  `d435b2ebc08821b8e7c1073cfdcaad34dccef3d991f7b94e45f69b0bc1428edb` (1,272,964,509 bytes,
+  installed 3,668,920,345), signature and self-test passed. Validator: 19 cases including the new
+  unparameterized-residue refusal; CUDA readings measured (RTX 4060 Ti, 8.9, driver 610.88, NVRTC
+  12.9); Reference parity 1.7122e-4 kJ/mol; peak VRAM 191,889,408 bytes, peak RAM 799,731,712;
+  solvated DHFR temperatures 252.6 K at 1 ps rising to 297.3–303.6 K after 5 ps, equilibrated mean
+  300.06 K. Rust lifecycle 29 passed, 0 failed, 2 ignored. Model evidence `phase: model-validation`
+  passed its contract, CUDA checks included. This is CI evidence on committed bytes; the production
+  archive will differ (KMS signature), so the release must still re-measure it.
+- Host note: the owner set WSL2 to 8 GB RAM / 4 GB swap / 6 CPUs on 2026-10-24 for another project,
+  after a Windows bugcheck 0x154 (previous Liatir values are kept in `%USERPROFILE%\.wslconfig.liatir-backup`).
+  The validation fits easily; whether the release's optimized Linux test-binary build fits in 8 GB
+  is untested. It is the owner's setting and was not changed.
+
+## Blocker and the exact owner action
+
+1. Re-enable billing for Google Cloud project `liatir-release-security`
+   (<https://console.developers.google.com/billing/enable?project=liatir-release-security>), and
+   wait a few minutes for it to propagate.
+2. Then, from `main`: dispatch `runtime-box-signer-deploy.yml` (no inputs). It must pass all its
+   steps, including "Smoke-test KMS against the app trust root", which proves the production key
+   still signs for `runtime-boxes/trust/production-public.json`. If that smoke test fails, stop:
+   the trust root is a contract and must not be replaced as cleanup.
+3. Then relaunch the ephemeral runner (Phase 4, step 1) and dispatch the release with the same
+   three inputs (attempt 2).
+
 ## Next action
 
-When `test:verify` passes: commit Phase 1 (code, guards, legal, context) and push to `main`, read
-the remote hash back, then start Phase 4.
+While billing is off: the Windows-through-WSL2 product lifecycle in the real Windows app, on a
+development box served by the loopback registry (development evidence, as on 2026-09-10), so the
+new receipt fields and UI run in the real app before the release. Then wait for the owner.
