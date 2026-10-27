@@ -45,8 +45,15 @@ On 2026-10-26 the owner authorized pushing all current `main` commits to
 On 2026-10-27 the owner explicitly authorized publishing desktop version **0.3.0**
 for macOS, Linux and the Microsoft Store channel. The root package version and
 its generated copies are synchronized; all seven `test:verify` suites passed
-(92 files / 718 tests, report `2026-10-27T00-11-17-423Z`). The next step is the existing
-`desktop-release-build.yml` dispatch with `targets=all`. Repository signing
+(92 files / 718 tests, report `2026-10-27T00-11-17-423Z`). Version commit
+`84e714ac38781a53a15dee1d3f3f6d6d32c3567d` is on remote `main` and the existing
+`desktop-release-build.yml` was dispatched with `targets=all` in
+[run 40424923018](https://github.com/Liatir/liatir-app/actions/runs/40424923018).
+All three package jobs stopped before compilation because plain-Node spec-loading
+tests lacked a freshly built core package. The common unit command now builds
+core first; the failure was reproduced with core output absent, the build-order
+guard was observed failing, and the corrected full local verify passed. The
+corrected revision needs a new all-target build; no 0.3.0 package is published yet. Repository signing
 secret/variable names and release-repository access were checked without reading
 secret values. The workflow builds and verifies packages; publishing macOS/Linux
 downloads and the updater feed is a subsequent step of the same authorization.

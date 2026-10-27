@@ -61,10 +61,10 @@ to make it look like one.
 
 | Item | Blocker |
 | --- | --- |
-| Apple notarization credentials | The Developer ID Application identity is in the maintainer's keychain; three copies are installed, all valid to 2031, so builds name the newest by its SHA-1, `CF1EC4A38CD20857E8C2A15DA87D06307EE4DCF2`, since the common name is ambiguous. An App Store Connect API key for notarization is not yet issued. |
+| Apple notarization credentials | The Developer ID Application identity is in the maintainer's keychain; three copies are installed, all valid to 2031, so builds name the newest by its SHA-1, `CF1EC4A38CD20857E8C2A15DA87D06307EE4DCF2`, since the common name is ambiguous. Notarization is already configured through Apple ID credentials in GitHub; a separate App Store Connect API key is not required by the existing workflow. |
 | Developer ID signatures inside the Native Tools box | **Resolved 2026-09-28:** Scrollcase 1.3.0 added `--codesign` and 1.4.0 `--codesign-entitlements`; the signed box (562 Mach-O files) passed its self-test and Apple accepted it on its own (submission `6123de1c-5b9d-484e-bdcd-1c34851fc502`, 0 issues). Original finding: the first notarization of `0.1.0` (submission `3779c3f5-7d35-40bd-b419-b6af768154db`, 2026-09-28, from `c60c7fd`) was rejected: the app itself passed, but Apple unpacks the embedded `native-tools-macos-aarch64-cpu.zip` and found 562 Mach-O files (`venv/lib`, `bin`, `libexec`, `sbin`) without a Developer ID signature, a secure timestamp or, for 104 executables, the hardened runtime. Scrollcase never runs `conda-unpack` and never rewrites a binary on extraction, so signatures applied before archiving stay valid; Scrollcase has no signing step yet. |
 | Updater key pair | Generated 2026-09-28 on the maintainer's Mac: private key `~/.tauri/liatir-updater.key`, its password in the login Keychain item `liatir-updater-key`, public key in `~/.tauri/liatir-updater.key.pub`. In GitHub since 2026-09-28 (`TAURI_SIGNING_PRIVATE_KEY`, `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`, variable `TAURI_SIGNING_PUBLIC_KEY`); backing it up outside that Mac is the maintainer's. Losing the private key means installed copies can never be updated again. |
-| The `updates.liatir.com` feed | R2 bucket `liatir-updates` with custom domain `updates.liatir.com` created 2026-09-28; `scripts/desktop-update-manifest.mjs` writes `desktop/latest.json`. Nothing uploaded yet. Downloads go to the public `Liatir/liatir-releases` repository, created the same day with only a README. |
+| The `updates.liatir.com` feed | R2 bucket `liatir-updates` with custom domain `updates.liatir.com` created 2026-09-28; `scripts/desktop-update-manifest.mjs` writes `desktop/latest.json`. The live feed and public downloads currently serve 0.2.1; both feed bytes and the R2 object were read back and matched during the 0.3.0 preflight. Downloads use the public `Liatir/liatir-releases` repository. |
 | Microsoft Store identity in GitHub | Reserved 2026-09-28 (Store ID `9NDBJVZJVV1Z`, Package Family Name `Desktopr.Liatir_2a6896ac5t66t`): `MSIX_IDENTITY_NAME=Desktopr.Liatir`, `MSIX_IDENTITY_PUBLISHER=CN=B27DF8BD-5700-47C4-9719-CA85B3F0938A`, `MSIX_PUBLISHER_DISPLAY_NAME=Lorenzo Suffritti` (changed from `Desktopr` in Partner Center on 2026-09-29, before the first submission), shown to users as the publisher. Not secret; set as repository variables 2026-09-28. |
 | A clean macOS arm64 machine or user for the install proof | Access, not code. |
 | MSIX containment of Runtime Boxes, Python environments and WSL2 | See consequence 3 below; unproven until the package runs on a real Windows machine. |
@@ -141,12 +141,29 @@ publication, GPU workflows or AI Model downloads/tests.
   `2026-10-27T00-11-17-423Z`) and Syngraphe. Optional local R/C++/WASI toolchains were enabled;
   no heavy model tests ran. Preserve the existing runtime desktop validation recorded in the
   [runtime plan](../r-and-native-plugin-runtime-support.md).
-- [ ] Commit/push and verify the exact dispatched revision.
+- [x] Commit/push version revision `84e714ac38781a53a15dee1d3f3f6d6d32c3567d` to `main`.
+  Dispatch `targets=all` in [run 40424923018](https://github.com/Liatir/liatir-app/actions/runs/40424923018)
+  and verify its repository, `workflow_dispatch` event, branch and full head SHA immediately.
 - [ ] Build macOS arm64, Linux x86_64 and Store x86_64 from that revision.
 - [ ] Download and verify artifact identity, updater signatures, macOS notarization and MSIX metadata.
 - [ ] Publish verified downloads and check GitHub asset hashes and public availability.
 - [ ] Publish and read back the two-platform updater feed only after downloads are available.
 - [ ] Record the Store handoff; do not describe a built MSIX as a certified Store release.
+
+### Clean-checkout prerequisite defect
+
+Run 40424923018 exposed a missing prerequisite before packaging: the unit suite's
+plain-Node e2e-spec loading check imports `liatir-core/dist/single-cell-showcase.js`,
+but the unit command did not build core first. A developer checkout's existing
+`dist/` masked it. All three package jobs failed on the same missing import before
+compilation; no package was published.
+The correction belongs in the common `test:unit` entry point, preserving all tests
+and avoiding release-only workarounds. The existing build-order guard was expanded
+and observed failing before changing the command. The exact Node import failure
+was reproduced locally with compiled core absent, then the corrected common
+entry point regenerated it and passed all seven verify suites (92 files / 718 tests).
+Proceed with one corrected all-target dispatch; inspect any new failure before
+another retry.
 
 ## 0.2.1 build evidence (2026-10-01, revision `7cfc948`)
 

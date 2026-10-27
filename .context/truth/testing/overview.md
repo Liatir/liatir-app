@@ -73,7 +73,9 @@ queued job as authorization to start a self-hosted runner.
 
 - `npm run test:unit`
   Fast TypeScript contract/helper tests. Use this for pure registry contracts,
-  parsers, path display helpers, and other deterministic logic.
+  parsers, path display helpers, and other deterministic logic. The command builds
+  `liatir-core` first: e2e-spec loading checks use plain Node child processes, which
+  cannot use Vitest's source aliases and need the compiled package on clean checkouts.
 
 - `npm run test:tauri`
   Full native E2E tests. This builds the frontend, compiles the Tauri bridge,
