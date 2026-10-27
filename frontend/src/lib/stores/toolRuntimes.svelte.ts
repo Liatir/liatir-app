@@ -1,7 +1,7 @@
 /** Machine-level state for signed scientific Tool Runtimes. Operations are isolated by runtime ID. */
 import { liatir } from '$lib/api';
 import { getAIHardwareInfo, type AIHardwareInfo } from '$lib/ai/runtime';
-import { toolRuntimeInstallBlock } from '$lib/ai/model-compatibility';
+import { toolRuntimeInstallBlock, type AIModelInstallBlock } from '$lib/ai/model-compatibility';
 import { appStorage } from './app-storage';
 import { LIATIR_TOOL_RUNTIME_CATALOG } from '$lib/tool-runtimes/catalog';
 import {
@@ -77,6 +77,12 @@ function createToolRuntimeStore() {
     get runtimes() { return records(); },
     get operations() { return operations; },
     get updates() { return updates; },
+
+    /** Why this Tool Runtime cannot run on this computer, or null when it can or the host is unknown. */
+    installBlock(id: string): AIModelInstallBlock | null {
+      const metadata = catalog.find((item) => item.id === id);
+      return metadata ? toolRuntimeInstallBlock(metadata, hardware) : null;
+    },
 
     async init() {
       if (initialized) return;

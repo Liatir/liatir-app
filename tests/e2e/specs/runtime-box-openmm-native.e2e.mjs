@@ -253,6 +253,18 @@ print(json.dumps({
     expect(Number.isFinite(metrics.initialPotentialEnergyKilojoulePerMole)).toBe(true);
     expect(metrics.finalPotentialEnergyKilojoulePerMole)
       .toBeLessThan(metrics.initialPotentialEnergyKilojoulePerMole);
+    // What the product's own run read of its GPU. A CUDA release's evidence holds these against the
+    // host it ran on, so they come from the Result the user keeps, never from the target's name.
+    const expectedCuda = targetCandidates[0].target.cudaVersion ?? null;
+    if (EXPECTED_ACCELERATOR === 'CUDA') {
+      expect(metrics.gpuModel).toEqual(expect.any(String));
+      expect(metrics.computeCapability).toMatch(/^\d+\.\d+$/);
+      expect(metrics.reportedCudaCompatibility).toBe(expectedCuda);
+      expect(metrics.peakVramBytes).toBeGreaterThan(0);
+    } else {
+      expect(metrics.gpuModel).toBe(null);
+      expect(metrics.peakVramBytes).toBe(null);
+    }
 
     await navigateInApp(browser, `/results?run=${result.id}`);
     await browser.waitUntil(
@@ -363,6 +375,8 @@ print(json.dumps({
     // check is what separates a physical trajectory from one that blew up into NaN.
     expect(dynamicsMetrics.frameCount).toBeGreaterThan(0);
     expect(dynamicsMetrics.trajectoryFiniteCoordinates).toBe(true);
+    expect(dynamicsMetrics.gpuModel).toBe(metrics.gpuModel);
+    expect(dynamicsMetrics.reportedCudaCompatibility).toBe(metrics.reportedCudaCompatibility);
 
     await navigateInApp(browser, `/results?run=${dynamicsResult.id}`);
     await browser.waitUntil(
@@ -391,6 +405,11 @@ print(json.dumps({
         targetId: TARGET_ID, hostEnvironment: EXPECTED_HOST_ENVIRONMENT,
         version: VERSION, jobId: productJob.id, analysisRunId: result.id,
         accelerator: EXPECTED_ACCELERATOR, resultArtifactCount: result.outputFiles.length,
+        gpuModel: metrics.gpuModel,
+        computeCapability: metrics.computeCapability,
+        reportedCudaCompatibility: metrics.reportedCudaCompatibility,
+        peakVramBytes: metrics.peakVramBytes,
+        vramMeasurementMethod: metrics.vramMeasurementMethod,
         // The exact bytes this lifecycle exercised. Without them the record cannot be tied back to
         // one build, and a later run of a different archive would look indistinguishable.
         release: {
@@ -416,6 +435,7 @@ print(json.dumps({
           preparedAtomCount: dynamicsMetrics.preparedAtomCount,
           frameCount: dynamicsMetrics.frameCount,
           trajectoryFiniteCoordinates: dynamicsMetrics.trajectoryFiniteCoordinates,
+          peakVramBytes: dynamicsMetrics.peakVramBytes,
         },
         assertions: {
           install: 'passed', cancellation: 'passed', unmeasuredRunConfirmable: 'passed',

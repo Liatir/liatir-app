@@ -38,6 +38,18 @@ assert.equal(Boolean(releasePath), Boolean(publicPath), '--release-document and 
 const measurementPath = join(ROOT, 'scripts/runtime-box/measure-python.py');
 const samples = [];
 const cases = [];
+const CUDA_DEVICE_FIELDS = ['gpuModel', 'gpuMemoryBytes', 'computeCapability', 'reportedCudaCompatibility',
+  'peakVramBytes', 'vramMeasurementMethod'];
+// Langevin dynamics at 300 K must hold the solvated system near its bath. Velocities are drawn at
+// 300 K on a minimized structure, so equipartition first moves kinetic energy into the potential:
+// the first saved frame, at 1 ps, measured 250 K on this system. The first half of the run is
+// therefore equilibration and is held only to a blow-up ceiling; the second half must sit near the
+// bath, where 29,419 atoms fluctuate by about 2 K.
+const THERMOSTAT_TARGET_KELVIN = 300;
+const THERMOSTAT_EQUILIBRATED_AFTER_PS = 5;
+const THERMOSTAT_MEAN_TOLERANCE_KELVIN = 10;
+const THERMOSTAT_FRAME_TOLERANCE_KELVIN = 20;
+const THERMOSTAT_CEILING_KELVIN = 350;
 
 function execute(script, payload, { accelerator = recipe.target.accelerator, timeoutMs = 600_000 } = {}) {
   return new Promise((resolveResult, reject) => {
@@ -67,6 +79,19 @@ function parseResult(execution, label) {
   const line = execution.stdout.split(/\r?\n/u).findLast((value) => value.startsWith('{'));
   assert.ok(line, `${label} emitted no structured result`);
   return JSON.parse(line);
+}
+
+/** The time and instantaneous temperature of every saved frame, from OpenMM's own state CSV. */
+async function stateTemperatures(path) {
+  const [header, ...rows] = (await readFile(path, 'utf8')).trim().split(/\r?\n/u);
+  const columns = header.replace(/^#/u, '').split(',').map((name) => name.replaceAll('"', ''));
+  const time = columns.indexOf('Time (ps)');
+  const temperature = columns.indexOf('Temperature (K)');
+  assert.ok(time >= 0 && temperature >= 0, `${path} has no time or temperature column`);
+  return rows.map((row) => {
+    const values = row.split(',');
+    return { timePs: Number(values[time]), kelvin: Number(values[temperature]) };
+  });
 }
 
 const PREPARE_FIXTURES = String.raw`
@@ -217,6 +242,17 @@ try {
     if (recipe.target.accelerator === 'cuda') {
       assert.deepEqual(execution.measurement.vramMeasurementErrors, []);
       assert.ok(execution.measurement.peakVramBytes > 0, 'No measured CUDA memory');
+      // The run's own readings of its device, held to the measuring process's separate nvidia-smi
+      // query. OpenMM hands PTX to the driver, so the NVRTC that compiled it decides which drivers
+      // can load it: it has to be the target's CUDA, as measured, not as declared.
+      assert.equal(result.summary.gpuModel, execution.measurement.gpuName, `${id} GPU`);
+      assert.equal(result.summary.computeCapability, execution.measurement.gpuComputeCapability,
+        `${id} compute capability`);
+      assert.equal(result.summary.reportedCudaCompatibility, recipe.target.cudaVersion, `${id} NVRTC CUDA version`);
+      assert.ok(result.summary.peakVramBytes > 0, `${id} reported no VRAM peak of its own`);
+      assert.equal(result.summary.vramMeasurementMethod, 'device-wide-delta');
+    } else {
+      for (const field of CUDA_DEVICE_FIELDS) assert.equal(result.summary[field], null, `${id} CPU ${field}`);
     }
     // The envelope must never claim more atoms were measured than the System actually contained.
     samples.push({ fixtureId: id, workloadId: metrics.workloadId, maxTokenCount: metrics.tokenCount,
@@ -224,7 +260,8 @@ try {
       peakRamBytes: execution.measurement.peakRamBytes, peakVramBytes: execution.measurement.peakVramBytes,
       elapsedMs: execution.measurement.elapsedMs, outputBytes });
     cases.push({ id, metrics, preparedAtoms: result.summary.preparedAtomCount,
-      measurement: execution.measurement, outputBytes });
+      measurement: execution.measurement, outputBytes,
+      cudaDevice: Object.fromEntries(CUDA_DEVICE_FIELDS.map((field) => [field, result.summary[field]])) });
     console.error(`OpenMM ${id}: passed (${result.summary.preparedAtomCount} atoms)`);
     return result;
   }
@@ -287,6 +324,23 @@ try {
     dhfrSolvated.summary.preparedAtomCount, { timeoutMs: 7_200_000 });
   assert.equal(dhfrDynamics.summary.frameCount, 10);
   assert.equal(dhfrDynamics.summary.trajectoryFiniteCoordinates, true);
+  // Finite coordinates do not make a trajectory physical. A system the thermostat cannot hold near
+  // its bath has blown up or been mis-parameterized even while every number stays finite.
+  const frames = await stateTemperatures(dhfrDynamics.paths.stateCsvPath);
+  assert.equal(frames.length, 10);
+  assert.ok(frames.every((frame) => Number.isFinite(frame.kelvin) && frame.kelvin < THERMOSTAT_CEILING_KELVIN),
+    `Solvated DHFR heated past ${THERMOSTAT_CEILING_KELVIN} K: ${frames.map((frame) => frame.kelvin).join(', ')}`);
+  const equilibrated = frames.filter((frame) => frame.timePs >= THERMOSTAT_EQUILIBRATED_AFTER_PS);
+  assert.ok(equilibrated.length >= 5, 'Too few equilibrated frames to judge the thermostat');
+  const equilibratedMean = equilibrated.reduce((sum, frame) => sum + frame.kelvin, 0) / equilibrated.length;
+  assert.ok(Math.abs(equilibratedMean - THERMOSTAT_TARGET_KELVIN) <= THERMOSTAT_MEAN_TOLERANCE_KELVIN,
+    `Solvated DHFR equilibrated mean ${equilibratedMean} K is not within ${THERMOSTAT_MEAN_TOLERANCE_KELVIN} K of the bath`);
+  assert.ok(equilibrated.every((frame) => Math.abs(frame.kelvin - THERMOSTAT_TARGET_KELVIN) <= THERMOSTAT_FRAME_TOLERANCE_KELVIN),
+    `Solvated DHFR left the thermostat band after equilibration: ${equilibrated.map((frame) => frame.kelvin).join(', ')} K`);
+  cases.find((item) => item.id === 'dhfr-solvated-dynamics-10ps').temperatureKelvin = {
+    bath: THERMOSTAT_TARGET_KELVIN, equilibratedAfterPs: THERMOSTAT_EQUILIBRATED_AFTER_PS,
+    equilibratedMean, frames,
+  };
 
   const solvatedInput = { mode: 'dynamics', dynamics: { ...dynamics, preset: 'custom', customDurationPs: 0.02,
     saveIntervalPs: 0.01, pressureBar: 1 },
@@ -316,6 +370,15 @@ try {
   assert.notEqual(noLigand.code, 0);
   assert.ok(noLigand.stderr.includes('did not parameterize a ligand'), noLigand.stderr);
   cases.push({ id: 'absent-ligand', rejected: true });
+  // Chemistry the reviewed force fields cannot describe is refused by name rather than dropped: the
+  // ethanol in this complex has no Amber template, and no SDF is supplied for it here.
+  const unparameterized = await execute(productPath, { ...base, action: 'run', mode: 'relaxation', relaxation,
+    inputStructure: join(workDir, 'protein-ligand.pdb'), measurementMode: true,
+    outputDir: join(workDir, 'unparameterized-residue') }, { accelerator: 'cpu' });
+  assert.notEqual(unparameterized.code, 0);
+  assert.ok(unparameterized.stderr.includes('cannot be parameterized by the reviewed force fields'),
+    unparameterized.stderr);
+  cases.push({ id: 'unparameterized-residue', rejected: true });
 
   const damagedMetadata = JSON.parse(await readFile(first.paths.checkpointMetadataPath, 'utf8'));
   damagedMetadata.state.systemXml += 'corrupted';
@@ -331,6 +394,9 @@ try {
   // Accelerator identity comes from the measured runs themselves, so a GPU figure always names the
   // card, driver and capability that produced it rather than leaving the reader to guess the host.
   const measuredField = (field) => cases.find((item) => item.measurement?.[field] != null)?.measurement[field] ?? null;
+  // The CUDA version OpenMM compiled with, as every CUDA case reported it and asserted it above.
+  const reportedCudaCompatibility = cases.find((item) => item.cudaDevice?.reportedCudaCompatibility)
+    ?.cudaDevice.reportedCudaCompatibility ?? null;
 
   const validation = { schemaVersion: 1, kind: 'liatir.openmm-scientific-validation',
     createdAt: new Date().toISOString(), status: 'passed', modelId: COMPONENT_ID, sourceRevision: SOURCE_REVISION,
@@ -356,14 +422,14 @@ try {
       // Real fixtures, all shipped inside the verified payload rather than downloaded.
       realProteinFixtures: realFixtureSha256,
       framework: { name: 'openmm', version: '8.5.1', backend: recipe.target.accelerator,
-        reportedCudaCompatibility: recipe.target.cudaVersion ?? null },
+        reportedCudaCompatibility },
       accelerator: { kind: recipe.target.accelerator,
         gpuModel: measuredField('gpuName'),
         gpuMemoryBytes: measuredField('gpuMemoryBytes'),
         computeCapability: measuredField('gpuComputeCapability'),
         driverVersion: measuredField('gpuDriverVersion'),
         vramMeasurementMethod: measuredField('vramMeasurementMethod'),
-        reportedCudaCompatibility: recipe.target.cudaVersion ?? null },
+        reportedCudaCompatibility },
       outputShapes: { relaxedStructure: [33, 3], ligandStructure: [42, 3], trajectory: [10, 33, 3] },
       finiteValues: true, tolerances: { absolute: 0.01, relative: 0 },
       parity: { reference: 'OpenMM-8.5.1-Reference-platform-official-ala3-energy', passed: true,

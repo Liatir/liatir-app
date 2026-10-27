@@ -20,12 +20,31 @@
 - Charge-model SHA-256: `7981e7f5b0b1e424c9e10a40d9e7606d96dcd3dd2b095cb4eeff6829f92238ee`.
 - RDKit 2025.03.6: BSD-3-Clause.
 
-The Linux and Windows OpenMM conda builds are unified packages that include CPU, CUDA and OpenCL
-plugins. Liatir still selects the signed target backend explicitly: CPU boxes cannot silently fall
-back to CUDA, and CUDA boxes cannot silently fall back to CPU. Both platforms are constrained to
+The Linux OpenMM conda build is a unified package that includes CPU, CUDA and OpenCL plugins.
+Liatir still selects the signed target backend explicitly: CPU boxes cannot silently fall back to
+CUDA, and CUDA boxes cannot silently fall back to CPU. The Linux targets are constrained to
 CUDA 12.9 packages so dependency locks cannot drift to CUDA 13. The macOS box selects CPU only.
 NAGL ligand charges use PyTorch 2.10.0 CPU on every target, including CUDA simulations; only OpenMM's
 simulation platform uses the GPU. This avoids bundling an unrelated CUDA PyTorch stack.
+
+## CUDA target
+
+The `linux-x86_64-cuda12.9` box carries OpenMM's CUDA platform plugin (LGPL-3.0-or-later) unmodified,
+as the official conda package, with the licence texts listed above. The plugin compiles its GPU
+kernels at run time with NVIDIA's runtime compiler and links NVIDIA's cuFFT library. Three conda
+packages are therefore under the NVIDIA CUDA Toolkit End User License Agreement:
+`cuda-nvrtc` 12.9.86, `libcufft` 11.4.1.4 and the `cuda-version` 12.9 constraint package. The same
+three packages, at the same versions and under the same agreement, already ship in the published
+scGPT, Geneformer and Boltz-2 CUDA boxes, so this box adds no NVIDIA term the project has not
+already distributed. `mkl` under the Intel Simplified Software License is likewise already shipped.
+The NVIDIA driver belongs to the user's system and is not part of the box.
+
+The GPL-family conda dependencies — the GCC runtime libraries under the GCC runtime library
+exception, `readline`, `ld_impl_linux-64`, `gmp` and the LGPL libraries — ship as unmodified,
+separable packages inside the box's own environment, on the basis recorded in
+[Copyleft dependencies in signed boxes](../../.context/decisions/copyleft-dependencies-in-signed-boxes.md).
+The complete transitive inventory, 183 packages with their declared licences, is
+`runtime-boxes/legal/audits/openmm-linux-x86_64-cuda12.9.json`.
 
 The signed Python environment includes a Liatir startup hook that resolves OpenMM's documented
 `OPENMM_PLUGIN_DIR` relative to the installed Python prefix, and retains local DLL search handles

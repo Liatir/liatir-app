@@ -5,7 +5,10 @@ import {
   MHCFLURRY_CLASS1_PRESENTATION_METADATA,
   getRuntimeBoxAIModelMetadata,
 } from '../../packages/liatir-core/src/ai-catalog';
-import { PVACTOOLS_TOOL_RUNTIME_METADATA } from '../../packages/liatir-core/src/tool-runtime-catalog';
+import {
+  OPENMM_RELEASE_CANDIDATE_METADATA,
+  PVACTOOLS_TOOL_RUNTIME_METADATA,
+} from '../../packages/liatir-core/src/tool-runtime-catalog';
 import type {
   LiatirAIModelMetadata,
   LiatirRuntimeBoxActivationMetadata,
@@ -223,6 +226,39 @@ describe('Runtime Box native target selection', () => {
       const block = modelInstallBlock(baseModel, windowsWithWsl2());
       expect(block?.kind).toBe('cuda');
       expect(block?.reason).toContain('needs an NVIDIA GPU');
+    });
+  });
+
+  // OpenMM is offered only as its Linux CUDA box, and its driver floor is CUDA 12.9's because OpenMM
+  // hands PTX to the driver. Each refusal has to name the real obstacle before a 1.3 GB download.
+  describe('OpenMM, offered only as the Linux CUDA box', () => {
+    it('installs natively and through WSL2 on a CUDA 12.9 driver', () => {
+      expect(toolRuntimeInstallBlock(OPENMM_RELEASE_CANDIDATE_METADATA, hardware('linux', 'x86_64', '575.51.03')))
+        .toBeNull();
+      const windows = hardware('windows', 'x86_64', '576.02');
+      windows.wsl2Available = true;
+      windows.wslDistribution = 'Ubuntu-24.04';
+      windows.wslNvidiaDriverVersion = '576.02';
+      expect(toolRuntimeInstallBlock(OPENMM_RELEASE_CANDIDATE_METADATA, windows)).toBeNull();
+    });
+
+    it('asks for a newer driver where the driver cannot load its PTX', () => {
+      const block = toolRuntimeInstallBlock(OPENMM_RELEASE_CANDIDATE_METADATA, hardware('linux', 'x86_64', '550.163.01'));
+      expect(block?.kind).toBe('cuda');
+      expect(block?.reason).toContain('575.51.03 or newer');
+    });
+
+    it('asks for an NVIDIA GPU without one', () => {
+      const block = toolRuntimeInstallBlock(OPENMM_RELEASE_CANDIDATE_METADATA, hardware('linux', 'x86_64'));
+      expect(block?.kind).toBe('cuda');
+      expect(block?.reason).toContain('needs an NVIDIA GPU');
+    });
+
+    it('names the systems it runs on, Windows included, on a Mac', () => {
+      const block = toolRuntimeInstallBlock(OPENMM_RELEASE_CANDIDATE_METADATA, hardware('macos', 'aarch64'));
+      expect(block?.kind).toBe('host-os');
+      expect(block?.summary).toBe('This Tool Runtime is not available on this system');
+      expect(block?.required).toBe('Linux, Windows through WSL2');
     });
   });
 

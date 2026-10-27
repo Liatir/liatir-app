@@ -7,6 +7,14 @@ and in the plans under `history/`; the readiness of each product area, with its 
 
 ## Active implementation
 
+**OpenMM CUDA publication** — the owner asked on 2026-10-27 for OpenMM's `linux-x86_64-cuda12.9`
+box to be published, CUDA only, for Linux and for Windows through WSL2. The persistent plan,
+findings, decisions and progress are in
+[OpenMM CUDA publication](./roadmap/openmm-cuda-publication.md). The pre-release check found the
+box's NVIDIA driver floor wrong (575.51.03, not 525.60.13 —
+[decision](../decisions/openmm-cuda-needs-the-cuda-12-9-driver.md)) and the CUDA release evidence
+unable to pass; both are corrected and rehearsed on this GPU before any dispatch.
+
 [R and Native Plugin runtimes](./r-and-native-plugin-runtime-support.md) are implemented
 in implementation commit `aeacb806` and documentation commit `449964c1`: CLI
 scaffolding/build/dev, managed R libraries,
@@ -261,9 +269,10 @@ refinements. No tests, builds or browser checks were run, as requested.
    Models page offer a Linux CUDA box through WSL2 on Windows: Geneformer showed as unavailable
    there because the page considered only CPU boxes for WSL2, although the installer already
    routed CUDA ones. Its MSIX, not the 0.1.1 one, is the one to submit to the Store.
-2. **OpenMM publication.** Both Linux targets are `native-lifecycle-validated` and the macOS CPU
-   target is still `planned`; none is published. See
-   [Phase 3 implementation status](./roadmap/phase3-implementation-status.md).
+2. **OpenMM publication.** In progress for `linux-x86_64-cuda12.9` only — see
+   [OpenMM CUDA publication](./roadmap/openmm-cuda-publication.md). `linux-x86_64-cpu` stays
+   `native-lifecycle-validated` and `macos-aarch64-cpu` `planned`, both deliberately unpublished;
+   earlier evidence is in [Phase 3 implementation status](./roadmap/phase3-implementation-status.md).
 3. **The partial product areas** in [Beta 1 readiness](./roadmap/beta-readiness.md): the Quenta
    evaluation against a real local Ollama model, useful Plugin templates, and the structure pages' unexercised paths (the 56-atom warning, local
    file validation, PAE/PDE output). Also: the Native Tools boxes with the h5repack step single-cell

@@ -246,6 +246,13 @@ interface OpenMMCommonSummary {
   hardwareEstimate: OpenMMAcceptedEstimate;
   seed: number;
   preparation: LiatirOpenMMPreparationOptions;
+  /** What the run itself read of its GPU; null on CPU, and for any reading the host withheld. */
+  gpuModel: string | null;
+  gpuMemoryBytes: number | null;
+  computeCapability: string | null;
+  reportedCudaCompatibility: string | null;
+  peakVramBytes: number | null;
+  vramMeasurementMethod: string | null;
 }
 
 interface OpenMMRelaxationSummary extends OpenMMCommonSummary {
@@ -542,7 +549,9 @@ function phase3Provenance(
       ligand: summary.forceField.ligand,
     },
     accelerator: activation.selectedTarget.accelerator,
-    computeDevice: `OpenMM ${summary.platform} platform`,
+    computeDevice: summary.gpuModel
+      ? `OpenMM ${summary.platform} platform · ${summary.gpuModel}`
+      : `OpenMM ${summary.platform} platform`,
     precision: summary.precision,
     seed: summary.seed,
     msa: { mode: 'not-applicable', localA3mEntityIds: [], singleSequenceEntityIds: [] },

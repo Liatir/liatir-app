@@ -7,17 +7,20 @@
  */
 export const OPENMM_SCRIPT = String.raw`
 import csv
+import ctypes
 import hashlib
 import json
 import math
 import os
 import pathlib
 import random
+import re
 import shlex
 import socket
 import struct
 import sys
 import tempfile
+import threading
 
 MAX_STRUCTURE_BYTES = 64 * 1024 * 1024
 MAX_LIGAND_BYTES = 16 * 1024 * 1024
@@ -37,6 +40,14 @@ NAGL_CHARGE_MODEL = "openff-gnn-am1bcc-1.0.0.pt"
 NAGL_CHARGE_MODEL_SHA256 = "7981e7f5b0b1e424c9e10a40d9e7606d96dcd3dd2b095cb4eeff6829f92238ee"
 FORCE_FIELD_ID = "amber19-all+tip3p-fb+openff-2.3.0+nagl-am1bcc-1.0.0"
 TIMESTEP_FS = 2
+# The CUDA plugin links this exact soname, so loading it again returns the NVRTC that compiled
+# OpenMM's kernels rather than any other copy on the machine.
+NVRTC_LIBRARY = "libnvrtc.so.12"
+CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR = 75
+CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR = 76
+GPU_SAMPLE_SECONDS = 0.05
+CUDA_DEVICE_FIELDS = ("gpuModel", "gpuMemoryBytes", "computeCapability", "reportedCudaCompatibility",
+                      "peakVramBytes", "vramMeasurementMethod")
 
 def fail(message):
     raise ValueError(message)
@@ -569,6 +580,137 @@ def platform_for(payload, Platform):
         return platform, {"Threads": str(threads)}, "mixed"
     fail("OpenMM supports only the exact CPU or CUDA target selected by the Runtime Box.")
 
+class NvmlMemory(ctypes.Structure):
+    _fields_ = [("total", ctypes.c_ulonglong), ("free", ctypes.c_ulonglong), ("used", ctypes.c_ulonglong)]
+
+class CudaDeviceReadings:
+    """
+    The GPU a CUDA run actually used, read by this process.
+
+    The box ships CPU PyTorch only, so the readings come from OpenMM, the CUDA driver API and NVML
+    rather than from torch. A CUDA release holds them against the host the run happened on, so none
+    is ever copied from the target's declared values: one that cannot be read stays None. NVML and
+    libcuda resolve through the dynamic loader, which also finds WSL2's /usr/lib/wsl/lib, where
+    nvidia-smi is not on a no-shell PATH.
+
+    VRAM is a device-wide delta, total use sampled every 50 ms minus a baseline read before the
+    Context exists, because NVML attributes no memory to a process under WSL2. It is the method the
+    scientific validator records, and like it, it can only over-state.
+    """
+
+    def __init__(self):
+        self.nvml = None
+        self.handles = []
+        self.baseline = []
+        self.peak = []
+        self.sampling_failed = False
+        self.nvml_index = None
+        self.identity = {"gpuModel": None, "computeCapability": None, "reportedCudaCompatibility": None}
+        self.stopped = threading.Event()
+        self.thread = None
+        try:
+            nvml = ctypes.CDLL("libnvidia-ml.so.1")
+            count = ctypes.c_uint()
+            if nvml.nvmlInit_v2() != 0 or nvml.nvmlDeviceGetCount_v2(ctypes.byref(count)) != 0:
+                return
+            for index in range(count.value):
+                handle = ctypes.c_void_p()
+                if nvml.nvmlDeviceGetHandleByIndex_v2(index, ctypes.byref(handle)) != 0:
+                    return
+                self.handles.append(handle)
+            self.nvml = nvml
+            self.baseline = self.used_bytes()
+        except (OSError, RuntimeError):
+            self.nvml = None
+            return
+        self.peak = list(self.baseline)
+        self.thread = threading.Thread(target=self.sample, daemon=True)
+        self.thread.start()
+
+    def used_bytes(self):
+        values = []
+        for handle in self.handles:
+            memory = NvmlMemory()
+            if self.nvml.nvmlDeviceGetMemoryInfo(handle, ctypes.byref(memory)) != 0:
+                raise RuntimeError("NVML could not read device memory.")
+            values.append(int(memory.used))
+        return values
+
+    def sample(self):
+        while not self.stopped.wait(GPU_SAMPLE_SECONDS):
+            try:
+                self.peak = [max(peak, used) for peak, used in zip(self.peak, self.used_bytes())]
+            except RuntimeError:
+                self.sampling_failed = True
+                return
+
+    def identify(self, platform, context):
+        """Reads the device OpenMM chose, once its Context exists and the CUDA plugin is loaded."""
+        from openmm import OpenMMException
+        try:
+            self.identity["gpuModel"] = str(platform.getPropertyValue(context, "DeviceName")) or None
+            ordinal = int(str(platform.getPropertyValue(context, "DeviceIndex")).split(",")[0])
+        except (OpenMMException, ValueError):
+            return
+        try:
+            nvrtc = ctypes.CDLL(NVRTC_LIBRARY)
+            major, minor = ctypes.c_int(), ctypes.c_int()
+            if nvrtc.nvrtcVersion(ctypes.byref(major), ctypes.byref(minor)) == 0:
+                self.identity["reportedCudaCompatibility"] = "%d.%d" % (major.value, minor.value)
+        except OSError:
+            pass
+        try:
+            cuda = ctypes.CDLL("libcuda.so.1")
+        except OSError:
+            return
+        device = ctypes.c_int()
+        if cuda.cuInit(0) != 0 or cuda.cuDeviceGet(ctypes.byref(device), ordinal) != 0:
+            return
+        major, minor = ctypes.c_int(), ctypes.c_int()
+        if (cuda.cuDeviceGetAttribute(ctypes.byref(major), CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, device) == 0
+                and cuda.cuDeviceGetAttribute(ctypes.byref(minor), CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, device) == 0):
+            self.identity["computeCapability"] = "%d.%d" % (major.value, minor.value)
+        # CUDA and NVML number devices differently, so the PCI bus is what ties OpenMM's device to
+        # the memory samples taken before it was chosen.
+        bus = ctypes.create_string_buffer(64)
+        handle = ctypes.c_void_p()
+        index = ctypes.c_uint()
+        if (self.nvml is not None and cuda.cuDeviceGetPCIBusId(bus, 64, device) == 0
+                and self.nvml.nvmlDeviceGetHandleByPciBusId_v2(bus.value, ctypes.byref(handle)) == 0
+                and self.nvml.nvmlDeviceGetIndex(handle, ctypes.byref(index)) == 0):
+            self.nvml_index = index.value
+
+    def finish(self):
+        """Stops sampling and returns every reading, with the device's peak over its own baseline."""
+        self.stopped.set()
+        if self.thread is not None:
+            self.thread.join(timeout=5)
+        readings = dict.fromkeys(CUDA_DEVICE_FIELDS)
+        readings.update(self.identity)
+        if self.nvml is None or self.nvml_index is None or self.sampling_failed:
+            return readings
+        index = self.nvml_index
+        memory = NvmlMemory()
+        try:
+            final = self.used_bytes()
+        except RuntimeError:
+            return readings
+        if self.nvml.nvmlDeviceGetMemoryInfo(self.handles[index], ctypes.byref(memory)) == 0:
+            readings["gpuMemoryBytes"] = int(memory.total)
+        peak = max(self.peak[index], final[index]) - self.baseline[index]
+        if peak > 0:
+            readings["peakVramBytes"] = peak
+            readings["vramMeasurementMethod"] = "device-wide-delta"
+        return readings
+
+def parameterization_refusal(error):
+    """Turns OpenMM's missing-template error into a refusal that names the residue."""
+    match = re.match(r"No template found for residue (\d+) \(([^)]*)\)", str(error))
+    if match is None:
+        raise error
+    fail("Residue %s (%s) cannot be parameterized by the reviewed force fields. If it is a small-molecule "
+         "ligand, supply its SDF; otherwise remove it from the structure." % (match.group(1), match.group(2)))
+
 def prepare_system(payload, structure_path, checkpoint_identity, metrics):
     import importlib.metadata
     import openmm
@@ -636,7 +778,10 @@ def prepare_system(payload, structure_path, checkpoint_identity, metrics):
     options = payload["relaxation"] if payload["mode"] == "relaxation" else payload["dynamics"]
     random.seed(int(options["seed"]))
     if preparation.get("addHydrogens") is True:
-        modeller.addHydrogens(forcefield, pH=float(preparation["ph"]), platform=Platform.getPlatformByName("CPU"))
+        try:
+            modeller.addHydrogens(forcefield, pH=float(preparation["ph"]), platform=Platform.getPlatformByName("CPU"))
+        except ValueError as error:
+            parameterization_refusal(error)
     if preparation["solvent"] == WATER_FORCE_FIELD:
         modeller.addSolvent(
             forcefield,
@@ -655,7 +800,10 @@ def prepare_system(payload, structure_path, checkpoint_identity, metrics):
     }
     if periodic:
         create_system_options["nonbondedCutoff"] = 1.0 * unit.nanometer
-    system = forcefield.createSystem(modeller.topology, **create_system_options)
+    try:
+        system = forcefield.createSystem(modeller.topology, **create_system_options)
+    except ValueError as error:
+        parameterization_refusal(error)
     if ligand_sdf and not matched_ligand_residues:
         fail("The SDF did not parameterize a ligand in the input structure. Supply the SDF for an existing ligand.")
     if payload["mode"] == "dynamics" and payload["dynamics"].get("pressureBar") is not None:
@@ -695,7 +843,11 @@ def prepared_system(payload, modeller, system, integrator, nagl_model_sha256, me
     if len(canonical_json(checkpoint_state)) + 16384 > MAX_CHECKPOINT_METADATA_BYTES:
         fail("Prepared system is too large for a resumable checkpoint.")
     platform, platform_properties, precision = platform_for(payload, Platform)
+    # The memory baseline has to be read before the Context below claims any GPU memory.
+    cuda_device = CudaDeviceReadings() if payload.get("accelerator") == "cuda" else None
     simulation = Simulation(modeller.topology, system, integrator, platform, platform_properties)
+    if cuda_device is not None:
+        cuda_device.identify(platform, simulation.context)
     return {
         "openmm": openmm,
         "unit": unit,
@@ -718,6 +870,7 @@ def prepared_system(payload, modeller, system, integrator, nagl_model_sha256, me
         "openffForceFieldsVersion": OPENFF_FORCEFIELDS_VERSION,
         "naglModelSha256": nagl_model_sha256,
         "periodic": payload["preparation"]["solvent"] == WATER_FORCE_FIELD,
+        "cudaDevice": cuda_device,
     }
 
 def energy_kj_per_mole(simulation, unit):
@@ -728,7 +881,10 @@ def energy_kj_per_mole(simulation, unit):
     return value
 
 def common_summary(payload, prepared, metrics):
+    # Called once the simulation has finished, so the sampled VRAM peak covers the whole run.
+    cuda_device = prepared["cudaDevice"]
     return {
+        **(cuda_device.finish() if cuda_device is not None else dict.fromkeys(CUDA_DEVICE_FIELDS)),
         "openmmVersion": prepared["openmmVersion"],
         "openmmforcefieldsVersion": prepared["openmmforcefieldsVersion"],
         "openffForceFieldsVersion": prepared["openffForceFieldsVersion"],

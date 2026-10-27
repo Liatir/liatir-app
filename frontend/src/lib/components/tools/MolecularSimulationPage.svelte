@@ -336,7 +336,12 @@
         {#if !runtime}
           <Card class="p-5"><p class="text-sm font-semibold text-text">Runtime not published</p><p class="mt-1 text-xs text-text-muted">This tool stays disabled until an exact signed OpenMM target passes scientific and product validation.</p></Card>
         {:else if runtime.status !== 'installed'}
-          <Card class="p-5"><p class="text-sm font-semibold text-text">Install required</p><p class="mt-1 text-xs text-text-muted">Install the OpenMM Tool Runtime from Dependencies first.</p></Card>
+          {@const blocked = toolRuntimesStore.installBlock(runtime.id)}
+          <Card class="p-5" testId="openmm-install-required">
+            <p class="text-sm font-semibold text-text">{blocked ? blocked.summary : 'Install required'}</p>
+            <p class="mt-1 text-xs text-text-muted">{blocked ? blocked.reason : 'Install the OpenMM Tool Runtime from Dependencies first. It is a scientific Tool Runtime, not an AI Model.'}</p>
+            {#if runtime.install.hostRequirements?.reason}<p class="mt-2 text-xs text-text-subtle">{runtime.install.hostRequirements.reason}</p>{/if}
+          </Card>
         {:else}
           <Card class="p-5 space-y-4">
             <fieldset disabled={runActive || checking} class="space-y-4 disabled:opacity-70">

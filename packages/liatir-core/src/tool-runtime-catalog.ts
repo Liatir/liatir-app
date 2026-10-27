@@ -115,7 +115,14 @@ export const PVACTOOLS_TOOL_RUNTIME_METADATA: LiatirToolRuntimeMetadata = {
 /** Exact metadata used by a release-built test app and the product after publication. */
 export const PVACTOOLS_RELEASE_CANDIDATE_METADATA = PVACTOOLS_TOOL_RUNTIME_METADATA;
 
-/** Non-distributable OpenMM candidate; normal catalog exposure waits for target-specific evidence. */
+/**
+ * OpenMM as offered on `beta`: the release-built test app and the product share this metadata.
+ *
+ * Only the CUDA target is offered. The CPU and macOS targets stay authored for a later release.
+ * The driver floor is CUDA 12.9's rather than the 12.x minor-version floor, because OpenMM hands
+ * PTX to the driver to compile — see the decision record "OpenMM CUDA needs the CUDA 12.9 driver".
+ * The installer requires every requirement here to equal the signed release's exactly.
+ */
 export const OPENMM_RELEASE_CANDIDATE_METADATA: LiatirToolRuntimeMetadata = {
   id: OPENMM_RUNTIME_COMPONENT_ID,
   name: "OpenMM 8.5.1",
@@ -139,26 +146,17 @@ export const OPENMM_RELEASE_CANDIDATE_METADATA: LiatirToolRuntimeMetadata = {
       boxId: OPENMM_BOX_ID,
       channel: "beta",
       registryBaseUrl: "https://models.liatir.com/v1",
-      publishedTargets: [
-        { target: { platform: "macos", arch: "aarch64", accelerator: "cpu" }, hostEnvironments: ["native"] },
-        { target: { platform: "linux", arch: "x86_64", accelerator: "cpu" }, hostEnvironments: ["native"] },
-        { target: { platform: "windows", arch: "x86_64", accelerator: "cpu" }, hostEnvironments: ["native"] },
-        {
-          target: { platform: "linux", arch: "x86_64", accelerator: "cuda", cudaVersion: "12.9" },
-          hostEnvironments: ["native"],
-          minNvidiaDriverVersion: "525.60.13",
-        },
-        {
-          target: { platform: "windows", arch: "x86_64", accelerator: "cuda", cudaVersion: "12.9" },
-          hostEnvironments: ["native"],
-          minNvidiaDriverVersion: "528.33",
-        },
-      ],
+      publishedTargets: [{
+        target: { platform: "linux", arch: "x86_64", accelerator: "cuda", cudaVersion: "12.9" },
+        hostEnvironments: ["native", "windows-wsl2"],
+        minRamGb: 8,
+        minNvidiaDriverVersion: "575.51.03",
+      }],
     },
     hostRequirements: {
-      os: ["macos", "linux", "windows"],
-      arch: ["aarch64", "x86_64"],
-      reason: "OpenMM has reviewed CPU targets on all three desktop systems and CUDA targets on Linux and Windows; each remains hidden until validated.",
+      os: ["linux", "windows"],
+      arch: ["x86_64"],
+      reason: "OpenMM runs on an NVIDIA GPU: on Linux x86_64 natively, or on Windows through WSL2. It is not available on macOS or without an NVIDIA GPU.",
     },
   },
   license: {
@@ -175,9 +173,10 @@ export const OPENMM_RELEASE_CANDIDATE_METADATA: LiatirToolRuntimeMetadata = {
     ],
   },
   hardware: {
-    cpu: true,
+    cpu: false,
     gpu: true,
-    notes: "CPU and CUDA are separate measured targets. GPU memory values are published only from retained target evidence.",
+    minRamGb: 8,
+    notes: "Needs an NVIDIA GPU with driver 575.51.03 or newer; on Windows, 576.02 or newer with the GPU visible inside WSL2. GPU memory values are published only from retained target measurements.",
   },
   documentation: { officialUrl: "https://docs.openmm.org/8.5.0/" },
   tags: ["runtime-box", "openmm", "molecular-dynamics", "relaxation", "amber19", "openff"],

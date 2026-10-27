@@ -67,6 +67,23 @@ describe('Phase 3 Runtime Box candidate boundary', () => {
     expect(audit.packages.find((item: { name: string }) => item.name === 'pytorch').version).toBe('2.10.0');
   });
 
+  // The installer refuses a box whose signed requirements differ in any way from what the product
+  // offered, and OpenMM's floor is the CUDA 12.9 driver's because OpenMM hands PTX to the driver.
+  it('offers only the OpenMM CUDA target, with exactly the signed scroll requirements', () => {
+    const root = resolve(import.meta.dirname, '../..');
+    const { compatibility } = JSON.parse(readFileSync(
+      resolve(root, 'runtime-boxes/scrolls/openmm/linux-x86_64-cuda12.9/scroll.json'), 'utf8',
+    ));
+    expect(OPENMM_RELEASE_CANDIDATE_METADATA.install.runtimeBox.publishedTargets).toEqual([{
+      target: { platform: 'linux', arch: 'x86_64', accelerator: 'cuda', cudaVersion: '12.9' },
+      hostEnvironments: compatibility.hostEnvironments,
+      minRamGb: compatibility.minRamGb,
+      minNvidiaDriverVersion: compatibility.minNvidiaDriverVersion,
+    }]);
+    expect(compatibility.hostEnvironments).toEqual(['native', 'windows-wsl2']);
+    expect(compatibility.minNvidiaDriverVersion).toBe('575.51.03');
+  });
+
   it('exposes published Boltz-2 and Protenix base, and keeps every unpublished Phase 3 component out of normal product catalogs', () => {
     const productModels = RUNTIME_BOX_AI_MODEL_REGISTRY.map((model) => model.id);
     expect(productModels).toContain(BOLTZ_2_MODEL_ID);

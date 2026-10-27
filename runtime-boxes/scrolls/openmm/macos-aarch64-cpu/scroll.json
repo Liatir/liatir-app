@@ -50,7 +50,7 @@
     {
       "sourcePath": "runtime-boxes/legal/openmm.md",
       "relativePath": "THIRD_PARTY_NOTICES/openmm.md",
-      "sha256": "ad8231503270a71d96f300e76e216acf64a7dff879019392fd61b813536a3813"
+      "sha256": "9363c9021a34710cdc5ad9ad7551a1bf0402ecadb6ffe4a01645bdb2def7a992"
     },
     {
       "sourcePath": "runtime-boxes/scrolls/openmm/self-test.py",

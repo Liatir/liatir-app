@@ -38,8 +38,8 @@ Markdown and stays complete and meaningful without the tool.
   [AI batch ledger](./state/roadmap/ai-batches.md), the
   [Runtime Box CI foundation](./state/roadmap/runtime-box-ci-foundation.md), the
   open [signed public distribution gate](./state/roadmap/release-signed-distribution.md),
-  and the [Phase 3 implementation status](./state/roadmap/phase3-implementation-status.md),
-  where OpenMM is still to publish.
+  the [Phase 3 implementation status](./state/roadmap/phase3-implementation-status.md), and
+  the [OpenMM CUDA publication](./state/roadmap/openmm-cuda-publication.md) plan.
 - `.context/truth/` — what is stable: architecture, the `window.Liatir` and
   Rust command surfaces, AI Model and AI Tool boundaries, the testing strategy,
   and the working agreements addressed to agents.

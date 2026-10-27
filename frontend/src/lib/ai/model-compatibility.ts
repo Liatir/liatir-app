@@ -55,10 +55,6 @@ function osLabel(os: string | null | undefined): string {
   }
 }
 
-function osListLabel(items: string[]): string {
-  return items.map(osLabel).join(', ');
-}
-
 function detectedHostLabel(hardware: AIHardwareInfo): string {
   const accelerators: string[] = [];
   if (hardware.appleMetal) accelerators.push('Apple Metal');
@@ -90,7 +86,7 @@ function runtimeBoxInstallBlock(
   if (candidates.length === 0) {
     return {
       kind: 'runtime-target',
-      summary: 'This model is not ready to install',
+      summary: `This ${componentLabel} is not ready to install`,
       required: 'A published Runtime Box target',
       detected: detectedHostLabel(hardware),
       reason: `This ${componentLabel} does not have a published Runtime Box for this computer yet.`,
@@ -139,7 +135,7 @@ function runtimeBoxInstallBlock(
         ];
         return {
           kind: 'host-arch',
-          summary: 'This model is not available on this architecture',
+          summary: `This ${componentLabel} is not available on this architecture`,
           required: requiredArchitectures.join(', '),
           detected: `${osLabel(hardware.os)} ${hardware.arch}`,
           reason: `This ${componentLabel} needs a published ${requiredArchitectures.join(' or ')} Runtime Box.`,
@@ -158,17 +154,22 @@ function runtimeBoxInstallBlock(
         details: ['The published payload does not declare a supported execution environment.'],
       };
     }
+    // A Linux box declared for WSL2 also serves Windows, and a user on another system needs to
+    // know that rather than read "Linux" alone.
     const requiredPlatforms = [
-      ...new Set(candidates.map((candidate) => candidate.target.platform)),
-    ];
+      ...new Set(candidates.map((candidate) => osLabel(candidate.target.platform))),
+      ...(candidates.some((candidate) => candidate.hostEnvironments.includes('windows-wsl2'))
+        ? ['Windows through WSL2']
+        : []),
+    ].join(', ');
     return {
       kind: 'host-os',
-      summary: 'This model is not available on this system',
-      required: osListLabel(requiredPlatforms),
+      summary: `This ${componentLabel} is not available on this system`,
+      required: requiredPlatforms,
       detected: detectedHostLabel(hardware),
       reason: `This ${componentLabel} does not have a published Runtime Box for ${osLabel(hardware.os)}.`,
       details: [
-        `Published platforms: ${osListLabel(requiredPlatforms)}`,
+        `Published platforms: ${requiredPlatforms}`,
         `Detected: ${detectedHostLabel(hardware)}`,
       ],
     };

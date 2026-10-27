@@ -157,6 +157,17 @@ describe('Runtime Box CI catalog', () => {
         const target = catalogTargets.find((value) => value.targetId === targetId);
         expect(target, `${record.componentId}/${targetId} is exposed before publication`).toBeDefined();
         expect(candidate.hostEnvironments).toEqual(target?.hostEnvironments);
+        // The installer compares these with the signed release and refuses any difference, so a
+        // mismatch is an Install button that can only fail.
+        const { compatibility } = JSON.parse(readFileSync(
+          new URL(`../../runtime-boxes/scrolls/${record.boxId}/${targetId}/scroll.json`, import.meta.url),
+          'utf8',
+        ));
+        expect(candidate.minNvidiaDriverVersion, `${record.componentId}/${targetId} driver`)
+          .toEqual(compatibility.minNvidiaDriverVersion);
+        if (candidate.minRamGb !== undefined) {
+          expect(candidate.minRamGb, `${record.componentId}/${targetId} memory`).toBe(compatibility.minRamGb);
+        }
       }
     }
   });

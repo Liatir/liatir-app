@@ -70,6 +70,7 @@
       {#each toolRuntimes as runtime (runtime.id)}
         {@const operation = toolOperations[runtime.id]}
         {@const update = toolUpdates[runtime.id]}
+        {@const blocked = runtime.status === 'installed' ? null : toolRuntimesStore.installBlock(runtime.id)}
         <div class="flex items-center gap-3 px-4 py-3" data-testid={`runtime-component-tool-runtime-${runtime.id}`}>
           <span class="h-2 w-2 shrink-0 rounded-full {runtime.status === 'installed' ? 'bg-emerald-500' : runtime.status === 'error' ? 'bg-red-400' : 'bg-border-2'}"></span>
           <div class="min-w-0 flex-1">
@@ -87,6 +88,9 @@
             {:else if runtime.error}
               <p class="mt-1 text-xs text-red-500">{runtime.error}</p>
             {/if}
+            {#if blocked}
+              <div class="mt-2 rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5 text-[11px] text-amber-800" data-testid={`runtime-component-tool-runtime-blocked-${runtime.id}`}><p class="font-semibold">{blocked.summary}</p><p class="mt-0.5">{blocked.reason}</p></div>
+            {/if}
           </div>
           <div class="flex shrink-0 items-center gap-2">
             {#if operation}
@@ -97,7 +101,7 @@
               <Button size="sm" variant="ghost" onclick={() => rollbackToolRuntime(runtime)}>Rollback</Button>
               <Button size="sm" variant="ghost" onclick={() => removeToolRuntime(runtime)}>Remove</Button>
             {:else}
-              <Button size="sm" variant="primary" onclick={() => installToolRuntime(runtime)}>Install</Button>
+              <Button size="sm" variant="primary" disabled={!!blocked} onclick={() => installToolRuntime(runtime)}>Install</Button>
             {/if}
           </div>
         </div>
