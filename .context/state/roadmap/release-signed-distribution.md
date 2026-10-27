@@ -1,9 +1,10 @@
 # Release gate — signed public distribution
 
-Status: **Open — 0.2.1 published for macOS and Linux on 2026-10-01 (0.1.1 earlier that day, 0.1.0 on 2026-09-29); Store submission pending.** The distribution channel is
+Status: **Open — 0.3.0 publication authorized and in preparation on 2026-10-27;
+0.2.1 remains the published macOS/Linux version; Store certification pending.** The distribution channel is
 decided ([decision](../../decisions/desktop-distribution-channel.md)) and the
-build paths for all three platforms are implemented; no signed release has been
-built yet.
+build paths for all three platforms are implemented and have successful signed
+macOS/Linux release evidence below.
 
 This gate is deliberately unnumbered. The workbench plan numbers its gates 1 to
 8, but "Gate 8" and "Gate 9" already name Runtime Box CI gates elsewhere in this
@@ -122,6 +123,30 @@ than `package.json`, and `tests/unit/desktop-release-contract.test.ts` fails whe
 the version (`Cargo.toml`, `tauri.conf.json`, the bridge constants, the `liatir` SDK, the browser
 API bundle) differs from it. The SDK version script and the SDK type generator now read
 `package.json` directly.
+
+## 0.3.0 release checkpoint (2026-10-27)
+
+The owner explicitly requested publication of desktop version 0.3.0 after checking
+the existing three-platform workflow. This authorizes the version commit/push,
+`desktop-release-build.yml` with `targets=all`, verified public downloads in
+`Liatir/liatir-releases`, and the existing R2 updater feed. It does not include npm
+publication, GPU workflows or AI Model downloads/tests.
+
+- [x] Verify clean `main` at `aaa63be9`, equal to remote `main` before version changes.
+- [x] Inspect workflow definition and all signing/Store configuration names; all required
+  names exist. Verify public `Liatir/liatir-releases` write access and no existing v0.3.0.
+- [x] Synchronize root version and generated copies to 0.3.0; dependency resolutions are unchanged
+  (npm lock changes are package-identity version metadata only).
+- [x] Pass all seven `test:verify` suites (92 files / 718 tests, report
+  `2026-10-27T00-11-17-423Z`) and Syngraphe. Optional local R/C++/WASI toolchains were enabled;
+  no heavy model tests ran. Preserve the existing runtime desktop validation recorded in the
+  [runtime plan](../r-and-native-plugin-runtime-support.md).
+- [ ] Commit/push and verify the exact dispatched revision.
+- [ ] Build macOS arm64, Linux x86_64 and Store x86_64 from that revision.
+- [ ] Download and verify artifact identity, updater signatures, macOS notarization and MSIX metadata.
+- [ ] Publish verified downloads and check GitHub asset hashes and public availability.
+- [ ] Publish and read back the two-platform updater feed only after downloads are available.
+- [ ] Record the Store handoff; do not describe a built MSIX as a certified Store release.
 
 ## 0.2.1 build evidence (2026-10-01, revision `7cfc948`)
 

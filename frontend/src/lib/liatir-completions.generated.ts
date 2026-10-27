@@ -1,6 +1,6 @@
 // This file is generated automatically — do not edit.
 // Run:  npm run gen:sdk-types
-// Source: src-ts/liatir/_types.ts → LiatirBrowserAPI  (liatir@0.2.1)
+// Source: src-ts/liatir/_types.ts → LiatirBrowserAPI  (liatir@0.3.0)
 
 import type { ApiNode } from './liatir-editor';
 

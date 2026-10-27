@@ -1,6 +1,6 @@
 # Current project status
 
-Last updated 2026-10-26. This page says where Liatir stands and what comes next. How each piece got
+Last updated 2026-10-27. This page says where Liatir stands and what comes next. How each piece got
 here is in the [status log, July to September 2026](../history/status-log-2026-07-to-2026-09.md)
 and in the plans under `history/`; the readiness of each product area, with its evidence, is in
 [Beta 1 readiness](./roadmap/beta-readiness.md).
@@ -40,6 +40,20 @@ is macOS arm64; the plan records the remaining platform/release boundaries.
 On 2026-10-26 the owner authorized pushing all current `main` commits to
 `origin/main`. Desktop and npm releases remain separate actions.
 
+## Desktop release 0.3.0
+
+On 2026-10-27 the owner explicitly authorized publishing desktop version **0.3.0**
+for macOS, Linux and the Microsoft Store channel. The root package version and
+its generated copies are synchronized; all seven `test:verify` suites passed
+(92 files / 718 tests, report `2026-10-27T00-11-17-423Z`). The next step is the existing
+`desktop-release-build.yml` dispatch with `targets=all`. Repository signing
+secret/variable names and release-repository access were checked without reading
+secret values. The workflow builds and verifies packages; publishing macOS/Linux
+downloads and the updater feed is a subsequent step of the same authorization.
+Store certification still requires Partner Center access; building an MSIX is
+not Store publication. No npm package publication is included in this desktop
+release. See the [release ledger](./roadmap/release-signed-distribution.md).
+
 ## Website sharing
 
 The owner requested complete removal of the third-party sharing widget. The
@@ -56,12 +70,13 @@ share API; an actual OS dialog was not opened by automation. Syngraphe passes.
 
 ## Where Liatir stands
 
-**The product works; it is not yet distributable.** The release-blocking scenarios in
+The release-blocking product scenarios in
 [Beta 1 readiness](./roadmap/beta-readiness.md) are covered by native automated tests against a
 real compiled app — pipelines, Jobs, Results and provenance, Native Tools, Plugins, API Connectors,
 Nextflow, Local MCP and the AI Models — with the platforms each one covers listed there. What stands between the app
-and a user is the [signed public distribution gate](./roadmap/release-signed-distribution.md),
-which has not been started.
+and complete platform signoff is the [signed public distribution gate](./roadmap/release-signed-distribution.md).
+macOS and Linux 0.2.1 are already publicly distributed; clean-machine installation,
+real signed update evidence and Store certification remain open in that gate.
 
 **Twelve AI Model targets across seven components are on the public `beta` channel**, all
 Scrollcase v3, KMS-signed and with retained release evidence under `runtime-boxes/evidence/`:
