@@ -1,7 +1,7 @@
 # Release gate — signed public distribution
 
-Status: **Open — 0.3.0 publication authorized and in preparation on 2026-10-27;
-0.2.1 remains the published macOS/Linux version; Store certification pending.** The distribution channel is
+Status: **Open — 0.3.0 published for macOS/Linux on 2026-10-27;
+verified 0.3.0 MSIX ready, Store submission/certification pending.** The distribution channel is
 decided ([decision](../../decisions/desktop-distribution-channel.md)) and the
 build paths for all three platforms are implemented and have successful signed
 macOS/Linux release evidence below.
@@ -64,7 +64,7 @@ to make it look like one.
 | Apple notarization credentials | The Developer ID Application identity is in the maintainer's keychain; three copies are installed, all valid to 2031, so builds name the newest by its SHA-1, `CF1EC4A38CD20857E8C2A15DA87D06307EE4DCF2`, since the common name is ambiguous. Notarization is already configured through Apple ID credentials in GitHub; a separate App Store Connect API key is not required by the existing workflow. |
 | Developer ID signatures inside the Native Tools box | **Resolved 2026-09-28:** Scrollcase 1.3.0 added `--codesign` and 1.4.0 `--codesign-entitlements`; the signed box (562 Mach-O files) passed its self-test and Apple accepted it on its own (submission `6123de1c-5b9d-484e-bdcd-1c34851fc502`, 0 issues). Original finding: the first notarization of `0.1.0` (submission `3779c3f5-7d35-40bd-b419-b6af768154db`, 2026-09-28, from `c60c7fd`) was rejected: the app itself passed, but Apple unpacks the embedded `native-tools-macos-aarch64-cpu.zip` and found 562 Mach-O files (`venv/lib`, `bin`, `libexec`, `sbin`) without a Developer ID signature, a secure timestamp or, for 104 executables, the hardened runtime. Scrollcase never runs `conda-unpack` and never rewrites a binary on extraction, so signatures applied before archiving stay valid; Scrollcase has no signing step yet. |
 | Updater key pair | Generated 2026-09-28 on the maintainer's Mac: private key `~/.tauri/liatir-updater.key`, its password in the login Keychain item `liatir-updater-key`, public key in `~/.tauri/liatir-updater.key.pub`. In GitHub since 2026-09-28 (`TAURI_SIGNING_PRIVATE_KEY`, `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`, variable `TAURI_SIGNING_PUBLIC_KEY`); backing it up outside that Mac is the maintainer's. Losing the private key means installed copies can never be updated again. |
-| The `updates.liatir.com` feed | R2 bucket `liatir-updates` with custom domain `updates.liatir.com` created 2026-09-28; `scripts/desktop-update-manifest.mjs` writes `desktop/latest.json`. The live feed and public downloads currently serve 0.2.1; both feed bytes and the R2 object were read back and matched during the 0.3.0 preflight. Downloads use the public `Liatir/liatir-releases` repository. |
+| The `updates.liatir.com` feed | R2 bucket `liatir-updates` with custom domain `updates.liatir.com` created 2026-09-28; `scripts/desktop-update-manifest.mjs` writes `desktop/latest.json`. The live feed and public downloads serve 0.3.0 since 2026-10-27; public and R2 feed bytes were read back and matched. The previous 0.2.1 feed was preserved before publication. Downloads use the public `Liatir/liatir-releases` repository. |
 | Microsoft Store identity in GitHub | Reserved 2026-09-28 (Store ID `9NDBJVZJVV1Z`, Package Family Name `Desktopr.Liatir_2a6896ac5t66t`): `MSIX_IDENTITY_NAME=Desktopr.Liatir`, `MSIX_IDENTITY_PUBLISHER=CN=B27DF8BD-5700-47C4-9719-CA85B3F0938A`, `MSIX_PUBLISHER_DISPLAY_NAME=Lorenzo Suffritti` (changed from `Desktopr` in Partner Center on 2026-09-29, before the first submission), shown to users as the publisher. Not secret; set as repository variables 2026-09-28. |
 | A clean macOS arm64 machine or user for the install proof | Access, not code. |
 | MSIX containment of Runtime Boxes, Python environments and WSL2 | See consequence 3 below; unproven until the package runs on a real Windows machine. |
@@ -144,11 +144,11 @@ publication, GPU workflows or AI Model downloads/tests.
 - [x] Commit/push version revision `84e714ac38781a53a15dee1d3f3f6d6d32c3567d` to `main`.
   Dispatch `targets=all` in [run 40424923018](https://github.com/Liatir/liatir-app/actions/runs/40424923018)
   and verify its repository, `workflow_dispatch` event, branch and full head SHA immediately.
-- [ ] Build macOS arm64, Linux x86_64 and Store x86_64 from that revision.
-- [ ] Download and verify artifact identity, updater signatures, macOS notarization and MSIX metadata.
-- [ ] Publish verified downloads and check GitHub asset hashes and public availability.
-- [ ] Publish and read back the two-platform updater feed only after downloads are available.
-- [ ] Record the Store handoff; do not describe a built MSIX as a certified Store release.
+- [x] Build macOS arm64, Linux x86_64 and Store x86_64 from the corrected revision below.
+- [x] Download and verify artifact identity, updater signatures, macOS notarization and MSIX metadata.
+- [x] Publish verified downloads and check all seven GitHub asset hashes and public availability.
+- [x] Publish and read back the two-platform updater feed only after downloads are available.
+- [x] Record the verified Store handoff; submission and certification remain pending.
 
 ### Clean-checkout prerequisite defect
 
@@ -164,6 +164,58 @@ was reproduced locally with compiled core absent, then the corrected common
 entry point regenerated it and passed all seven verify suites (92 files / 718 tests).
 Proceed with one corrected all-target dispatch; inspect any new failure before
 another retry.
+
+Corrected verify report: `2026-10-27T00-20-01-927Z` (all seven suites, 718 tests).
+The correction is committed and pushed as `622647f806a52bb71de88dafff94d0212ceb4600`.
+The corrected all-target [run 40425839349](https://github.com/Liatir/liatir-app/actions/runs/40425839349)
+was immediately verified against that full SHA, `main`, `workflow_dispatch`, and
+the unchanged 0.3.0 version/workflow definition. This is the candidate release run.
+
+Linux package job `121932114820` and Store job `121932114829` completed successfully.
+The downloaded MSIX declares `Desktopr.Liatir`, the reserved publisher, x64 and
+version `0.3.0.0`, and its executable contains no in-app updater. At this intermediate
+checkpoint macOS was still in progress and no public release/feed change had been made.
+
+The Linux AppImage's file and trusted-comment signatures were verified with
+`minisign-verify` 0.2.5 against the configured updater public key; a one-byte
+corruption was rejected. The four verified Linux artifacts were uploaded to the
+private v0.3.0 release draft in `Liatir/liatir-releases`, targeting that binary
+host repository's `4aa8693d` commit (the application source revision remains
+`622647f8`, recorded in the notes). All four GitHub asset digests and sizes match
+the local verified files. The draft was kept private until macOS passed verification.
+
+### Published 0.3.0 evidence
+
+- All five jobs in run 40425839349 passed at source revision
+  `622647f806a52bb71de88dafff94d0212ceb4600`. Linux and Windows package verification
+  and macOS signing/notarization gates passed. This proves builds, not clean-machine
+  runtime execution or an installed A-to-B update.
+- Both updater files and trusted comments verified against `TAURI_SIGNING_PUBLIC_KEY`
+  with the existing `minisign-verify` 0.2.5 crate; one-byte corruption of each was
+  rejected. The macOS app and DMG passed `spctl` (Notarized Developer ID) and
+  `stapler validate`; the app passed `codesign --verify --deep --strict`, its version
+  is 0.3.0 and its signing team is `UC22LVU6ZY`; the DMG passed `hdiutil verify`.
+- [Public release v0.3.0](https://github.com/Liatir/liatir-releases/releases/tag/v0.3.0),
+  release ID `424921156`, published `2026-10-27T00:52:32Z`, marked latest. All seven
+  asset sizes and SHA-256 digests match the verified files. The anonymous GitHub
+  API returns v0.3.0 as latest, and all seven downloads answered 200 with the right
+  sizes. The homepage also shows 0.3.0.
+- The existing R2 object `liatir-updates/desktop/latest.json` was replaced only
+  after both updater downloads were publicly available. Its public response and
+  remote R2 readback match the generated two-platform 0.3.0 file byte-for-byte,
+  with `application/json`, `Cache-Control: no-cache`, SHA-256
+  `24b4726f9c8ce20027dd83612b905d315a12f1adf9bbd77e6866171cd2a932fb`.
+- Store handoff: artifact `liatir-0.3.0-microsoft-store` in the same successful run,
+  file `Liatir_0.3.0_x64.msix`, SHA-256
+  `1b07a2717033524d4f4a15f98efabda2af4bdaac8f0220ea4b1d28635ed8a16d`.
+  It declares `Desktopr.Liatir`, the reserved publisher and version `0.3.0.0`, x64,
+  and no in-app updater. It is unsigned for Microsoft to sign during certification.
+  The local verified copy is retained in ignored release artifacts. The repository
+  has no Partner Center submission integration/credentials, so Store upload and
+  certification remain pending; this is not a claimed Store publication.
+- No npm package publication, GPU workflow, heavy-model test, trust-root change,
+  dependency resolution update or signature relaxation was performed. The existing
+  clean-machine install/update and cross-platform runtime signoff boundaries remain open.
 
 ## 0.2.1 build evidence (2026-10-01, revision `7cfc948`)
 

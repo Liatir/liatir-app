@@ -42,24 +42,26 @@ On 2026-10-26 the owner authorized pushing all current `main` commits to
 
 ## Desktop release 0.3.0
 
-On 2026-10-27 the owner explicitly authorized publishing desktop version **0.3.0**
-for macOS, Linux and the Microsoft Store channel. The root package version and
-its generated copies are synchronized; all seven `test:verify` suites passed
-(92 files / 718 tests, report `2026-10-27T00-11-17-423Z`). Version commit
-`84e714ac38781a53a15dee1d3f3f6d6d32c3567d` is on remote `main` and the existing
-`desktop-release-build.yml` was dispatched with `targets=all` in
-[run 40424923018](https://github.com/Liatir/liatir-app/actions/runs/40424923018).
-All three package jobs stopped before compilation because plain-Node spec-loading
-tests lacked a freshly built core package. The common unit command now builds
-core first; the failure was reproduced with core output absent, the build-order
-guard was observed failing, and the corrected full local verify passed. The
-corrected revision needs a new all-target build; no 0.3.0 package is published yet. Repository signing
-secret/variable names and release-repository access were checked without reading
-secret values. The workflow builds and verifies packages; publishing macOS/Linux
-downloads and the updater feed is a subsequent step of the same authorization.
-Store certification still requires Partner Center access; building an MSIX is
-not Store publication. No npm package publication is included in this desktop
-release. See the [release ledger](./roadmap/release-signed-distribution.md).
+**0.3.0 is published for macOS and Linux**, explicitly authorized by the owner on
+2026-10-27: [public release](https://github.com/Liatir/liatir-releases/releases/tag/v0.3.0).
+All five jobs in [run 40425839349](https://github.com/Liatir/liatir-app/actions/runs/40425839349)
+passed at app revision `622647f806a52bb71de88dafff94d0212ceb4600`. Both updater
+signatures, macOS signing/notarization and the Store package identity were independently
+verified. All seven public download sizes and GitHub digests match the local files;
+the public homepage shows 0.3.0. The two-platform updater feed is live, read back
+byte-for-byte against the generated file and the R2 object with `no-cache`.
+
+The first attempt exposed a clean-checkout test prerequisite; `test:unit` now builds
+core before plain-Node spec-loading checks. The failure and regression guard were
+observed before the fix; corrected local verify passed all seven suites (92 files /
+718 tests, report `2026-10-27T00-20-01-927Z`). Package builds also passed their verify
+gates on every platform. No heavy AI/GPU workflow was run.
+
+The verified `Liatir_0.3.0_x64.msix` (version `0.3.0.0`) is ready for Partner Center.
+Store submission/certification remains manual: no integration or credentials for
+that action are configured here. No npm package was published; the updated CLI is
+a separate release. Clean-machine install/update and other-host runtime execution
+signoff are still open. See the [release ledger](./roadmap/release-signed-distribution.md).
 
 ## Website sharing
 
@@ -82,7 +84,7 @@ The release-blocking product scenarios in
 real compiled app — pipelines, Jobs, Results and provenance, Native Tools, Plugins, API Connectors,
 Nextflow, Local MCP and the AI Models — with the platforms each one covers listed there. What stands between the app
 and complete platform signoff is the [signed public distribution gate](./roadmap/release-signed-distribution.md).
-macOS and Linux 0.2.1 are already publicly distributed; clean-machine installation,
+macOS and Linux 0.3.0 are already publicly distributed; clean-machine installation,
 real signed update evidence and Store certification remain open in that gate.
 
 **Twelve AI Model targets across seven components are on the public `beta` channel**, all

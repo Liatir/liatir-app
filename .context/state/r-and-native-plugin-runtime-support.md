@@ -554,3 +554,17 @@ source/packaged-CLI asset consistency checks. SDK npm dry-run inspection verifie
 the exact `@liatir/cli` package identity and all four new C++ assets; no package
 was published. All implementation checkpoints are complete on macOS arm64,
 with other-host signoff and the separate package release still outstanding.
+
+## Desktop distribution follow-up (2026-10-27)
+
+The owner separately authorized desktop 0.3.0 publication. The existing release
+workflow built macOS arm64, Linux x86_64 and the Windows Store MSIX successfully
+at revision `622647f806a52bb71de88dafff94d0212ceb4600`; verified macOS/Linux downloads
+and their signed updater feed are now public. A clean-checkout unit-test
+prerequisite was fixed in the common command before the successful run. See the
+[release evidence](./roadmap/release-signed-distribution.md).
+
+The Store package is verified but still needs manual Partner Center submission
+and certification. Publishing the new CLI/SDK package remains a separate action;
+this desktop release did not publish npm packages. Linux/Windows build success
+does not replace the still-open execution signoff for the new Plugin runtimes.
