@@ -568,3 +568,44 @@ The Store package is verified but still needs manual Partner Center submission
 and certification. Publishing the new CLI/SDK package remains a separate action;
 this desktop release did not publish npm packages. Linux/Windows build success
 does not replace the still-open execution signoff for the new Plugin runtimes.
+
+## npm 1.10.0 publication checkpoint (2026-10-27)
+
+The owner separately authorized publishing `@liatir/api` and `@liatir/cli` at
+1.10.0 using npm account `suffro`. Both are now public with `latest=1.10.0`.
+This does not change desktop version 0.3.0 or the shared Plugin contract.
+
+- [x] Read the publication helper/lifecycle definitions and verify account and registry.
+  Its existing preparation synchronized package/lock identities and scaffold ranges.
+- [x] Pass `liatir:publish:dry -- --version 1.10.0 --tag latest` for both identities;
+  confirm managed SDK source/asset consistency and restoration of temporary edits.
+- [x] Pass all seven verify suites (718 unit tests, report
+  `2026-10-27T01-10-52-641Z`) and Syngraphe before publication.
+- [x] Publish API before CLI to `https://registry.npmjs.org/`, public access and
+  `latest`, and read back name, version, latest tag, publisher `suffro`, tarball URL
+  and hashes. npm's processing delay completed for both packages.
+- [x] Commit synchronized release version metadata as `42e59dec`; this final context
+  checkpoint records the public publication evidence alongside the released source.
+
+The first attempt failed with npm E404 after browser authentication because
+`suffro` lacked effective package permission at that point. The scope-level access
+query had been insufficient; the collaborator listing identified `liatir.com`.
+The owner then explicitly requested retrying with `suffro` after updating access.
+The retry succeeded, and public metadata identifies `suffro` as publisher for both
+packages. No account protection was weakened and no package was unpublished.
+The npm CLI renders `_npmUser` as a display string here; normalize its username.
+
+Registry tarball shasums match those reported for the built publication packages:
+
+| Package | Version / latest | Publisher | SHA-1 |
+| --- | --- | --- | --- |
+| `@liatir/api` | `1.10.0` | `suffro` | `b82096d4ff2fa2806e3138b2a0f82f290c094e4f` |
+| `@liatir/cli` | `1.10.0` | `suffro` | `e3b1c8440cd6fbb6436c0638c9ee347d27a72fd0` |
+
+Public registry readback also records each SHA-512 integrity value. The CLI's 41
+published files include all managed R, Rust and C++ SDK assets. The owner explicitly
+requested no additional broad checks: fresh archive-install/build smoke tests and
+additional CI were intentionally skipped, using the existing implementation and
+release validation. No GPU, heavy-model, desktop-release or deployment workflow
+was manually started for this npm release. Other-host runtime execution signoff
+and Microsoft Store certification remain separate from npm distribution.

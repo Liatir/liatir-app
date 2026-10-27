@@ -59,9 +59,26 @@ gates on every platform. No heavy AI/GPU workflow was run.
 
 The verified `Liatir_0.3.0_x64.msix` (version `0.3.0.0`) is ready for Partner Center.
 Store submission/certification remains manual: no integration or credentials for
-that action are configured here. No npm package was published; the updated CLI is
-a separate release. Clean-machine install/update and other-host runtime execution
+that action are configured here. This desktop release did not publish npm packages;
+the subsequent Plugin npm release is recorded below. Clean-machine install/update and other-host runtime execution
 signoff are still open. See the [release ledger](./roadmap/release-signed-distribution.md).
+
+## Plugin npm release 1.10.0
+
+**`@liatir/api` and `@liatir/cli` 1.10.0 are published** on the public npm
+registry with `latest=1.10.0`, publisher `suffro`, explicitly authorized by the
+owner on 2026-10-27. The package versions, lockfile identity fields and Node
+scaffold dependency ranges are synchronized in commit `42e59dec`. Desktop
+version 0.3.0 and the shared Plugin contract are unchanged.
+
+The release dry run passed with all managed SDK assets, including R and C++.
+The full verify gate also passed (report `2026-10-27T01-10-52-641Z`, seven suites,
+718 unit tests). After the owner requested fewer checks, no further tests or CI
+were run: the final check read back both public package identities, latest tags,
+publisher and tarball hashes. An initial account-permission failure was resolved
+when the owner requested retrying with `suffro` after updating access; npm's
+browser confirmation and subsequent asynchronous publication completed for both.
+See the [runtime plan](./r-and-native-plugin-runtime-support.md).
 
 ## Website sharing
 
