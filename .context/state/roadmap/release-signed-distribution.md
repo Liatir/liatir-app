@@ -126,6 +126,27 @@ the version (`Cargo.toml`, `tauri.conf.json`, the bridge constants, the `liatir`
 API bundle) differs from it. The SDK version script and the SDK type generator now read
 `package.json` directly.
 
+## 0.3.1 release checkpoint (2026-10-28)
+
+0.3.1 exists so the Store MSIX carries the corrected WSL2 consumer (`3eb5963c`); the 0.3.0 MSIX
+must not be submitted. It also ships the published OpenMM Tool Runtime. The owner authorized on
+2026-10-28 the version commit/push, `desktop-release-build.yml` with `targets=all`, and publication
+for macOS and Linux exactly as 0.3.0; the owner uploads the MSIX to Partner Center personally. No
+Store action, Runtime Box or GPU workflow, or force-push is authorized.
+
+- [x] Verify clean `main` at `e194f615`, equal to remote `main`; all signing, updater and Store
+  configuration names exist, the configured updater public key equals the one 0.3.0 was verified
+  against, no v0.3.1 release exists, and the live 0.3.0 feed (`24b4726f…`) was saved before changes.
+- [x] Set 0.3.1 in the root `package.json`, propagated with `localdevconf`, `sdk:syncVersion` and
+  `gen:sdk-types`: the same ten files as 0.3.0, version strings only. `src-tauri/Cargo.lock` still
+  names the app 0.2.1, as it did through 0.3.0; lockfiles are left alone.
+- [x] Pass all seven `test:verify` suites (92 files / 718 tests, 7 skipped, report
+  `2026-10-28T11-54-18-961Z`) and Syngraphe, on macOS arm64.
+- [ ] Commit/push, dispatch `targets=all`, verify the run's identity.
+- [ ] Verify the WSL2 consumer test in the Native Tools job, the consumer inside the MSIX against
+  that job's artifact, the MSIX identity, macOS signing/notarization and both updater signatures.
+- [ ] Publish macOS/Linux downloads, then the feed; read back every digest and the feed bytes.
+
 ## 0.3.0 release checkpoint (2026-10-27)
 
 The owner explicitly requested publication of desktop version 0.3.0 after checking

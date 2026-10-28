@@ -1,6 +1,6 @@
 {
   "name": "liatir",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "JS/TS SDK for the Liatir native bridge",
   "main": "dist-sdk/sdk/index.js",
   "types": "dist-sdk/sdk/index.d.ts",
