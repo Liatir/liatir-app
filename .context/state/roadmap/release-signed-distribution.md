@@ -1,7 +1,9 @@
 # Release gate — signed public distribution
 
-Status: **Open — 0.3.0 published for macOS/Linux on 2026-10-27;
-verified 0.3.0 MSIX ready, Store submission/certification pending.** The distribution channel is
+Status: **Open — 0.3.0 published for macOS/Linux on 2026-10-27; the 0.3.0 MSIX must not be
+submitted** (its WSL2 consumer fails the status check of every installed Runtime Box, fixed in
+`3eb5963c` — see [the OpenMM record](../../history/openmm-cuda-publication.md)); the next MSIX
+comes from a release build at or after that commit. Store submission/certification pending.** The distribution channel is
 decided ([decision](../../decisions/desktop-distribution-channel.md)) and the
 build paths for all three platforms are implemented and have successful signed
 macOS/Linux release evidence below.
