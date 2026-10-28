@@ -412,7 +412,8 @@ release decision for the owner, outside this plan.
 ## Left open, outside this plan
 
 - **Windows package.** Rebuild the MSIX from a Native Tools artifact that contains the corrected
-  WSL2 consumer before any Store submission; the 0.3.0 MSIX carries the old one.
+  WSL2 consumer before any Store submission; the 0.3.0 MSIX carries the old one. Done 2026-10-28:
+  the 0.3.1 MSIX carries it ([release ledger](../state/roadmap/release-signed-distribution.md)).
 - **Unreferenced R2 objects** from release attempt 2: archive `2bf6d93b…` and release document
   `cbc58a3e…` under `boxes/openmm/8.5.1-beta.1/linux-x86_64-cuda12.9/`. Harmless; nothing points
   at them. Deleting from R2 by hand needs a current `wrangler login`.

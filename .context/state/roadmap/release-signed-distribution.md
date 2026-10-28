@@ -1,9 +1,10 @@
 # Release gate — signed public distribution
 
-Status: **Open — 0.3.0 published for macOS/Linux on 2026-10-27; the 0.3.0 MSIX must not be
-submitted** (its WSL2 consumer fails the status check of every installed Runtime Box, fixed in
-`3eb5963c` — see [the OpenMM record](../../history/openmm-cuda-publication.md)); the next MSIX
-comes from a release build at or after that commit. Store submission/certification pending.** The distribution channel is
+Status: **Open — 0.3.1 published for macOS/Linux on 2026-10-28; its MSIX, which carries the
+corrected WSL2 consumer, is handed to the owner for Partner Center.** The 0.3.0 MSIX must not be
+submitted (its WSL2 consumer fails the status check of every installed Runtime Box, fixed in
+`3eb5963c` — see [the OpenMM record](../../history/openmm-cuda-publication.md)). Store
+submission/certification pending. The distribution channel is
 decided ([decision](../../decisions/desktop-distribution-channel.md)) and the
 build paths for all three platforms are implemented and have successful signed
 macOS/Linux release evidence below.
@@ -66,7 +67,7 @@ to make it look like one.
 | Apple notarization credentials | The Developer ID Application identity is in the maintainer's keychain; three copies are installed, all valid to 2031, so builds name the newest by its SHA-1, `CF1EC4A38CD20857E8C2A15DA87D06307EE4DCF2`, since the common name is ambiguous. Notarization is already configured through Apple ID credentials in GitHub; a separate App Store Connect API key is not required by the existing workflow. |
 | Developer ID signatures inside the Native Tools box | **Resolved 2026-09-28:** Scrollcase 1.3.0 added `--codesign` and 1.4.0 `--codesign-entitlements`; the signed box (562 Mach-O files) passed its self-test and Apple accepted it on its own (submission `6123de1c-5b9d-484e-bdcd-1c34851fc502`, 0 issues). Original finding: the first notarization of `0.1.0` (submission `3779c3f5-7d35-40bd-b419-b6af768154db`, 2026-09-28, from `c60c7fd`) was rejected: the app itself passed, but Apple unpacks the embedded `native-tools-macos-aarch64-cpu.zip` and found 562 Mach-O files (`venv/lib`, `bin`, `libexec`, `sbin`) without a Developer ID signature, a secure timestamp or, for 104 executables, the hardened runtime. Scrollcase never runs `conda-unpack` and never rewrites a binary on extraction, so signatures applied before archiving stay valid; Scrollcase has no signing step yet. |
 | Updater key pair | Generated 2026-09-28 on the maintainer's Mac: private key `~/.tauri/liatir-updater.key`, its password in the login Keychain item `liatir-updater-key`, public key in `~/.tauri/liatir-updater.key.pub`. In GitHub since 2026-09-28 (`TAURI_SIGNING_PRIVATE_KEY`, `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`, variable `TAURI_SIGNING_PUBLIC_KEY`); backing it up outside that Mac is the maintainer's. Losing the private key means installed copies can never be updated again. |
-| The `updates.liatir.com` feed | R2 bucket `liatir-updates` with custom domain `updates.liatir.com` created 2026-09-28; `scripts/desktop-update-manifest.mjs` writes `desktop/latest.json`. The live feed and public downloads serve 0.3.0 since 2026-10-27; public and R2 feed bytes were read back and matched. The previous 0.2.1 feed was preserved before publication. Downloads use the public `Liatir/liatir-releases` repository. |
+| The `updates.liatir.com` feed | R2 bucket `liatir-updates` with custom domain `updates.liatir.com` created 2026-09-28; `scripts/desktop-update-manifest.mjs` writes `desktop/latest.json`. The live feed and public downloads serve 0.3.1 since 2026-10-28; public and R2 feed bytes were read back and matched. The previous 0.3.0 feed was preserved before publication. Downloads use the public `Liatir/liatir-releases` repository. |
 | Microsoft Store identity in GitHub | Reserved 2026-09-28 (Store ID `9NDBJVZJVV1Z`, Package Family Name `Desktopr.Liatir_2a6896ac5t66t`): `MSIX_IDENTITY_NAME=Desktopr.Liatir`, `MSIX_IDENTITY_PUBLISHER=CN=B27DF8BD-5700-47C4-9719-CA85B3F0938A`, `MSIX_PUBLISHER_DISPLAY_NAME=Lorenzo Suffritti` (changed from `Desktopr` in Partner Center on 2026-09-29, before the first submission), shown to users as the publisher. Not secret; set as repository variables 2026-09-28. |
 | A clean macOS arm64 machine or user for the install proof | Access, not code. |
 | MSIX containment of Runtime Boxes, Python environments and WSL2 | See consequence 3 below; unproven until the package runs on a real Windows machine. |
@@ -142,10 +143,38 @@ Store action, Runtime Box or GPU workflow, or force-push is authorized.
   names the app 0.2.1, as it did through 0.3.0; lockfiles are left alone.
 - [x] Pass all seven `test:verify` suites (92 files / 718 tests, 7 skipped, report
   `2026-10-28T11-54-18-961Z`) and Syngraphe, on macOS arm64.
-- [ ] Commit/push, dispatch `targets=all`, verify the run's identity.
-- [ ] Verify the WSL2 consumer test in the Native Tools job, the consumer inside the MSIX against
-  that job's artifact, the MSIX identity, macOS signing/notarization and both updater signatures.
-- [ ] Publish macOS/Linux downloads, then the feed; read back every digest and the feed bytes.
+- [x] Commit/push `11215878a412da8bd18b1bfcf8c8d8bc0f923241` (read back through git and the API);
+  dispatch `targets=all` as [run 40683744337](https://github.com/Liatir/liatir-app/actions/runs/40683744337),
+  identity verified (workflow path, `workflow_dispatch`, `main`, full SHA; macOS and Native Tools
+  jobs both started, which only `all` does). All five jobs passed, 11:55–12:20Z.
+- [x] Native Tools job `122800734669` ran "Test the WSL2 Scrollcase consumer" at that SHA: 3 passed,
+  0 failed, step `success`. Store job `122802180772` downloaded that run's artifact
+  `native-tools-linux-x86_64-cpu` (ID `12814237323`, digest `112adf2f…` checked by the action) and
+  packed `native-tools\native-tools-box-consumer`. In the downloaded MSIX all four `native-tools/`
+  files are byte-identical to that artifact; the consumer is 1,131,216 bytes, SHA-256
+  `6fac3d0207054b693f93f17f357ae916cad48979685d9112e222bf99ccdf4f1c`, and contains no
+  `pythonEntryPoint` (the 0.3.0 MSIX's consumer, `70c98c5c…`, contains `/release/pythonEntryPoint`).
+  `3eb5963c` is an ancestor of the release SHA, where the field appears only in the crate's tests.
+- [x] Both updater signatures verified with `minisign-verify` against `TAURI_SIGNING_PUBLIC_KEY`,
+  one-byte corruption rejected. App: `codesign --verify --deep --strict`, `spctl` Notarized
+  Developer ID, stapled, team `UC22LVU6ZY`, version 0.3.1. DMG: `spctl`, `stapler validate`,
+  `hdiutil verify` all passed.
+- [x] Published [v0.3.1](https://github.com/Liatir/liatir-releases/releases/tag/v0.3.1), release ID
+  `426640039`, `2026-10-28T12:28:36Z`, latest, target `4aa8693d` as 0.3.0. All seven GitHub
+  sizes and digests match the verified files; all seven public URLs answer anonymously with the
+  right length; the anonymous API names v0.3.1 latest.
+- [x] Replaced `liatir-updates/desktop/latest.json` after both updater URLs answered 200. Public
+  response (`application/json`, `no-cache`) and R2 readback are byte-identical to the generated
+  file, SHA-256 `ed56b3811f18fb005a904d9bf593485b1dd6632afaa9ec3497adb6258c05e27f`. The previous
+  0.3.0 feed (`24b4726f…`) is kept in the ignored `tests/.artifacts/release-0.3.1/`.
+- **Store handoff:** artifact `liatir-0.3.1-microsoft-store` in run 40683744337 (kept until
+  2026-11-11), file `Liatir_0.3.1_x64.msix`, 272,440,388 bytes, SHA-256
+  `109951e58ac648db3252b48a04a46e0f8a326be9867b55097e1d2a092fa9aba2`, identity `Desktopr.Liatir`,
+  publisher `CN=B27DF8BD-5700-47C4-9719-CA85B3F0938A`, version `0.3.1.0`, x64, unsigned, no
+  updater. The owner uploads it to Partner Center; this replaces the 0.3.0 MSIX.
+- **Not done:** the session ran on the Mac, so the MSIX was not sideloaded on Windows; Runtime Box
+  installation inside the MSIX container remains unproven. The consumer it carries is the one
+  proven through WSL2 in the Windows test app (see the OpenMM record).
 
 ## 0.3.0 release checkpoint (2026-10-27)
 

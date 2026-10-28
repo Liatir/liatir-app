@@ -22,8 +22,8 @@ The product now offers Molecular Relaxation and Molecular Dynamics. The Windows 
 found that **every Runtime Box installed through WSL2 looked
 broken to the Windows app** since the move to box format version 3: the WSL2 consumer's status
 check read a version 2 field. It is fixed and tested, and the full OpenMM lifecycle then passed in
-the real Windows app through WSL2 on CUDA; but the 0.3.0 MSIX prepared for Partner Center carries
-the old consumer and should be rebuilt from a fixed Native Tools artifact before submission.
+the real Windows app through WSL2 on CUDA. The 0.3.0 MSIX carries the old consumer; the 0.3.1
+MSIX (see Desktop release 0.3.1) carries the fixed one and replaces it for Partner Center.
 
 [R and Native Plugin runtimes](./r-and-native-plugin-runtime-support.md) are implemented
 in implementation commit `aeacb806` and documentation commit `449964c1`: CLI
@@ -58,9 +58,23 @@ is macOS arm64; the plan records the remaining platform/release boundaries.
 On 2026-10-26 the owner authorized pushing all current `main` commits to
 `origin/main`. Desktop and npm releases remain separate actions.
 
+## Desktop release 0.3.1
+
+**0.3.1 is published for macOS and Linux** since 2026-10-28, explicitly authorized by the owner:
+[public release](https://github.com/Liatir/liatir-releases/releases/tag/v0.3.1), built by all five
+jobs of [run 40683744337](https://github.com/Liatir/liatir-app/actions/runs/40683744337) at
+`11215878a412da8bd18b1bfcf8c8d8bc0f923241`. It ships the OpenMM Tool Runtime and, for Windows,
+the corrected WSL2 consumer. Local verify passed all seven suites (92 files / 718 tests); both
+updater signatures, macOS notarization, all seven public digests and the live feed bytes were
+verified. The MSIX `Liatir_0.3.1_x64.msix` (version `0.3.1.0`, SHA-256 `109951e5…`) carries a
+consumer byte-identical to the run's Native Tools artifact, with no version 2 field; the owner
+uploads it to Partner Center. Its Runtime Box behaviour inside the MSIX container was not tested
+(no Windows machine in that session). Details in the
+[release ledger](./roadmap/release-signed-distribution.md).
+
 ## Desktop release 0.3.0
 
-**0.3.0 is published for macOS and Linux**, explicitly authorized by the owner on
+**0.3.0 was published for macOS and Linux**, explicitly authorized by the owner on
 2026-10-27: [public release](https://github.com/Liatir/liatir-releases/releases/tag/v0.3.0).
 All five jobs in [run 40425839349](https://github.com/Liatir/liatir-app/actions/runs/40425839349)
 passed at app revision `622647f806a52bb71de88dafff94d0212ceb4600`. Both updater
@@ -77,7 +91,7 @@ gates on every platform. No heavy AI/GPU workflow was run.
 
 The verified `Liatir_0.3.0_x64.msix` (version `0.3.0.0`) was prepared for Partner Center, but
 it carries the WSL2 consumer whose status check fails for every Runtime Box (found 2026-10-27,
-see Active implementation); rebuild it from a fixed Native Tools artifact before submitting.
+see Active implementation); it must not be submitted — 0.3.1 replaces it.
 Store submission/certification remains manual: no integration or credentials for
 that action are configured here. This desktop release did not publish npm packages;
 the subsequent Plugin npm release is recorded below. Clean-machine install/update and other-host runtime execution
