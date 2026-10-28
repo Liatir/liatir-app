@@ -38,6 +38,8 @@ jobs:
           toolchain: "1.95.0"
 
       - run: npm ci
+      # The frontend build packages the single-cell showcase with the CLI's own builder.
+      - run: npm ci --prefix packages/liatir-cli
 
       - name: Build the real Liatir product test binary
         run: npm run test:tauri:prepare

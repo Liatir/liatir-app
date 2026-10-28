@@ -277,6 +277,12 @@ jobs:
       - name: Free the build scratch before the product lifecycle
         run: npm run runtime-box:ci -- release-build-scratch
 
+      # The frontend build packages the single-cell showcase with the CLI's own builder, so the CLI's
+      # dependencies are installed here as in every other workflow that builds the frontend. Run
+      # 40621392871 published OpenMM and then stopped at this build on a missing `jszip`.
+      - name: Install the CLI package the frontend build compiles
+        run: npm ci --prefix packages/liatir-cli
+
       - name: Build the real Liatir product test binary
         env:
           # This binary is never distributed. It exposes only the exact release candidate so the

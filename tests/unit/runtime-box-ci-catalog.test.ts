@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import catalogJson from '../../runtime-boxes/catalog.json';
 import { APP_VERSION } from '../../scripts/app-version.mjs';
@@ -684,6 +684,26 @@ describe('Runtime Box CI catalog', () => {
     expect(windowsPixiInstaller).toContain('Get-FileHash');
     expect(windowsPixiInstaller).toContain('curl.exe --fail --location --retry 3');
     expect(windowsPixiInstaller).toContain('conda-pack==0.9.2');
+  });
+
+  // The frontend build packages the single-cell showcase with the CLI's own builder. Release run
+  // 40621392871 published OpenMM and then stopped at the product test binary on a missing `jszip`,
+  // because that workflow, unlike CI and the desktop release, never installed the CLI package.
+  it('installs the CLI package before every product test binary build', () => {
+    const directory = new URL('../../.github/workflows/', import.meta.url);
+    const building = readdirSync(directory)
+      .map((name) => ({ name, text: readFileSync(new URL(name, directory), 'utf8') }))
+      .filter(({ text }) => text.includes('npm run test:tauri:prepare'));
+    expect(building.map(({ name }) => name).sort()).toEqual([
+      'runtime-box-release.yml',
+      'runtime-box-windows-product-smoke.yml',
+      'runtime-box-wsl2-product-lifecycle.yml',
+    ]);
+    for (const { name, text } of building) {
+      const install = text.indexOf('npm ci --prefix packages/liatir-cli');
+      expect(install, name).toBeGreaterThanOrEqual(0);
+      expect(install, name).toBeLessThan(text.indexOf('npm run test:tauri:prepare'));
+    }
   });
 
   it('selects Git Bash before a Windows composite action in the WSL2 proof', () => {

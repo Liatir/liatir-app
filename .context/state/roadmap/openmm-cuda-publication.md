@@ -334,6 +334,30 @@ chaotic, so only energies at identical coordinates are compared.
 3. Then relaunch the ephemeral runner (Phase 4, step 1) and dispatch the release with the same
    three inputs (attempt 2).
 
+- 2026-10-28 — **Owner re-enabled billing.** Unauthenticated probes answered 403 five times in a
+  row (service routable again). Signer redeploy run
+  [40621062422](https://github.com/Liatir/liatir-app/actions/runs/40621062422) from `3eb5963c` passed
+  every step, including "Smoke-test KMS against the app trust root", so the production key still
+  signs for `runtime-boxes/trust/production-public.json`. Runner relaunched (listening 02:30:40Z);
+  release attempt 2 dispatched as run
+  [40621392871](https://github.com/Liatir/liatir-app/actions/runs/40621392871) on `main` at `3eb5963c`
+  with the same three inputs, identity read back.
+- 2026-10-28 — **Release attempt 2 passed every gate up to publication, then stopped before the
+  product lifecycle.** Signer policy check, KMS build, signature verification and native
+  self-test, the scientific validator and immutable publication with public re-hash all passed
+  (02:31–02:43Z); R2 now holds the unreferenced archive `2bf6d93b2efc72232b4f464ecda2422aab01ce5430f9f2af4c2113373eed64f6.zip`
+  and release document `cbc58a3e6f550be89a4279d2f8fa3aa069baf7c1b6c033077458246f2a9a0108.release.json`.
+  "Build the real Liatir product test binary" failed: the frontend's prebuild
+  (`scripts/build-single-cell-showcase.mjs`, since `e0654c89` of 2026-10-05) compiles
+  `packages/liatir-cli`, whose `jszip` this workflow never installed — `ci.yml` and
+  `desktop-release-build.yml` do. Every Runtime Box release since then would have stopped here;
+  none ran. Promotion did not run, so the public channel still answers 404 and no user sees the
+  box. The same gap was in `runtime-box-wsl2-product-lifecycle.yml` and
+  `runtime-box-windows-product-smoke.yml`. All three now run `npm ci --prefix packages/liatir-cli`
+  first, and `runtime-box-ci-catalog.test.ts` requires it of every workflow that builds the
+  product test binary (observed failing without the fix). The unreferenced objects are harmless
+  and left in place; nothing points at them.
+
 ## Before Windows users can run any Runtime Box
 
 The consumer fix is in source only. A Windows package takes the consumer from the Native Tools CI
