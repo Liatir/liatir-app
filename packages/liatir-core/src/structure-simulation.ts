@@ -836,22 +836,24 @@ const OPENMM_MACOS_AARCH64_CPU_DEVELOPMENT_PROFILE: LiatirHardwareValidationProf
 };
 
 /**
- * The first GPU envelope in this project. Its `peakVramBytes` figures are device-wide deltas,
- * not per-process readings: WSL2's driver reports no per-process GPU memory at all, so a run is
- * charged for everything the card gained while it ran. They can only over-state, never
- * under-state. The evidence record names the method per case; see the VRAM measurement decision.
+ * OpenMM on CUDA, measured by the production release that published this box (run 40622962439),
+ * on the KMS-signed build users install, extracted and self-tested before the validator ran. Its
+ * `peakVramBytes` figures are device-wide deltas, not per-process readings: WSL2's driver reports
+ * no per-process GPU memory at all, so a run is charged for everything the card gained while it
+ * ran. They can only over-state, never under-state. The evidence record names the method per case;
+ * see the VRAM measurement decision.
  */
-const OPENMM_LINUX_X86_64_CUDA129_DEVELOPMENT_PROFILE: LiatirHardwareValidationProfile = {
+const OPENMM_LINUX_X86_64_CUDA129_PRODUCTION_PROFILE: LiatirHardwareValidationProfile = {
   schemaVersion: 1,
-  profileId: "openmm-8.5.1-beta.1-linux-x86_64-cuda12.9-development-2026-09-09",
+  profileId: "openmm-8.5.1-beta.1-linux-x86_64-cuda12.9-production-2026-10-28",
   componentId: OPENMM_RUNTIME_COMPONENT_ID,
   componentVersion: OPENMM_VERSION,
   runtimeBoxRelease: "8.5.1-beta.1",
   target: { platform: "linux", arch: "x86_64", accelerator: "cuda", cudaVersion: "12.9" },
   precision: "mixed",
-  measuredAt: "2026-09-09T13:46:54.588Z",
+  measuredAt: "2026-10-28T02:58:08.456Z",
   evidenceRecord:
-    "runtime-boxes/measurements/openmm-linux-x86_64-cuda12.9-development-2026-09-09.json",
+    "runtime-boxes/measurements/openmm-linux-x86_64-cuda12.9-production-run-40622962439.json",
   samples: [
     {
       fixtureId: "official-protein-relaxation",
@@ -860,10 +862,10 @@ const OPENMM_LINUX_X86_64_CUDA129_DEVELOPMENT_PROFILE: LiatirHardwareValidationP
       maxAtomCount: 33,
       maxStepCount: 5000,
       maxOutputItemCount: 1,
-      peakRamBytes: 281591808,
-      peakVramBytes: 127926272,
-      elapsedMs: 1822,
-      outputBytes: 13787,
+      peakRamBytes: 302919680,
+      peakVramBytes: 125829120,
+      elapsedMs: 1793,
+      outputBytes: 14010,
     },
     {
       fixtureId: "add-missing-hydrogens",
@@ -872,10 +874,10 @@ const OPENMM_LINUX_X86_64_CUDA129_DEVELOPMENT_PROFILE: LiatirHardwareValidationP
       maxAtomCount: 33,
       maxStepCount: 5000,
       maxOutputItemCount: 1,
-      peakRamBytes: 251789312,
-      peakVramBytes: 100663296,
-      elapsedMs: 909,
-      outputBytes: 13785,
+      peakRamBytes: 272789504,
+      peakVramBytes: 125829120,
+      elapsedMs: 939,
+      outputBytes: 14008,
     },
     {
       fixtureId: "protein-ligand-relaxation",
@@ -884,10 +886,10 @@ const OPENMM_LINUX_X86_64_CUDA129_DEVELOPMENT_PROFILE: LiatirHardwareValidationP
       maxAtomCount: 42,
       maxStepCount: 5000,
       maxOutputItemCount: 1,
-      peakRamBytes: 872071168,
-      peakVramBytes: 121634816,
-      elapsedMs: 7507,
-      outputBytes: 18538,
+      peakRamBytes: 778215424,
+      peakVramBytes: 125829120,
+      elapsedMs: 6876,
+      outputBytes: 18761,
     },
     {
       fixtureId: "protein-dynamics-10ps",
@@ -896,10 +898,10 @@ const OPENMM_LINUX_X86_64_CUDA129_DEVELOPMENT_PROFILE: LiatirHardwareValidationP
       maxAtomCount: 33,
       maxStepCount: 5000,
       maxOutputItemCount: 10,
-      peakRamBytes: 307953664,
-      peakVramBytes: 126877696,
-      elapsedMs: 1900,
-      outputBytes: 657885,
+      peakRamBytes: 303562752,
+      peakVramBytes: 125829120,
+      elapsedMs: 1674,
+      outputBytes: 658108,
     },
     {
       fixtureId: "protein-checkpoint-resume",
@@ -908,10 +910,10 @@ const OPENMM_LINUX_X86_64_CUDA129_DEVELOPMENT_PROFILE: LiatirHardwareValidationP
       maxAtomCount: 33,
       maxStepCount: 5000,
       maxOutputItemCount: 10,
-      peakRamBytes: 232337408,
-      peakVramBytes: 126877696,
-      elapsedMs: 1240,
-      outputBytes: 658744,
+      peakRamBytes: 253435904,
+      peakVramBytes: 125829120,
+      elapsedMs: 1126,
+      outputBytes: 658972,
     },
     {
       fixtureId: "protein-dynamics-100ps",
@@ -920,10 +922,10 @@ const OPENMM_LINUX_X86_64_CUDA129_DEVELOPMENT_PROFILE: LiatirHardwareValidationP
       maxAtomCount: 33,
       maxStepCount: 50000,
       maxOutputItemCount: 10,
-      peakRamBytes: 254709760,
-      peakVramBytes: 132120576,
-      elapsedMs: 5715,
-      outputBytes: 657900,
+      peakRamBytes: 275492864,
+      peakVramBytes: 125829120,
+      elapsedMs: 6472,
+      outputBytes: 658125,
     },
     {
       fixtureId: "multi-residue-relaxation",
@@ -932,10 +934,10 @@ const OPENMM_LINUX_X86_64_CUDA129_DEVELOPMENT_PROFILE: LiatirHardwareValidationP
       maxAtomCount: 407,
       maxStepCount: 5000,
       maxOutputItemCount: 1,
-      peakRamBytes: 319774720,
-      peakVramBytes: 126877696,
-      elapsedMs: 2009,
-      outputBytes: 144647,
+      peakRamBytes: 305655808,
+      peakVramBytes: 125829120,
+      elapsedMs: 1356,
+      outputBytes: 144869,
     },
     {
       fixtureId: "dhfr-protein-relaxation",
@@ -944,10 +946,10 @@ const OPENMM_LINUX_X86_64_CUDA129_DEVELOPMENT_PROFILE: LiatirHardwareValidationP
       maxAtomCount: 2489,
       maxStepCount: 5000,
       maxOutputItemCount: 1,
-      peakRamBytes: 327270400,
-      peakVramBytes: 128974848,
-      elapsedMs: 4060,
-      outputBytes: 831639,
+      peakRamBytes: 312877056,
+      peakVramBytes: 127926272,
+      elapsedMs: 3592,
+      outputBytes: 831862,
     },
     {
       fixtureId: "dhfr-drug-ligand-relaxation",
@@ -956,10 +958,10 @@ const OPENMM_LINUX_X86_64_CUDA129_DEVELOPMENT_PROFILE: LiatirHardwareValidationP
       maxAtomCount: 2530,
       maxStepCount: 5000,
       maxOutputItemCount: 1,
-      peakRamBytes: 898355200,
-      peakVramBytes: 128974848,
-      elapsedMs: 9764,
-      outputBytes: 851517,
+      peakRamBytes: 801001472,
+      peakVramBytes: 133169152,
+      elapsedMs: 10203,
+      outputBytes: 851740,
     },
     {
       fixtureId: "dhfr-solvated-relaxation",
@@ -968,10 +970,10 @@ const OPENMM_LINUX_X86_64_CUDA129_DEVELOPMENT_PROFILE: LiatirHardwareValidationP
       maxAtomCount: 29419,
       maxStepCount: 5000,
       maxOutputItemCount: 1,
-      peakRamBytes: 478240768,
-      peakVramBytes: 177209344,
-      elapsedMs: 14089,
-      outputBytes: 9907605,
+      peakRamBytes: 471879680,
+      peakVramBytes: 173015040,
+      elapsedMs: 12777,
+      outputBytes: 9907829,
     },
     {
       fixtureId: "dhfr-solvated-dynamics-10ps",
@@ -980,10 +982,10 @@ const OPENMM_LINUX_X86_64_CUDA129_DEVELOPMENT_PROFILE: LiatirHardwareValidationP
       maxAtomCount: 29419,
       maxStepCount: 5000,
       maxOutputItemCount: 10,
-      peakRamBytes: 484532224,
-      peakVramBytes: 193986560,
-      elapsedMs: 13663,
-      outputBytes: 34451141,
+      peakRamBytes: 480612352,
+      peakVramBytes: 191889408,
+      elapsedMs: 14478,
+      outputBytes: 34451347,
     },
     {
       fixtureId: "solvated-dynamics-custom",
@@ -992,10 +994,10 @@ const OPENMM_LINUX_X86_64_CUDA129_DEVELOPMENT_PROFILE: LiatirHardwareValidationP
       maxAtomCount: 974,
       maxStepCount: 10,
       maxOutputItemCount: 2,
-      peakRamBytes: 402657280,
-      peakVramBytes: 140509184,
-      elapsedMs: 4725,
-      outputBytes: 1556502,
+      peakRamBytes: 399859712,
+      peakVramBytes: 139460608,
+      elapsedMs: 3804,
+      outputBytes: 1556731,
     },
     {
       fixtureId: "solvated-checkpoint-resume",
@@ -1004,10 +1006,10 @@ const OPENMM_LINUX_X86_64_CUDA129_DEVELOPMENT_PROFILE: LiatirHardwareValidationP
       maxAtomCount: 974,
       maxStepCount: 10,
       maxOutputItemCount: 2,
-      peakRamBytes: 338706432,
-      peakVramBytes: 119537664,
-      elapsedMs: 741,
-      outputBytes: 1557391,
+      peakRamBytes: 353988608,
+      peakVramBytes: 136314880,
+      elapsedMs: 806,
+      outputBytes: 1557613,
     },
   ],
 };
@@ -1149,7 +1151,7 @@ const PROTENIX_BASE_V1_LINUX_X86_64_CUDA126_PRODUCTION_PROFILE: LiatirHardwareVa
 export const LIATIR_PHASE3_HARDWARE_VALIDATION_PROFILES:
   readonly LiatirHardwareValidationProfile[] = [
     OPENMM_MACOS_AARCH64_CPU_DEVELOPMENT_PROFILE,
-    OPENMM_LINUX_X86_64_CUDA129_DEVELOPMENT_PROFILE,
+    OPENMM_LINUX_X86_64_CUDA129_PRODUCTION_PROFILE,
     BOLTZ_2_LINUX_X86_64_CUDA129_PRODUCTION_PROFILE,
     PROTENIX_BASE_V1_LINUX_X86_64_CUDA126_PRODUCTION_PROFILE,
   ];

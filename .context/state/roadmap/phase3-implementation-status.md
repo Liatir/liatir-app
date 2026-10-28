@@ -1,10 +1,13 @@
 # Phase 3 implementation evidence and remaining work
 
 The full scope is [Phase 3 of the integration plan](./new-ai-models-integration-plan.md#fase-3--strutture-affinità-e-simulazione).
-Status on 2026-09-27: **Boltz-2 and Protenix base v1.0.0 are published** on `beta` (runs
-35227045147 and 35244917546, 2026-09-17) and in the product catalog. **OpenMM is not**: its two
-Linux targets are `native-lifecycle-validated` and its macOS CPU target is `planned`. Protenix v2
-waits on ByteDance, and Protenix Mini Default is unauthored. The dated sections below are the
+Status on 2026-10-28: **Boltz-2 and Protenix base v1.0.0 are published** on `beta` (runs
+35227045147 and 35244917546, 2026-09-17) and in the product catalog. **OpenMM
+`linux-x86_64-cuda12.9` is published too** (run 40622962439, 2026-10-28), CUDA only; its
+`linux-x86_64-cpu` target stays `native-lifecycle-validated` and `macos-aarch64-cpu` `planned`,
+deliberately unpublished. How it got there is in
+[OpenMM CUDA publication](../../history/openmm-cuda-publication.md). Protenix v2 waits on ByteDance, and
+Protenix Mini Default is unauthored. The dated sections below are the
 evidence as it accumulated; the checklist near the end is the current state.
 
 ## GitHub audit (2026-09-07)

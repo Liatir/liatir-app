@@ -811,7 +811,7 @@
           ],
           "recipeId": "openmm-linux-x86_64-cuda12.9",
           "runnerProfileId": "linux-x64-cuda-selfhosted",
-          "status": "native-lifecycle-validated",
+          "status": "published",
           "validationModes": [
             "build",
             "scientific",
@@ -827,7 +827,19 @@
             "safetyMarginBytes": 4294967296
           },
           "gpuRequired": true,
-          "nativeCiEnabled": true
+          "nativeCiEnabled": true,
+          "publication": {
+            "source": "github-actions",
+            "releaseManifestUrl": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/openmm/8.5.1-beta.1/linux-x86_64-cuda12.9/c819be6ec106f668585dd4f8f85a00d6c6898ad8b396946715ced045c1b049ae.release.json",
+            "archiveSha256": "3b6b8783755579c4f4d1a37954a29b9dc97d8b0bdc31b0f75f194f89cc24c4bf",
+            "archiveSizeBytes": 1272964507,
+            "installedSizeBytes": 3668920345,
+            "signingKeyId": "liatir-runtime-box-kms-2026",
+            "publishedAt": "2026-10-28T03:18:42.300Z",
+            "workflowRunId": "40622962439",
+            "workflowRunUrl": "https://github.com/Liatir/liatir-app/actions/runs/40622962439",
+            "evidenceRecord": "runtime-boxes/evidence/openmm-linux-x86_64-cuda12.9-8.5.1-beta.1-run-40622962439.json"
+          }
         }
       ]
     },

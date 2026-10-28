@@ -178,7 +178,10 @@ export const OPENMM_RELEASE_CANDIDATE_METADATA: LiatirToolRuntimeMetadata = {
     minRamGb: 8,
     notes: "Needs an NVIDIA GPU with driver 575.51.03 or newer; on Windows, 576.02 or newer with the GPU visible inside WSL2. GPU memory values are published only from retained target measurements.",
   },
-  documentation: { officialUrl: "https://docs.openmm.org/8.5.0/" },
+  documentation: {
+    liatirPath: "/tools/molecular-simulation",
+    officialUrl: "https://docs.openmm.org/8.5.0/",
+  },
   tags: ["runtime-box", "openmm", "molecular-dynamics", "relaxation", "amber19", "openff"],
 };
 
@@ -187,6 +190,7 @@ export const OPENMM_RELEASE_CANDIDATE_METADATA: LiatirToolRuntimeMetadata = {
  */
 export const LIATIR_TOOL_RUNTIME_CATALOG: readonly LiatirToolRuntimeMetadata[] = [
   PVACTOOLS_TOOL_RUNTIME_METADATA,
+  OPENMM_RELEASE_CANDIDATE_METADATA,
 ];
 
 export function runtimeIdForToolRuntime(runtime: LiatirToolRuntimeMetadata): string {

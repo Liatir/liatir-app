@@ -1,13 +1,12 @@
 # OpenMM CUDA publication
 
-The persistent operating guide for publishing OpenMM's CUDA Runtime Box, started 2026-10-27. It
-must let another session resume without re-deriving anything: read **Current status** and **Next
-action** first, then the phase you are in.
+The operating guide for publishing OpenMM's CUDA Runtime Box, 2026-10-27 to 2026-10-28. **Closed
+and archived**: every phase passed. What remains belongs to other decisions and is listed under
+**Left open, outside this plan**.
 
-**Current status: blocked on the owner at Phase 4** — billing is disabled on the Google Cloud
-project that holds the production signer (see **Blocker and the exact owner action**). Phases 1–3
-passed, and the official CI validation passed on the committed bytes. Nothing has been signed with
-the production key or published.
+**Final status: PUBLISHED on `beta` on 2026-10-28** by release run 40622962439, independently
+verified, exposed in the product, and proven in the real Windows app through WSL2 against the
+published archive.
 
 ## Objective and support matrix
 
@@ -55,7 +54,7 @@ Evidence was read from the repository and GitHub on this date, not from older re
   `runtime-box-release.yml` already offers `openmm-openmm` and `linux-x86_64-cuda12.9`;
   `release-resolve` requires only `nativeCiEnabled`.
 - Runner: this machine's WSL2 under the standing authorization in
-  [Linux GPU CI runs on the owner's machine](../../decisions/linux-gpu-ci-on-the-owner-machine.md).
+  [Linux GPU CI runs on the owner's machine](../decisions/linux-gpu-ci-on-the-owner-machine.md).
   RTX 4060 Ti, 8,188 MiB, compute capability 8.9, driver **610.88** (was 610.62), 724 GiB free.
 - Product: `OPENMM_RELEASE_CANDIDATE_METADATA` is stale and OpenMM is not in
   `LIATIR_TOOL_RUNTIME_CATALOG`. The Tools page and the pipeline palette already switch both tools
@@ -73,7 +72,7 @@ Each was verified, not inferred; the evidence is named.
    PTX ISA 8.8 to a minimum CUDA 12.9 driver, and the CUDA 12.9 release notes give 575.51.03 (Linux)
    and 576.02 (Windows). A user on 535 or 550 would download 1.3 GB and then fail every run with
    `CUDA_ERROR_UNSUPPORTED_PTX_VERSION`. See the
-   [decision](../../decisions/openmm-cuda-needs-the-cuda-12-9-driver.md).
+   [decision](../decisions/openmm-cuda-needs-the-cuda-12-9-driver.md).
 2. **The release evidence would be refused after promotion.** For a CUDA release,
    `write-release-evidence` requires the product lifecycle receipt to carry the GPU model, compute
    capability, CUDA version and a peak VRAM figure (`scripts/runtime-box/evidence.mjs`). OpenMM's
@@ -322,7 +321,7 @@ chaotic, so only energies at identical coordinates are compared.
   `runtime-boxes/measurements/openmm-linux-x86_64-cuda12.9-product-lifecycle-development-2026-10-27.json`.
   Development evidence: development key, loopback URL, not the production archive.
 
-## Blocker and the exact owner action
+## Blocker and the exact owner action (resolved 2026-10-28)
 
 1. Re-enable billing for Google Cloud project `liatir-release-security`
    (<https://console.developers.google.com/billing/enable?project=liatir-release-security>), and
@@ -357,6 +356,39 @@ chaotic, so only energies at identical coordinates are compared.
   first, and `runtime-box-ci-catalog.test.ts` requires it of every workflow that builds the
   product test binary (observed failing without the fix). The unreferenced objects are harmless
   and left in place; nothing points at them.
+- 2026-10-28 — **Release attempt 3 passed every step**: run
+  [40622962439](https://github.com/Liatir/liatir-app/actions/runs/40622962439) on `main` at
+  `69c91d20` (clean tree), 02:47–03:18Z. KMS build in 330 s, archive
+  `3b6b8783755579c4f4d1a37954a29b9dc97d8b0bdc31b0f75f194f89cc24c4bf` (1,272,964,507 bytes,
+  installed 3,668,920,345), release document `c819be6ec106f668585dd4f8f85a00d6c6898ad8b396946715ced045c1b049ae`,
+  key `liatir-runtime-box-kms-2026`; self-test; validator 19 cases, parity 1.7122e-4 kJ/mol,
+  measured CUDA 12.9, peak VRAM 191,889,408, peak RAM 801,001,472, solvated DHFR equilibrated at
+  301.76 K; publication with streamed public re-hash; the native Linux product lifecycle (both
+  tools on CUDA, 17 assertions, the run's own readings RTX 4060 Ti / 8.9 / 12.9 / 126,566,400
+  bytes); promotion (HTTP 200); and the release evidence, which passed the CUDA contract this plan
+  set out to satisfy. Retained byte for byte:
+  `runtime-boxes/evidence/openmm-linux-x86_64-cuda12.9-8.5.1-beta.1-run-40622962439.json`.
+- 2026-10-28 — **Phase 5, independent public verification, passed** from public URLs only, with
+  `runtime-boxes/trust/production-public.json`: the channel
+  `https://models.liatir.com/v1/channels/beta/openmm/linux-x86_64-cuda12.9` and the release
+  document both verified as signed documents; the release document's SHA-256 is `c819be6e…`; it
+  signs driver 575.51.03, 8 GB, `native` + `windows-wsl2`, builder revision `69c91d20`, clean tree;
+  the archive downloaded from `assets.models.liatir.com` re-hashed to `3b6b8783…` at exactly
+  1,272,964,507 bytes.
+- 2026-10-28 — **Phase 6, product publication**: catalog target `published` with its publication
+  block; the production validator output, extracted unchanged from the job log, retained as
+  `runtime-boxes/measurements/openmm-linux-x86_64-cuda12.9-production-run-40622962439.json` and
+  transcribed by script into profile `openmm-8.5.1-beta.1-linux-x86_64-cuda12.9-production-2026-10-28`
+  (published VRAM minimum 239,861,760 and recommendation 287,834,112 bytes); OpenMM added to
+  `LIATIR_TOOL_RUNTIME_CATALOG`, which turns on both tool pages and both pipeline steps; public
+  page `docs/tools/molecular-simulation.md`, a Tool Runtimes section in the Tools overview, the
+  navigation entry and the regenerated Quenta docs seed. The docs site builds.
+- 2026-10-28 — **Phase 7 passed**: a Windows test app built as the product (no release-candidate
+  switch, so OpenMM came from the product catalog) installed the published box from
+  `https://models.liatir.com/v1` through WSL2, verified against the production key embedded in the
+  app, and passed all 17 assertions on CUDA with the production hardware profile; same energies as
+  every earlier run (−1.6910709302007945 → −119.11212442123042 kJ/mol). Retained:
+  `runtime-boxes/measurements/openmm-linux-x86_64-cuda12.9-product-lifecycle-wsl2-published-2026-10-28.json`.
 
 ## Before Windows users can run any Runtime Box
 
@@ -366,8 +398,28 @@ from a commit containing this fix; the 0.3.0 MSIX prepared for Partner Center pr
 should not be submitted as it is. Building and submitting that package is a separate desktop
 release decision for the owner, outside this plan.
 
-## Next action
+- 2026-10-28 — **Phase 8, final verification.** `npm run test:verify` passed all seven suites:
+  91 files / 708 tests passed, 17 skipped, report `2026-10-28T03-41-34-964Z`. On the product build
+  of the Windows app: `runtime-box-security-e2e` 1/1 and `pipeline-settlement-restart-e2e` 1/1
+  passed; `tauri-e2e` passed 42, skipped 36 and failed 7, every failure needing the bundled Native
+  Tools box this Windows checkout does not have (Windows cannot build it; the Linux CI artifact
+  was not downloaded): `samtools` "program not found", pipelines running native steps, and the
+  Dependencies check waiting for "Included with Liatir". The same Dependencies screenshot shows
+  the new OpenMM Tool Runtime row rendered with Install enabled on this compatible machine. Those
+  seven were not re-run with the Native Tools box present.
+  The public docs site builds. `syngraphe check` passes.
 
-Wait for the owner to re-enable billing, then follow **Blocker and the exact owner action**. Phases
-5–8 follow the release unchanged; Phase 7 can reuse this rehearsal's procedure against the
-production registry (`https://models.liatir.com/v1`, no trusted-key override).
+## Left open, outside this plan
+
+- **Windows package.** Rebuild the MSIX from a Native Tools artifact that contains the corrected
+  WSL2 consumer before any Store submission; the 0.3.0 MSIX carries the old one.
+- **Unreferenced R2 objects** from release attempt 2: archive `2bf6d93b…` and release document
+  `cbc58a3e…` under `boxes/openmm/8.5.1-beta.1/linux-x86_64-cuda12.9/`. Harmless; nothing points
+  at them. Deleting from R2 by hand needs a current `wrangler login`.
+- **WSL2 memory.** The release fitted in the owner's current 8 GB WSL2 limit.
+- **Other OpenMM targets.** `linux-x86_64-cpu` and `macos-aarch64-cpu` stay unpublished by
+  decision; their scrolls carry the corrected legal-notice pin.
+- **Other CUDA components and PTX.** Whether any of them also depends on driver PTX JIT was not
+  investigated (see the driver decision).
+- **Wider driver support.** Re-locking OpenMM with an older `cuda-version` would admit drivers
+  below 575; it is a separate decision with its own revalidation.

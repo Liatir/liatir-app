@@ -79,13 +79,14 @@ describe('Phase 3 retained hardware envelopes', () => {
       target,
     });
     expect(profile?.profileId)
-      .toBe('openmm-8.5.1-beta.1-linux-x86_64-cuda12.9-development-2026-09-09');
+      .toBe('openmm-8.5.1-beta.1-linux-x86_64-cuda12.9-production-2026-10-28');
 
-    // 185 MiB measured on an 8 GiB card: OpenMM's GPU cost is the CUDA context, not the system size.
+    // 183 MiB measured on an 8 GiB card by the release that published the box: OpenMM's GPU cost
+    // is the CUDA context, not the system size.
     expect(publishedVramRequirements(profile!)).toEqual({
-      measuredPeakVramBytes: 193986560,
-      minimumVramBytes: 242483200,
-      recommendedVramBytes: 290979840,
+      measuredPeakVramBytes: 191889408,
+      minimumVramBytes: 239861760,
+      recommendedVramBytes: 287834112,
     });
 
     // Solvated DHFR, the real production shape, is inside the measured envelope on this target.

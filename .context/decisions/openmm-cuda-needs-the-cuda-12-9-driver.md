@@ -69,4 +69,4 @@ single floor admits exactly the CUDA 12.9-capable drivers on Linux and on Window
 
 ## Related
 
-- [OpenMM CUDA publication](../state/roadmap/openmm-cuda-publication.md)
+- [OpenMM CUDA publication](../history/openmm-cuda-publication.md)

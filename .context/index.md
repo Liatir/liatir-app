@@ -38,8 +38,7 @@ Markdown and stays complete and meaningful without the tool.
   [AI batch ledger](./state/roadmap/ai-batches.md), the
   [Runtime Box CI foundation](./state/roadmap/runtime-box-ci-foundation.md), the
   open [signed public distribution gate](./state/roadmap/release-signed-distribution.md),
-  the [Phase 3 implementation status](./state/roadmap/phase3-implementation-status.md), and
-  the [OpenMM CUDA publication](./state/roadmap/openmm-cuda-publication.md) plan.
+  and the [Phase 3 implementation status](./state/roadmap/phase3-implementation-status.md).
 - `.context/truth/` — what is stable: architecture, the `window.Liatir` and
   Rust command surfaces, AI Model and AI Tool boundaries, the testing strategy,
   and the working agreements addressed to agents.
@@ -47,6 +46,10 @@ Markdown and stays complete and meaningful without the tool.
   rationale and what was rejected.
 
 ## Historical
+
+- [OpenMM CUDA publication](./history/openmm-cuda-publication.md) — closed 2026-10-28 with
+  `linux-x86_64-cuda12.9` published; it also records the WSL2 consumer and release-workflow
+  defects it fixed, and what was left open.
 
 - [Scientific Showcases documentation integration](./history/single-cell-showcase-docs-integration.md).
 

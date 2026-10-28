@@ -84,13 +84,15 @@ describe('Phase 3 Runtime Box candidate boundary', () => {
     expect(compatibility.minNvidiaDriverVersion).toBe('575.51.03');
   });
 
-  it('exposes published Boltz-2 and Protenix base, and keeps every unpublished Phase 3 component out of normal product catalogs', () => {
+  it('exposes published Boltz-2, Protenix base and OpenMM, and keeps every unpublished Phase 3 component out of normal product catalogs', () => {
     const productModels = RUNTIME_BOX_AI_MODEL_REGISTRY.map((model) => model.id);
     expect(productModels).toContain(BOLTZ_2_MODEL_ID);
     expect(productModels).toContain(PROTENIX_BASE_V1_MODEL_ID);
     expect(productModels).not.toContain(PROTENIX_V2_MODEL_ID);
     expect(productModels).not.toContain(PROTENIX_MINI_DEFAULT_MODEL_ID);
-    expect(LIATIR_TOOL_RUNTIME_CATALOG.map((runtime) => runtime.id)).not.toContain(OPENMM_RUNTIME_COMPONENT_ID);
+    // OpenMM is a Tool Runtime, never an AI Model.
+    expect(productModels).not.toContain(OPENMM_RUNTIME_COMPONENT_ID);
+    expect(LIATIR_TOOL_RUNTIME_CATALOG.map((runtime) => runtime.id)).toContain(OPENMM_RUNTIME_COMPONENT_ID);
   });
 
   it('resolves each exact component only in the non-distributable release-candidate build', () => {

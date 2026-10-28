@@ -1,9 +1,10 @@
 # Tools
 
-Liatir offers four kinds of analysis step: **built-in tools** that work out of
+Liatir offers five kinds of analysis step: **built-in tools** that work out of
 the box, **native tools** — real bioinformatics programs, shipped with Liatir —
-**AI Tools** that use local AI Models, and **External Workflows** that run saved
-engine projects such as Nextflow.
+tools that run on a **Tool Runtime** Liatir installs when you ask, **AI Tools**
+that use local AI Models, and **External Workflows** that run saved engine
+projects such as Nextflow.
 
 They all share the same layout, run history, and results view, and they can be
 mixed freely in a pipeline whenever their inputs and outputs match.
@@ -80,6 +81,18 @@ to be installed inside WSL2 yourself.
 
 Liatir unpacks its tools the first time it starts after being installed or
 updated. It takes a second or two, happens in the background, and does not repeat.
+
+## Tool Runtimes
+
+Some scientific programs are too large to ship inside Liatir and only make sense
+on suitable hardware. Liatir installs them once, when you ask, from
+**Dependencies → Tool Runtimes**: a signed package that Liatir verifies, keeps
+separate from everything else and runs offline. They are not AI Models.
+
+| Tool | Tool Runtime | Runs on |
+| --- | --- | --- |
+| [Molecular Relaxation](/tools/molecular-simulation) | OpenMM 8.5.1 | Linux, or Windows through WSL2, with an NVIDIA GPU |
+| [Molecular Dynamics](/tools/molecular-simulation) | OpenMM 8.5.1 | Linux, or Windows through WSL2, with an NVIDIA GPU |
 
 ## AI Tools
 

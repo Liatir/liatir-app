@@ -58,7 +58,7 @@ const EXPECTED_ACCELERATOR = TARGET_ID.includes('-cuda') ? 'CUDA' : 'CPU';
 // with no retained measurement has no entry and fails here rather than borrowing another's numbers.
 const EXPECTED_HARDWARE_PROFILE = {
   'macos-aarch64-cpu': 'openmm-8.5.1-beta.1-macos-aarch64-cpu-development-2026-09-09',
-  'linux-x86_64-cuda12.9': 'openmm-8.5.1-beta.1-linux-x86_64-cuda12.9-development-2026-09-09',
+  'linux-x86_64-cuda12.9': 'openmm-8.5.1-beta.1-linux-x86_64-cuda12.9-production-2026-10-28',
 }[TARGET_ID];
 const OFFICIAL_FIXTURE = 'source/openmmforcefields/openmmforcefields/data/test-ala-3.pdb';
 const RUN_TIMEOUT_MS = 15 * 60 * 1000;

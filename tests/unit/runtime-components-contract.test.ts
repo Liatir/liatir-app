@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   LIATIR_TOOL_RUNTIME_CATALOG,
+  OPENMM_RUNTIME_COMPONENT_ID,
   PVACTOOLS_RUNTIME_COMPONENT_ID,
   type LiatirRuntimeComponentKind,
   type LiatirRuntimeBoxCiCatalog,
@@ -17,7 +18,7 @@ describe('Runtime Component production contract', () => {
     const kinds: LiatirRuntimeComponentKind[] = ['ai-model', 'tool-runtime'];
     expect(kinds).toEqual(['ai-model', 'tool-runtime']);
     expect(LIATIR_TOOL_RUNTIME_CATALOG.map((runtime) => runtime.id))
-      .toEqual([PVACTOOLS_RUNTIME_COMPONENT_ID]);
+      .toEqual([PVACTOOLS_RUNTIME_COMPONENT_ID, OPENMM_RUNTIME_COMPONENT_ID]);
     expect(LIATIR_TOOL_RUNTIME_CATALOG[0]?.install.runtimeBox.publishedTargets).toEqual([
       {
         target: { platform: 'macos', arch: 'aarch64', accelerator: 'cpu' },

@@ -3,7 +3,7 @@
 
 import type { LiatirQuentaContextDocument } from '@liatir/core';
 
-export const QUENTA_DOCS_SEED_HASH = "3799841052a865a00f687b7eb1b56a621c070cffdb3f3b99cfdf390f01a48741";
+export const QUENTA_DOCS_SEED_HASH = "3ce46247924f32561691ccd603a06ef03563226883229f88e57fc72786b4e551";
 
 export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
   {
@@ -2423,12 +2423,76 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "content": "How to read the result\nThe SAM output is usually an intermediate artifact. For downstream analysis,\nconvert and sort it with Samtools or another alignment-processing tool.\n\nMinimap2 supports many presets. Liatir currently exposes a practical default\nconfiguration, with more preset controls planned."
   },
   {
+    "id": "docs:tools/molecular-simulation",
+    "sourceKind": "documentation",
+    "title": "Molecular Relaxation and Molecular Dynamics",
+    "locator": "Docs / Tools / Molecular Simulation",
+    "excerpt": "Two tools that simulate how the atoms of a molecule move, using [OpenMM](https://openmm.org) 8.5.1, an open-source physics engine. Liatir runs them entirely on your computer, on an NVIDIA graphics card (GPU). - **Molecular Relaxation** gently moves the atoms…",
+    "content": "Two tools that simulate how the atoms of a molecule move, using\n[OpenMM](https://openmm.org) 8.5.1, an open-source physics engine. Liatir runs\nthem entirely on your computer, on an NVIDIA graphics card (GPU).\n\n- **Molecular Relaxation** gently moves the atoms of a structure until strain and\n  clashes are gone and its energy is as low as it can get nearby (an energy\n  minimization). Use it to clean up a structure you downloaded or predicted\n  before you look at it or simulate it.\n- **Molecular Dynamics** simulates how the atoms move over time at a temperature\n  you choose, and gives you a trajectory you can play back, plus the energy and\n  temperature at every saved moment.\n\nYou find both under **Tools → Molecular Simulation**, and both are available as\nsteps in a [pipeline](/pipeline/overview)."
+  },
+  {
+    "id": "docs:tools/molecular-simulation#what-you-need",
+    "sourceKind": "documentation",
+    "title": "Molecular Relaxation and Molecular Dynamics — What you need",
+    "locator": "Docs / Tools / Molecular Simulation / What you need",
+    "excerpt": "What you need OpenMM is a **Tool Runtime**: a scientific program that Liatir installs once, on request, and keeps separate from everything else. It is not an AI Model — it calculates physics and learns nothing from data — so you install it from **Dependencies…",
+    "content": "What you need\nOpenMM is a **Tool Runtime**: a scientific program that Liatir installs once,\non request, and keeps separate from everything else. It is not an AI Model — it\ncalculates physics and learns nothing from data — so you install it from\n**Dependencies → Tool Runtimes**, not from the AI Models page.\n\n| Your computer | Can it run these tools? |\n| --- | --- |\n| Linux x86_64 with an NVIDIA GPU, driver 575.51.03 or newer | Yes |\n| Windows 11 with an NVIDIA GPU, through WSL2, driver 576.02 or newer | Yes |\n| Windows or Linux without an NVIDIA GPU | Not yet |\n| Mac | No |\n\n- **Why a recent driver.** OpenMM prepares its GPU code when it starts and asks\n  the NVIDIA driver to finish it. This version of OpenMM needs a driver that\n  supports CUDA 12.9; an older one would install fine and then fail on every\n  run. Liatir checks your driver before downloading anything and tells you if\n  it needs updating.\n- **On Windows**, OpenMM runs inside WSL2, as the\n  [native tools](/tools/overview#windows-and-wsl2) do, and your graphics card\n  must be visible inside WSL2. If Liatir says it is not, run `wsl --update` and\n  restart WSL2.\n- **Memory and disk.** At least 8 GB of memory. The download is about 1.3 GB\n  and needs about 3.7 GB once installed. The GPU itself needs very little memory\n  for these tools: under 200 MB in every case below.\n\nAfter installation everything works offline. The simulation never connects to\nthe network."
+  },
+  {
+    "id": "docs:tools/molecular-simulation#molecular-relaxation",
+    "sourceKind": "documentation",
+    "title": "Molecular Relaxation and Molecular Dynamics — Molecular Relaxation",
+    "locator": "Docs / Tools / Molecular Simulation / Molecular Relaxation",
+    "excerpt": "Molecular Relaxation - **Input:** a structure as PDB or mmCIF. Optionally one small molecule (ligand) as an SDF file, if that molecule is already part of the structure. - **Options:** add missing hydrogens at a chosen pH, surround the molecule with water (TIP…",
+    "content": "Molecular Relaxation\n- **Input:** a structure as PDB or mmCIF. Optionally one small molecule\n  (ligand) as an SDF file, if that molecule is already part of the structure.\n- **Options:** add missing hydrogens at a chosen pH, surround the molecule with\n  water (TIP3P-FB) and salt, the maximum number of steps and the stopping\n  tolerance, and a seed so the run can be repeated.\n- **Output:** the relaxed structure as mmCIF, which opens in the\n  [3D Structure Viewer](/visualization/structure-viewer), the energy before and\n  after, and the full record of what was run."
+  },
+  {
+    "id": "docs:tools/molecular-simulation#molecular-dynamics",
+    "sourceKind": "documentation",
+    "title": "Molecular Relaxation and Molecular Dynamics — Molecular Dynamics",
+    "locator": "Docs / Tools / Molecular Simulation / Molecular Dynamics",
+    "excerpt": "Molecular Dynamics - **Input:** the same structures as above, or a checkpoint from an earlier run to continue it. - **Options:** a 10 ps check, a 100 ps run or a custom length; the temperature; the pressure, only when the system is in water; how often to save…",
+    "content": "Molecular Dynamics\n- **Input:** the same structures as above, or a checkpoint from an earlier run\n  to continue it.\n- **Options:** a 10 ps check, a 100 ps run or a custom length; the temperature;\n  the pressure, only when the system is in water; how often to save a frame;\n  and a seed.\n- **Output:** the trajectory (DCD) with its topology, the final structure, a\n  table and plots of energy and temperature over time, and a checkpoint that\n  lets you continue the simulation later."
+  },
+  {
+    "id": "docs:tools/molecular-simulation#force-fields-and-chemistry",
+    "sourceKind": "documentation",
+    "title": "Molecular Relaxation and Molecular Dynamics — Force fields and chemistry",
+    "locator": "Docs / Tools / Molecular Simulation / Force fields and chemistry",
+    "excerpt": "Force fields and chemistry Proteins use Amber19, water uses TIP3P-FB, and small molecules use OpenFF Sage 2.3.0 with charges from the NAGL AM1-BCC model. Some chemistry is outside these force fields, for example membrane lipids. When a structure contains a re…",
+    "content": "Force fields and chemistry\nProteins use Amber19, water uses TIP3P-FB, and small molecules use OpenFF Sage\n2.3.0 with charges from the NAGL AM1-BCC model. Some chemistry is outside these\nforce fields, for example membrane lipids. When a structure contains a residue\nthey cannot describe, Liatir refuses the run and names that residue rather than\nguessing or silently dropping it. If it is a small molecule, supplying its SDF\nusually solves it."
+  },
+  {
+    "id": "docs:tools/molecular-simulation#how-it-was-checked",
+    "sourceKind": "documentation",
+    "title": "Molecular Relaxation and Molecular Dynamics — How it was checked",
+    "locator": "Docs / Tools / Molecular Simulation / How it was checked",
+    "excerpt": "How it was checked Before publication, the exact package you download was tested on a GeForce RTX 4060 Ti with 8 GB of memory: - The energy it calculates matches OpenMM's own reference implementation within 0.0002 kJ/mol, on identical coordinates. - Dihydrofo…",
+    "content": "How it was checked\nBefore publication, the exact package you download was tested on a GeForce RTX\n4060 Ti with 8 GB of memory:\n\n- The energy it calculates matches OpenMM's own reference implementation within\n  0.0002 kJ/mol, on identical coordinates.\n- Dihydrofolate reductase (DHFR), the standard benchmark protein with 2,489\n  atoms, relaxed in about 4 seconds; with the approved drug ruxolitinib bound\n  to it, in about 10 seconds.\n- DHFR in water and salt, 29,419 atoms — the realistic shape of a simulation —\n  relaxed in about 13 seconds, and 10 ps of dynamics took about 15 seconds. The\n  temperature settled at the 300 K requested: 301.8 K on average once the system\n  had equilibrated.\n- A changed or corrupted checkpoint, a missing ligand and a residue the force\n  fields cannot describe were all refused.\n\nThe same package then ran inside the real Liatir app, from installation to\nresults and removal, on Linux and on Windows through WSL2.\n\nLarger systems than those measured are allowed: Liatir tells you the run goes\nbeyond what was measured and asks you to confirm before it starts."
+  },
+  {
+    "id": "docs:tools/molecular-simulation#what-the-results-mean",
+    "sourceKind": "documentation",
+    "title": "Molecular Relaxation and Molecular Dynamics — What the results mean",
+    "locator": "Docs / Tools / Molecular Simulation / What the results mean",
+    "excerpt": "What the results mean OpenMM simulates atomic motion with a force field. It does not prove binding affinity, molecular stability, clinical benefit, or therapeutic efficacy. Liatir shows this notice with every result. Runs of 10 to 100 ps are short: they are u…",
+    "content": "What the results mean\nOpenMM simulates atomic motion with a force field. It does not prove binding\naffinity, molecular stability, clinical benefit, or therapeutic efficacy.\nLiatir shows this notice with every result. Runs of 10 to 100 ps are short:\nthey are useful to check and relax a structure, while studying how a protein\nactually behaves usually takes nanoseconds or more, and the result always\ndepends on the starting structure you provide."
+  },
+  {
+    "id": "docs:tools/molecular-simulation#licences-and-official-source",
+    "sourceKind": "documentation",
+    "title": "Molecular Relaxation and Molecular Dynamics — Licences and official source",
+    "locator": "Docs / Tools / Molecular Simulation / Licences and official source",
+    "excerpt": "Licences and official source - [OpenMM 8.5.1](https://github.com/openmm/openmm/tree/8.5.1): MIT for the core, LGPL-3.0-or-later for its GPU platform. - [OpenMMForceFields 0.16.0](https://github.com/openmm/openmmforcefields/tree/0.16.0) and the OpenFF Toolkit:…",
+    "content": "Licences and official source\n- [OpenMM 8.5.1](https://github.com/openmm/openmm/tree/8.5.1): MIT for the core,\n  LGPL-3.0-or-later for its GPU platform.\n- [OpenMMForceFields 0.16.0](https://github.com/openmm/openmmforcefields/tree/0.16.0)\n  and the OpenFF Toolkit: MIT. OpenFF force fields and the NAGL charge model:\n  CC-BY-4.0.\n- The package includes NVIDIA's CUDA runtime compiler and FFT library under\n  NVIDIA's own licence. Your NVIDIA driver is not part of it.\n- [OpenMM documentation](https://docs.openmm.org/8.5.0/)"
+  },
+  {
     "id": "docs:tools/overview",
     "sourceKind": "documentation",
     "title": "Tools",
     "locator": "Docs / Tools / Overview",
-    "excerpt": "Liatir offers four kinds of analysis step: **built-in tools** that work out of the box, **native tools** — real bioinformatics programs, shipped with Liatir — **AI Tools** that use local AI Models, and **External Workflows** that run saved engine projects suc…",
-    "content": "Liatir offers four kinds of analysis step: **built-in tools** that work out of\nthe box, **native tools** — real bioinformatics programs, shipped with Liatir —\n**AI Tools** that use local AI Models, and **External Workflows** that run saved\nengine projects such as Nextflow.\n\nThey all share the same layout, run history, and results view, and they can be\nmixed freely in a pipeline whenever their inputs and outputs match."
+    "excerpt": "Liatir offers five kinds of analysis step: **built-in tools** that work out of the box, **native tools** — real bioinformatics programs, shipped with Liatir — tools that run on a **Tool Runtime** Liatir installs when you ask, **AI Tools** that use local AI Mo…",
+    "content": "Liatir offers five kinds of analysis step: **built-in tools** that work out of\nthe box, **native tools** — real bioinformatics programs, shipped with Liatir —\ntools that run on a **Tool Runtime** Liatir installs when you ask, **AI Tools**\nthat use local AI Models, and **External Workflows** that run saved engine\nprojects such as Nextflow.\n\nThey all share the same layout, run history, and results view, and they can be\nmixed freely in a pipeline whenever their inputs and outputs match."
   },
   {
     "id": "docs:tools/overview#built-in-tools",
@@ -2445,6 +2509,14 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "locator": "Docs / Tools / Overview / Native tools",
     "excerpt": "Native tools These are real bioinformatics programs, and Liatir ships them. You do not install `samtools`, `bwa`, `minimap2`, `bcftools`, `seqkit`, `fastp`, `simpleaf` or `alevin-fry` yourself: they arrive with the application, at the exact versions it was te…",
     "content": "Native tools\nThese are real bioinformatics programs, and Liatir ships them. You do not install\n`samtools`, `bwa`, `minimap2`, `bcftools`, `seqkit`, `fastp`, `simpleaf` or\n`alevin-fry` yourself: they arrive with the application, at the exact versions it\nwas tested with, and they update when Liatir updates. The tool page shows\n**Included with Liatir** and the version it is running.\n\nSnpEff and SnpSift are the exception: they are Java programs. Liatir downloads\nand verifies both together only when you need them, then manages their versions\nand SnpEff databases. Java 21 or newer must still be installed on your machine.\n\nOn **Windows** these tools run inside WSL2 — see\n[Windows and WSL2](#windows-and-wsl2) below.\n\n| Tool | Subcommand | Input formats |\n|------|-----------|---------------|\n| [seqkit stats](/tools/seqkit) | `stats` | FASTA, FASTQ (compressed or not) |\n| [Samtools](/tools/samtools) | `flagstat` | BAM, SAM, CRAM |\n| [Samtools faidx](/tools/samtools-faidx) | `faidx` | FASTA, FASTA.GZ |\n| [BWA-MEM](/tools/bwa-mem) | `mem` | FASTA + FASTQ |\n| [Minimap2](/tools/minimap2) | — | FASTA/MMI + FASTQ/FASTA |\n| [BCFtools](/tools/bcftools) | `stats` | VCF, VCF.GZ, BCF, BCF.GZ |\n| [BCFtools filter](/tools/bcftools-filter) | `filter` | VCF, VCF.GZ, BCF, BCF.GZ |\n| [SnpEff](/tools/snpeff) | — | VCF, VCF.GZ |\n| [SnpSift Filter](/tools/snpsift-filter) | `filter` | VCF, VCF.GZ |\n| [fastp](/tools/fastp) | — | FASTQ (single or paired-end) |\n| [Single-cell Reference Index](/tools/single-cell-index) | `simpleaf index` | Genome FASTA + GTF/GFF3 |\n| [Single-cell Quantification](/tools/single-cell-quant) | `simpleaf quant` | Single-cell index + paired FASTQ |\n\nThe two single-cell steps are one toolchain: `simpleaf` drives `piscem` for\nmapping and `alevin-fry` for counting, so you run one step instead of five. The\nresult is an `.h5ad` count matrix, which is the input the\n[Single-cell Embedding](/ai/tools/single-cell-embedding) AI Tool and the\n[Single-cell Viewer](/visualization/single-cell-viewer) expect.\n\nCommon single-cell references can be selected from a ready-made list. Liatir\ndownloads each index once, verifies it and keeps it for reuse; the reference\nindex tool remains available for species or annotation releases not in that\nlist.\n\n### Windows and WSL2\n\nAlmost none of this software has a Windows build. `samtools`, `bcftools`, `bwa`,\n`minimap2`, `fastp`, `simpleaf` and `alevin-fry` are written for Unix and rely on\noperating-system facilities Windows does not provide; their authors publish Linux\nand macOS releases only. This is not a Liatir limitation and no Windows version\nexists to package.\n\nSo Liatir on Windows ships the Linux tools and runs them through **WSL2**, the\nWindows Subsystem for Linux — the same mechanism it already uses for\n[Nextflow](/tools/external-workflows). You still work entirely in the Liatir\nwindow; your files stay where they are, and Liatir translates their locations for\nthe tool.\n\n**WSL2 must be installed.** It is a supported Windows feature, not third-party\nsoftware: open PowerShell as administrator, run `wsl --install`, and restart when\nasked. You do not need to install anything inside it for these tools — Liatir\nbrings its own copy and sets it up for you. Nextflow is different and does need\nto be installed inside WSL2 yourself.\n\nLiatir unpacks its tools the first time it starts after being installed or\nupdated. It takes a second or two, happens in the background, and does not repeat."
+  },
+  {
+    "id": "docs:tools/overview#tool-runtimes",
+    "sourceKind": "documentation",
+    "title": "Tools — Tool Runtimes",
+    "locator": "Docs / Tools / Overview / Tool Runtimes",
+    "excerpt": "Tool Runtimes Some scientific programs are too large to ship inside Liatir and only make sense on suitable hardware. Liatir installs them once, when you ask, from **Dependencies → Tool Runtimes**: a signed package that Liatir verifies, keeps separate from eve…",
+    "content": "Tool Runtimes\nSome scientific programs are too large to ship inside Liatir and only make sense\non suitable hardware. Liatir installs them once, when you ask, from\n**Dependencies → Tool Runtimes**: a signed package that Liatir verifies, keeps\nseparate from everything else and runs offline. They are not AI Models.\n\n| Tool | Tool Runtime | Runs on |\n| --- | --- | --- |\n| [Molecular Relaxation](/tools/molecular-simulation) | OpenMM 8.5.1 | Linux, or Windows through WSL2, with an NVIDIA GPU |\n| [Molecular Dynamics](/tools/molecular-simulation) | OpenMM 8.5.1 | Linux, or Windows through WSL2, with an NVIDIA GPU |"
   },
   {
     "id": "docs:tools/overview#ai-tools",

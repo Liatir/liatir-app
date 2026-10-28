@@ -1,6 +1,6 @@
 # Current project status
 
-Last updated 2026-10-27. This page says where Liatir stands and what comes next. How each piece got
+Last updated 2026-10-28. This page says where Liatir stands and what comes next. How each piece got
 here is in the [status log, July to September 2026](../history/status-log-2026-07-to-2026-09.md)
 and in the plans under `history/`; the readiness of each product area, with its evidence, is in
 [Beta 1 readiness](./roadmap/beta-readiness.md).
@@ -10,14 +10,16 @@ and in the plans under `history/`; the readiness of each product area, with its 
 **OpenMM CUDA publication** — the owner asked on 2026-10-27 for OpenMM's `linux-x86_64-cuda12.9`
 box to be published, CUDA only, for Linux and for Windows through WSL2. The persistent plan,
 findings, decisions and progress are in
-[OpenMM CUDA publication](./roadmap/openmm-cuda-publication.md). The pre-release check found the
+[OpenMM CUDA publication](../history/openmm-cuda-publication.md). The pre-release check found the
 box's NVIDIA driver floor wrong (575.51.03, not 525.60.13 —
 [decision](../decisions/openmm-cuda-needs-the-cuda-12-9-driver.md)) and the CUDA release evidence
-unable to pass; both are corrected (`f81fef2b`) and rehearsed on this GPU. **Publication is blocked
-on the owner**: billing is disabled on the Google Cloud project `liatir-release-security`, which
-holds the production signer and KMS key, so the signer answers 503 and cannot be redeployed. Every
-Runtime Box release is blocked until billing is re-enabled; the plan lists the exact steps after
-that. The Windows rehearsal also found that **every Runtime Box installed through WSL2 looked
+unable to pass; both are corrected (`f81fef2b`) and rehearsed on this GPU. **It is published on
+`beta` since 2026-10-28** by release run 40622962439, after the owner re-enabled billing on the
+Google Cloud project that holds the signer (it had stopped every Runtime Box release) and after a
+release-workflow gap that would have stopped any release at the product test binary was closed
+(`69c91d20`). Public channel, release signature and archive bytes were verified independently.
+The product now offers Molecular Relaxation and Molecular Dynamics. The Windows rehearsal also
+found that **every Runtime Box installed through WSL2 looked
 broken to the Windows app** since the move to box format version 3: the WSL2 consumer's status
 check read a version 2 field. It is fixed and tested, and the full OpenMM lifecycle then passed in
 the real Windows app through WSL2 on CUDA; but the 0.3.0 MSIX prepared for Partner Center carries
@@ -122,8 +124,9 @@ and complete platform signoff is the [signed public distribution gate](./roadmap
 macOS and Linux 0.3.0 are already publicly distributed; clean-machine installation,
 real signed update evidence and Store certification remain open in that gate.
 
-**Twelve AI Model targets across seven components are on the public `beta` channel**, all
-Scrollcase v3, KMS-signed and with retained release evidence under `runtime-boxes/evidence/`:
+**Thirteen Runtime Box targets across eight components are on the public `beta` channel** —
+AI Models plus the pVACseq and OpenMM Tool Runtimes — all Scrollcase v3, KMS-signed and with
+retained release evidence under `runtime-boxes/evidence/`:
 
 | Component | Published targets |
 | --- | --- |
@@ -134,6 +137,7 @@ Scrollcase v3, KMS-signed and with retained release evidence under `runtime-boxe
 | pVACseq | `macos-aarch64-cpu`, `linux-x86_64-cpu` |
 | Boltz-2 | `linux-x86_64-cuda12.9` |
 | Protenix base v1.0.0 | `linux-x86_64-cuda12.6` |
+| OpenMM 8.5.1 (Tool Runtime) | `linux-x86_64-cuda12.9` |
 
 Every Linux target also serves Windows through WSL2; there are no native Windows targets
 ([decision](../decisions/no-native-windows-runtime-box-targets.md)). `runtime-boxes/catalog.json`
@@ -279,8 +283,8 @@ refinements. No tests, builds or browser checks were run, as requested.
    Models page offer a Linux CUDA box through WSL2 on Windows: Geneformer showed as unavailable
    there because the page considered only CPU boxes for WSL2, although the installer already
    routed CUDA ones. Its MSIX, not the 0.1.1 one, is the one to submit to the Store.
-2. **OpenMM publication.** In progress for `linux-x86_64-cuda12.9` only — see
-   [OpenMM CUDA publication](./roadmap/openmm-cuda-publication.md). `linux-x86_64-cpu` stays
+2. **OpenMM.** `linux-x86_64-cuda12.9` is published (2026-10-28, run 40622962439) — see
+   [OpenMM CUDA publication](../history/openmm-cuda-publication.md). `linux-x86_64-cpu` stays
    `native-lifecycle-validated` and `macos-aarch64-cpu` `planned`, both deliberately unpublished;
    earlier evidence is in [Phase 3 implementation status](./roadmap/phase3-implementation-status.md).
 3. **The partial product areas** in [Beta 1 readiness](./roadmap/beta-readiness.md): the Quenta

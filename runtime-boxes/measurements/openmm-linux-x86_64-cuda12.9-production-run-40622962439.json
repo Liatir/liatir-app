@@ -1,0 +1,858 @@
+{
+  "schemaVersion": 1,
+  "kind": "liatir.openmm-scientific-validation",
+  "createdAt": "2026-10-28T02:58:08.456Z",
+  "status": "passed",
+  "modelId": "openmm-openmm",
+  "sourceRevision": "8.5.1+openmmforcefields-0.16.0+openff-toolkit-0.17.1+openff-sage-2.3.0+nagl-0.5.5",
+  "targetId": "linux-x86_64-cuda12.9",
+  "productRunnerSha256": "b92777727045a39c79035467eaf62ef7db849cff515d6d776696e2a9f28471ed",
+  "cases": [
+    {
+      "id": "official-protein-relaxation",
+      "metrics": {
+        "schemaVersion": 1,
+        "kind": "liatir.openmm-preflight",
+        "mode": "relaxation",
+        "workloadId": "openmm:relaxation:none:standard",
+        "tokenCount": 1,
+        "atomCount": 33,
+        "inputAtomCount": 33,
+        "stepCount": 5000,
+        "ligandAtomCount": 0,
+        "outputItemCount": 1,
+        "inputBytes": 2751,
+        "networkAccess": false
+      },
+      "preparedAtoms": 33,
+      "measurement": {
+        "elapsedMs": 1793,
+        "peakRamBytes": 302919680,
+        "peakVramBytes": 125829120,
+        "vramMeasurementMethod": "device-wide-delta",
+        "vramDeviceBaselineBytes": 1009778688,
+        "gpuName": "NVIDIA GeForce RTX 4060 Ti",
+        "gpuDriverVersion": "610.88",
+        "gpuMemoryBytes": 8585740288,
+        "gpuComputeCapability": "8.9",
+        "vramSamplingIntervalMs": 50,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 14010,
+      "cudaDevice": {
+        "gpuModel": "NVIDIA GeForce RTX 4060 Ti",
+        "gpuMemoryBytes": 8585740288,
+        "computeCapability": "8.9",
+        "reportedCudaCompatibility": "12.9",
+        "peakVramBytes": 126566400,
+        "vramMeasurementMethod": "device-wide-delta"
+      }
+    },
+    {
+      "id": "add-missing-hydrogens",
+      "metrics": {
+        "schemaVersion": 1,
+        "kind": "liatir.openmm-preflight",
+        "mode": "relaxation",
+        "workloadId": "openmm:relaxation:none:standard",
+        "tokenCount": 1,
+        "atomCount": 80,
+        "inputAtomCount": 16,
+        "stepCount": 5000,
+        "ligandAtomCount": 0,
+        "outputItemCount": 1,
+        "inputBytes": 1376,
+        "networkAccess": false
+      },
+      "preparedAtoms": 33,
+      "measurement": {
+        "elapsedMs": 939,
+        "peakRamBytes": 272789504,
+        "peakVramBytes": 125829120,
+        "vramMeasurementMethod": "device-wide-delta",
+        "vramDeviceBaselineBytes": 1009778688,
+        "gpuName": "NVIDIA GeForce RTX 4060 Ti",
+        "gpuDriverVersion": "610.88",
+        "gpuMemoryBytes": 8585740288,
+        "gpuComputeCapability": "8.9",
+        "vramSamplingIntervalMs": 50,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 14008,
+      "cudaDevice": {
+        "gpuModel": "NVIDIA GeForce RTX 4060 Ti",
+        "gpuMemoryBytes": 8585740288,
+        "computeCapability": "8.9",
+        "reportedCudaCompatibility": "12.9",
+        "peakVramBytes": 126566400,
+        "vramMeasurementMethod": "device-wide-delta"
+      }
+    },
+    {
+      "id": "protein-ligand-relaxation",
+      "metrics": {
+        "schemaVersion": 1,
+        "kind": "liatir.openmm-preflight",
+        "mode": "relaxation",
+        "workloadId": "openmm:relaxation:none:openff",
+        "tokenCount": 1,
+        "atomCount": 42,
+        "inputAtomCount": 42,
+        "stepCount": 5000,
+        "ligandAtomCount": 9,
+        "outputItemCount": 1,
+        "inputBytes": 4508,
+        "networkAccess": false
+      },
+      "preparedAtoms": 42,
+      "measurement": {
+        "elapsedMs": 6876,
+        "peakRamBytes": 778215424,
+        "peakVramBytes": 125829120,
+        "vramMeasurementMethod": "device-wide-delta",
+        "vramDeviceBaselineBytes": 1009778688,
+        "gpuName": "NVIDIA GeForce RTX 4060 Ti",
+        "gpuDriverVersion": "610.88",
+        "gpuMemoryBytes": 8585740288,
+        "gpuComputeCapability": "8.9",
+        "vramSamplingIntervalMs": 50,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 18761,
+      "cudaDevice": {
+        "gpuModel": "NVIDIA GeForce RTX 4060 Ti",
+        "gpuMemoryBytes": 8585740288,
+        "computeCapability": "8.9",
+        "reportedCudaCompatibility": "12.9",
+        "peakVramBytes": 126566400,
+        "vramMeasurementMethod": "device-wide-delta"
+      }
+    },
+    {
+      "id": "protein-dynamics-10ps",
+      "metrics": {
+        "schemaVersion": 1,
+        "kind": "liatir.openmm-preflight",
+        "mode": "dynamics",
+        "workloadId": "openmm:dynamics:none:standard",
+        "tokenCount": 1,
+        "atomCount": 33,
+        "inputAtomCount": 33,
+        "stepCount": 5000,
+        "ligandAtomCount": 0,
+        "outputItemCount": 10,
+        "inputBytes": 2751,
+        "networkAccess": false
+      },
+      "preparedAtoms": 33,
+      "measurement": {
+        "elapsedMs": 1674,
+        "peakRamBytes": 303562752,
+        "peakVramBytes": 125829120,
+        "vramMeasurementMethod": "device-wide-delta",
+        "vramDeviceBaselineBytes": 1009778688,
+        "gpuName": "NVIDIA GeForce RTX 4060 Ti",
+        "gpuDriverVersion": "610.88",
+        "gpuMemoryBytes": 8585740288,
+        "gpuComputeCapability": "8.9",
+        "vramSamplingIntervalMs": 50,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 658108,
+      "cudaDevice": {
+        "gpuModel": "NVIDIA GeForce RTX 4060 Ti",
+        "gpuMemoryBytes": 8585740288,
+        "computeCapability": "8.9",
+        "reportedCudaCompatibility": "12.9",
+        "peakVramBytes": 126566400,
+        "vramMeasurementMethod": "device-wide-delta"
+      }
+    },
+    {
+      "id": "protein-checkpoint-resume",
+      "metrics": {
+        "schemaVersion": 1,
+        "kind": "liatir.openmm-preflight",
+        "mode": "dynamics",
+        "workloadId": "openmm:dynamics:none:standard",
+        "tokenCount": 1,
+        "atomCount": 33,
+        "inputAtomCount": 33,
+        "stepCount": 5000,
+        "ligandAtomCount": 0,
+        "outputItemCount": 10,
+        "inputBytes": 2751,
+        "networkAccess": false
+      },
+      "preparedAtoms": 33,
+      "measurement": {
+        "elapsedMs": 1126,
+        "peakRamBytes": 253435904,
+        "peakVramBytes": 125829120,
+        "vramMeasurementMethod": "device-wide-delta",
+        "vramDeviceBaselineBytes": 1009778688,
+        "gpuName": "NVIDIA GeForce RTX 4060 Ti",
+        "gpuDriverVersion": "610.88",
+        "gpuMemoryBytes": 8585740288,
+        "gpuComputeCapability": "8.9",
+        "vramSamplingIntervalMs": 50,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 658972,
+      "cudaDevice": {
+        "gpuModel": "NVIDIA GeForce RTX 4060 Ti",
+        "gpuMemoryBytes": 8585740288,
+        "computeCapability": "8.9",
+        "reportedCudaCompatibility": "12.9",
+        "peakVramBytes": 126697472,
+        "vramMeasurementMethod": "device-wide-delta"
+      }
+    },
+    {
+      "id": "protein-dynamics-100ps",
+      "metrics": {
+        "schemaVersion": 1,
+        "kind": "liatir.openmm-preflight",
+        "mode": "dynamics",
+        "workloadId": "openmm:dynamics:none:standard",
+        "tokenCount": 1,
+        "atomCount": 33,
+        "inputAtomCount": 33,
+        "stepCount": 50000,
+        "ligandAtomCount": 0,
+        "outputItemCount": 10,
+        "inputBytes": 2751,
+        "networkAccess": false
+      },
+      "preparedAtoms": 33,
+      "measurement": {
+        "elapsedMs": 6472,
+        "peakRamBytes": 275492864,
+        "peakVramBytes": 125829120,
+        "vramMeasurementMethod": "device-wide-delta",
+        "vramDeviceBaselineBytes": 1009778688,
+        "gpuName": "NVIDIA GeForce RTX 4060 Ti",
+        "gpuDriverVersion": "610.88",
+        "gpuMemoryBytes": 8585740288,
+        "gpuComputeCapability": "8.9",
+        "vramSamplingIntervalMs": 50,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 658125,
+      "cudaDevice": {
+        "gpuModel": "NVIDIA GeForce RTX 4060 Ti",
+        "gpuMemoryBytes": 8585740288,
+        "computeCapability": "8.9",
+        "reportedCudaCompatibility": "12.9",
+        "peakVramBytes": 126566400,
+        "vramMeasurementMethod": "device-wide-delta"
+      }
+    },
+    {
+      "id": "multi-residue-relaxation",
+      "metrics": {
+        "schemaVersion": 1,
+        "kind": "liatir.openmm-preflight",
+        "mode": "relaxation",
+        "workloadId": "openmm:relaxation:none:standard",
+        "tokenCount": 1,
+        "atomCount": 407,
+        "inputAtomCount": 407,
+        "stepCount": 5000,
+        "ligandAtomCount": 0,
+        "outputItemCount": 1,
+        "inputBytes": 34083,
+        "networkAccess": false
+      },
+      "preparedAtoms": 407,
+      "measurement": {
+        "elapsedMs": 1356,
+        "peakRamBytes": 305655808,
+        "peakVramBytes": 125829120,
+        "vramMeasurementMethod": "device-wide-delta",
+        "vramDeviceBaselineBytes": 1009778688,
+        "gpuName": "NVIDIA GeForce RTX 4060 Ti",
+        "gpuDriverVersion": "610.88",
+        "gpuMemoryBytes": 8585740288,
+        "gpuComputeCapability": "8.9",
+        "vramSamplingIntervalMs": 50,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 144869,
+      "cudaDevice": {
+        "gpuModel": "NVIDIA GeForce RTX 4060 Ti",
+        "gpuMemoryBytes": 8585740288,
+        "computeCapability": "8.9",
+        "reportedCudaCompatibility": "12.9",
+        "peakVramBytes": 126435328,
+        "vramMeasurementMethod": "device-wide-delta"
+      }
+    },
+    {
+      "id": "dhfr-protein-relaxation",
+      "metrics": {
+        "schemaVersion": 1,
+        "kind": "liatir.openmm-preflight",
+        "mode": "relaxation",
+        "workloadId": "openmm:relaxation:none:standard",
+        "tokenCount": 1,
+        "atomCount": 2489,
+        "inputAtomCount": 2489,
+        "stepCount": 5000,
+        "ligandAtomCount": 0,
+        "outputItemCount": 1,
+        "inputBytes": 192005,
+        "networkAccess": false
+      },
+      "preparedAtoms": 2489,
+      "measurement": {
+        "elapsedMs": 3592,
+        "peakRamBytes": 312877056,
+        "peakVramBytes": 127926272,
+        "vramMeasurementMethod": "device-wide-delta",
+        "vramDeviceBaselineBytes": 1009778688,
+        "gpuName": "NVIDIA GeForce RTX 4060 Ti",
+        "gpuDriverVersion": "610.88",
+        "gpuMemoryBytes": 8585740288,
+        "gpuComputeCapability": "8.9",
+        "vramSamplingIntervalMs": 50,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 831862,
+      "cudaDevice": {
+        "gpuModel": "NVIDIA GeForce RTX 4060 Ti",
+        "gpuMemoryBytes": 8585740288,
+        "computeCapability": "8.9",
+        "reportedCudaCompatibility": "12.9",
+        "peakVramBytes": 128663552,
+        "vramMeasurementMethod": "device-wide-delta"
+      }
+    },
+    {
+      "id": "dhfr-drug-ligand-relaxation",
+      "metrics": {
+        "schemaVersion": 1,
+        "kind": "liatir.openmm-preflight",
+        "mode": "relaxation",
+        "workloadId": "openmm:relaxation:none:openff",
+        "tokenCount": 1,
+        "atomCount": 2530,
+        "inputAtomCount": 2530,
+        "stepCount": 5000,
+        "ligandAtomCount": 41,
+        "outputItemCount": 1,
+        "inputBytes": 209499,
+        "networkAccess": false
+      },
+      "preparedAtoms": 2530,
+      "measurement": {
+        "elapsedMs": 10203,
+        "peakRamBytes": 801001472,
+        "peakVramBytes": 133169152,
+        "vramMeasurementMethod": "device-wide-delta",
+        "vramDeviceBaselineBytes": 1009778688,
+        "gpuName": "NVIDIA GeForce RTX 4060 Ti",
+        "gpuDriverVersion": "610.88",
+        "gpuMemoryBytes": 8585740288,
+        "gpuComputeCapability": "8.9",
+        "vramSamplingIntervalMs": 50,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 851740,
+      "cudaDevice": {
+        "gpuModel": "NVIDIA GeForce RTX 4060 Ti",
+        "gpuMemoryBytes": 8585740288,
+        "computeCapability": "8.9",
+        "reportedCudaCompatibility": "12.9",
+        "peakVramBytes": 133316608,
+        "vramMeasurementMethod": "device-wide-delta"
+      }
+    },
+    {
+      "id": "dhfr-solvated-relaxation",
+      "metrics": {
+        "schemaVersion": 1,
+        "kind": "liatir.openmm-preflight",
+        "mode": "relaxation",
+        "workloadId": "openmm:relaxation:tip3p-fb:standard",
+        "tokenCount": 1,
+        "atomCount": 117913,
+        "inputAtomCount": 2489,
+        "stepCount": 5000,
+        "ligandAtomCount": 0,
+        "outputItemCount": 1,
+        "inputBytes": 192005,
+        "networkAccess": false
+      },
+      "preparedAtoms": 29419,
+      "measurement": {
+        "elapsedMs": 12777,
+        "peakRamBytes": 471879680,
+        "peakVramBytes": 173015040,
+        "vramMeasurementMethod": "device-wide-delta",
+        "vramDeviceBaselineBytes": 1013972992,
+        "gpuName": "NVIDIA GeForce RTX 4060 Ti",
+        "gpuDriverVersion": "610.88",
+        "gpuMemoryBytes": 8585740288,
+        "gpuComputeCapability": "8.9",
+        "vramSamplingIntervalMs": 50,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 9907829,
+      "cudaDevice": {
+        "gpuModel": "NVIDIA GeForce RTX 4060 Ti",
+        "gpuMemoryBytes": 8585740288,
+        "computeCapability": "8.9",
+        "reportedCudaCompatibility": "12.9",
+        "peakVramBytes": 177029120,
+        "vramMeasurementMethod": "device-wide-delta"
+      }
+    },
+    {
+      "id": "dhfr-solvated-dynamics-10ps",
+      "metrics": {
+        "schemaVersion": 1,
+        "kind": "liatir.openmm-preflight",
+        "mode": "dynamics",
+        "workloadId": "openmm:dynamics:tip3p-fb:standard",
+        "tokenCount": 1,
+        "atomCount": 117913,
+        "inputAtomCount": 2489,
+        "stepCount": 5000,
+        "ligandAtomCount": 0,
+        "outputItemCount": 10,
+        "inputBytes": 192005,
+        "networkAccess": false
+      },
+      "preparedAtoms": 29419,
+      "measurement": {
+        "elapsedMs": 14478,
+        "peakRamBytes": 480612352,
+        "peakVramBytes": 191889408,
+        "vramMeasurementMethod": "device-wide-delta",
+        "vramDeviceBaselineBytes": 1009778688,
+        "gpuName": "NVIDIA GeForce RTX 4060 Ti",
+        "gpuDriverVersion": "610.88",
+        "gpuMemoryBytes": 8585740288,
+        "gpuComputeCapability": "8.9",
+        "vramSamplingIntervalMs": 50,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 34451347,
+      "cudaDevice": {
+        "gpuModel": "NVIDIA GeForce RTX 4060 Ti",
+        "gpuMemoryBytes": 8585740288,
+        "computeCapability": "8.9",
+        "reportedCudaCompatibility": "12.9",
+        "peakVramBytes": 183189504,
+        "vramMeasurementMethod": "device-wide-delta"
+      },
+      "temperatureKelvin": {
+        "bath": 300,
+        "equilibratedAfterPs": 5,
+        "equilibratedMean": 301.75855918909,
+        "frames": [
+          {
+            "timePs": 1.0000000000000007,
+            "kelvin": 250.07367386597102
+          },
+          {
+            "timePs": 2.0000000000000013,
+            "kelvin": 279.0829774851752
+          },
+          {
+            "timePs": 2.999999999999891,
+            "kelvin": 291.69589203448203
+          },
+          {
+            "timePs": 3.999999999999781,
+            "kelvin": 296.6930682704904
+          },
+          {
+            "timePs": 4.999999999999671,
+            "kelvin": 301.5076926830041
+          },
+          {
+            "timePs": 5.999999999999561,
+            "kelvin": 300.8259666261576
+          },
+          {
+            "timePs": 6.999999999999451,
+            "kelvin": 301.3310480316549
+          },
+          {
+            "timePs": 7.999999999999341,
+            "kelvin": 303.464048418137
+          },
+          {
+            "timePs": 8.999999999999675,
+            "kelvin": 302.4725264727015
+          },
+          {
+            "timePs": 10.000000000000009,
+            "kelvin": 300.69920639679907
+          }
+        ]
+      }
+    },
+    {
+      "id": "solvated-dynamics-custom",
+      "metrics": {
+        "schemaVersion": 1,
+        "kind": "liatir.openmm-preflight",
+        "mode": "dynamics",
+        "workloadId": "openmm:dynamics:tip3p-fb:standard",
+        "tokenCount": 1,
+        "atomCount": 6605,
+        "inputAtomCount": 33,
+        "stepCount": 10,
+        "ligandAtomCount": 0,
+        "outputItemCount": 2,
+        "inputBytes": 2751,
+        "networkAccess": false
+      },
+      "preparedAtoms": 974,
+      "measurement": {
+        "elapsedMs": 3804,
+        "peakRamBytes": 399859712,
+        "peakVramBytes": 139460608,
+        "vramMeasurementMethod": "device-wide-delta",
+        "vramDeviceBaselineBytes": 1009778688,
+        "gpuName": "NVIDIA GeForce RTX 4060 Ti",
+        "gpuDriverVersion": "610.88",
+        "gpuMemoryBytes": 8585740288,
+        "gpuComputeCapability": "8.9",
+        "vramSamplingIntervalMs": 50,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 1556731,
+      "cudaDevice": {
+        "gpuModel": "NVIDIA GeForce RTX 4060 Ti",
+        "gpuMemoryBytes": 8585740288,
+        "computeCapability": "8.9",
+        "reportedCudaCompatibility": "12.9",
+        "peakVramBytes": 139149312,
+        "vramMeasurementMethod": "device-wide-delta"
+      }
+    },
+    {
+      "id": "solvated-checkpoint-resume",
+      "metrics": {
+        "schemaVersion": 1,
+        "kind": "liatir.openmm-preflight",
+        "mode": "dynamics",
+        "workloadId": "openmm:dynamics:tip3p-fb:standard",
+        "tokenCount": 1,
+        "atomCount": 6605,
+        "inputAtomCount": 33,
+        "stepCount": 10,
+        "ligandAtomCount": 0,
+        "outputItemCount": 2,
+        "inputBytes": 2751,
+        "networkAccess": false
+      },
+      "preparedAtoms": 974,
+      "measurement": {
+        "elapsedMs": 806,
+        "peakRamBytes": 353988608,
+        "peakVramBytes": 136314880,
+        "vramMeasurementMethod": "device-wide-delta",
+        "vramDeviceBaselineBytes": 1009778688,
+        "gpuName": "NVIDIA GeForce RTX 4060 Ti",
+        "gpuDriverVersion": "610.88",
+        "gpuMemoryBytes": 8585740288,
+        "gpuComputeCapability": "8.9",
+        "vramSamplingIntervalMs": 50,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 1557613,
+      "cudaDevice": {
+        "gpuModel": "NVIDIA GeForce RTX 4060 Ti",
+        "gpuMemoryBytes": 8585740288,
+        "computeCapability": "8.9",
+        "reportedCudaCompatibility": "12.9",
+        "peakVramBytes": 137052160,
+        "vramMeasurementMethod": "device-wide-delta"
+      }
+    },
+    {
+      "id": "changed-release",
+      "rejected": true
+    },
+    {
+      "id": "changed-target",
+      "rejected": true
+    },
+    {
+      "id": "changed-temperature",
+      "rejected": true
+    },
+    {
+      "id": "absent-ligand",
+      "rejected": true
+    },
+    {
+      "id": "unparameterized-residue",
+      "rejected": true
+    },
+    {
+      "id": "corrupted-checkpoint-system",
+      "rejected": true
+    }
+  ],
+  "hardwareSamples": [
+    {
+      "fixtureId": "official-protein-relaxation",
+      "workloadId": "openmm:relaxation:none:standard",
+      "maxTokenCount": 1,
+      "maxAtomCount": 33,
+      "maxStepCount": 5000,
+      "maxOutputItemCount": 1,
+      "peakRamBytes": 302919680,
+      "peakVramBytes": 125829120,
+      "elapsedMs": 1793,
+      "outputBytes": 14010
+    },
+    {
+      "fixtureId": "add-missing-hydrogens",
+      "workloadId": "openmm:relaxation:none:standard",
+      "maxTokenCount": 1,
+      "maxAtomCount": 33,
+      "maxStepCount": 5000,
+      "maxOutputItemCount": 1,
+      "peakRamBytes": 272789504,
+      "peakVramBytes": 125829120,
+      "elapsedMs": 939,
+      "outputBytes": 14008
+    },
+    {
+      "fixtureId": "protein-ligand-relaxation",
+      "workloadId": "openmm:relaxation:none:openff",
+      "maxTokenCount": 1,
+      "maxAtomCount": 42,
+      "maxStepCount": 5000,
+      "maxOutputItemCount": 1,
+      "peakRamBytes": 778215424,
+      "peakVramBytes": 125829120,
+      "elapsedMs": 6876,
+      "outputBytes": 18761
+    },
+    {
+      "fixtureId": "protein-dynamics-10ps",
+      "workloadId": "openmm:dynamics:none:standard",
+      "maxTokenCount": 1,
+      "maxAtomCount": 33,
+      "maxStepCount": 5000,
+      "maxOutputItemCount": 10,
+      "peakRamBytes": 303562752,
+      "peakVramBytes": 125829120,
+      "elapsedMs": 1674,
+      "outputBytes": 658108
+    },
+    {
+      "fixtureId": "protein-checkpoint-resume",
+      "workloadId": "openmm:dynamics:none:standard",
+      "maxTokenCount": 1,
+      "maxAtomCount": 33,
+      "maxStepCount": 5000,
+      "maxOutputItemCount": 10,
+      "peakRamBytes": 253435904,
+      "peakVramBytes": 125829120,
+      "elapsedMs": 1126,
+      "outputBytes": 658972
+    },
+    {
+      "fixtureId": "protein-dynamics-100ps",
+      "workloadId": "openmm:dynamics:none:standard",
+      "maxTokenCount": 1,
+      "maxAtomCount": 33,
+      "maxStepCount": 50000,
+      "maxOutputItemCount": 10,
+      "peakRamBytes": 275492864,
+      "peakVramBytes": 125829120,
+      "elapsedMs": 6472,
+      "outputBytes": 658125
+    },
+    {
+      "fixtureId": "multi-residue-relaxation",
+      "workloadId": "openmm:relaxation:none:standard",
+      "maxTokenCount": 1,
+      "maxAtomCount": 407,
+      "maxStepCount": 5000,
+      "maxOutputItemCount": 1,
+      "peakRamBytes": 305655808,
+      "peakVramBytes": 125829120,
+      "elapsedMs": 1356,
+      "outputBytes": 144869
+    },
+    {
+      "fixtureId": "dhfr-protein-relaxation",
+      "workloadId": "openmm:relaxation:none:standard",
+      "maxTokenCount": 1,
+      "maxAtomCount": 2489,
+      "maxStepCount": 5000,
+      "maxOutputItemCount": 1,
+      "peakRamBytes": 312877056,
+      "peakVramBytes": 127926272,
+      "elapsedMs": 3592,
+      "outputBytes": 831862
+    },
+    {
+      "fixtureId": "dhfr-drug-ligand-relaxation",
+      "workloadId": "openmm:relaxation:none:openff",
+      "maxTokenCount": 1,
+      "maxAtomCount": 2530,
+      "maxStepCount": 5000,
+      "maxOutputItemCount": 1,
+      "peakRamBytes": 801001472,
+      "peakVramBytes": 133169152,
+      "elapsedMs": 10203,
+      "outputBytes": 851740
+    },
+    {
+      "fixtureId": "dhfr-solvated-relaxation",
+      "workloadId": "openmm:relaxation:tip3p-fb:standard",
+      "maxTokenCount": 1,
+      "maxAtomCount": 29419,
+      "maxStepCount": 5000,
+      "maxOutputItemCount": 1,
+      "peakRamBytes": 471879680,
+      "peakVramBytes": 173015040,
+      "elapsedMs": 12777,
+      "outputBytes": 9907829
+    },
+    {
+      "fixtureId": "dhfr-solvated-dynamics-10ps",
+      "workloadId": "openmm:dynamics:tip3p-fb:standard",
+      "maxTokenCount": 1,
+      "maxAtomCount": 29419,
+      "maxStepCount": 5000,
+      "maxOutputItemCount": 10,
+      "peakRamBytes": 480612352,
+      "peakVramBytes": 191889408,
+      "elapsedMs": 14478,
+      "outputBytes": 34451347
+    },
+    {
+      "fixtureId": "solvated-dynamics-custom",
+      "workloadId": "openmm:dynamics:tip3p-fb:standard",
+      "maxTokenCount": 1,
+      "maxAtomCount": 974,
+      "maxStepCount": 10,
+      "maxOutputItemCount": 2,
+      "peakRamBytes": 399859712,
+      "peakVramBytes": 139460608,
+      "elapsedMs": 3804,
+      "outputBytes": 1556731
+    },
+    {
+      "fixtureId": "solvated-checkpoint-resume",
+      "workloadId": "openmm:dynamics:tip3p-fb:standard",
+      "maxTokenCount": 1,
+      "maxAtomCount": 974,
+      "maxStepCount": 10,
+      "maxOutputItemCount": 2,
+      "peakRamBytes": 353988608,
+      "peakVramBytes": 136314880,
+      "elapsedMs": 806,
+      "outputBytes": 1557613
+    }
+  ],
+  "runtimeEvidence": {
+    "kind": "development-environment",
+    "signedPayloadVerified": false
+  },
+  "measurementHost": {
+    "platform": "linux",
+    "arch": "x64",
+    "osRelease": "6.18.33.2-microsoft-standard-WSL2",
+    "cpuModel": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+    "logicalCpuCount": 6,
+    "totalMemoryBytes": 8327913472
+  },
+  "validatorSource": {
+    "gitCommit": "69c91d2078e21d272be830585df4310d65dd64b9",
+    "sourceTreeDirty": false,
+    "scriptSha256": "270a6d214250dc5b0ce8d7b8aa5d8ee23cc5c668147e0ee94f0c0576c5cad3ba",
+    "measurementScriptSha256": "8472f89feef369db89377a672afacea35dd0f5027ead01be385b023861f62e0f",
+    "fixturePreparationSha256": "dabb40779060fc4b1afc3fcd2be426487192d4c281ff75609cbc02d5bf10e1be",
+    "recipeSha256": "5f994960f45b067ce82a7843ce23994d49d9b31859f1b127b5776929a380989e"
+  },
+  "provenance": {
+    "recipeId": "openmm-linux-x86_64-cuda12.9",
+    "recipeVersion": "1.0.0",
+    "pythonVersion": "3.11.16",
+    "pixiVersion": "0.73.0",
+    "dependencyLockSha256": "0bf2cb447cde30e8ee2ca1b262c88fec72c890519728ed52588a0c59c2afb39f"
+  },
+  "evidence": {
+    "fixture": {
+      "id": "openmmforcefields-0.16.0-official-ala3-and-ethanol-v1",
+      "sha256": "25c1464b65bdd067c91ab4887aa25404b4668b9e1b8bb2bcd1506a639fdc881a",
+      "inputShapes": {
+        "proteinAtoms": [
+          33
+        ],
+        "proteinLigandAtoms": [
+          42
+        ],
+        "drugLikeComplexAtoms": [
+          2530
+        ]
+      }
+    },
+    "realProteinFixtures": {
+      "openmmforcefields-test-aa": "ea3ecac772926c1a4a2c1d8fa45dd0b793096de044d28afa9c45265d4502719b",
+      "openmm-benchmark-5dfr": "6416f9d769431dec6f343a4896b63a7fb4d99d048cef5253f3ec66bc1411fa6d",
+      "openff-toolkit-ruxolitinib": "eea6995acb4c897b7ec357825db4f13408d788a624ecd6ef9e1caa408b3e5cd5"
+    },
+    "framework": {
+      "name": "openmm",
+      "version": "8.5.1",
+      "backend": "cuda",
+      "reportedCudaCompatibility": "12.9"
+    },
+    "accelerator": {
+      "kind": "cuda",
+      "gpuModel": "NVIDIA GeForce RTX 4060 Ti",
+      "gpuMemoryBytes": 8585740288,
+      "computeCapability": "8.9",
+      "driverVersion": "610.88",
+      "vramMeasurementMethod": "device-wide-delta",
+      "reportedCudaCompatibility": "12.9"
+    },
+    "outputShapes": {
+      "relaxedStructure": [
+        33,
+        3
+      ],
+      "ligandStructure": [
+        42,
+        3
+      ],
+      "trajectory": [
+        10,
+        33,
+        3
+      ]
+    },
+    "finiteValues": true,
+    "tolerances": {
+      "absolute": 0.01,
+      "relative": 0
+    },
+    "parity": {
+      "reference": "OpenMM-8.5.1-Reference-platform-official-ala3-energy",
+      "passed": true,
+      "cpuBaselinePassed": true,
+      "acceleratorPassed": true,
+      "maximumAbsoluteDifference": 0.00017122510064382368,
+      "meanAbsoluteDifference": 0.00017122510064382368,
+      "minimumCosineSimilarity": null
+    },
+    "peakRamBytes": 801001472,
+    "peakVramBytes": 191889408,
+    "outputContract": "passed",
+    "provenanceContract": "passed"
+  }
+}

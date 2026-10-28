@@ -129,6 +129,7 @@ export default defineConfig({
           { text: 'SnpEff', link: '/tools/snpeff' },
           { text: 'Single-cell Reference Index', link: '/tools/single-cell-index' },
           { text: 'Single-cell Quantification', link: '/tools/single-cell-quant' },
+          { text: 'Molecular Simulation', link: '/tools/molecular-simulation' },
         ],
       },
       {
