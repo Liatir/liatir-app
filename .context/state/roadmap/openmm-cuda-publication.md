@@ -293,6 +293,35 @@ chaotic, so only energies at identical coordinates are compared.
   The validation fits easily; whether the release's optimized Linux test-binary build fits in 8 GB
   is untested. It is the owner's setting and was not changed.
 
+- 2026-10-27 — **Finding 7: the Windows-through-WSL2 path was broken for every Runtime Box.** The
+  first Windows rehearsal (development box `2fc89574…` from `01b7e24c`, loopback registry, Windows
+  candidate binary) installed OpenMM through WSL2 and passed cancellation, then the tool page showed
+  "Install required": the persisted state read `The WSL2 Runtime Box operation failed: Runtime Box
+  activation metadata has no Python entry point.` Root cause in
+  `tools/native-tools-box-consumer/src/main.rs`: `runtime-status` (and so every status check after
+  an install) read `/release/pythonEntryPoint`, a version 2 field, while install already read the
+  version 3 `runtime.entryPoint`. It dates from the move to version 3 (`2ea19a71`) and no test ran
+  the consumer, and the Windows-through-WSL2 lifecycle had not run since (the 2026-10-05 study used
+  a Linux app inside WSL2). **Every Windows build carrying that consumer, including the 0.3.0 MSIX
+  prepared for Partner Center, would show every installed Runtime Box as failed.** Fixed by reading
+  the entry point through the same `ReleaseManifest` type install uses; three crate tests (a real
+  version 3 activation, a path outside the runtime root, a version 2 shape) all failed on the old
+  code and pass now; `native-tools-box/action.yml` now runs them before building the consumer, and
+  `native-tools-scrollcase.test.ts` guards the source in the everywhere-gate (observed failing on
+  the old consumer). Clippy is clean; the only `rustfmt` difference is in untouched install code.
+- 2026-10-27 — **Windows-through-WSL2 product lifecycle passed with the corrected consumer**: 2 of
+  2 (release-candidate exposure, then `runtime-box-openmm-native.e2e.mjs`) in the real Windows
+  test app, on the same development box `2fc89574…` from the loopback registry, host environment
+  `windows-wsl2`, CUDA. Install through WSL2 with signature verification against the development
+  key, killed-Job cancellation, both hardware states on one input, a CUDA relaxation of the box's
+  `test-ala-3.pdb` (−1.6910709302007945 → −119.11212442123042 kJ/mol, identical to 2026-09-10),
+  10 ps of dynamics (10 frames, finite coordinates, 10 artifacts), Jobs, Results, provenance,
+  offline execution, navigation, removal with every artifact intact. The receipt carries the
+  run's own readings — RTX 4060 Ti, 8.9, CUDA 12.9, 126,566,400 bytes peak — exactly the fields
+  the release evidence requires. Retained byte for byte:
+  `runtime-boxes/measurements/openmm-linux-x86_64-cuda12.9-product-lifecycle-development-2026-10-27.json`.
+  Development evidence: development key, loopback URL, not the production archive.
+
 ## Blocker and the exact owner action
 
 1. Re-enable billing for Google Cloud project `liatir-release-security`
@@ -305,8 +334,16 @@ chaotic, so only energies at identical coordinates are compared.
 3. Then relaunch the ephemeral runner (Phase 4, step 1) and dispatch the release with the same
    three inputs (attempt 2).
 
+## Before Windows users can run any Runtime Box
+
+The consumer fix is in source only. A Windows package takes the consumer from the Native Tools CI
+artifact (`native-tools-box.yml`, Linux job), so the next Windows build must use an artifact built
+from a commit containing this fix; the 0.3.0 MSIX prepared for Partner Center predates it and
+should not be submitted as it is. Building and submitting that package is a separate desktop
+release decision for the owner, outside this plan.
+
 ## Next action
 
-While billing is off: the Windows-through-WSL2 product lifecycle in the real Windows app, on a
-development box served by the loopback registry (development evidence, as on 2026-09-10), so the
-new receipt fields and UI run in the real app before the release. Then wait for the owner.
+Wait for the owner to re-enable billing, then follow **Blocker and the exact owner action**. Phases
+5–8 follow the release unchanged; Phase 7 can reuse this rehearsal's procedure against the
+production registry (`https://models.liatir.com/v1`, no trusted-key override).

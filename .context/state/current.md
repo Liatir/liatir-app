@@ -17,7 +17,11 @@ unable to pass; both are corrected (`f81fef2b`) and rehearsed on this GPU. **Pub
 on the owner**: billing is disabled on the Google Cloud project `liatir-release-security`, which
 holds the production signer and KMS key, so the signer answers 503 and cannot be redeployed. Every
 Runtime Box release is blocked until billing is re-enabled; the plan lists the exact steps after
-that.
+that. The Windows rehearsal also found that **every Runtime Box installed through WSL2 looked
+broken to the Windows app** since the move to box format version 3: the WSL2 consumer's status
+check read a version 2 field. It is fixed and tested, and the full OpenMM lifecycle then passed in
+the real Windows app through WSL2 on CUDA; but the 0.3.0 MSIX prepared for Partner Center carries
+the old consumer and should be rebuilt from a fixed Native Tools artifact before submission.
 
 [R and Native Plugin runtimes](./r-and-native-plugin-runtime-support.md) are implemented
 in implementation commit `aeacb806` and documentation commit `449964c1`: CLI
@@ -69,7 +73,9 @@ observed before the fix; corrected local verify passed all seven suites (92 file
 718 tests, report `2026-10-27T00-20-01-927Z`). Package builds also passed their verify
 gates on every platform. No heavy AI/GPU workflow was run.
 
-The verified `Liatir_0.3.0_x64.msix` (version `0.3.0.0`) is ready for Partner Center.
+The verified `Liatir_0.3.0_x64.msix` (version `0.3.0.0`) was prepared for Partner Center, but
+it carries the WSL2 consumer whose status check fails for every Runtime Box (found 2026-10-27,
+see Active implementation); rebuild it from a fixed Native Tools artifact before submitting.
 Store submission/certification remains manual: no integration or credentials for
 that action are configured here. This desktop release did not publish npm packages;
 the subsequent Plugin npm release is recorded below. Clean-machine install/update and other-host runtime execution

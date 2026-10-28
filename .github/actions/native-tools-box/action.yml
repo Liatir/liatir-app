@@ -33,6 +33,13 @@ runs:
       with:
         targets: x86_64-unknown-linux-musl
 
+    # Its status path once read a field only version 2 boxes had, and nothing ran the crate's tests,
+    # so every box installed through WSL2 looked broken to the Windows app.
+    - name: Test the WSL2 Scrollcase consumer
+      if: inputs.target-id == 'linux-x86_64-cpu'
+      shell: bash
+      run: cargo test --locked --manifest-path tools/native-tools-box-consumer/Cargo.toml
+
     - name: Build the statically linked WSL2 Scrollcase consumer
       if: inputs.target-id == 'linux-x86_64-cpu'
       shell: bash

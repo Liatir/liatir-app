@@ -212,4 +212,19 @@ describe('Native Tools Scrollcase box', () => {
     expect(resolver).toContain('mapped[3].clone(),\n                digest.clone(),');
     expect(resolver).toContain('= Some(digest);');
   });
+
+  // Status once read `pythonEntryPoint`, a field only version 2 releases had, so after the move to
+  // version 3 every box installed through WSL2 reported itself broken. The crate's own tests prove
+  // the behaviour where it is built; this keeps the gate that runs on every platform guarding it.
+  it('reads the WSL2 interpreter from the version 3 release, as install does, and tests it', () => {
+    const action = source('../../.github/actions/native-tools-box/action.yml');
+    const [production, crateTests = ''] = wslConsumer.split('#[cfg(test)]');
+    expect(production).not.toContain('pythonEntryPoint');
+    expect(production).toMatch(/let release: ReleaseManifest = serde_json::from_value\(/u);
+    expect(production).toMatch(/release\s*\.runtime\s*\.entry_point/u);
+    expect(crateTests).toContain('fn reads_the_interpreter_of_a_version_3_activation()');
+    expect(action.indexOf('cargo test --locked --manifest-path tools/native-tools-box-consumer/Cargo.toml'))
+      .toBeLessThan(action.indexOf('npm run native-tools:wsl-consumer:build'));
+    expect(action).toContain('cargo test --locked --manifest-path tools/native-tools-box-consumer/Cargo.toml');
+  });
 });

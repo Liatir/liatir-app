@@ -437,12 +437,21 @@ fn install_runtime(arguments: &[String]) -> Result<RuntimeState, String> {
     install
 }
 
-fn current_runtime_state(kind: &str, runtime_id: &str) -> Result<RuntimeState, String> {
-    let runtime = runtime_root(kind, runtime_id)?;
-    let activation = read_activation(&runtime.join("runtime-box-activation.json"))?;
-    let python_entry = activation
-        .pointer("/release/pythonEntryPoint")
-        .and_then(Value::as_str)
+/// The interpreter a persisted activation names, relative to the runtime root.
+///
+/// Read through the same signed release type install reads it from, so status cannot keep looking
+/// for a field a newer box format no longer has.
+fn activation_python_entry(activation: &Value) -> Result<String, String> {
+    let release: ReleaseManifest = serde_json::from_value(
+        activation
+            .get("release")
+            .cloned()
+            .ok_or("Runtime Box activation metadata has no release.")?,
+    )
+    .map_err(|error| format!("Runtime Box activation metadata has an invalid release: {error}"))?;
+    let python_entry = release
+        .runtime
+        .entry_point
         .ok_or("Runtime Box activation metadata has no Python entry point.")?;
     if python_entry.starts_with('/')
         || python_entry
@@ -451,7 +460,14 @@ fn current_runtime_state(kind: &str, runtime_id: &str) -> Result<RuntimeState, S
     {
         return Err("Runtime Box activation metadata has an unsafe Python entry point.".into());
     }
-    let python = runtime.join(python_entry);
+    Ok(python_entry)
+}
+
+fn current_runtime_state(kind: &str, runtime_id: &str) -> Result<RuntimeState, String> {
+    let runtime = runtime_root(kind, runtime_id)?;
+    let activation = read_activation(&runtime.join("runtime-box-activation.json"))?;
+    let python_entry = activation_python_entry(&activation)?;
+    let python = runtime.join(&python_entry);
     if !python.is_file() {
         return Err("The Runtime Box Python interpreter is missing in WSL2.".into());
     }
@@ -592,5 +608,43 @@ fn main() {
     if let Err(error) = run() {
         eprintln!("{error}");
         std::process::exit(1);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::activation_python_entry;
+    use serde_json::Value;
+
+    /// The activation the Windows app persisted for a real OpenMM install through WSL2.
+    fn version_3_activation() -> Value {
+        serde_json::from_str(include_str!("fixtures/openmm-activation-v3.json")).unwrap()
+    }
+
+    // Status read a field only version 2 releases carried, so after the move to version 3 every
+    // box installed through WSL2 reported itself broken the moment the app asked for its status.
+    #[test]
+    fn reads_the_interpreter_of_a_version_3_activation() {
+        assert_eq!(
+            activation_python_entry(&version_3_activation()).as_deref(),
+            Ok("venv/bin/python")
+        );
+    }
+
+    #[test]
+    fn refuses_an_interpreter_outside_the_runtime_root() {
+        let mut activation = version_3_activation();
+        activation["release"]["runtime"]["entryPoint"] = Value::from("../venv/bin/python");
+        assert!(activation_python_entry(&activation)
+            .unwrap_err()
+            .contains("unsafe"));
+    }
+
+    #[test]
+    fn refuses_an_activation_that_is_not_a_version_3_release() {
+        let activation = serde_json::json!({
+            "release": { "pythonEntryPoint": "venv/bin/python" }
+        });
+        assert!(activation_python_entry(&activation).is_err());
     }
 }
