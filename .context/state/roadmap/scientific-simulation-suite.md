@@ -216,6 +216,11 @@ Each was checked, not inferred; the evidence is named.
     refused every unnamed molecule ("unreadable counts line"). Found while reading ProLIF's own Vina
     poses for Phase 3; records are now split only at their `$$$$` terminators and never trimmed, and
     a unit test holds it.
+21. **Calling a ProLIF interaction returns a generator, which is always truthy**, so
+    `assert fingerprint.hbdonor(a, b)` passes whether or not the bond exists. The box self-test first
+    did exactly that; adding ProLIF's own negative control (`acceptor_false.mol2`) exposed it.
+    Interactions are tested with `Interaction.any`, which returns `True` or `None`, as ProLIF's test
+    suite does with `next(..., False)`.
 
 ## Licensing and redistribution review
 
@@ -412,7 +417,7 @@ component.
 | --- | --- | --- |
 | Vina, RDKit, Meeko, PDBFixer, Ringtail | SCIENTIFICALLY VALIDATED and PRODUCT VALIDATED on native Linux (development build); Windows through WSL2 and publication pending | `runtime-boxes/measurements/molecular-docking-linux-x86_64-cpu-development-2026-11-03.json`, `runtime-boxes/measurements/molecular-docking-linux-x86_64-cpu-product-lifecycle-development-2026-11-03.json` |
 | GNINA | BLOCKED (B1) | finding 8 |
-| MDAnalysis, ProLIF | not started | resolves (finding 9) |
+| MDAnalysis, ProLIF | IMPLEMENTED (recipe, development build and self-test); validation in progress | finding 9; box `molecular-analysis` `2.11.0-beta.1` |
 | PySB, BioNetGen | not started | resolves (finding 10) |
 | COBRApy | not started | resolves (finding 11) |
 | PhysiCell | not started; B2 open | finding 12 |
