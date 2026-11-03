@@ -459,6 +459,8 @@ are reported, never treated as affinities.
   environments resolved; PhysiCell and BioNetGen binaries inspected without being executed; this plan,
   the boundary decision and the context links written. No build, download beyond 16 MB of upstream
   release files, push, CI or paid action.
+- 2026-11-03 — `npm run test:verify` on the branch at `d89efb32`, in WSL2: all seven suites passed,
+  94 files / 734 tests (7 skipped), report `2026-11-03T21-10-26-798Z`.
 - 2026-11-03 — Phase 2. Docking box recipe committed (`5252d7a2`); development build in WSL2;
   adapter, shared contract, release-candidate metadata, tools, pipeline steps, restart finalizer,
   Receptor Preparation and Molecular Docking pages, unit tests (13), validator, catalog entry,
@@ -474,9 +476,8 @@ are reported, never treated as affinities.
 
 ## Next concrete actions
 
-1. `npm run test:verify` on the branch; the Windows-through-WSL2 lifecycle with a Windows test app
-   built with the same candidate (the only build outside WSL2 the plan allows: the product shell, not
-   a scientific component).
+1. The Windows-through-WSL2 lifecycle with a Windows test app built with the same candidate (the
+   only build outside WSL2 the plan allows: the product shell, not a scientific component).
 2. Production release (B3, B4): merge, signer redeploy, `runtime-box-release.yml` with
    `model_id=autodock-vina-molecular-docking`, `target_id=linux-x86_64-cpu`, `channel=beta`; then the
    publication commit (catalog, product catalog, docs, measurement from the production build).
