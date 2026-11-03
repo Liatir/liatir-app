@@ -1,11 +1,22 @@
 # Current project status
 
-Last updated 2026-10-28. This page says where Liatir stands and what comes next. How each piece got
+Last updated 2026-11-03. This page says where Liatir stands and what comes next. How each piece got
 here is in the [status log, July to September 2026](../history/status-log-2026-07-to-2026-09.md)
 and in the plans under `history/`; the readiness of each product area, with its evidence, is in
 [Beta 1 readiness](./roadmap/beta-readiness.md).
 
 ## Active implementation
+
+**Scientific Simulation Suite** — the owner asked on 2026-11-03 for a local, validated suite of
+molecular docking and virtual screening (AutoDock Vina, RDKit, Meeko, PDBFixer, Ringtail), neural
+pose scoring (GNINA), trajectory and interaction analysis (MDAnalysis, ProLIF), biochemical networks
+(PySB, BioNetGen), metabolic modeling (COBRApy) and multicellular simulation (PhysiCell), Linux and
+Windows through WSL2 only, developed entirely inside WSL2. The canonical plan, verified versions,
+box boundaries, blockers and progress are in the
+[Scientific Simulation Suite plan](./roadmap/scientific-simulation-suite.md). Phase 1 (feasibility)
+is complete; Phase 2 (docking) is next. GNINA is blocked on a redistribution decision. Work happens
+on branch `simulation-suite` in the WSL2 checkout `/home/lorenzo/liatir-stack-gate8-mcp`. The owner
+told the agent on 2026-11-03 to proceed autonomously without asking for permissions.
 
 **OpenMM CUDA publication** — the owner asked on 2026-10-27 for OpenMM's `linux-x86_64-cuda12.9`
 box to be published, CUDA only, for Linux and for Windows through WSL2. The persistent plan,

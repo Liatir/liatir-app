@@ -34,6 +34,8 @@ Markdown and stays complete and meaningful without the tool.
 
 - `.context/state/roadmap/` — the live plans and ledgers: the
   canonical [Scientific AI Workbench product plan](./state/roadmap/scientific-ai-workbench.md),
+  the active [Scientific Simulation Suite plan](./state/roadmap/scientific-simulation-suite.md)
+  (docking, screening, trajectory analysis, systems and multicellular simulation),
   [Beta 1 readiness](./state/roadmap/beta-readiness.md), the
   [AI batch ledger](./state/roadmap/ai-batches.md), the
   [Runtime Box CI foundation](./state/roadmap/runtime-box-ci-foundation.md), the
