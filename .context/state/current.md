@@ -1,11 +1,19 @@
 # Current project status
 
-Last updated 2026-10-28. This page says where Liatir stands and what comes next. How each piece got
+Last updated 2026-11-03. This page says where Liatir stands and what comes next. How each piece got
 here is in the [status log, July to September 2026](../history/status-log-2026-07-to-2026-09.md)
 and in the plans under `history/`; the readiness of each product area, with its evidence, is in
 [Beta 1 readiness](./roadmap/beta-readiness.md).
 
 ## Active implementation
+
+The public docs now explicitly use the owner's supplied cover for link previews on every page,
+through global Open Graph and Twitter card metadata; see
+[documentation conventions](../truth/conventions.md#public-markdown-and-page-actions).
+The image is byte-identical to the supplied PNG and its 1280 × 640 dimensions were checked.
+`syngraphe check` passed. Docs build and `test:verify` were attempted but could not run:
+this checkout has no installed development dependencies (`vitepress` and `tsc` are missing).
+The change has not been published.
 
 **OpenMM CUDA publication** — the owner asked on 2026-10-27 for OpenMM's `linux-x86_64-cuda12.9`
 box to be published, CUDA only, for Linux and for Windows through WSL2. The persistent plan,

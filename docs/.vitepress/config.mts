@@ -37,6 +37,15 @@ export default defineConfig({
   // Browser-tab favicon: logo mark. SVG first for crisp scaling,
   // PNG fallback (app icon on circle) for browsers without SVG-favicon support.
   head: [
+    ['meta', { property: 'og:image', content: `${HOSTNAME}/static/social-preview.png` }],
+    ['meta', { property: 'og:image:type', content: 'image/png' }],
+    ['meta', { property: 'og:image:width', content: '1280' }],
+    ['meta', { property: 'og:image:height', content: '640' }],
+    ['meta', { property: 'og:image:alt', content: 'Liatir — Bioinformatics on your machine, with a DNA illustration and the 3D Structure Viewer.' }],
+    ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
+    ['meta', { name: 'twitter:image', content: `${HOSTNAME}/static/social-preview.png` }],
+    ['meta', { name: 'twitter:image:alt', content: 'Liatir — Bioinformatics on your machine, with a DNA illustration and the 3D Structure Viewer.' }],
+
     ['link', { rel: 'icon', type: 'image/svg+xml', href: '/static/logo/svg/mono/color.svg' }],
     ['link', { rel: 'icon', type: 'image/png', href: '/static/icons/app-icons/standard/bg-rounded/x32.png' }],
 
