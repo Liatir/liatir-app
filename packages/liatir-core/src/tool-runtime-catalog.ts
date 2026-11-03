@@ -12,6 +12,12 @@ import type {
 } from "./runtime-box.js";
 import { PVACTOOLS_RUNTIME_COMPONENT_ID, PVACTOOLS_RUNTIME_ID } from "./oncology.js";
 import {
+  AUTODOCK_VINA_VERSION,
+  MOLECULAR_DOCKING_BOX_ID,
+  MOLECULAR_DOCKING_RUNTIME_COMPONENT_ID,
+  MOLECULAR_DOCKING_RUNTIME_ID,
+} from "./molecular-docking.js";
+import {
   OPENMM_BOX_ID,
   OPENMM_RUNTIME_COMPONENT_ID,
   OPENMM_RUNTIME_ID,
@@ -183,6 +189,71 @@ export const OPENMM_RELEASE_CANDIDATE_METADATA: LiatirToolRuntimeMetadata = {
     officialUrl: "https://docs.openmm.org/8.5.0/",
   },
   tags: ["runtime-box", "openmm", "molecular-dynamics", "relaxation", "amber19", "openff"],
+};
+
+/**
+ * Molecular docking as a release candidate: AutoDock Vina with Meeko, PDBFixer and Ringtail in one
+ * Linux CPU box that also serves Windows through WSL2. It joins the catalog only once published; the
+ * installer requires every requirement here to equal the signed release's exactly.
+ */
+export const MOLECULAR_DOCKING_RELEASE_CANDIDATE_METADATA: LiatirToolRuntimeMetadata = {
+  id: MOLECULAR_DOCKING_RUNTIME_COMPONENT_ID,
+  name: "AutoDock Vina 1.2.7",
+  description: "Local receptor preparation, molecular docking and virtual screening with AutoDock Vina, Meeko, PDBFixer and Ringtail.",
+  category: "Molecular Docking",
+  version: AUTODOCK_VINA_VERSION,
+  runtime: { kind: "python-venv", name: "Molecular Docking Runtime", version: "Python 3.11" },
+  localOnly: true,
+  install: {
+    method: "runtime-box",
+    runtimeId: MOLECULAR_DOCKING_RUNTIME_ID,
+    runtimePackages: [
+      { package: "vina", specifier: `vina==${AUTODOCK_VINA_VERSION}`, importName: "vina" },
+      { package: "meeko", specifier: "meeko==0.8.0", importName: "meeko" },
+      { package: "ringtail", specifier: "ringtail==2.3.1", importName: "ringtail" },
+      { package: "pdbfixer", specifier: "pdbfixer==1.12.0", importName: "pdbfixer" },
+      { package: "rdkit", specifier: "rdkit==2024.9.6", importName: "rdkit" },
+    ],
+    runtimeBox: {
+      boxId: MOLECULAR_DOCKING_BOX_ID,
+      channel: "beta",
+      registryBaseUrl: "https://models.liatir.com/v1",
+      publishedTargets: [{
+        target: { platform: "linux", arch: "x86_64", accelerator: "cpu" },
+        hostEnvironments: ["native", "windows-wsl2"],
+        minRamGb: 4,
+      }],
+    },
+    hostRequirements: {
+      os: ["linux", "windows"],
+      arch: ["x86_64"],
+      reason: "Molecular docking runs on the CPU of a Linux x86_64 computer, natively or on Windows through WSL2. It is not available on macOS.",
+    },
+  },
+  license: {
+    name: "AutoDock Vina Apache-2.0 with LGPL-2.1 Meeko and Ringtail",
+    spdxId: "Apache-2.0 AND LGPL-2.1-only AND MIT AND BSD-3-Clause",
+    url: "https://github.com/ccsb-scripps/AutoDock-Vina/blob/v1.2.7/LICENSE",
+    verifiedAt: "2026-11-03",
+    components: [
+      { scope: "runtime", name: "AutoDock Vina 1.2.7", spdxId: "Apache-2.0", sourceUrl: "https://github.com/ccsb-scripps/AutoDock-Vina/tree/v1.2.7" },
+      { scope: "runtime", name: "Meeko 0.8.0", spdxId: "LGPL-2.1-only", sourceUrl: "https://github.com/forlilab/Meeko/tree/v0.8.0" },
+      { scope: "runtime", name: "Ringtail 2.3.1", spdxId: "LGPL-2.1-only", sourceUrl: "https://github.com/forlilab/Ringtail/tree/v2.3.1" },
+      { scope: "runtime", name: "PDBFixer 1.12 with the OpenMM 8.5.1 library", spdxId: "MIT", sourceUrl: "https://github.com/openmm/pdbfixer/tree/v1.12" },
+      { scope: "runtime", name: "RDKit 2024.09.6", spdxId: "BSD-3-Clause", sourceUrl: "https://github.com/rdkit/rdkit/tree/Release_2024_09_6" },
+    ],
+  },
+  hardware: {
+    cpu: true,
+    gpu: false,
+    minRamGb: 4,
+    notes: "Runs on the CPU only. Run time and memory are estimated from retained measurements of this exact release.",
+  },
+  documentation: {
+    liatirPath: "/tools/molecular-docking",
+    officialUrl: "https://autodock-vina.readthedocs.io/en/latest/",
+  },
+  tags: ["runtime-box", "docking", "virtual-screening", "autodock-vina", "meeko", "pdbfixer", "ringtail"],
 };
 
 /**

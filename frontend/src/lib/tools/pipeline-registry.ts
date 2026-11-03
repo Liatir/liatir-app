@@ -21,6 +21,12 @@ import {
   runMolecularRelaxationStep,
 } from './molecular-simulation/openmm';
 import {
+  molecularDockingDefinition,
+  receptorPreparationDefinition,
+  runMolecularDockingStep,
+  runReceptorPreparationStep,
+} from './molecular-docking/docking';
+import {
   runSimpleafIndexStep,
   runSimpleafQuantStep,
   simpleafIndexDefinition,
@@ -49,6 +55,7 @@ import type { JsonValue } from '@liatir/core';
 import {
   LIATIR_TOOL_RUNTIME_CATALOG,
   MHCFLURRY_CLASS1_PRESENTATION_MODEL_ID,
+  MOLECULAR_DOCKING_RUNTIME_COMPONENT_ID,
   OPENMM_RUNTIME_COMPONENT_ID,
   PVACTOOLS_RUNTIME_COMPONENT_ID,
   RUNTIME_BOX_AI_MODEL_REGISTRY,
@@ -574,6 +581,8 @@ export const PIPELINE_REGISTRY: Record<string, PipelineRegistryEntry> = {
   'neoantigen-prioritization': { definition: neoantigenPrioritizationDefinition, run: runNeoantigenPrioritizationStep },
   'molecular-relaxation': { definition: molecularRelaxationDefinition, run: runMolecularRelaxationStep },
   'molecular-dynamics': { definition: molecularDynamicsDefinition, run: runMolecularDynamicsStep },
+  'docking-receptor-preparation': { definition: receptorPreparationDefinition, run: runReceptorPreparationStep },
+  'molecular-docking': { definition: molecularDockingDefinition, run: runMolecularDockingStep },
   'viewer-structure-3d': { definition: structureViewerDefinition, run: runStructureViewerStep },
   'viewer-genome-track': { definition: genomeViewerDefinition, run: runGenomeViewerStep },
   'viewer-single-cell': { definition: singleCellViewerDefinition, run: runSingleCellViewerStep },
@@ -652,6 +661,10 @@ export function allStepDefinitions(): PipelineStepDefinition[] {
     if (runtime.id === OPENMM_RUNTIME_COMPONENT_ID) {
       publishedToolRuntimeSteps.add(molecularRelaxationDefinition.id);
       publishedToolRuntimeSteps.add(molecularDynamicsDefinition.id);
+    }
+    if (runtime.id === MOLECULAR_DOCKING_RUNTIME_COMPONENT_ID) {
+      publishedToolRuntimeSteps.add(receptorPreparationDefinition.id);
+      publishedToolRuntimeSteps.add(molecularDockingDefinition.id);
     }
   }
   return [

@@ -17,6 +17,7 @@
   import {
     BOLTZ_2_MODEL_ID,
     LIATIR_TOOL_RUNTIME_CATALOG,
+    MOLECULAR_DOCKING_RUNTIME_COMPONENT_ID,
     OPENMM_RUNTIME_COMPONENT_ID,
     PVACTOOLS_RUNTIME_COMPONENT_ID,
     isLiatirStructureModelId,
@@ -42,6 +43,10 @@
   );
   const openmmPublished = LIATIR_TOOL_RUNTIME_CATALOG.some(
     (runtime) => runtime.id === OPENMM_RUNTIME_COMPONENT_ID
+      && runtime.install.runtimeBox.publishedTargets.length > 0,
+  );
+  const dockingPublished = LIATIR_TOOL_RUNTIME_CATALOG.some(
+    (runtime) => runtime.id === MOLECULAR_DOCKING_RUNTIME_COMPONENT_ID
       && runtime.install.runtimeBox.publishedTargets.length > 0,
   );
   // An AI Model enters the registry only once a target is published, so membership is the gate.
@@ -201,6 +206,24 @@
       status: openmmPublished ? 'available' : 'soon',
       tags: ['DCD', 'Trajectory', 'OpenMM', 'CUDA'],
       category: 'Molecular Simulation',
+    },
+    {
+      id: 'docking-receptor-preparation',
+      label: 'Receptor Preparation',
+      description: 'Repair and protonate a protein structure for docking, recording every change.',
+      ...(dockingPublished ? { href: '/tools/molecular-docking/receptor-preparation' } : {}),
+      status: dockingPublished ? 'available' : 'soon',
+      tags: ['PDB', 'mmCIF', 'PDBFixer', 'Meeko'],
+      category: 'Molecular Docking',
+    },
+    {
+      id: 'molecular-docking',
+      label: 'Molecular Docking',
+      description: 'Dock a ligand or a library into a receptor with AutoDock Vina and rank the poses.',
+      ...(dockingPublished ? { href: '/tools/molecular-docking/docking' } : {}),
+      status: dockingPublished ? 'available' : 'soon',
+      tags: ['SDF', 'PDBQT', 'AutoDock Vina', 'Ringtail', 'Screening'],
+      category: 'Molecular Docking',
     },
     {
       id: 'biomolecular-structure-prediction',

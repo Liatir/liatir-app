@@ -93,6 +93,14 @@
       ]
     },
     {
+      "boxId": "molecular-docking",
+      "modelId": "autodock-vina-molecular-docking",
+      "runtimeId": "molecular-docking-vina-1-2-7",
+      "targets": [
+        "linux-x86_64-cpu"
+      ]
+    },
+    {
       "boxId": "boltz-2",
       "modelId": "jwohlwend-boltz-2",
       "runtimeId": "structure-boltz-2-2-1",

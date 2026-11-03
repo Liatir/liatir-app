@@ -14,7 +14,11 @@ pose scoring (GNINA), trajectory and interaction analysis (MDAnalysis, ProLIF), 
 Windows through WSL2 only, developed entirely inside WSL2. The canonical plan, verified versions,
 box boundaries, blockers and progress are in the
 [Scientific Simulation Suite plan](./roadmap/scientific-simulation-suite.md). Phase 1 (feasibility)
-is complete; Phase 2 (docking) is next. GNINA is blocked on a redistribution decision. Work happens
+is complete. Phase 2: the `molecular-docking` box (Vina, Meeko, PDBFixer, Ringtail, RDKit) is built,
+scientifically validated on a development-signed build — imatinib redocks within 0.4 Å of the 1IEP
+crystal pose — and integrated as Receptor Preparation and Molecular Docking; the real-app lifecycle and
+publication are next. Merging the branch requires a signer redeploy before any further Runtime Box
+release (the signer policy gains the docking box). GNINA is blocked on a redistribution decision. Work happens
 on branch `simulation-suite` in the WSL2 checkout `/home/lorenzo/liatir-stack-gate8-mcp`. The owner
 told the agent on 2026-11-03 to proceed autonomously without asking for permissions.
 

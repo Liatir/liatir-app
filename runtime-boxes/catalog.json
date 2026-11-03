@@ -844,6 +844,53 @@
       ]
     },
     {
+      "componentKind": "tool-runtime",
+      "componentId": "autodock-vina-molecular-docking",
+      "modelId": "autodock-vina-molecular-docking",
+      "boxId": "molecular-docking",
+      "runtimeId": "molecular-docking-vina-1-2-7",
+      "legalRecord": "runtime-boxes/legal/molecular-docking.md",
+      "legalStatus": "approved",
+      "validatorScript": "runtime-box:validate:molecular-docking",
+      "validatorPath": "scripts/validate-molecular-docking-runtime.mjs",
+      "productScriptPath": "frontend/src/lib/tools/molecular-docking/python-scripts/docking.ts",
+      "productLifecycleSpec": "tests/e2e/specs/runtime-box-molecular-docking-native.e2e.mjs",
+      "callerWorkflow": ".github/workflows/runtime-box-molecular-docking.yml",
+      "targets": [
+        {
+          "targetId": "linux-x86_64-cpu",
+          "target": {
+            "platform": "linux",
+            "arch": "x86_64",
+            "accelerator": "cpu"
+          },
+          "hostEnvironments": [
+            "native",
+            "windows-wsl2"
+          ],
+          "recipeId": "molecular-docking-linux-x86_64-cpu",
+          "runnerProfileId": "linux-x64-selfhosted",
+          "status": "scientifically-validated",
+          "validationModes": [
+            "build",
+            "scientific",
+            "native-lifecycle"
+          ],
+          "timeoutMinutes": 120,
+          "requiredBuildDiskBytes": 8589934592,
+          "dependencyLockSha256": "271965e6dd5035a9494d974c991dac8a1d10d0fe7f2dbea1ecb856097aa9d2fc",
+          "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/molecular-docking-linux-x86_64-cpu.json",
+          "diskPlan": {
+            "estimatedInstalledSizeBytes": 1610612736,
+            "estimatedArchiveSizeBytes": 536870912,
+            "safetyMarginBytes": 4294967296
+          },
+          "gpuRequired": false,
+          "nativeCiEnabled": true
+        }
+      ]
+    },
+    {
       "componentKind": "ai-model",
       "componentId": "jwohlwend-boltz-2",
       "modelId": "jwohlwend-boltz-2",

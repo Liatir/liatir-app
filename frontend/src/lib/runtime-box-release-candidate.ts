@@ -3,6 +3,7 @@ import {
 	PROTENIX_V2_RELEASE_CANDIDATE_METADATA,
 	PROTENIX_MINI_DEFAULT_RELEASE_CANDIDATE_METADATA,
 	OPENMM_RELEASE_CANDIDATE_METADATA,
+  MOLECULAR_DOCKING_RELEASE_CANDIDATE_METADATA,
   PVACTOOLS_RELEASE_CANDIDATE_METADATA,
   type LiatirAIModelMetadata,
   type LiatirToolRuntimeMetadata,
@@ -33,6 +34,9 @@ export function resolveRuntimeBoxReleaseCandidate(
   }
   if (id === OPENMM_RELEASE_CANDIDATE_METADATA.id) {
     return { kind: 'tool-runtime', metadata: OPENMM_RELEASE_CANDIDATE_METADATA };
+  }
+  if (id === MOLECULAR_DOCKING_RELEASE_CANDIDATE_METADATA.id) {
+    return { kind: 'tool-runtime', metadata: MOLECULAR_DOCKING_RELEASE_CANDIDATE_METADATA };
   }
   throw new Error(`Unsupported Runtime Box release candidate: ${id}`);
 }

@@ -4,9 +4,10 @@ The canonical, persistent execution plan for adding molecular docking, virtual s
 analysis, biochemical networks, metabolic modeling and multicellular simulation to Liatir. **Read this
 page before continuing any of that work**, and update it in the same change as any progress.
 
-**Status (2026-11-03): Phase 1 complete; Phase 2 (molecular docking) next.** GNINA is
-**BLOCKED** on a redistribution decision (B1). Nothing is published; no paid, remote or GPU CI
-action has been taken.
+**Status (2026-11-03): Phase 2 in progress — the molecular docking box is built, scientifically
+validated on a development-signed build, and integrated in the product; the real-app lifecycle is
+next.** GNINA is **BLOCKED** on a redistribution decision (B1). Nothing is published; no paid, remote
+or GPU CI action has been taken. All work is on branch `simulation-suite`, not pushed.
 
 ## Objective and scope
 
@@ -181,6 +182,36 @@ Each was checked, not inferred; the evidence is named.
     `rules`) link only libc/libm, require **glibc ≥ 2.38** (Ubuntu 24.04 or newer) and use AVX
     registers; Ubuntu 22.04, still common under WSL2, has glibc 2.35. See B2.
 
+13. **Scrollcase 1.4.0 copies every directory symlink in full, and conda's Python ships
+    `lib/python3.1 -> python3.11`**, so every Linux Python box Scrollcase builds carries its whole
+    Python library twice (`settleSymlinksInPlace` in `scrollcase/src/build/pixi.mjs`). Measured: the
+    docking payload held a 638 MB copy; the OpenMM CUDA development payload a 1.1 GB one. Docking
+    prunes it (`prunePaths`); the published boxes still carry it (see "For the owner").
+14. **PDBFixer lets OpenMM pick the fastest platform** (`mm.Context(system, integrator)` without a
+    platform, `pdbfixer.py` 1.12), so on a machine with an NVIDIA GPU repairs would run on CUDA. The
+    adapter names the CPU platform, which PDBFixer also hands to `Modeller.addHydrogens`, with
+    `OPENMM_CPU_THREADS=1`. The GPU plugins stay in the box: a packed conda prefix ships whole (the
+    rule `runtime-box-cost-controls.test.ts` enforces after scGPT lost a lazily imported package).
+15. **Meeko's own PDB reader rejects a residue whose atoms are not contiguous**; the official
+    `1iep_receptorH.pdb` lists one Ser438 hydrogen at the top of the file. The adapter uses the path
+    `mk_prepare_receptor -i` takes: ProDy with `altloc="all"`, charges from the residue templates.
+16. **Ringtail starts `max_proc - 1` readers beside one writer**, so `max_proc=1` starts none and
+    waits forever. The adapter passes 2, and hands the results to a fresh interpreter so Ringtail
+    never forks a process that has run Vina's thread pool.
+17. **OpenMM's mmCIF reader names chains by `label_asym_id`**, which files every ligand, ion and
+    water group under a chain of its own. "Keep chain A" therefore removed chain A's own imatinib
+    and chloride ions as "other chains". Found by the validator; chain selection now translates to
+    author chains (`author_chain_names`) and the validator holds it.
+18. **PDBFixer 1.12 silently skips hydrogens on residues it cannot define offline**, and Meeko then
+    tries to download a template. The adapter refuses any residue without a bundled Meeko template
+    by name before hydrogens are added. Meeko 0.8.0 templates water and Cl, Br, F, I, Zn, Mg, Ca,
+    Mn, Fe and Cu ions, but no drug-like ligand or cofactor (HEM, NAD, ATP): a receptor with a bound
+    cofactor cannot be prepared by this tool yet (limitation L1).
+19. **Receptor hydrogens written by other tools cannot be merged** with OpenMM's: Reduce names
+    `HN`/`HB1` where OpenMM names `H`/`HB3`, and adding hydrogens on top duplicated them (an RDKit
+    valence error). Receptor Preparation replaces every input hydrogen and re-protonates at one pH;
+    a receptor protonated elsewhere enters Molecular Docking directly as its own PDBQT.
+
 ## Licensing and redistribution review
 
 The project rule is [copyleft dependencies in signed boxes](../../decisions/copyleft-dependencies-in-signed-boxes.md):
@@ -336,6 +367,9 @@ component.
   build needs a new Scrollcase feature.
 - **B3 — Signer policy.** Each new box needs an entry in `services/runtime-box-signer/policy.json`
   and a signer redeploy before a production signature: a remote, authorized action.
+- **B3 now applies on this branch**: `services/runtime-box-signer/policy.json` lists
+  `molecular-docking`. Merging it into `main` makes the deployed signer stale for every box until
+  `runtime-box-signer-deploy.yml` runs (`verify-signer-policy` compares the whole policy).
 - **B4 — Publication.** Production releases run `runtime-box-release.yml` on this machine's
   self-hosted runner from `main`; merging, pushing and releasing each need the owner's explicit go.
 - **R1 — Vina reproducibility** may depend on thread count; measure before claiming.
@@ -358,17 +392,51 @@ component.
 - **D8** — PySB executes only reviewed built-in models and declarative BNGL imported without actions.
 - **D9** — PhysiCell runs reviewed executables on validated configurations; no user C++ is compiled.
 - **D10** — GNINA starts with rescoring; docking and refinement follow only with validation.
+- **D11** — Receptor Preparation re-protonates every residue at one pH with OpenMM's rules and
+  replaces input hydrogens (finding 19); bring a receptor protonated elsewhere as its own PDBQT.
+- **D12** — Chains are always author chains; residues without a bundled Meeko template are refused
+  by name before any repair (findings 17, 18).
+- **D13** — The docking box's memory floor is 4 GB, from a measured peak under 1 GB; the scroll and
+  the release-candidate metadata carry the same value, as the installer requires.
+- **D14** — The public Molecular Docking page under `docs/tools/` and its Tools-overview row are
+  written in the publication commit, as for OpenMM, so the site never offers an uninstallable tool.
 
 ## Component status
 
 | Component | Status | Evidence |
 | --- | --- | --- |
-| Vina, RDKit, Meeko, PDBFixer, Ringtail | Phase 2 next | resolves (finding 1) |
+| Vina, RDKit, Meeko, PDBFixer, Ringtail | SCIENTIFICALLY VALIDATED (development build); IMPLEMENTED in the product | `runtime-boxes/measurements/molecular-docking-linux-x86_64-cpu-development-2026-11-03.json` |
 | GNINA | BLOCKED (B1) | finding 8 |
 | MDAnalysis, ProLIF | not started | resolves (finding 9) |
 | PySB, BioNetGen | not started | resolves (finding 10) |
 | COBRApy | not started | resolves (finding 11) |
 | PhysiCell | not started; B2 open | finding 12 |
+
+## Phase 2 evidence (development build, 2026-11-03)
+
+Box `molecular-docking` `1.2.7-beta.1` / `linux-x86_64-cpu`, lock `271965e6…`, 152 packages,
+signed with the WSL2 development key: archive `5a3a9521…`, 591,761,185 bytes, installed 1.65 GB; the
+only prune is the `lib/python3.1` copy of finding 13 (an earlier build that also pruned the GPU plugins
+and NVIDIA libraries was 1.03 GB, but broke the rule that a packed conda prefix ships whole). The
+validator `scripts/validate-molecular-docking-runtime.mjs` ran the product's own adapter in the
+signed, extracted payload on this host (Intel i7-8700K, 6 vCPU, 12 GB): **18 cases, all passed**,
+record `runtime-boxes/measurements/molecular-docking-linux-x86_64-cpu-development-2026-11-03.json`.
+
+| Case | Result |
+| --- | --- |
+| Redock, official receptor PDBQT, exhaustiveness 32 | top pose 0.368 Å, -13.219 kcal/mol (tutorial: −13.234) |
+| Redock, receptor prepared here from the official PDB | top pose 0.369 Å, -13.211 kcal/mol |
+| Redock, receptor prepared from the raw PDB entry 1IEP | top pose 0.374 Å, -13.306 kcal/mol |
+| Ligand typing against the official `1iep_ligand.pdbqt` | identical atom types and torsion count |
+| Same seed and threads, twice | identical poses: yes |
+| Same seed, 1 thread against 6 | identical poses: yes |
+| Screen of 9 molecules | 6 docked, 3 refused by name (2D input, salt, boron) |
+| Database guards | same-experiment append accepted; another site and a foreign database refused |
+| Malformed inputs | truncated SDF, ligand as receptor, 200 Å box, mismatched receptor PDB refused |
+
+Peak memory over every case 1.25 GB (process-tree PSS, finding 16); slowest case batch-screen,
+103 s. The 2.0 Å threshold is the standard redocking success criterion (D6); scores
+are reported, never treated as affinities.
 
 ## Progress log
 
@@ -377,11 +445,25 @@ component.
   environments resolved; PhysiCell and BioNetGen binaries inspected without being executed; this plan,
   the boundary decision and the context links written. No build, download beyond 16 MB of upstream
   release files, push, CI or paid action.
+- 2026-11-03 — Phase 2. Docking box recipe committed (`5252d7a2`); development build in WSL2;
+  adapter, shared contract, release-candidate metadata, tools, pipeline steps, restart finalizer,
+  Receptor Preparation and Molecular Docking pages, unit tests (13), validator, catalog entry,
+  signer-policy entry, CI workflow and release option written; findings 13–19 recorded; SDK types
+  regenerated; core build, frontend check (0 errors) and catalog check pass.
+
+## For the owner
+
+- **Every published Linux Python box ships its Python library twice** (finding 13): about 1.1 GB of
+  OpenMM's 3.7 GB install. Fixing it belongs in Scrollcase (keep or drop in-tree directory links
+  instead of copying them) and then needs a republish of each box; the docking box already avoids it
+  with a prune.
 
 ## Next concrete actions
 
-1. Author `runtime-boxes/scrolls/molecular-docking/linux-x86_64-cpu/` (pixi.toml with D3 pins,
-   `pixi lock` with pixi 0.73.0, scroll.json, self-test), its legal record and dependency audit.
-2. Build it in WSL2 with a development key into `~/liatir-build/`, run the self-test, record size.
-3. Write `scripts/validate-molecular-docking-runtime.mjs` around the official 1IEP files and run it
-   against the built payload.
+1. Build the WSL2 test binary with `VITE_LIATIR_RUNTIME_BOX_RELEASE_CANDIDATE_ID=autodock-vina-molecular-docking`
+   and run `tests/e2e/specs/runtime-box-molecular-docking-native.e2e.mjs` against the local
+   registry (`npm run runtime-box:product-lifecycle`), then `npm run test:verify`.
+2. Production release (B3, B4): merge, signer redeploy, `runtime-box-release.yml` with
+   `model_id=autodock-vina-molecular-docking`, `target_id=linux-x86_64-cpu`, `channel=beta`; then the
+   publication commit (catalog, product catalog, docs, measurement from the production build).
+3. Phase 3: the `molecular-analysis` box (MDAnalysis, ProLIF).

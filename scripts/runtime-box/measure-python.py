@@ -93,8 +93,44 @@ def cuda_device_identity():
     }
 
 
+def process_tree_pss_bytes():
+    """
+    Proportional memory of this process and every descendant, read from /proc (Linux only).
+
+    A runner that hands work to a child process keeps that child's memory out of RUSAGE_SELF, and
+    a forked worker's RSS double-counts the pages it still shares with its parent. PSS charges each
+    shared page once across the tree, so the sum is what the run really occupied at that moment.
+    """
+    children = {}
+    for entry in os.listdir("/proc"):
+        if not entry.isdigit():
+            continue
+        try:
+            with open("/proc/%s/stat" % entry, encoding="utf-8") as handle:
+                parent = int(handle.read().rsplit(")", 1)[1].split()[1])
+        except (OSError, ValueError, IndexError):
+            continue
+        children.setdefault(parent, []).append(int(entry))
+    total = 0
+    pending = [os.getpid()]
+    while pending:
+        pid = pending.pop()
+        pending.extend(children.get(pid, []))
+        try:
+            with open("/proc/%d/smaps_rollup" % pid, encoding="utf-8") as handle:
+                for line in handle:
+                    if line.startswith("Pss:"):
+                        total += int(line.split()[1]) * 1024
+                        break
+        except OSError:
+            continue
+    return total
+
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--accelerator", choices=("cpu", "cuda"), required=True)
+parser.add_argument("--process-tree", action="store_true",
+                    help="also sample the proportional memory of every descendant process (Linux)")
 parser.add_argument("script")
 args = parser.parse_args()
 stopped = threading.Event()
@@ -129,6 +165,25 @@ def sample_gpu():
             return
         stopped.wait(SAMPLE_WAIT_SECONDS)
 
+
+tree_peak = [None]
+tree_errors = []
+
+
+def sample_tree():
+    while not stopped.is_set():
+        try:
+            tree_peak[0] = max(tree_peak[0] or 0, process_tree_pss_bytes())
+        except Exception as error:
+            tree_errors.append(str(error))
+            return
+        stopped.wait(SAMPLE_WAIT_SECONDS)
+
+
+tree_sampler = None
+if args.process_tree:
+    tree_sampler = threading.Thread(target=sample_tree, daemon=True)
+    tree_sampler.start()
 
 sampler = None
 if args.accelerator == "cuda":
@@ -170,6 +225,8 @@ finally:
     stopped.set()
     if sampler is not None:
         sampler.join(timeout=6)
+    if tree_sampler is not None:
+        tree_sampler.join(timeout=6)
     print("LIATIR_SCIENTIFIC_MEASUREMENT " + json.dumps({
         "elapsedMs": max(1, round((time.monotonic() - started) * 1000)),
         "peakRamBytes": peak_ram_bytes(),
@@ -177,4 +234,6 @@ finally:
         **gpu_identity,
         "vramSamplingIntervalMs": round(SAMPLE_WAIT_SECONDS * 1000) if sampler is not None else None,
         "vramMeasurementErrors": gpu_errors,
+        **({"peakProcessTreePssBytes": tree_peak[0], "processTreeMeasurementErrors": tree_errors}
+           if args.process_tree else {}),
     }), file=sys.stderr, flush=True)
