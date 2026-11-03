@@ -148,6 +148,9 @@ export const tests = [{
     const ligandSource = joinRuntimePath(installed.runtimeDir, 'reference/vina-1iep/1iep_ligand.sdf');
     const receptorPath = path.join(fixtureDir, '1iep_receptorH.pdb');
     const ligandPath = path.join(fixtureDir, '1iep_ligand.sdf');
+    // The same crystal pose again under its own name: the picker helper matches an option by the
+    // start of its text, and the Ligands field already shows 1iep_ligand.sdf once it is chosen.
+    const referencePath = path.join(fixtureDir, 'crystal-imatinib.sdf');
     const copied = await browser.execute(async (input) => window.Liatir.invoke('lia_runtime_component_python_run', input), {
       componentKind: 'tool-runtime', runtimeId: RUNTIME_ID, script: String.raw`
 import json, sys
@@ -156,7 +159,8 @@ payload = json.loads(sys.stdin.read() or "{}")
 for source, target in payload["pairs"]:
     Path(target).write_bytes(Path(source).read_bytes())
 print(json.dumps({"copied": len(payload["pairs"])}))
-`, args: [], inputJson: { pairs: [[receptorSource, receptorPath], [ligandSource, ligandPath]] }, timeoutSeconds: 120,
+`, args: [], inputJson: { pairs: [[receptorSource, receptorPath], [ligandSource, ligandPath], [ligandSource, referencePath]] },
+      timeoutSeconds: 120,
     });
     expect(copied.ok).toBe(true);
 
@@ -164,7 +168,7 @@ print(json.dumps({"copied": len(payload["pairs"])}))
       status: 'installed', runtimePath: installed.runtimeDir, installedSizeBytes: installed.sizeBytes,
       runtimeBoxActivation: installed.activation, updatedAt: Date.now(),
     });
-    await dataFiles(browser, [receptorPath, ligandPath]);
+    await dataFiles(browser, [receptorPath, ligandPath, referencePath]);
     await reloadLiatirApp(browser);
     await activateCleanSandbox(browser);
 
@@ -199,7 +203,7 @@ print(json.dumps({"copied": len(payload["pairs"])}))
     const preparedPdb = outputPath(preparation.result, 'preparedReceptor');
 
     // Molecular Docking against the receptor just prepared, around the crystal ligand.
-    await dataFiles(browser, [receptorPath, ligandPath, receptorPdbqt, preparedPdb]);
+    await dataFiles(browser, [receptorPath, ligandPath, referencePath, receptorPdbqt, preparedPdb]);
     await reloadLiatirApp(browser);
     await activateCleanSandbox(browser);
     await navigateInApp(browser, '/tools/molecular-docking/docking');
@@ -209,7 +213,7 @@ print(json.dumps({"copied": len(payload["pairs"])}))
     });
     await selectFileFromPicker(browser, 'docking-receptor-pdbqt', path.basename(receptorPdbqt));
     await selectFileFromPicker(browser, 'docking-ligands', path.basename(ligandPath));
-    await selectFileFromPicker(browser, 'docking-reference-ligand', path.basename(ligandPath));
+    await selectFileFromPicker(browser, 'docking-reference-ligand', path.basename(referencePath));
     await selectFileFromPicker(browser, 'docking-receptor-structure', path.basename(preparedPdb));
     await dockCheck.click();
     const dockRun = await browser.$('[data-testid="docking-run"]');

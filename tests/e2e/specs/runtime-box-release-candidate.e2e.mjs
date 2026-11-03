@@ -15,6 +15,8 @@ export const tests = [{
         ? '/tools/oncology/neoantigen-prioritization'
         : candidateId === 'openmm-openmm'
           ? '/tools/molecular-simulation/relaxation'
+        : candidateId === 'autodock-vina-molecular-docking'
+          ? '/tools/molecular-docking/docking'
         : ['jwohlwend-boltz-2', 'bytedance-protenix-base-v1-0-0', 'bytedance-protenix-v2', 'bytedance-protenix-mini-default-v0-5-0'].includes(candidateId)
           ? '/tools/structure/prediction'
         : null;
