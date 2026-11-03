@@ -277,13 +277,25 @@ def pdbqt_atom_count(path):
     return count
 
 
+def sdf_blocks(path):
+    """The lines of each SDF record.
+
+    A record's first line is its title, which RDKit leaves blank for an unnamed molecule, so records
+    are split only at their $$$$ terminators and never trimmed.
+    """
+    records = [[]]
+    with open(path, encoding="utf-8", errors="strict") as handle:
+        for line in handle.read().splitlines():
+            if line.strip() == "$$$$":
+                records.append([])
+            else:
+                records[-1].append(line)
+    return [record for record in records if any(line.strip() for line in record)]
+
+
 def sdf_records(path):
     """Yields (index, name, atom count, heavy atoms, coordinates) per SDF record without RDKit."""
-    with open(path, encoding="utf-8", errors="strict") as handle:
-        text = handle.read()
-    blocks = [block for block in re.split(r"^\$\$\$\$\s*$", text, flags=re.MULTILINE) if block.strip()]
-    for index, block in enumerate(blocks):
-        lines = block.strip("\n").splitlines()
+    for index, lines in enumerate(sdf_blocks(path)):
         if len(lines) < 4:
             fail("SDF record %d is truncated." % (index + 1))
         name = lines[0].strip()

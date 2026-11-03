@@ -211,6 +211,11 @@ Each was checked, not inferred; the evidence is named.
     `HN`/`HB1` where OpenMM names `H`/`HB3`, and adding hydrogens on top duplicated them (an RDKit
     valence error). Receptor Preparation replaces every input hydrogen and re-protonates at one pH;
     a receptor protonated elsewhere enters Molecular Docking directly as its own PDBQT.
+20. **RDKit leaves an unnamed molecule's SDF title line blank**, and the docking preflight trimmed
+    blank lines from the start of each record, so it read the program line as the counts line and
+    refused every unnamed molecule ("unreadable counts line"). Found while reading ProLIF's own Vina
+    poses for Phase 3; records are now split only at their `$$$$` terminators and never trimmed, and
+    a unit test holds it.
 
 ## Licensing and redistribution review
 

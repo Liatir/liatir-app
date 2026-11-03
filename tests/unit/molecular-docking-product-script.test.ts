@@ -139,6 +139,20 @@ describe.skipIf(process.platform === 'win32')('molecular docking product Python 
     expect(result.stderr).toContain('SDF record 1 is truncated: it declares 2 atoms and holds 1.');
   });
 
+  it('reads unnamed molecules, whose SDF title line is blank', () => {
+    const root = workspace('liatir-docking-unnamed-');
+    const { receptor } = dockingInputs(root);
+    const ligands = join(root, 'unnamed.sdf');
+    writeFileSync(ligands, sdfRecord('', [['C', 0, 0, 0], ['O', 1, 0, 0]]) + sdfRecord('', [['N', 0, 0, 0]]));
+    const reference = join(root, 'unnamed-reference.sdf');
+    writeFileSync(reference, sdfRecord('', [['C', 0, 0, 0], ['C', 4, 2, 0]]));
+    const result = run({ action: 'preflight-dock', receptorPdbqt: receptor, ligandsSdf: ligands,
+      site: { mode: 'reference-ligand', referenceLigand: reference, paddingAngstrom: 5 }, docking: { cpu: 1 } });
+    expect(result.status, result.stderr).toBe(0);
+    expect(JSON.parse(result.stdout)).toMatchObject({ ligandCount: 2, maxLigandHeavyAtoms: 2,
+      site: { center: [2, 1, 0], size: [14, 12, 10] } });
+  });
+
   it('will not load the scientific stack without an accepted measured envelope', () => {
     const root = workspace('liatir-docking-envelope-');
     const structure = join(root, 'input.pdb');
