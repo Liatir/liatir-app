@@ -74,9 +74,10 @@ from vina import Vina
 
 prody.confProDy(verbosity="none")
 
-# The GPU plugins and NVIDIA libraries are pruned: OpenMM here must offer exactly CPU and Reference.
+# The conda OpenMM build is unified, so GPU plugins may load on a GPU host; the runner always names
+# the CPU platform for PDBFixer, which therefore has to be present.
 platforms = sorted(Platform.getPlatform(index).getName() for index in range(Platform.getNumPlatforms()))
-assert platforms == ["CPU", "Reference"], platforms
+assert {"CPU", "Reference"} <= set(platforms), platforms
 
 receptor_text = (REFERENCE / "1iep_receptorH.pdb").read_text(encoding="utf-8")
 fixer = PDBFixer(pdbfile=io.StringIO(receptor_text), platform=Platform.getPlatformByName("CPU"))

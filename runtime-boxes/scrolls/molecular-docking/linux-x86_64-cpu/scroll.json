@@ -17,7 +17,7 @@
   },
   "compatibility": {
     "minLiatirVersion": "0.2.1",
-    "minRamGb": 8,
+    "minRamGb": 4,
     "hostEnvironments": [
       "native",
       "windows-wsl2"
@@ -79,12 +79,12 @@
     {
       "sourcePath": "runtime-boxes/legal/molecular-docking.md",
       "relativePath": "THIRD_PARTY_NOTICES/molecular-docking.md",
-      "sha256": "8071cd58a5187d11d750e2c8ff9e08dc22a722147064b021c379df701fb755b0"
+      "sha256": "a67badce09feea12140ad2cc4f634818c213d9f04d90c6c57f03bea424ac7714"
     },
     {
       "sourcePath": "runtime-boxes/scrolls/molecular-docking/self-test.py",
       "relativePath": "self-tests/molecular-docking.py",
-      "sha256": "16c9a23e29501de29d1c16472b0ec2c99251c658058582ed1ccb3d087152b8fc"
+      "sha256": "1cb4c89cb1debfdcfaddb71a019374879337d27ada21a669edf5e5a3e113420b"
     },
     {
       "sourcePath": "runtime-boxes/scrolls/openmm/python-startup.py",
@@ -98,45 +98,7 @@
     }
   ],
   "prunePaths": [
-    "venv/lib/python3.1",
-    "venv/targets",
-    "venv/lib/libcufft.so.11",
-    "venv/lib/libcufft.so.11.4.1.4",
-    "venv/lib/libcufftw.so.11",
-    "venv/lib/libcufftw.so.11.4.1.4",
-    "venv/lib/libnvrtc-builtins.alt.so.12.9",
-    "venv/lib/libnvrtc-builtins.alt.so.12.9.86",
-    "venv/lib/libnvrtc-builtins.so.12.9",
-    "venv/lib/libnvrtc-builtins.so.12.9.86",
-    "venv/lib/libnvrtc.alt.so.12",
-    "venv/lib/libnvrtc.alt.so.12.9.86",
-    "venv/lib/libnvrtc.so.12",
-    "venv/lib/libnvrtc.so.12.9.86",
-    "venv/lib/libOpenMMCUDA.so",
-    "venv/lib/libOpenMMAmoebaCUDA.so",
-    "venv/lib/libOpenMMDrudeCUDA.so",
-    "venv/lib/libOpenMMRPMDCUDA.so",
-    "venv/lib/libOpenMMOpenCL.so",
-    "venv/lib/libOpenMMAmoebaOpenCL.so",
-    "venv/lib/libOpenMMDrudeOpenCL.so",
-    "venv/lib/libOpenMMRPMDOpenCL.so",
-    "venv/lib/libOpenMMHIP.so",
-    "venv/lib/libOpenMMAmoebaHIP.so",
-    "venv/lib/libOpenMMDrudeHIP.so",
-    "venv/lib/libOpenMMRPMDHIP.so",
-    "venv/lib/plugins/libOpenMMCUDA.so",
-    "venv/lib/plugins/libOpenMMAmoebaCUDA.so",
-    "venv/lib/plugins/libOpenMMDrudeCUDA.so",
-    "venv/lib/plugins/libOpenMMRPMDCUDA.so",
-    "venv/lib/plugins/libOpenMMOpenCL.so",
-    "venv/lib/plugins/libOpenMMAmoebaOpenCL.so",
-    "venv/lib/plugins/libOpenMMDrudeOpenCL.so",
-    "venv/lib/plugins/libOpenMMRPMDOpenCL.so",
-    "venv/lib/plugins/libOpenMMHIP.so",
-    "venv/lib/plugins/libOpenMMAmoebaHIP.so",
-    "venv/lib/plugins/libOpenMMDrudeHIP.so",
-    "venv/lib/plugins/libOpenMMRPMDHIP.so",
-    "venv/lib/python3.11/site-packages/prody/tests"
+    "venv/lib/python3.1"
   ],
   "selfTest": {
     "imports": [

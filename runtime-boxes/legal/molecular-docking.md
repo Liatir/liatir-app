@@ -24,18 +24,16 @@ complete transitive inventory with declared licences is
 `runtime-boxes/legal/audits/molecular-docking-linux-x86_64-cpu.json`.
 
 OpenMM is present only as PDBFixer's library: it reads structures, holds residue templates, adds
-hydrogens and minimizes repaired atoms. The box is a CPU target. The OpenMM conda build is unified, so
-its lock also resolves three packages under the NVIDIA CUDA Toolkit End User License Agreement
-(`cuda-nvrtc` 12.9.86, `libcufft` 11.4.1.4, the `cuda-version` 12.9 constraint) and OpenMM's CUDA,
-OpenCL and HIP platform plugins (LGPL-3.0-or-later). **None of those binaries ships**: the scroll
-prunes the NVIDIA libraries under `venv/targets`, their links in `venv/lib`, and every GPU platform
-plugin, so OpenMM inside this box can only use its CPU and Reference platforms. The packages remain in
-the lock and the audit, which inventory what was resolved. The OpenMM Tool Runtime's startup hook is
-reused unchanged to resolve `OPENMM_PLUGIN_DIR` inside the relocated environment.
+hydrogens and minimizes repaired atoms, always on its CPU platform, which the runner names explicitly.
+The OpenMM conda build is unified, so the box also carries, unmodified, OpenMM's CUDA, OpenCL and HIP
+platform plugins (LGPL-3.0-or-later) and three packages under the NVIDIA CUDA Toolkit End User License
+Agreement — `cuda-nvrtc` 12.9.86, `libcufft` 11.4.1.4 and the `cuda-version` 12.9 constraint — the same
+packages and versions the published OpenMM, scGPT, Geneformer and Boltz-2 boxes already distribute.
+The packed conda prefix ships whole. The OpenMM Tool Runtime's startup hook is reused unchanged to
+resolve `OPENMM_PLUGIN_DIR` inside the relocated environment.
 
-The scroll also prunes `venv/lib/python3.1`, a full copy of the Python library that packaging would
-otherwise produce from conda's `lib/python3.1 -> python3.11` directory link, and ProDy's bundled test
-data; neither is used at run time.
+The scroll prunes one path, `venv/lib/python3.1`: conda's Python declares it as a link to
+`python3.11`, and the build would otherwise ship a full second copy of the Python library.
 
 ## Reference fixtures
 
