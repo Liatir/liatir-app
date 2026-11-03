@@ -405,7 +405,7 @@ component.
 
 | Component | Status | Evidence |
 | --- | --- | --- |
-| Vina, RDKit, Meeko, PDBFixer, Ringtail | SCIENTIFICALLY VALIDATED (development build); IMPLEMENTED in the product | `runtime-boxes/measurements/molecular-docking-linux-x86_64-cpu-development-2026-11-03.json` |
+| Vina, RDKit, Meeko, PDBFixer, Ringtail | SCIENTIFICALLY VALIDATED and PRODUCT VALIDATED on native Linux (development build); Windows through WSL2 and publication pending | `runtime-boxes/measurements/molecular-docking-linux-x86_64-cpu-development-2026-11-03.json`, `runtime-boxes/measurements/molecular-docking-linux-x86_64-cpu-product-lifecycle-development-2026-11-03.json` |
 | GNINA | BLOCKED (B1) | finding 8 |
 | MDAnalysis, ProLIF | not started | resolves (finding 9) |
 | PySB, BioNetGen | not started | resolves (finding 10) |
@@ -434,6 +434,20 @@ record `runtime-boxes/measurements/molecular-docking-linux-x86_64-cpu-developmen
 | Database guards | same-experiment append accepted; another site and a foreign database refused |
 | Malformed inputs | truncated SDF, ligand as receptor, 200 Å box, mismatched receptor PDB refused |
 
+**Real-app lifecycle, native Linux (WSL2, Xvfb), 2026-11-03: 2 of 2 passed** —
+`runtime-box-release-candidate.e2e.mjs` and `runtime-box-molecular-docking-native.e2e.mjs` on a test
+binary built with the docking candidate, against the loopback registry and the development key. The box
+(`eb299933…`, 591,761,187 bytes, 1,515,487,168 installed; the same lock and files as the validated
+build, which differs only in the builder revision its provenance records) installed with signature
+verification; a killed Job reached `killed`; Receptor Preparation and Molecular Docking ran through
+their pages inside the measured envelope; imatinib redocked at **0.247 Å, −13.368 kcal/mol** (default
+exhaustiveness 8, box around the crystal ligand); Jobs, Results, provenance and the interpretation
+notice held; removal kept every Result file. Record `runtime-boxes/measurements/molecular-docking-linux-x86_64-cpu-product-lifecycle-development-2026-11-03.json`. Two test-only defects were fixed on the way:
+the release-candidate spec had no route for the docking candidate, and the picker helper matched the
+already-filled Ligands field (the reference ligand now has its own file name). `runtime-boxes/README.md`
+told local builds to pass `--asset-base-url`, which Scrollcase 1.4.0 does not have; the archive URL
+comes from `--publish-base-url`, now documented.
+
 Peak memory over every case 1.25 GB (process-tree PSS, finding 16); slowest case batch-screen,
 103 s. The 2.0 Å threshold is the standard redocking success criterion (D6); scores
 are reported, never treated as affinities.
@@ -460,9 +474,9 @@ are reported, never treated as affinities.
 
 ## Next concrete actions
 
-1. Build the WSL2 test binary with `VITE_LIATIR_RUNTIME_BOX_RELEASE_CANDIDATE_ID=autodock-vina-molecular-docking`
-   and run `tests/e2e/specs/runtime-box-molecular-docking-native.e2e.mjs` against the local
-   registry (`npm run runtime-box:product-lifecycle`), then `npm run test:verify`.
+1. `npm run test:verify` on the branch; the Windows-through-WSL2 lifecycle with a Windows test app
+   built with the same candidate (the only build outside WSL2 the plan allows: the product shell, not
+   a scientific component).
 2. Production release (B3, B4): merge, signer redeploy, `runtime-box-release.yml` with
    `model_id=autodock-vina-molecular-docking`, `target_id=linux-x86_64-cpu`, `channel=beta`; then the
    publication commit (catalog, product catalog, docs, measurement from the production build).
