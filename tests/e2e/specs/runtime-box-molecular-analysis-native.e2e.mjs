@@ -22,6 +22,7 @@ import {
   readDataJson,
   reloadLiatirApp,
   selectFileFromPicker,
+  setAppInputValue,
 } from '../support/liatir-app.mjs';
 
 const BOX_ID = 'molecular-analysis';
@@ -119,12 +120,6 @@ async function checkAndRun(browser, label) {
   await run.click();
 }
 
-async function setText(browser, selector, value) {
-  const field = await browser.$(selector);
-  await field.clearValue();
-  await field.setValue(value);
-}
-
 export const tests = [{
   name: 'analyses a protein-ligand trajectory and its interactions, writes nothing beside the data, and keeps both Results',
   heavy: true,
@@ -196,7 +191,7 @@ print(json.dumps({"copied": len(payload["pairs"])}))
     });
     await selectFileFromPicker(browser, 'analysis-topology', path.basename(topologyPath));
     await selectFileFromPicker(browser, 'analysis-trajectory', path.basename(trajectoryPath));
-    await setText(browser, '[data-testid="analysis-ligand"]', 'resname LIG');
+    await setAppInputValue(browser, '[data-testid="analysis-ligand"]', 'resname LIG');
     await checkAndRun(browser, 'Trajectory Analysis');
     const trajectory = await runToResult(browser, TRAJECTORY_TOOL_ID, 'Trajectory Analysis');
     expect(trajectory.provenance).toMatchObject({
@@ -221,8 +216,8 @@ print(json.dumps({"copied": len(payload["pairs"])}))
     });
     await selectFileFromPicker(browser, 'analysis-topology', path.basename(topologyPath));
     await selectFileFromPicker(browser, 'analysis-trajectory', path.basename(trajectoryPath));
-    await setText(browser, '[data-testid="analysis-ligand"]', 'resname LIG');
-    await setText(browser, '#analysis-stride', '25');
+    await setAppInputValue(browser, '[data-testid="analysis-ligand"]', 'resname LIG');
+    await setAppInputValue(browser, '#analysis-stride', '25');
     await checkAndRun(browser, 'Interaction Fingerprint');
     const fingerprint = await runToResult(browser, FINGERPRINT_TOOL_ID, 'Interaction Fingerprint');
     expect(fingerprint.provenance).toMatchObject({

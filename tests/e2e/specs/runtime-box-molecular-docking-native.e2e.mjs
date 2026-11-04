@@ -1,10 +1,11 @@
 /**
- * Runs Receptor Preparation and Molecular Docking through Liatir's install, preflight, Job, Result
- * and removal lifecycle on the official AutoDock Vina 1IEP example shipped inside the box.
+ * Runs Receptor Preparation, Molecular Docking and Docked Complex through Liatir's install, preflight,
+ * Job, Result and removal lifecycle on the official AutoDock Vina 1IEP example shipped inside the box.
  *
- * The two tools share one signed box and form one workflow: the receptor the first prepares is the
- * receptor the second docks into. The docked imatinib pose is then held to the crystal structure by
- * the box's own RDKit, so the product gate checks the science and not only that a Job finished.
+ * The tools share one signed box and form one workflow: the receptor the first prepares is the
+ * receptor the second docks into, and the third takes the best pose with that receptor towards a
+ * simulation. The docked imatinib pose is held to the crystal structure by the box's own RDKit, so
+ * the product gate checks the science and not only that a Job finished.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -30,6 +31,7 @@ const MODEL_ID = 'autodock-vina-molecular-docking';
 const RUNTIME_ID = 'molecular-docking-vina-1-2-7';
 const PREPARATION_TOOL_ID = 'docking-receptor-preparation';
 const DOCKING_TOOL_ID = 'molecular-docking';
+const COMPLEX_TOOL_ID = 'docking-selected-complex';
 const TARGET_ID = process.env.LIATIR_RUNTIME_BOX_TARGET_ID ?? 'linux-x86_64-cpu';
 const VERSION = process.env.LIATIR_RUNTIME_BOX_EXPECTED_VERSION ?? '1.2.7-beta.1';
 const REGISTRY_BASE_URL = process.env.LIATIR_RUNTIME_BOX_REGISTRY_BASE_URL ?? 'https://models.liatir.com/v1';
@@ -107,7 +109,7 @@ function outputPath(result, fieldKey) {
 }
 
 export const tests = [{
-  name: 'prepares the 1IEP receptor, redocks imatinib within 2 Å of the crystal, and keeps both Results',
+  name: 'prepares the 1IEP receptor, redocks imatinib within 2 Å of the crystal, builds the docked complex, and keeps every Result',
   heavy: true,
   async run({ browser, expect, rootDir }) {
     await activateCleanSandbox(browser);
@@ -254,6 +256,39 @@ print(json.dumps({"rmsd": rdMolAlign.CalcRMS(Chem.RemoveHs(top), crystal),
     expect(pose.rmsd).toBeLessThan(REDOCKING_RMSD_ANGSTROM);
     expect(pose.score).toBe(summary.ranking[0].scoreKcalPerMol);
 
+    // Docked Complex: the top pose with the receptor it was docked into, ready for OpenMM.
+    await dataFiles(browser, [receptorPath, ligandPath, referencePath, receptorPdbqt, preparedPdb, posesSdf]);
+    await reloadLiatirApp(browser);
+    await activateCleanSandbox(browser);
+    await navigateInApp(browser, '/tools/molecular-docking/complex');
+    const complexCheck = await browser.$('[data-testid="docking-preflight"]');
+    await browser.waitUntil(() => complexCheck.isDisplayed(), {
+      timeout: 20_000, timeoutMsg: 'Docked Complex did not render its runtime controls',
+    });
+    await selectFileFromPicker(browser, 'complex-poses', path.basename(posesSdf));
+    await selectFileFromPicker(browser, 'complex-receptor-pdbqt', path.basename(receptorPdbqt));
+    await selectFileFromPicker(browser, 'complex-receptor-structure', path.basename(preparedPdb));
+    await complexCheck.click();
+    const complexRun = await browser.$('[data-testid="docking-run"]');
+    await browser.waitUntil(() => complexRun.isEnabled(), {
+      timeout: 120_000, timeoutMsg: 'Docked Complex Run did not become enabled inside the measured envelope',
+    });
+    await complexRun.click();
+    const complex = await runToResult(browser, COMPLEX_TOOL_ID, 'Docked Complex');
+    expect(complex.provenance).toMatchObject({
+      'Network access': 'Disabled',
+      'Hardware evidence': EXPECTED_HARDWARE_PROFILE,
+      'Within measured evidence': 'Yes',
+      'Runtime Box': `${VERSION} · ${TARGET_ID}`,
+    });
+    const complexSummary = JSON.parse(fs.readFileSync(outputPath(complex.result, 'summaryJson'), 'utf8'));
+    // The page offers the best pose first; it is the one checked against the crystal above.
+    expect(complexSummary.poseRank).toBe(1);
+    expect(complexSummary.scoreKcalPerMol).toBe(pose.score);
+    expect(complexSummary.complex.ligandAtoms).toBeGreaterThan(0);
+    outputPath(complex.result, 'complexPdb');
+    outputPath(complex.result, 'ligandSdf');
+
     await navigateInApp(browser, `/results?run=${docking.result.id}`);
     await browser.waitUntil(
       async () => browser.execute(() => document.body.innerText.includes('Ligand ranking')),
@@ -261,7 +296,7 @@ print(json.dumps({"rmsd": rdMolAlign.CalcRMS(Chem.RemoveHs(top), crystal),
     );
     expect(await browser.execute(() => document.body.innerText)).toContain('not measured binding affinities');
 
-    const artifacts = [...preparation.result.outputFiles, ...docking.result.outputFiles];
+    const artifacts = [...preparation.result.outputFiles, ...docking.result.outputFiles, ...complex.result.outputFiles];
     const before = runtimeBoxResultArtifactSnapshot(artifacts);
     const removed = await browser.execute(async (input) => window.Liatir.invoke('lia_runtime_box_remove', input), {
       componentKind: 'tool-runtime', runtimeId: RUNTIME_ID, boxId: BOX_ID,
@@ -287,9 +322,12 @@ print(json.dumps({"rmsd": rdMolAlign.CalcRMS(Chem.RemoveHs(top), crystal),
           topScoreKcalPerMol: pose.score },
         preparation: { jobId: preparation.job.id, analysisRunId: preparation.result.id,
           resultArtifactCount: preparation.result.outputFiles.length },
+        dockedComplex: { jobId: complex.job.id, analysisRunId: complex.result.id,
+          resultArtifactCount: complex.result.outputFiles.length, ligandAtoms: complexSummary.complex.ligandAtoms,
+          receptorAtoms: complexSummary.complex.receptorAtoms },
         assertions: {
           install: 'passed', cancellation: 'passed', officialFixture: 'passed', receptorPreparation: 'passed',
-          docking: 'passed', redockingWithinTwoAngstrom: 'passed', jobs: 'passed', results: 'passed',
+          docking: 'passed', redockingWithinTwoAngstrom: 'passed', dockedComplex: 'passed', jobs: 'passed', results: 'passed',
           provenance: 'passed', offline: 'passed', interpretationNotice: 'passed', removal: 'passed',
           resultArtifactsSurvivedRemoval: 'passed',
         },

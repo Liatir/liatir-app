@@ -16,11 +16,12 @@ box boundaries, blockers and progress are in the
 [Scientific Simulation Suite plan](./roadmap/scientific-simulation-suite.md). Phase 1 (feasibility)
 is complete. Phase 2: the `molecular-docking` box (Vina, Meeko, PDBFixer, Ringtail, RDKit) is built,
 scientifically validated on a development-signed build — imatinib redocks within 0.4 Å of the 1IEP
-crystal pose — integrated as Receptor Preparation, Molecular Docking and Docked Complex, and passed the
-real-app lifecycle on native Linux; Windows through WSL2 and publication are next. Phase 3: the
+crystal pose — integrated as Receptor Preparation, Molecular Docking and Docked Complex, all three of
+which passed the real-app lifecycle on native Linux; Windows through WSL2 and publication are next. Phase 3: the
 `molecular-analysis` box (MDAnalysis, ProLIF) is scientifically validated the same way — its measures
 match an independent computation to 5 × 10⁻⁵ Å and ProLIF's 61 official test vectors pass — and
-integrated as Trajectory Analysis and Interaction Fingerprint. The whole chain — dock imatinib, take
+integrated as Trajectory Analysis and Interaction Fingerprint, which passed the real-app lifecycle on
+native Linux. The whole chain — dock imatinib, take
 the pose to OpenMM on the GPU in explicit water, analyse the trajectory — passes, with the crystal's
 hinge hydrogen bond held in every frame. Phase 4B: the `metabolic-modeling` box (COBRApy with HiGHS,
 confirmed by GLPK) reproduces COBRApy's own published results for E. coli core, settles solver

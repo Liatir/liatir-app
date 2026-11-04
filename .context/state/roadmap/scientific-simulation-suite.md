@@ -499,8 +499,8 @@ component.
 | --- | --- | --- |
 | Vina, RDKit, Meeko, PDBFixer, Ringtail | SCIENTIFICALLY VALIDATED and PRODUCT VALIDATED on native Linux (development build); Windows through WSL2 and publication pending | `runtime-boxes/measurements/molecular-docking-linux-x86_64-cpu-development-2026-11-03.json`, `runtime-boxes/measurements/molecular-docking-linux-x86_64-cpu-product-lifecycle-development-2026-11-03.json` |
 | GNINA | BLOCKED (B1) | finding 8 |
-| MDAnalysis, ProLIF | SCIENTIFICALLY VALIDATED on a development-signed build; product lifecycle and publication pending | `runtime-boxes/measurements/molecular-analysis-linux-x86_64-cpu-development-2026-11-04.json` |
-| Docked Complex (docking box) | SCIENTIFICALLY VALIDATED on the development build; real-app lifecycle pending | `runtime-boxes/measurements/molecular-docking-linux-x86_64-cpu-development-2026-11-04.json`, `runtime-boxes/measurements/docking-simulation-chain-development-2026-11-04.json` |
+| MDAnalysis, ProLIF | SCIENTIFICALLY VALIDATED and PRODUCT VALIDATED on native Linux (development build); Windows through WSL2 and publication pending | `runtime-boxes/measurements/molecular-analysis-linux-x86_64-cpu-development-2026-11-04.json`, `runtime-boxes/measurements/molecular-analysis-linux-x86_64-cpu-product-lifecycle-development-2026-11-04.json` |
+| Docked Complex (docking box) | SCIENTIFICALLY VALIDATED and PRODUCT VALIDATED on native Linux (development build); Windows through WSL2 and publication pending | `runtime-boxes/measurements/molecular-docking-linux-x86_64-cpu-development-2026-11-04.json`, `runtime-boxes/measurements/docking-simulation-chain-development-2026-11-04.json` |
 | PySB, BioNetGen | SCIENTIFICALLY VALIDATED on the development build's directory; the installed box cannot start BioNetGen (B5) | `runtime-boxes/measurements/biochemical-simulation-linux-x86_64-cpu-development-2026-11-04.json` |
 | COBRApy | SCIENTIFICALLY VALIDATED and PRODUCT VALIDATED on native Linux (development build); Windows through WSL2 and publication pending | `runtime-boxes/measurements/metabolic-modeling-linux-x86_64-cpu-development-2026-11-04.json`, `runtime-boxes/measurements/metabolic-modeling-linux-x86_64-cpu-product-lifecycle-development-2026-11-04.json` |
 | PhysiCell | not started; B2 open | finding 12 |
@@ -569,6 +569,14 @@ payload re-verification, record
 Peak memory 282 MB; slowest case the 250-frame fingerprint of ProLIF's trajectory, about 200 s. Reference data is
 ProLIF 2.2.3's packaged trajectory, Vina poses and interaction test molecules (Apache-2.0).
 
+**Real-app lifecycle, native Linux (WSL2, Xvfb), 2026-11-04: 2 of 2 passed** — Trajectory Analysis
+and Interaction Fingerprint through their pages on ProLIF's trajectory copied into the user's Data,
+inside the measured envelope: protein Cα and ligand RMSD reported, ProLIF's pinned frame-0
+interactions (VAL201.A and PHE351.B hydrophobic) found, the user's data directory unchanged
+(finding 22), Jobs, Results, provenance, the offline boundary and removal held. Record
+`runtime-boxes/measurements/molecular-analysis-linux-x86_64-cpu-product-lifecycle-development-2026-11-04.json`. The spec cleared fields through a WebDriver call the
+harness does not have; it now uses `setAppInputValue`.
+
 ## Docking → OpenMM → analysis chain (development builds, 2026-11-04)
 
 `scripts/validate-docking-simulation-chain.mjs` runs each product runner in its own box on the official
@@ -594,6 +602,12 @@ The docking validator was rerun with Docked Complex: 21 cases passed, including 
 another receptor and an absent pose refused; record
 `runtime-boxes/measurements/molecular-docking-linux-x86_64-cpu-development-2026-11-04.json`, which the
 docking envelope now cites.
+
+**Docked Complex real-app lifecycle, native Linux (WSL2, Xvfb), 2026-11-04: 2 of 2 passed** — the
+docking spec now continues past redocking: the top pose (0.247 Å from the crystal, −13.368 kcal/mol)
+with the receptor it was docked into, through the Docked Complex page inside the measured envelope,
+gives a complex of 4411 receptor and 69 ligand atoms with the same score, and every Result of the three
+tools survives the box's removal. Record `runtime-boxes/measurements/molecular-docking-linux-x86_64-cpu-product-lifecycle-development-2026-11-04.json`.
 
 ## Phase 4B evidence (development build, 2026-11-04)
 
@@ -702,7 +716,7 @@ only, so a stochastic run of a larger network asks the user to confirm a run bey
 2. Production release (B3, B4): merge, signer redeploy, `runtime-box-release.yml` with
    `model_id=autodock-vina-molecular-docking`, `target_id=linux-x86_64-cpu`, `channel=beta`; then the
    publication commit (catalog, product catalog, docs, measurement from the production build).
-3. Real-app lifecycle of Docked Complex and the analysis tools on native Linux, then through WSL2
-   with item 1.
+3. Real-app lifecycle of every tool through WSL2 with item 1 (all pass on native Linux except
+   Biochemical Simulation, B5).
 4. Real-app lifecycle of Biochemical Simulation, once B5 is resolved.
 5. Phase 4C PhysiCell (B2).
