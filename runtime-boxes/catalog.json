@@ -985,6 +985,53 @@
       ]
     },
     {
+      "componentKind": "tool-runtime",
+      "componentId": "pysb-biochemical-simulation",
+      "modelId": "pysb-biochemical-simulation",
+      "boxId": "biochemical-simulation",
+      "runtimeId": "biochemical-simulation-pysb-1-17-0",
+      "legalRecord": "runtime-boxes/legal/biochemical-simulation.md",
+      "legalStatus": "approved",
+      "validatorScript": "runtime-box:validate:biochemical-simulation",
+      "validatorPath": "scripts/validate-biochemical-simulation-runtime.mjs",
+      "productScriptPath": "frontend/src/lib/tools/biochemical-simulation/python-scripts/biochemical.ts",
+      "productLifecycleSpec": "tests/e2e/specs/runtime-box-biochemical-simulation-native.e2e.mjs",
+      "callerWorkflow": ".github/workflows/runtime-box-biochemical-simulation.yml",
+      "targets": [
+        {
+          "targetId": "linux-x86_64-cpu",
+          "target": {
+            "platform": "linux",
+            "arch": "x86_64",
+            "accelerator": "cpu"
+          },
+          "hostEnvironments": [
+            "native",
+            "windows-wsl2"
+          ],
+          "recipeId": "biochemical-simulation-linux-x86_64-cpu",
+          "runnerProfileId": "linux-x64-selfhosted",
+          "status": "scientifically-validated",
+          "validationModes": [
+            "build",
+            "scientific",
+            "native-lifecycle"
+          ],
+          "timeoutMinutes": 90,
+          "requiredBuildDiskBytes": 6442450944,
+          "dependencyLockSha256": "a7e830468894a2ffcb0081ac7e12688ec34c1b7813aaebb6dd679c88d4d3c0f7",
+          "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/biochemical-simulation-linux-x86_64-cpu.json",
+          "diskPlan": {
+            "estimatedInstalledSizeBytes": 536870912,
+            "estimatedArchiveSizeBytes": 268435456,
+            "safetyMarginBytes": 4294967296
+          },
+          "gpuRequired": false,
+          "nativeCiEnabled": true
+        }
+      ]
+    },
+    {
       "componentKind": "ai-model",
       "componentId": "jwohlwend-boltz-2",
       "modelId": "jwohlwend-boltz-2",

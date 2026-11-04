@@ -21,6 +21,8 @@ export const tests = [{
           ? '/tools/molecular-analysis/trajectory'
         : candidateId === 'cobrapy-metabolic-modeling'
           ? '/tools/metabolic-modeling'
+        : candidateId === 'pysb-biochemical-simulation'
+          ? '/tools/biochemical-simulation'
         : ['jwohlwend-boltz-2', 'bytedance-protenix-base-v1-0-0', 'bytedance-protenix-v2', 'bytedance-protenix-mini-default-v0-5-0'].includes(candidateId)
           ? '/tools/structure/prediction'
         : null;

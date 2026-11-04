@@ -117,6 +117,14 @@
       ]
     },
     {
+      "boxId": "biochemical-simulation",
+      "modelId": "pysb-biochemical-simulation",
+      "runtimeId": "biochemical-simulation-pysb-1-17-0",
+      "targets": [
+        "linux-x86_64-cpu"
+      ]
+    },
+    {
       "boxId": "boltz-2",
       "modelId": "jwohlwend-boltz-2",
       "runtimeId": "structure-boltz-2-2-1",

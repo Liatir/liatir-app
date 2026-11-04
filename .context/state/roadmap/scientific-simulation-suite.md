@@ -257,6 +257,32 @@ Each was checked, not inferred; the evidence is named.
     on iJO1366, GLPK let OPHHX3 carry 2.2e-4 where HiGHS found 1e-10; GLPK's exact rational simplex
     gives 0. The runner settles any value the two disagree on in exact arithmetic (at most 200 per run,
     otherwise it refuses) and reports which; a value exact arithmetic does not confirm is refused.
+30. **PySB 1.17.0 imports `dateutil` without declaring it**; the box adds `python-dateutil`.
+31. **BioNetGen's release archive has two top-level entries and 167 macOS resource forks** (`._*`).
+    Scrollcase refuses `stripComponents` on an archive with more than one root, so it is unpacked whole
+    under `bionetgen-release/` and the forks are pruned by exact path. The directory cannot be called
+    `bionetgen`: at the box root it answers `import bionetgen` as a namespace package, and PySB's
+    BioNetGen lookup then fails (`module 'bionetgen' has no attribute 'defaults'`).
+32. **PySB's defaults would compile and resolve names.** `ScipyOdeSimulator` integrates with VODE and
+    compiles the right-hand side with Cython; the runner uses LSODA with a Python right-hand side, so
+    nothing is compiled on the user's computer. PySB's logger calls `socket.getfqdn()`, a reverse DNS
+    lookup that failed every offline run until the runner answered it locally.
+33. **PySB's `BngSimulator` gives every stochastic replicate the same seed**, so a request for many
+    runs returns copies of one. The runner runs each replicate with its own seed (seed + i) in one
+    BioNetGen session; the same seeds reproduce byte-identical runs.
+34. **BioNetGen ends network generation without a word.** At `max_iter` it returns the network as it
+    stood; with `max_agg` it drops every larger complex; and it has no limit on memory or time — a
+    one-rule linear polymer ran 72 minutes before it was stopped by hand. The runner never sets
+    `max_agg`, refuses a network still growing in its last permitted round (100), and runs BioNetGen
+    under limits it inherits: 4 GB of address space and 5 minutes of CPU time. A model past either is
+    refused, never simulated on a partial network.
+35. **The network, not the rule set, is the cost**: one rule can define an infinite network. The
+    preflight therefore generates the network, and the measured envelope is matched on species and
+    reactions; the run generates it again and must obtain the same network (same SHA-256).
+36. **PySB 1.17.0 imports, and BioNetGen generates within seconds, 18 of the 27 example models
+    BioNetGen 2.9.3 ships** (the largest, `egfr_net`, 356 species and 3,749 reactions in 5.8 s). PySB's
+    importer refuses 6 (Arrhenius and saturation rate laws, exclude-reactant declarations), one file
+    has no rules, and two (`blbr`, `tlbr`) are written for network-free simulation and never close.
 
 ## Licensing and redistribution review
 
@@ -455,7 +481,7 @@ component.
 | GNINA | BLOCKED (B1) | finding 8 |
 | MDAnalysis, ProLIF | SCIENTIFICALLY VALIDATED on a development-signed build; product lifecycle and publication pending | `runtime-boxes/measurements/molecular-analysis-linux-x86_64-cpu-development-2026-11-04.json` |
 | Docked Complex (docking box) | SCIENTIFICALLY VALIDATED on the development build; real-app lifecycle pending | `runtime-boxes/measurements/molecular-docking-linux-x86_64-cpu-development-2026-11-04.json`, `runtime-boxes/measurements/docking-simulation-chain-development-2026-11-04.json` |
-| PySB, BioNetGen | not started | resolves (finding 10) |
+| PySB, BioNetGen | SCIENTIFICALLY VALIDATED on a development-signed build; real-app lifecycle and publication pending | `runtime-boxes/measurements/biochemical-simulation-linux-x86_64-cpu-development-2026-11-04.json` |
 | COBRApy | SCIENTIFICALLY VALIDATED on a development-signed build; real-app lifecycle and publication pending | `runtime-boxes/measurements/metabolic-modeling-linux-x86_64-cpu-development-2026-11-04.json` |
 | PhysiCell | not started; B2 open | finding 12 |
 
@@ -572,6 +598,30 @@ runner in the signed payload, every run confirmed by GLPK: **passed**, record `r
 Peak memory 547 MB. Reference data ships in COBRApy; the FVA table is committed as
 `runtime-boxes/fixtures/metabolic/cobrapy-0.32.1-textbook-fva.json`.
 
+## Phase 4A evidence (development build, 2026-11-04)
+
+Box `biochemical-simulation` `1.17.0-beta.1` / `linux-x86_64-cpu`, lock `a7e83046…`, 43 packages: PySB
+1.17.0 (PyPI wheel), BioNetGen 2.9.3 (official Linux release, `NFsim` pruned), Perl 5.44.0, SymPy
+1.11.1, SciPy 1.17.1, Python 3.11.18. Signed with the WSL2 development key: archive `bf5ade96…`,
+136.7 MB, installed 478 MB. The validator `scripts/validate-biochemical-simulation-runtime.mjs` ran the
+product's runner in the signed payload: **passed**, 696 s, record
+`runtime-boxes/measurements/biochemical-simulation-linux-x86_64-cpu-development-2026-11-04.json`.
+
+| Check | Reference | Result |
+| --- | --- | --- |
+| Robertson's stiff problem to t = 10¹¹, LSODA | Test Set for IVP Solvers (Mazzia and Magherini), problem ROBER | relative error ≤ 3.6 × 10⁻¹⁰ |
+| Synthesis and degradation, a parameter changed | exact solution A(t) = 20 − 19e^(−0.1t) | within 8.1 × 10⁻⁸ |
+| The same model, 1,000 stochastic runs (Gillespie, BioNetGen) | stationary Poisson, mean and variance 10 | mean 9.848 (bound ±0.4), variance 9.95 (bound ±1.83); 1,000 distinct runs; the same seeds repeat byte for byte |
+| BioNetGen's `egfr_net` (356 species, 3,749 reactions) | BioNetGen's own CVODE on the same network | LSODA within 2.0 × 10⁻⁸ (relative to each observable's range) |
+| A BNGL file with `writeXML`/`writeSBML` actions | — | imported and simulated; no action ran |
+| Every reviewed built-in PySB model | — | all eight generate a network (2 to 58 species) |
+| Preflight against run | — | the same network, SHA-256 equal, in every case |
+| Refusals | — | a linear polymer and BioNetGen's TLBR stopped at the 5-minute CPU limit; Arrhenius rate law, malformed BNGL, unknown built-in model or parameter, seed overflow, log-spaced stochastic run |
+| Nothing written outside the run | — | the home directory stays empty; the signed payload re-verifies |
+
+Peak memory 166 MB (process tree). The stochastic envelope is measured on synthesis and degradation
+only, so a stochastic run of a larger network asks the user to confirm a run beyond evidence.
+
 ## Progress log
 
 - 2026-11-03 — Phase 1. Context read; WSL2 host and toolchain measured; Linux checkout brought to
@@ -599,6 +649,11 @@ Peak memory 547 MB. Reference data ships in COBRApy; the FVA table is committed 
 - 2026-11-04 — Phase 4B: metabolic box built and validated (above); runner, contract, release
   candidate, Metabolic Modeling page and pipeline step, restart finalizer, unit tests, lifecycle spec,
   catalog and signer-policy entries, CI workflow and release option; findings 26–29.
+- 2026-11-04 — Phase 4A: biochemical box built and validated (above). A one-rule polymer kept
+  BioNetGen running for 72 minutes (finding 34); a survey of BioNetGen's 27 example models set the
+  limits (finding 36). Runner, contract, release candidate, Biochemical Simulation page and pipeline
+  step, restart finalizer, unit tests, lifecycle spec, catalog and signer-policy entries, CI workflow
+  and release option; findings 30–36.
 
 ## For the owner
 
@@ -616,5 +671,5 @@ Peak memory 547 MB. Reference data ships in COBRApy; the FVA table is committed 
    publication commit (catalog, product catalog, docs, measurement from the production build).
 3. Real-app lifecycle of Docked Complex and the analysis tools on native Linux, then through WSL2
    with item 1.
-4. Real-app lifecycle of Metabolic Modeling.
-5. Phase 4A PySB + BioNetGen, then 4C PhysiCell (B2).
+4. Real-app lifecycle of Metabolic Modeling and Biochemical Simulation.
+5. Phase 4C PhysiCell (B2).

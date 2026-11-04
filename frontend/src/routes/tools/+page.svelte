@@ -15,6 +15,7 @@
   import { toast } from '$lib/stores/toast.svelte';
 	import PageContent from '$lib/components/layout/PageContent.svelte';
   import {
+    BIOCHEMICAL_SIMULATION_RUNTIME_COMPONENT_ID,
     BOLTZ_2_MODEL_ID,
     LIATIR_TOOL_RUNTIME_CATALOG,
     METABOLIC_MODELING_RUNTIME_COMPONENT_ID,
@@ -53,6 +54,10 @@
   );
   const metabolicPublished = LIATIR_TOOL_RUNTIME_CATALOG.some(
     (runtime) => runtime.id === METABOLIC_MODELING_RUNTIME_COMPONENT_ID
+      && runtime.install.runtimeBox.publishedTargets.length > 0,
+  );
+  const biochemicalPublished = LIATIR_TOOL_RUNTIME_CATALOG.some(
+    (runtime) => runtime.id === BIOCHEMICAL_SIMULATION_RUNTIME_COMPONENT_ID
       && runtime.install.runtimeBox.publishedTargets.length > 0,
   );
   const analysisPublished = LIATIR_TOOL_RUNTIME_CATALOG.some(
@@ -269,6 +274,15 @@
       ...(metabolicPublished ? { href: '/tools/metabolic-modeling' } : {}),
       status: metabolicPublished ? 'available' : 'soon',
       tags: ['SBML', 'FBA', 'FVA', 'Gene essentiality', 'COBRApy'],
+      category: 'Systems Biology',
+    },
+    {
+      id: 'biochemical-simulation',
+      label: 'Biochemical Simulation',
+      description: 'Simulate how the amounts of molecules in a reaction network change over time, deterministically or stochastically.',
+      ...(biochemicalPublished ? { href: '/tools/biochemical-simulation' } : {}),
+      status: biochemicalPublished ? 'available' : 'soon',
+      tags: ['BNGL', 'ODE', 'Stochastic', 'Rule-based', 'PySB'],
       category: 'Systems Biology',
     },
     {

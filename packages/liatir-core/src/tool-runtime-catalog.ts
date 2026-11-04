@@ -32,6 +32,12 @@ import {
   METABOLIC_MODELING_RUNTIME_ID,
 } from "./metabolic-modeling.js";
 import {
+  BIOCHEMICAL_SIMULATION_BOX_ID,
+  BIOCHEMICAL_SIMULATION_RUNTIME_COMPONENT_ID,
+  BIOCHEMICAL_SIMULATION_RUNTIME_ID,
+  PYSB_VERSION,
+} from "./biochemical-simulation.js";
+import {
   OPENMM_BOX_ID,
   OPENMM_RUNTIME_COMPONENT_ID,
   OPENMM_RUNTIME_ID,
@@ -392,6 +398,69 @@ export const METABOLIC_MODELING_RELEASE_CANDIDATE_METADATA: LiatirToolRuntimeMet
     officialUrl: "https://cobrapy.readthedocs.io/en/0.32.1/",
   },
   tags: ["runtime-box", "metabolic-modeling", "flux-balance-analysis", "cobrapy", "highs"],
+};
+
+/**
+ * PySB with BioNetGen, kept out of the product catalog until a signed target is published; the
+ * installer requires every requirement here to equal the signed release's exactly.
+ */
+export const BIOCHEMICAL_SIMULATION_RELEASE_CANDIDATE_METADATA: LiatirToolRuntimeMetadata = {
+  id: BIOCHEMICAL_SIMULATION_RUNTIME_COMPONENT_ID,
+  name: "PySB 1.17.0 with BioNetGen 2.9.3",
+  description: "Local deterministic and stochastic simulation of rule-based biochemical reaction networks.",
+  category: "Systems Biology",
+  version: PYSB_VERSION,
+  runtime: { kind: "python-venv", name: "Biochemical Simulation Runtime", version: "Python 3.11" },
+  localOnly: true,
+  install: {
+    method: "runtime-box",
+    runtimeId: BIOCHEMICAL_SIMULATION_RUNTIME_ID,
+    runtimePackages: [
+      { package: "pysb", specifier: `pysb==${PYSB_VERSION}`, importName: "pysb" },
+      { package: "sympy", specifier: "sympy==1.11.1", importName: "sympy" },
+      { package: "scipy", specifier: "scipy==1.17.1", importName: "scipy" },
+      { package: "numpy", specifier: "numpy==2.4.6", importName: "numpy" },
+    ],
+    runtimeBox: {
+      boxId: BIOCHEMICAL_SIMULATION_BOX_ID,
+      channel: "beta",
+      registryBaseUrl: "https://models.liatir.com/v1",
+      publishedTargets: [{
+        target: { platform: "linux", arch: "x86_64", accelerator: "cpu" },
+        hostEnvironments: ["native", "windows-wsl2"],
+        minRamGb: 4,
+      }],
+    },
+    hostRequirements: {
+      os: ["linux", "windows"],
+      arch: ["x86_64"],
+      reason: "Biochemical simulation runs on the CPU of a Linux x86_64 computer with glibc 2.34 or newer, natively or on Windows through WSL2. It is not available on macOS.",
+    },
+  },
+  license: {
+    name: "PySB BSD-2-Clause with MIT BioNetGen",
+    spdxId: "BSD-2-Clause AND MIT AND BSD-3-Clause AND (Artistic-1.0-Perl OR GPL-1.0-or-later)",
+    url: "https://github.com/pysb/pysb/blob/v1.17.0/LICENSE",
+    verifiedAt: "2026-11-04",
+    components: [
+      { scope: "runtime", name: "PySB 1.17.0", spdxId: "BSD-2-Clause", sourceUrl: "https://github.com/pysb/pysb/tree/v1.17.0" },
+      { scope: "runtime", name: "BioNetGen 2.9.3", spdxId: "MIT", sourceUrl: "https://github.com/RuleWorld/bionetgen/releases/tag/BioNetGen-2.9.3" },
+      { scope: "runtime", name: "SUNDIALS CVODE 2.6.0, in BioNetGen's run_network", spdxId: "BSD-3-Clause", sourceUrl: "https://github.com/LLNL/sundials" },
+      { scope: "runtime", name: "muParser, in BioNetGen's run_network", spdxId: "MIT", sourceUrl: "https://github.com/beltoforion/muparser" },
+      { scope: "runtime", name: "Perl 5.44", spdxId: "Artistic-1.0-Perl OR GPL-1.0-or-later", sourceUrl: "https://www.perl.org/" },
+    ],
+  },
+  hardware: {
+    cpu: true,
+    gpu: false,
+    minRamGb: 4,
+    notes: "Runs on the CPU only. Network generation stops at 4 GB of memory or 5 minutes of computing; run time and memory are estimated from retained measurements of this exact release.",
+  },
+  documentation: {
+    liatirPath: "/tools/biochemical-simulation",
+    officialUrl: "https://pysb.readthedocs.io/en/v1.17.0/",
+  },
+  tags: ["runtime-box", "biochemical-simulation", "rule-based-modeling", "pysb", "bionetgen"],
 };
 
 /**

@@ -28,6 +28,7 @@ import {
   trajectoryAnalysisDefinition,
 } from '$lib/tools/molecular-analysis/analysis';
 import { finalizeMetabolicResult, metabolicModelingDefinition } from '$lib/tools/metabolic-modeling/metabolic';
+import { biochemicalSimulationDefinition, finalizeBiochemicalResult } from '$lib/tools/biochemical-simulation/biochemical';
 import { parseToolRuntimeDirectRunContext } from './direct-run-context';
 
 const finalizing = new Set<string>();
@@ -116,7 +117,9 @@ export async function finalizeCompletedToolRuntimeDirectRuns(jobs: JobEntry[]): 
                       ? await finalizeInteractionFingerprintResult(runtime, context.outputDir, runtimeResult, appendLog)
                       : context.toolId === metabolicModelingDefinition.id
                         ? await finalizeMetabolicResult(runtime, context.outputDir, runtimeResult, appendLog)
-                        : null;
+                        : context.toolId === biochemicalSimulationDefinition.id
+                          ? await finalizeBiochemicalResult(runtime, context.outputDir, runtimeResult, appendLog)
+                          : null;
       if (!finalized) throw new Error(`Unsupported Tool Runtime finalizer: ${context.toolId}`);
       const endedAt = job.endedAtMs ?? Date.now();
       await finalizeExecutionResult(context.execution.runId, 'done', {
