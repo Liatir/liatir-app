@@ -822,50 +822,45 @@ def analyze_trajectory(payload, output_dir, metrics, scratch):
 
 # ── interaction fingerprints ────────────────────────────────────────────────
 
-def add_disulfides(universe, protein):
-    """Bonds cysteine sulfurs by OpenMM's rule: two SG atoms without a hydrogen within 0.3 nm.
-
-    MDAnalysis's van der Waals criterion bonds two sulfurs only below 1.98 Å, so it misses the 2.0-2.1 Å
-    disulfide, and an unbonded SG would then be read as a charged thiolate.
-    """
-    from MDAnalysis.lib.distances import capped_distance
-    sulfurs = [atom for atom in protein.select_atoms("resname CYS CYX CYM and name SG")
-               if not any(neighbour.element in ("H", "D") for neighbour in atom.bonded_atoms)]
-    if len(sulfurs) < 2:
-        return 0
-    positions = universe.atoms[[atom.index for atom in sulfurs]].positions
-    pairs = [(int(i), int(j)) for i, j in capped_distance(positions, positions, 3.0, box=universe.dimensions,
-                                                         return_distances=False) if i < j]
-    partners = {}
-    for i, j in pairs:
-        partners[i] = partners.get(i, 0) + 1
-        partners[j] = partners.get(j, 0) + 1
-    crowded = [sulfurs[index] for index, count in partners.items() if count > 1]
-    if crowded:
-        atom = crowded[0]
-        fail("Cysteine %s%d has more than one possible disulfide partner within 3 Å; supply a topology that records "
-             "its bonds." % (atom.resname, atom.resid))
-    added = [(sulfurs[i].index, sulfurs[j].index) for i, j in pairs if sulfurs[j] not in sulfurs[i].bonded_atoms]
-    if added:
-        universe.add_bonds(added)
-    return len(added)
-
-
-def ensure_protein_bonds(universe, protein):
+def ensure_protein_bonds(universe, protein, topology):
     """Standard residues need bonds that a PDB from OpenMM or PDBFixer does not record.
 
-    Missing bonds are derived from interatomic distances with MDAnalysis's van der Waals criterion and
-    disulfides by OpenMM's rule, added to any the file records, and accepted only if every hydrogen
-    then has exactly one bond.
+    Missing bonds come from RDKit's PDB proximity bonding, which reproduces OpenMM's residue templates
+    exactly, disulfides included. MDAnalysis's van der Waals rule does not: it bonded a methyl hydrogen
+    of an unrelaxed PDBFixer receptor to a sulfur 1.47 Å away, and missed a 2.03 Å disulfide. The bonds
+    are added to any the file records and accepted only if every hydrogen then has exactly one bond.
     """
     if hasattr(universe.atoms, "bonds") and all(len(atom.bonds) for atom in protein):
         method = "topology"
     else:
-        try:
-            protein.guess_bonds()
-        except ValueError as error:
-            fail("The protein's bonds could not be derived from its coordinates: %s" % error)
-        add_disulfides(universe, protein)
+        from rdkit import Chem
+        # RDKit reads only the protein's own records: OpenMM numbers the solvent of a large box past
+        # residue 9999 in hybrid-36 ("A000"), valid PDB that RDKit's reader refuses.
+        indices = [int(index) for index in protein.indices]
+        wanted = set(indices)
+        lines = []
+        ordinal = -1
+        with open(topology, encoding="utf-8", errors="replace") as handle:
+            for line in handle:
+                if line.startswith(("ATOM  ", "HETATM")):
+                    ordinal += 1
+                    if ordinal in wanted:
+                        lines.append(line.rstrip("\r\n"))
+                elif line.startswith("ENDMDL"):
+                    break
+        molecule = Chem.MolFromPDBBlock("\n".join(lines + ["END", ""]), removeHs=False, sanitize=False)
+        if molecule is None or molecule.GetNumAtoms() != len(indices):
+            fail("RDKit could not read the protein's connectivity from %s." % topology.name)
+        for local, atom in enumerate(protein):
+            info = molecule.GetAtomWithIdx(local).GetPDBResidueInfo()
+            if info is None or info.GetName().strip() != atom.name or info.GetResidueName().strip() != atom.resname:
+                fail("RDKit and MDAnalysis read atom %d of %s differently." % (atom.index + 1, topology.name))
+        existing = ({tuple(sorted(map(int, pair))) for pair in universe.bonds.indices}
+                    if hasattr(universe.atoms, "bonds") else set())
+        added = sorted({tuple(sorted((indices[bond.GetBeginAtomIdx()], indices[bond.GetEndAtomIdx()])))
+                        for bond in molecule.GetBonds()} - existing)
+        if added:
+            universe.add_bonds(added)
         method = "distance-derived"
     for atom in protein:
         if atom.element in ("H", "D") and len(atom.bonds) != 1:
@@ -953,7 +948,7 @@ def fingerprint(payload, output_dir, metrics, scratch):
             if not any(element in ("H", "D") for element in group.elements):
                 fail("The %s has no hydrogens; interaction fingerprints need every hydrogen." % label)
         require_ligand_bonds(universe, ligand)
-        protein_bonds = ensure_protein_bonds(universe, protein)
+        protein_bonds = ensure_protein_bonds(universe, protein, topology)
         if str(payload.get("ligandReferenceSdf") or "").strip():
             reference, _ = checked_file(payload["ligandReferenceSdf"], "Ligand reference SDF", MAX_SMALL_FILE_BYTES,
                                         (".sdf",))
@@ -989,7 +984,7 @@ def fingerprint(payload, output_dir, metrics, scratch):
         protein = pick(universe, metrics["proteinSelection"], "The protein")
         if not any(element in ("H", "D") for element in protein.elements):
             fail("The protein has no hydrogens; interaction fingerprints need every hydrogen.")
-        protein_bonds = ensure_protein_bonds(universe, protein)
+        protein_bonds = ensure_protein_bonds(universe, protein, receptor)
         protein_mol = prolif.Molecule.from_mda(protein)
         supplier = Chem.SDMolSupplier(str(poses_path), removeHs=False, sanitize=True)
         poses = []

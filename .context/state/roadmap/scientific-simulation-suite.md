@@ -228,11 +228,22 @@ Each was checked, not inferred; the evidence is named.
     beside every user's trajectory. The runner and the self-test now open a trajectory through a link
     in a temporary directory; the validator re-verifies the signed payload after every run and the
     lifecycle spec checks that the user's data directory is unchanged.
-23. **MDAnalysis's distance rule misses disulfide bonds**: it bonds two sulfurs only below 1.98 Å,
-    and a disulfide is 2.0–2.1 Å (2.03 Å in ProLIF's trajectory), so an unbonded cysteine sulfur
-    would read as a charged thiolate. The runner adds OpenMM's rule (two SG atoms without hydrogens
-    within 3 Å, one partner each, otherwise refused); distance-derived bonds then equal the recorded
-    ones exactly on both reference structures (5,053 of 5,053).
+23. **MDAnalysis's distance rule is not a reliable source of protein bonds.** It bonds two sulfurs
+    only below 1.98 Å, so it missed the 2.03 Å disulfide in ProLIF's trajectory, and on the
+    unrelaxed receptor PDBFixer writes it bonded a Met290 methyl hydrogen to the sulfur 1.47 Å away
+    (found by the chain validator; the hydrogen-valence guard refused the run). RDKit's PDB proximity
+    bonding reproduces OpenMM's residue templates exactly — 4,470 of 4,470 bonds on that receptor and
+    on OpenMM's 61,538-atom trajectory topology, 5,053 of 5,053 on both ProLIF structures — so the
+    runner takes protein bonds from RDKit, and keeps the guard.
+24. **OpenMM numbers residues past 9999 in hybrid-36** (`A000`) in the PDB topology of a large
+    solvated system. That is valid PDB, but RDKit's reader refuses the file and MDAnalysis reads those
+    residue numbers as 1. The runner gives RDKit only the protein's records; selecting solvent by
+    residue number in such a topology is unreliable (limitation L2).
+25. **A bifurcated hydrogen bond is one hydrogen bond to a geometric rule.** Nagar et al. describe
+    imatinib's piperazinium NH bonding the Ile360 and His361 carbonyls; it has one hydrogen, and
+    ProLIF's donor-angle criterion assigns it to Ile360 (2.67 Å) and records His361 (3.19 Å) as a van
+    der Waals contact. The chain validator holds the five hydrogen bonds a single-hydrogen rule can
+    see, plus that contact.
 
 ## Licensing and redistribution review
 
@@ -430,7 +441,7 @@ component.
 | Vina, RDKit, Meeko, PDBFixer, Ringtail | SCIENTIFICALLY VALIDATED and PRODUCT VALIDATED on native Linux (development build); Windows through WSL2 and publication pending | `runtime-boxes/measurements/molecular-docking-linux-x86_64-cpu-development-2026-11-03.json`, `runtime-boxes/measurements/molecular-docking-linux-x86_64-cpu-product-lifecycle-development-2026-11-03.json` |
 | GNINA | BLOCKED (B1) | finding 8 |
 | MDAnalysis, ProLIF | SCIENTIFICALLY VALIDATED on a development-signed build; product lifecycle and publication pending | `runtime-boxes/measurements/molecular-analysis-linux-x86_64-cpu-development-2026-11-04.json` |
-| Docked Complex (docking box) | IMPLEMENTED; validated in the docking validator rerun and the Docking → OpenMM → analysis chain, both pending | `select-complex` action |
+| Docked Complex (docking box) | SCIENTIFICALLY VALIDATED on the development build; real-app lifecycle pending | `runtime-boxes/measurements/molecular-docking-linux-x86_64-cpu-development-2026-11-04.json`, `runtime-boxes/measurements/docking-simulation-chain-development-2026-11-04.json` |
 | PySB, BioNetGen | not started | resolves (finding 10) |
 | COBRApy | not started | resolves (finding 11) |
 | PhysiCell | not started; B2 open | finding 12 |
@@ -481,7 +492,8 @@ Box `molecular-analysis` `2.11.0-beta.1` / `linux-x86_64-cpu`, lock `6badab47…
 Python 3.11.18, signed with the WSL2 development key: archive `2c975cdb…`, 316,696,256 bytes,
 installed 1,116,869,916 bytes; no cache file in the archive (finding 22). The validator
 `scripts/validate-molecular-analysis-runtime.mjs` ran the product's own runner in the signed, extracted
-payload: **20 cases, all passed** (8 measured runs, 12 refusals), record
+payload: 10 measured runs and 12 refusals passed, with ProLIF's vectors, the agreement checks and the
+payload re-verification, record
 `runtime-boxes/measurements/molecular-analysis-linux-x86_64-cpu-development-2026-11-04.json`.
 
 | Check | Result |
@@ -489,13 +501,40 @@ payload: **20 cases, all passed** (8 measured runs, 12 refusals), record
 | RMSD, RMSF, minimum and centroid distances against an independent NumPy computation (unwrapping recurrence, Kabsch by SVD, minimum image) | max difference 5.0 × 10⁻⁵ Å on XTC and on the same frames as DCD; strided window equal |
 | ProLIF's 61 official interaction test vectors, loaded as its `conftest.py` loads them | 61 of 61 |
 | Runner against ProLIF run directly | identical: 5,076 trajectory rows, 159 pose rows; ProLIF's pinned anchors present |
-| Distance-derived protein bonds against recorded bonds | identical, 5,053 of 5,053, on both reference structures |
+| Protein bonds derived for a PDB without them, against recorded bonds | identical, 5,053 of 5,053, on both reference structures (finding 23) |
+| A trajectory from the OpenMM box (61,538 atoms, 50 frames, checked against its state record) | analysed in 1.5 s, fingerprinted in 31 s |
 | Reproducibility | the same request twice gives byte-identical tables |
 | Signed payload after every run | re-verified unchanged |
 | Refusals | mismatched topology, truncated XTC and DCD, non-finite frame, empty and invalid selections, frame range beyond the trajectory, ligand without bond records, ligand not the reference molecule, receptor or poses without hydrogens, unknown interaction |
 
-Peak memory 282 MB; slowest case the 250-frame trajectory fingerprint, 197 s. Reference data is
+Peak memory 282 MB; slowest case the 250-frame fingerprint of ProLIF's trajectory, about 200 s. Reference data is
 ProLIF 2.2.3's packaged trajectory, Vina poses and interaction test molecules (Apache-2.0).
+
+## Docking → OpenMM → analysis chain (development builds, 2026-11-04)
+
+`scripts/validate-docking-simulation-chain.mjs` runs each product runner in its own box on the official
+1IEP example: Receptor Preparation, redocking at exhaustiveness 32, Docked Complex, OpenMM, Trajectory
+Analysis and Interaction Fingerprint. **Passed**, record
+`runtime-boxes/measurements/docking-simulation-chain-development-2026-11-04.json`.
+
+| Step | Result |
+| --- | --- |
+| Redocking | −13.211 kcal/mol; the selected pose is 0.369 Å from the crystal |
+| Docked Complex | receptor 4,411 atoms + imatinib 69 atoms with its bonds, chain L |
+| Crystal pose fingerprint | Met318, Thr315, Glu286, Asp381 and Ile360 hydrogen bonds, His361 contact (finding 25); the docked pose recovers four |
+| OpenMM (published `linux-x86_64-cuda12.9` payload, RTX 4060 Ti) | the complex in TIP3P-FB water at 1 bar, OpenFF 2.3.0 ligand with NAGL charges: 61,538 atoms, 100 ps, 50 frames |
+| Binding mode | hinge contact (imatinib to Met318 N) 2.71–3.21 Å in every frame, criterion ≤ 3.5 Å; protein Cα RMSD mean 1.13 Å, ligand mean 1.43 Å |
+| Hydrogen-bond persistence | Met318 100 %, Glu286 88 %, Thr315 82 %, Asp381 68 %, Ile360 2 % |
+| Ligand identity | the molecule read back from the trajectory is the docked imatinib (protonated piperazine) |
+
+A first run measured the ligand's RMSD to 2.34 Å and failed a ≤ 2 Å threshold borrowed from
+redocking; the excursions were the solvent-exposed methylpiperazine (up to 4.2 Å) while the core
+moved under 0.5 Å. The binding mode is now held by the hinge contact, and ligand RMSD is reported.
+
+The docking validator was rerun with Docked Complex: 21 cases passed, including a pose docked into
+another receptor and an absent pose refused; record
+`runtime-boxes/measurements/molecular-docking-linux-x86_64-cpu-development-2026-11-04.json`, which the
+docking envelope now cites.
 
 ## Progress log
 
@@ -518,6 +557,9 @@ ProLIF 2.2.3's packaged trajectory, Vina poses and interaction test molecules (A
   Fingerprint pages and pipeline steps, restart finalizers, unit tests (13), validator, lifecycle spec,
   catalog entry, signer-policy entry, CI workflow and release option written; Docked Complex added to
   the docking runner, page and pipeline; findings 20–23 recorded; validator passed (above).
+- 2026-11-04 — Docking validator rerun with Docked Complex (21 cases); the chain validator written and
+  passed on the GPU; findings 23–25; analysis validator rerun with the OpenMM trajectory (10 measured
+  runs). Phase 4B started: COBRApy feasibility, references and recipe.
 
 ## For the owner
 
@@ -533,8 +575,6 @@ ProLIF 2.2.3's packaged trajectory, Vina poses and interaction test molecules (A
 2. Production release (B3, B4): merge, signer redeploy, `runtime-box-release.yml` with
    `model_id=autodock-vina-molecular-docking`, `target_id=linux-x86_64-cpu`, `channel=beta`; then the
    publication commit (catalog, product catalog, docs, measurement from the production build).
-3. Rerun the docking validator for Docked Complex and transcribe its envelope sample; run
-   `scripts/validate-docking-simulation-chain.mjs` (Docking → Docked Complex → OpenMM CUDA in explicit
-   water → analysis) on this host's RTX 4060 Ti, then the analysis validator on that trajectory.
-4. Real-app lifecycle of the analysis tools on native Linux, then through WSL2 with item 1.
-5. Phase 4, in the order 4B COBRApy, 4A PySB + BioNetGen, 4C PhysiCell.
+3. Real-app lifecycle of Docked Complex and the analysis tools on native Linux, then through WSL2
+   with item 1.
+4. Phase 4, in the order 4B COBRApy, 4A PySB + BioNetGen, 4C PhysiCell.

@@ -287,7 +287,7 @@ print(json.dumps({'rows': rows}))
 
 // Bonds the runner's own function derives from distances against the bonds a file records.
 const BOND_PERCEPTION = String.raw`
-import importlib.util, json, sys, warnings
+import importlib.util, json, pathlib, sys, warnings
 warnings.filterwarnings('ignore')
 import MDAnalysis as mda
 p = json.load(sys.stdin)
@@ -296,7 +296,7 @@ product = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(product)
 recorded = mda.Universe(p['withBonds'])
 derived = mda.Universe(p['withoutBonds'])
-assert product.ensure_protein_bonds(derived, derived.select_atoms('protein')) == 'distance-derived'
+assert product.ensure_protein_bonds(derived, derived.select_atoms('protein'), pathlib.Path(p['withoutBonds'])) == 'distance-derived'
 def bonds(universe):
     atoms = set(universe.select_atoms('protein').indices)
     return sorted(sorted(map(int, pair)) for pair in universe.bonds.indices if set(map(int, pair)) <= atoms)

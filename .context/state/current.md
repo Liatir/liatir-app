@@ -20,8 +20,9 @@ crystal pose — integrated as Receptor Preparation, Molecular Docking and Docke
 real-app lifecycle on native Linux; Windows through WSL2 and publication are next. Phase 3: the
 `molecular-analysis` box (MDAnalysis, ProLIF) is scientifically validated the same way — its measures
 match an independent computation to 5 × 10⁻⁵ Å and ProLIF's 61 official test vectors pass — and
-integrated as Trajectory Analysis and Interaction Fingerprint; the Docking → OpenMM → analysis chain is
-next. Merging the branch requires a signer redeploy before any further Runtime Box release (the signer
+integrated as Trajectory Analysis and Interaction Fingerprint. The whole chain — dock imatinib, take
+the pose to OpenMM on the GPU in explicit water, analyse the trajectory — passes, with the crystal's
+hinge hydrogen bond held in every frame. Merging the branch requires a signer redeploy before any further Runtime Box release (the signer
 policy gains both boxes). GNINA is blocked on a redistribution decision. Work happens
 on branch `simulation-suite` in the WSL2 checkout `/home/lorenzo/liatir-stack-gate8-mcp`. The owner
 told the agent on 2026-11-03 to proceed autonomously without asking for permissions.

@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
   "kind": "liatir.molecular-analysis-scientific-validation",
-  "createdAt": "2026-11-04T09:46:23.133Z",
+  "createdAt": "2026-11-04T10:27:52.849Z",
   "status": "passed",
   "modelId": "mdanalysis-molecular-analysis",
   "sourceRevision": "mdanalysis-2.11.0+prolif-2.2.3+rdkit-2026.09.1",
   "targetId": "linux-x86_64-cpu",
-  "productRunnerSha256": "e465c6d88fd27e196cede53e33bb8e08bad5c465d266d554010a7e8425652b23",
+  "productRunnerSha256": "6876deda3c50300387013634b6e5ddbf62ad513e81e85898e751f37d0778a860",
   "cases": [
     {
       "id": "prolif-official-interaction-vectors",
@@ -23,8 +23,8 @@
         "outputItemCount": 250
       },
       "measurement": {
-        "elapsedMs": 2827,
-        "peakRamBytes": 158724096,
+        "elapsedMs": 2603,
+        "peakRamBytes": 154771456,
         "peakVramBytes": null,
         "vramMeasurementMethod": null,
         "vramDeviceBaselineBytes": null,
@@ -74,8 +74,8 @@
         "outputItemCount": 250
       },
       "measurement": {
-        "elapsedMs": 2669,
-        "peakRamBytes": 154951680,
+        "elapsedMs": 2580,
+        "peakRamBytes": 154681344,
         "peakVramBytes": null,
         "vramMeasurementMethod": null,
         "vramDeviceBaselineBytes": null,
@@ -125,8 +125,8 @@
         "outputItemCount": 36
       },
       "measurement": {
-        "elapsedMs": 2626,
-        "peakRamBytes": 155222016,
+        "elapsedMs": 2530,
+        "peakRamBytes": 154947584,
         "peakVramBytes": null,
         "vramMeasurementMethod": null,
         "vramDeviceBaselineBytes": null,
@@ -145,8 +145,8 @@
         "outputItemCount": 250
       },
       "measurement": {
-        "elapsedMs": 2716,
-        "peakRamBytes": 155049984,
+        "elapsedMs": 2654,
+        "peakRamBytes": 155004928,
         "peakVramBytes": null,
         "vramMeasurementMethod": null,
         "vramDeviceBaselineBytes": null,
@@ -165,8 +165,8 @@
         "outputItemCount": 250
       },
       "measurement": {
-        "elapsedMs": 196728,
-        "peakRamBytes": 282152960,
+        "elapsedMs": 183468,
+        "peakRamBytes": 282013696,
         "peakVramBytes": null,
         "vramMeasurementMethod": null,
         "vramDeviceBaselineBytes": null,
@@ -185,8 +185,8 @@
         "outputItemCount": 25
       },
       "measurement": {
-        "elapsedMs": 31331,
-        "peakRamBytes": 279863296,
+        "elapsedMs": 27826,
+        "peakRamBytes": 272515072,
         "peakVramBytes": null,
         "vramMeasurementMethod": null,
         "vramDeviceBaselineBytes": null,
@@ -205,8 +205,8 @@
         "outputItemCount": 9
       },
       "measurement": {
-        "elapsedMs": 3846,
-        "peakRamBytes": 250884096,
+        "elapsedMs": 3853,
+        "peakRamBytes": 250757120,
         "peakVramBytes": null,
         "vramMeasurementMethod": null,
         "vramDeviceBaselineBytes": null,
@@ -225,8 +225,8 @@
         "outputItemCount": 9
       },
       "measurement": {
-        "elapsedMs": 8405,
-        "peakRamBytes": 256012288,
+        "elapsedMs": 3626,
+        "peakRamBytes": 247701504,
         "peakVramBytes": null,
         "vramMeasurementMethod": null,
         "vramDeviceBaselineBytes": null,
@@ -333,6 +333,46 @@
       "message": "Interactions must be chosen from"
     },
     {
+      "id": "openmm-trajectory-analysis",
+      "metrics": {
+        "workloadId": "mdanalysis:trajectory-analysis",
+        "tokenCount": 3,
+        "atomCount": 61538,
+        "stepCount": 50,
+        "outputItemCount": 50
+      },
+      "measurement": {
+        "elapsedMs": 1545,
+        "peakRamBytes": 183484416,
+        "peakVramBytes": null,
+        "vramMeasurementMethod": null,
+        "vramDeviceBaselineBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 23741
+    },
+    {
+      "id": "openmm-trajectory-fingerprint",
+      "metrics": {
+        "workloadId": "prolif:trajectory-fingerprint",
+        "tokenCount": 9,
+        "atomCount": 61538,
+        "stepCount": 50,
+        "outputItemCount": 50
+      },
+      "measurement": {
+        "elapsedMs": 31275,
+        "peakRamBytes": 279973888,
+        "peakVramBytes": null,
+        "vramMeasurementMethod": null,
+        "vramDeviceBaselineBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 92754
+    },
+    {
       "id": "payload-unchanged-after-runs",
       "signedPayloadReverified": true
     }
@@ -345,9 +385,9 @@
       "maxAtomCount": 5067,
       "maxStepCount": 250,
       "maxOutputItemCount": 250,
-      "peakRamBytes": 158724096,
+      "peakRamBytes": 154771456,
       "peakVramBytes": null,
-      "elapsedMs": 2827,
+      "elapsedMs": 2603,
       "outputBytes": 74914
     },
     {
@@ -357,9 +397,9 @@
       "maxAtomCount": 5067,
       "maxStepCount": 250,
       "maxOutputItemCount": 250,
-      "peakRamBytes": 154951680,
+      "peakRamBytes": 154681344,
       "peakVramBytes": null,
-      "elapsedMs": 2669,
+      "elapsedMs": 2580,
       "outputBytes": 78462
     },
     {
@@ -369,9 +409,9 @@
       "maxAtomCount": 5067,
       "maxStepCount": 250,
       "maxOutputItemCount": 36,
-      "peakRamBytes": 155222016,
+      "peakRamBytes": 154947584,
       "peakVramBytes": null,
-      "elapsedMs": 2626,
+      "elapsedMs": 2530,
       "outputBytes": 28418
     },
     {
@@ -381,9 +421,9 @@
       "maxAtomCount": 5067,
       "maxStepCount": 250,
       "maxOutputItemCount": 250,
-      "peakRamBytes": 155049984,
+      "peakRamBytes": 155004928,
       "peakVramBytes": null,
-      "elapsedMs": 2716,
+      "elapsedMs": 2654,
       "outputBytes": 74914
     },
     {
@@ -393,9 +433,9 @@
       "maxAtomCount": 5067,
       "maxStepCount": 250,
       "maxOutputItemCount": 250,
-      "peakRamBytes": 282152960,
+      "peakRamBytes": 282013696,
       "peakVramBytes": null,
-      "elapsedMs": 196728,
+      "elapsedMs": 183468,
       "outputBytes": 388555
     },
     {
@@ -405,9 +445,9 @@
       "maxAtomCount": 5067,
       "maxStepCount": 250,
       "maxOutputItemCount": 25,
-      "peakRamBytes": 279863296,
+      "peakRamBytes": 272515072,
       "peakVramBytes": null,
-      "elapsedMs": 31331,
+      "elapsedMs": 27826,
       "outputBytes": 48407
     },
     {
@@ -417,9 +457,9 @@
       "maxAtomCount": 4988,
       "maxStepCount": 9,
       "maxOutputItemCount": 9,
-      "peakRamBytes": 250884096,
+      "peakRamBytes": 250757120,
       "peakVramBytes": null,
-      "elapsedMs": 3846,
+      "elapsedMs": 3853,
       "outputBytes": 19163
     },
     {
@@ -429,10 +469,34 @@
       "maxAtomCount": 4988,
       "maxStepCount": 9,
       "maxOutputItemCount": 9,
-      "peakRamBytes": 256012288,
+      "peakRamBytes": 247701504,
       "peakVramBytes": null,
-      "elapsedMs": 8405,
+      "elapsedMs": 3626,
       "outputBytes": 19171
+    },
+    {
+      "fixtureId": "openmm-trajectory-analysis",
+      "workloadId": "mdanalysis:trajectory-analysis",
+      "maxTokenCount": 3,
+      "maxAtomCount": 61538,
+      "maxStepCount": 50,
+      "maxOutputItemCount": 50,
+      "peakRamBytes": 183484416,
+      "peakVramBytes": null,
+      "elapsedMs": 1545,
+      "outputBytes": 23741
+    },
+    {
+      "fixtureId": "openmm-trajectory-fingerprint",
+      "workloadId": "prolif:trajectory-fingerprint",
+      "maxTokenCount": 9,
+      "maxAtomCount": 61538,
+      "maxStepCount": 50,
+      "maxOutputItemCount": 50,
+      "peakRamBytes": 279973888,
+      "peakVramBytes": null,
+      "elapsedMs": 31275,
+      "outputBytes": 92754
     }
   ],
   "runtimeEvidence": {
@@ -540,7 +604,105 @@
         "Hydrophobic"
       ]
     ],
-    "openmm": null
+    "openmm": {
+      "input": {
+        "complexSha256": "6d2bf809f2c6fba6e3b65dcf50872502279e58fd931bcff161fdabfe96f0fe40",
+        "ligandSha256": "2163af7db42365e6bdbbbc51461cd26254969708072196f36ea3280977d23743",
+        "trajectorySha256": "fadbe32e730a7a3de06ef4c9c78fe545c58e255b6f25560a118a70e72db3447c"
+      },
+      "rmsd": [
+        {
+          "label": "Protein C-alpha",
+          "selection": "protein and name CA",
+          "atoms": 274,
+          "minimum": 0,
+          "maximum": 1.4245,
+          "mean": 1.1346,
+          "final": 1.2515
+        },
+        {
+          "label": "Ligand",
+          "selection": "resname LIG and not element H",
+          "atoms": 37,
+          "minimum": 0,
+          "maximum": 1.8335,
+          "mean": 1.4256,
+          "final": 1.4512
+        }
+      ],
+      "mostFrequent": [
+        {
+          "ligandResidue": "LIG1.L",
+          "proteinResidue": "ASP381.A",
+          "interaction": "VdWContact",
+          "count": 50,
+          "fraction": 1
+        },
+        {
+          "ligandResidue": "LIG1.L",
+          "proteinResidue": "HIS361.A",
+          "interaction": "VdWContact",
+          "count": 50,
+          "fraction": 1
+        },
+        {
+          "ligandResidue": "LIG1.L",
+          "proteinResidue": "LYS271.A",
+          "interaction": "Hydrophobic",
+          "count": 50,
+          "fraction": 1
+        },
+        {
+          "ligandResidue": "LIG1.L",
+          "proteinResidue": "MET318.A",
+          "interaction": "HBAcceptor",
+          "count": 50,
+          "fraction": 1
+        },
+        {
+          "ligandResidue": "LIG1.L",
+          "proteinResidue": "MET318.A",
+          "interaction": "VdWContact",
+          "count": 50,
+          "fraction": 1
+        },
+        {
+          "ligandResidue": "LIG1.L",
+          "proteinResidue": "TYR253.A",
+          "interaction": "Hydrophobic",
+          "count": 50,
+          "fraction": 1
+        },
+        {
+          "ligandResidue": "LIG1.L",
+          "proteinResidue": "ASP381.A",
+          "interaction": "Hydrophobic",
+          "count": 49,
+          "fraction": 0.98
+        },
+        {
+          "ligandResidue": "LIG1.L",
+          "proteinResidue": "GLU286.A",
+          "interaction": "Hydrophobic",
+          "count": 49,
+          "fraction": 0.98
+        },
+        {
+          "ligandResidue": "LIG1.L",
+          "proteinResidue": "HIS361.A",
+          "interaction": "HBDonor",
+          "count": 49,
+          "fraction": 0.98
+        },
+        {
+          "ligandResidue": "LIG1.L",
+          "proteinResidue": "MET290.A",
+          "interaction": "Hydrophobic",
+          "count": 49,
+          "fraction": 0.98
+        }
+      ]
+    }
   },
   "measurementHost": {
     "platform": "linux",
@@ -548,12 +710,12 @@
     "osRelease": "6.18.33.2-microsoft-standard-WSL2",
     "cpuModel": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
     "logicalCpuCount": 6,
-    "totalMemoryBytes": 12543184896
+    "totalMemoryBytes": 12543180800
   },
   "validatorSource": {
-    "gitCommit": "34ba9f578633fca0573e187511710b9ca7049fe6",
+    "gitCommit": "b63583c3a270021bf0c548c9ec110fbd106677fe",
     "sourceTreeDirty": true,
-    "scriptSha256": "987a4c7633e0a64abe4adff9a4f0ff9be6f21f8aea92dc7a3eda843f6d5b7445",
+    "scriptSha256": "674283f832bbb153a787e762e094bcc0dd00fbb45c7556a6d6e9c61903291337",
     "measurementScriptSha256": "69b3d3ea2b3d8ea402477442b3b45fd64df884e5e1397b9f916a13fe8fa9832e",
     "fixturePreparationSha256": "f311a959c3136f4b635876c38601996ab474d77607895e8faac071894d29f409",
     "recipeSha256": "6af63008fed174b03024fe4def43638247a23ee853d46db37957ecc1ad547c6a"
@@ -580,7 +742,7 @@
       "kind": "cpu"
     },
     "finiteValues": true,
-    "peakRamBytes": 282152960,
+    "peakRamBytes": 282013696,
     "peakVramBytes": null,
     "outputContract": "passed",
     "provenanceContract": "passed"
