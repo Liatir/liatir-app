@@ -25,6 +25,13 @@ import {
   PROLIF_VERSION,
 } from "./molecular-analysis.js";
 import {
+  COBRAPY_VERSION,
+  HIGHS_VERSION,
+  METABOLIC_MODELING_BOX_ID,
+  METABOLIC_MODELING_RUNTIME_COMPONENT_ID,
+  METABOLIC_MODELING_RUNTIME_ID,
+} from "./metabolic-modeling.js";
+import {
   OPENMM_BOX_ID,
   OPENMM_RUNTIME_COMPONENT_ID,
   OPENMM_RUNTIME_ID,
@@ -322,6 +329,69 @@ export const MOLECULAR_ANALYSIS_RELEASE_CANDIDATE_METADATA: LiatirToolRuntimeMet
     officialUrl: "https://docs.mdanalysis.org/2.11.0/",
   },
   tags: ["runtime-box", "trajectory-analysis", "interaction-fingerprint", "mdanalysis", "prolif"],
+};
+
+/**
+ * Constraint-based metabolic modeling as a release candidate: COBRApy with HiGHS, confirmed by GLPK, in
+ * one Linux CPU box that also serves Windows through WSL2. It joins the catalog only once published;
+ * the installer requires every requirement here to equal the signed release's exactly.
+ */
+export const METABOLIC_MODELING_RELEASE_CANDIDATE_METADATA: LiatirToolRuntimeMetadata = {
+  id: METABOLIC_MODELING_RUNTIME_COMPONENT_ID,
+  name: "COBRApy 0.32.1 with HiGHS",
+  description: "Local flux balance and flux variability analysis, and single gene and reaction deletions, on genome-scale metabolic models.",
+  category: "Systems Biology",
+  version: COBRAPY_VERSION,
+  runtime: { kind: "python-venv", name: "Metabolic Modeling Runtime", version: "Python 3.11" },
+  localOnly: true,
+  install: {
+    method: "runtime-box",
+    runtimeId: METABOLIC_MODELING_RUNTIME_ID,
+    runtimePackages: [
+      { package: "cobra", specifier: `cobra==${COBRAPY_VERSION}`, importName: "cobra" },
+      { package: "optlang", specifier: "optlang==1.9.1", importName: "optlang" },
+      { package: "highspy", specifier: `highspy==${HIGHS_VERSION}`, importName: "highspy" },
+      { package: "swiglpk", specifier: "swiglpk==5.0.13", importName: "swiglpk" },
+    ],
+    runtimeBox: {
+      boxId: METABOLIC_MODELING_BOX_ID,
+      channel: "beta",
+      registryBaseUrl: "https://models.liatir.com/v1",
+      publishedTargets: [{
+        target: { platform: "linux", arch: "x86_64", accelerator: "cpu" },
+        hostEnvironments: ["native", "windows-wsl2"],
+        minRamGb: 4,
+      }],
+    },
+    hostRequirements: {
+      os: ["linux", "windows"],
+      arch: ["x86_64"],
+      reason: "Metabolic modeling runs on the CPU of a Linux x86_64 computer, natively or on Windows through WSL2. It is not available on macOS.",
+    },
+  },
+  license: {
+    name: "COBRApy LGPL-2.0-or-later with MIT HiGHS and GPL-3.0 GLPK",
+    spdxId: "LGPL-2.0-or-later AND Apache-2.0 AND MIT AND GPL-3.0-or-later",
+    url: "https://github.com/opencobra/cobrapy/blob/0.32.1/LICENSE",
+    verifiedAt: "2026-11-04",
+    components: [
+      { scope: "runtime", name: "COBRApy 0.32.1", spdxId: "LGPL-2.0-or-later", sourceUrl: "https://github.com/opencobra/cobrapy/tree/0.32.1" },
+      { scope: "runtime", name: "optlang 1.9.1", spdxId: "Apache-2.0", sourceUrl: "https://github.com/opencobra/optlang/tree/1.9.1" },
+      { scope: "runtime", name: "HiGHS 1.15.1", spdxId: "MIT", sourceUrl: "https://github.com/ERGO-Code/HiGHS" },
+      { scope: "runtime", name: "GLPK 5.0", spdxId: "GPL-3.0-or-later", sourceUrl: "https://www.gnu.org/software/glpk/" },
+    ],
+  },
+  hardware: {
+    cpu: true,
+    gpu: false,
+    minRamGb: 4,
+    notes: "Runs on the CPU only. Run time and memory are estimated from retained measurements of this exact release.",
+  },
+  documentation: {
+    liatirPath: "/tools/metabolic-modeling",
+    officialUrl: "https://cobrapy.readthedocs.io/en/0.32.1/",
+  },
+  tags: ["runtime-box", "metabolic-modeling", "flux-balance-analysis", "cobrapy", "highs"],
 };
 
 /**

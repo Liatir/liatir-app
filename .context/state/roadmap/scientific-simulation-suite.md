@@ -244,6 +244,19 @@ Each was checked, not inferred; the evidence is named.
     ProLIF's donor-angle criterion assigns it to Ile360 (2.67 Å) and records His361 (3.19 Å) as a van
     der Waals contact. The chain validator holds the five hydrogen bonds a single-hydrogen rule can
     see, plus that contact.
+26. **COBRApy reaches HiGHS only through optlang's hybrid interface**, which also needs OSQP: COBRApy
+    0.32.1 does not know a solver called `highs`, and `hybrid` exists only once `osqp` (Apache-2.0) is
+    installed. The box adds OSQP 1.1.3; HiGHS solves the linear problems.
+27. **COBRApy creates `~/.cache/cobrapy` when it is imported**, in the user's home. The runner points
+    `XDG_CACHE_HOME` at a temporary directory before importing it. Scrollcase imports a box's listed
+    modules before its self-test code runs, so COBRApy is left off that list.
+28. **HiGHS returns the same solution on every run, but its last bits vary by about 1e-14**; GLPK is
+    bit-identical. Reproducibility is held to the precision the runner reports (nine significant
+    digits, values below 1e-9 written as zero), not to identical bytes.
+29. **Two floating-point solvers can disagree where a problem is degenerate.** At 100 % of the optimum
+    on iJO1366, GLPK let OPHHX3 carry 2.2e-4 where HiGHS found 1e-10; GLPK's exact rational simplex
+    gives 0. The runner settles any value the two disagree on in exact arithmetic (at most 200 per run,
+    otherwise it refuses) and reports which; a value exact arithmetic does not confirm is refused.
 
 ## Licensing and redistribution review
 
@@ -401,7 +414,7 @@ component.
 - **B3 — Signer policy.** Each new box needs an entry in `services/runtime-box-signer/policy.json`
   and a signer redeploy before a production signature: a remote, authorized action.
 - **B3 now applies on this branch**: `services/runtime-box-signer/policy.json` lists
-  `molecular-docking` and `molecular-analysis`. Merging it into `main` makes the deployed signer stale for every box until
+  `molecular-docking`, `molecular-analysis` and `metabolic-modeling`. Merging it into `main` makes the deployed signer stale for every box until
   `runtime-box-signer-deploy.yml` runs (`verify-signer-policy` compares the whole policy).
 - **B4 — Publication.** Production releases run `runtime-box-release.yml` on this machine's
   self-hosted runner from `main`; merging, pushing and releasing each need the owner's explicit go.
@@ -443,7 +456,7 @@ component.
 | MDAnalysis, ProLIF | SCIENTIFICALLY VALIDATED on a development-signed build; product lifecycle and publication pending | `runtime-boxes/measurements/molecular-analysis-linux-x86_64-cpu-development-2026-11-04.json` |
 | Docked Complex (docking box) | SCIENTIFICALLY VALIDATED on the development build; real-app lifecycle pending | `runtime-boxes/measurements/molecular-docking-linux-x86_64-cpu-development-2026-11-04.json`, `runtime-boxes/measurements/docking-simulation-chain-development-2026-11-04.json` |
 | PySB, BioNetGen | not started | resolves (finding 10) |
-| COBRApy | not started | resolves (finding 11) |
+| COBRApy | SCIENTIFICALLY VALIDATED on a development-signed build; real-app lifecycle and publication pending | `runtime-boxes/measurements/metabolic-modeling-linux-x86_64-cpu-development-2026-11-04.json` |
 | PhysiCell | not started; B2 open | finding 12 |
 
 ## Phase 2 evidence (development build, 2026-11-03)
@@ -536,6 +549,29 @@ another receptor and an absent pose refused; record
 `runtime-boxes/measurements/molecular-docking-linux-x86_64-cpu-development-2026-11-04.json`, which the
 docking envelope now cites.
 
+## Phase 4B evidence (development build, 2026-11-04)
+
+Box `metabolic-modeling` `0.32.1-beta.1` / `linux-x86_64-cpu`, lock `66e2fabe…`, 95 packages: COBRApy
+0.32.1, optlang 1.9.1, HiGHS 1.15.1 (default solver), OSQP 1.1.3, GLPK 5.0 (cross-check), libSBML
+5.21.2, Python 3.11.18. Signed with the WSL2 development key: archive `f64a1fd8…`, 208.6 MB,
+installed 715 MB. The validator `scripts/validate-metabolic-modeling-runtime.mjs` ran the product's
+runner in the signed payload, every run confirmed by GLPK: **passed**, record `runtime-boxes/measurements/metabolic-modeling-linux-x86_64-cpu-development-2026-11-04.json`.
+
+| Check | Reference | Result |
+| --- | --- | --- |
+| FBA, E. coli core (`textbook`) | COBRApy's documented 0.8739215069684307 | within 1e-9; SBML and COBRA JSON equal |
+| FVA, all 95 reactions | COBRApy 0.32.1 `tests/data/textbook_fva.json` | every value within np.allclose |
+| Repeated FVA | — | agrees within 0.0e+00 |
+| Single gene deletions | COBRApy's 7 essential genes and 5 pinned growth values | identical set, values within 0.01 |
+| Single reaction deletions | COBRApy's 18 essential reactions and 6 pinned values | identical set, values within 1e-5 |
+| Minimized glucose uptake at 95 % of the optimum | COBRApy's test: −10 to −9.5 | exact |
+| iJO1366 (2,583 reactions, 1,367 genes) | HiGHS against GLPK | FBA 0.98237181; FVA 579 s with 1 value settled in exact arithmetic for HiGHS (finding 29); gene deletions 176 s, 208 essential |
+| Refusals | — | no glucose (infeasible), unknown reaction, gene or objective, inverted bounds, DOCTYPE/ENTITY, truncated gzip, non-SBML XML, non-model JSON, gene deletion without gene products, MATLAB format |
+| Nothing written outside the run | — | the home directory stays empty; the signed payload re-verifies |
+
+Peak memory 547 MB. Reference data ships in COBRApy; the FVA table is committed as
+`runtime-boxes/fixtures/metabolic/cobrapy-0.32.1-textbook-fva.json`.
+
 ## Progress log
 
 - 2026-11-03 — Phase 1. Context read; WSL2 host and toolchain measured; Linux checkout brought to
@@ -560,6 +596,9 @@ docking envelope now cites.
 - 2026-11-04 — Docking validator rerun with Docked Complex (21 cases); the chain validator written and
   passed on the GPU; findings 23–25; analysis validator rerun with the OpenMM trajectory (10 measured
   runs). Phase 4B started: COBRApy feasibility, references and recipe.
+- 2026-11-04 — Phase 4B: metabolic box built and validated (above); runner, contract, release
+  candidate, Metabolic Modeling page and pipeline step, restart finalizer, unit tests, lifecycle spec,
+  catalog and signer-policy entries, CI workflow and release option; findings 26–29.
 
 ## For the owner
 
@@ -577,4 +616,5 @@ docking envelope now cites.
    publication commit (catalog, product catalog, docs, measurement from the production build).
 3. Real-app lifecycle of Docked Complex and the analysis tools on native Linux, then through WSL2
    with item 1.
-4. Phase 4, in the order 4B COBRApy, 4A PySB + BioNetGen, 4C PhysiCell.
+4. Real-app lifecycle of Metabolic Modeling.
+5. Phase 4A PySB + BioNetGen, then 4C PhysiCell (B2).

@@ -17,6 +17,7 @@
   import {
     BOLTZ_2_MODEL_ID,
     LIATIR_TOOL_RUNTIME_CATALOG,
+    METABOLIC_MODELING_RUNTIME_COMPONENT_ID,
     MOLECULAR_ANALYSIS_RUNTIME_COMPONENT_ID,
     MOLECULAR_DOCKING_RUNTIME_COMPONENT_ID,
     OPENMM_RUNTIME_COMPONENT_ID,
@@ -48,6 +49,10 @@
   );
   const dockingPublished = LIATIR_TOOL_RUNTIME_CATALOG.some(
     (runtime) => runtime.id === MOLECULAR_DOCKING_RUNTIME_COMPONENT_ID
+      && runtime.install.runtimeBox.publishedTargets.length > 0,
+  );
+  const metabolicPublished = LIATIR_TOOL_RUNTIME_CATALOG.some(
+    (runtime) => runtime.id === METABOLIC_MODELING_RUNTIME_COMPONENT_ID
       && runtime.install.runtimeBox.publishedTargets.length > 0,
   );
   const analysisPublished = LIATIR_TOOL_RUNTIME_CATALOG.some(
@@ -256,6 +261,15 @@
       status: analysisPublished ? 'available' : 'soon',
       tags: ['Hydrogen bonds', 'Contacts', 'ProLIF', 'Docking', 'Trajectory'],
       category: 'Molecular Simulation',
+    },
+    {
+      id: 'metabolic-modeling',
+      label: 'Metabolic Modeling',
+      description: 'Predict growth and metabolic fluxes from a genome-scale model, and which genes it cannot do without.',
+      ...(metabolicPublished ? { href: '/tools/metabolic-modeling' } : {}),
+      status: metabolicPublished ? 'available' : 'soon',
+      tags: ['SBML', 'FBA', 'FVA', 'Gene essentiality', 'COBRApy'],
+      category: 'Systems Biology',
     },
     {
       id: 'biomolecular-structure-prediction',

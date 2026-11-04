@@ -720,6 +720,7 @@ export * from "./tool-runtime-catalog.js";
 export * from "./complex-spec.js";
 export * from "./structure-simulation.js";
 export * from "./structure-draft.js";
+export * from "./metabolic-modeling.js";
 export * from "./molecular-analysis.js";
 export * from "./molecular-docking.js";
 

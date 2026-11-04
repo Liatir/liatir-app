@@ -56,6 +56,7 @@ describe('Runtime Box CI catalog', () => {
       'openmm-openmm/linux-x86_64-cuda12.9',
       'autodock-vina-molecular-docking/linux-x86_64-cpu',
       'mdanalysis-molecular-analysis/linux-x86_64-cpu',
+      'cobrapy-metabolic-modeling/linux-x86_64-cpu',
       'jwohlwend-boltz-2/linux-x86_64-cuda12.9',
       'bytedance-protenix-base-v1-0-0/linux-x86_64-cuda12.6',
     ]);

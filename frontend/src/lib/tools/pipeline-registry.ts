@@ -34,6 +34,7 @@ import {
   runTrajectoryAnalysisStep,
   trajectoryAnalysisDefinition,
 } from './molecular-analysis/analysis';
+import { metabolicModelingDefinition, runMetabolicModelingStep } from './metabolic-modeling/metabolic';
 import {
   runSimpleafIndexStep,
   runSimpleafQuantStep,
@@ -62,6 +63,7 @@ import {
 import type { JsonValue } from '@liatir/core';
 import {
   LIATIR_TOOL_RUNTIME_CATALOG,
+  METABOLIC_MODELING_RUNTIME_COMPONENT_ID,
   MHCFLURRY_CLASS1_PRESENTATION_MODEL_ID,
   MOLECULAR_ANALYSIS_RUNTIME_COMPONENT_ID,
   MOLECULAR_DOCKING_RUNTIME_COMPONENT_ID,
@@ -595,6 +597,7 @@ export const PIPELINE_REGISTRY: Record<string, PipelineRegistryEntry> = {
   'docking-selected-complex': { definition: dockedComplexDefinition, run: runDockedComplexStep },
   'trajectory-analysis': { definition: trajectoryAnalysisDefinition, run: runTrajectoryAnalysisStep },
   'interaction-fingerprint': { definition: interactionFingerprintDefinition, run: runInteractionFingerprintStep },
+  'metabolic-modeling': { definition: metabolicModelingDefinition, run: runMetabolicModelingStep },
   'viewer-structure-3d': { definition: structureViewerDefinition, run: runStructureViewerStep },
   'viewer-genome-track': { definition: genomeViewerDefinition, run: runGenomeViewerStep },
   'viewer-single-cell': { definition: singleCellViewerDefinition, run: runSingleCellViewerStep },
@@ -682,6 +685,9 @@ export function allStepDefinitions(): PipelineStepDefinition[] {
     if (runtime.id === MOLECULAR_ANALYSIS_RUNTIME_COMPONENT_ID) {
       publishedToolRuntimeSteps.add(trajectoryAnalysisDefinition.id);
       publishedToolRuntimeSteps.add(interactionFingerprintDefinition.id);
+    }
+    if (runtime.id === METABOLIC_MODELING_RUNTIME_COMPONENT_ID) {
+      publishedToolRuntimeSteps.add(metabolicModelingDefinition.id);
     }
   }
   return [
