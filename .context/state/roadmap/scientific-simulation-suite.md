@@ -455,7 +455,10 @@ component.
 
 ## Blockers and risks
 
-- **B1 — GNINA redistribution (BLOCKED, owner decision).** The official binary is GPL-2.0 as a
+- **B1 — GNINA redistribution. Decided 2026-11-04:** the box fetches GNINA's official binary at
+  install, from its GitHub release, pinned by size and SHA-256; Liatir never redistributes it
+  ([decision](../../decisions/gnina-binary-fetched-at-install.md)). It needs Liatir's installer to
+  download on-demand assets, which it does not do yet. The original note follows. The official binary is GPL-2.0 as a
   whole and is distributed together with NVIDIA libraries. Before Liatir redistributes it, inspect
   what the binary links statically, establish whether the result can be distributed under GPL-2.0 at
   all, and choose a delivery mode from the workbench plan's list: a signed box with the binary and its
@@ -526,7 +529,7 @@ component.
 | Component | Status | Evidence |
 | --- | --- | --- |
 | Vina, RDKit, Meeko, PDBFixer, Ringtail | SCIENTIFICALLY VALIDATED and PRODUCT VALIDATED on native Linux (development build); Windows through WSL2 and publication pending | `runtime-boxes/measurements/molecular-docking-linux-x86_64-cpu-development-2026-11-03.json`, `runtime-boxes/measurements/molecular-docking-linux-x86_64-cpu-product-lifecycle-development-2026-11-03.json` |
-| GNINA | BLOCKED (B1) | finding 8 |
+| GNINA | Decided (B1): official binary fetched at install; not started | finding 8, [decision](../../decisions/gnina-binary-fetched-at-install.md) |
 | MDAnalysis, ProLIF | SCIENTIFICALLY VALIDATED and PRODUCT VALIDATED on native Linux (development build); Windows through WSL2 and publication pending | `runtime-boxes/measurements/molecular-analysis-linux-x86_64-cpu-development-2026-11-04.json`, `runtime-boxes/measurements/molecular-analysis-linux-x86_64-cpu-product-lifecycle-development-2026-11-04.json` |
 | Docked Complex (docking box) | SCIENTIFICALLY VALIDATED and PRODUCT VALIDATED on native Linux (development build); Windows through WSL2 and publication pending | `runtime-boxes/measurements/molecular-docking-linux-x86_64-cpu-development-2026-11-04.json`, `runtime-boxes/measurements/docking-simulation-chain-development-2026-11-04.json` |
 | PySB, BioNetGen | SCIENTIFICALLY VALIDATED on the development build's directory; the installed box cannot start BioNetGen (B5) | `runtime-boxes/measurements/biochemical-simulation-linux-x86_64-cpu-development-2026-11-04.json` |
@@ -773,8 +776,8 @@ Record `runtime-boxes/measurements/physicell-linux-x86_64-cpu-product-lifecycle-
 
 ## Next concrete actions
 
-0. **Before the suite closes, discuss B1 (GNINA's redistribution) with the owner** — their request
-   of 2026-11-04. GNINA stays blocked until then; nothing about it is decided by default.
+0. GNINA (B1, decided): on-demand assets in Liatir's installer, then the GNINA box and its
+   rescoring tool, validated on this machine's GPU.
 
 1. The Windows-through-WSL2 lifecycle with a Windows test app built with the same candidate (the
    only build outside WSL2 the plan allows: the product shell, not a scientific component).
