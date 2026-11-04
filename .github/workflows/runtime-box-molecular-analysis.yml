@@ -1,0 +1,68 @@
+name: Runtime Box Molecular Analysis
+
+on:
+  pull_request:
+    paths:
+      - "runtime-boxes/catalog.json"
+      - "runtime-boxes/scrolls/molecular-analysis/linux-x86_64-cpu/**"
+      - "runtime-boxes/scrolls/molecular-analysis/self-test.py"
+      - "runtime-boxes/legal/audits/molecular-analysis-linux-x86_64-cpu.json"
+      - "runtime-boxes/legal/molecular-analysis.md"
+      - "scripts/validate-molecular-analysis-runtime.mjs"
+      - "scripts/runtime-box/evidence.mjs"
+      - "scripts/runtime-box/measure-python.py"
+      - "scripts/runtime-box-ci.mjs"
+      - "scripts/runtime-box/validator-context.mjs"
+      - "scripts/install-runtime-box-linux-product-deps.sh"
+      - "frontend/src/lib/tools/molecular-analysis/python-scripts/analysis.ts"
+      - "tests/e2e/specs/runtime-box-molecular-analysis-native.e2e.mjs"
+      - ".github/workflows/_runtime-box-validate.yml"
+      - ".github/workflows/runtime-box-molecular-analysis.yml"
+  push:
+    branches: [main]
+    paths:
+      - "runtime-boxes/catalog.json"
+      - "runtime-boxes/scrolls/molecular-analysis/linux-x86_64-cpu/**"
+      - "runtime-boxes/scrolls/molecular-analysis/self-test.py"
+      - "runtime-boxes/legal/audits/molecular-analysis-linux-x86_64-cpu.json"
+      - "runtime-boxes/legal/molecular-analysis.md"
+      - "scripts/validate-molecular-analysis-runtime.mjs"
+      - "scripts/runtime-box/evidence.mjs"
+      - "scripts/runtime-box/measure-python.py"
+      - "scripts/runtime-box-ci.mjs"
+      - "scripts/runtime-box/validator-context.mjs"
+      - "scripts/install-runtime-box-linux-product-deps.sh"
+      - "frontend/src/lib/tools/molecular-analysis/python-scripts/analysis.ts"
+      - "tests/e2e/specs/runtime-box-molecular-analysis-native.e2e.mjs"
+      - ".github/workflows/_runtime-box-validate.yml"
+      - ".github/workflows/runtime-box-molecular-analysis.yml"
+  workflow_dispatch:
+    inputs:
+      target_id:
+        description: Checked Runtime Box target
+        required: true
+        type: choice
+        options:
+          - linux-x86_64-cpu
+      mode:
+        description: Native validation depth
+        required: true
+        default: build
+        type: choice
+        options: [build, scientific, native-lifecycle]
+
+concurrency:
+  group: runtime-box-molecular-analysis-${{ inputs.target_id || 'linux-x86_64-cpu' }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    uses: ./.github/workflows/_runtime-box-validate.yml
+    with:
+      model_id: mdanalysis-molecular-analysis
+      target_id: ${{ inputs.target_id || 'linux-x86_64-cpu' }}
+      mode: ${{ inputs.mode || 'build' }}
+      native_requested: ${{ github.event_name == 'workflow_dispatch' }}

@@ -18,6 +18,13 @@ import {
   MOLECULAR_DOCKING_RUNTIME_ID,
 } from "./molecular-docking.js";
 import {
+  MDANALYSIS_VERSION,
+  MOLECULAR_ANALYSIS_BOX_ID,
+  MOLECULAR_ANALYSIS_RUNTIME_COMPONENT_ID,
+  MOLECULAR_ANALYSIS_RUNTIME_ID,
+  PROLIF_VERSION,
+} from "./molecular-analysis.js";
+import {
   OPENMM_BOX_ID,
   OPENMM_RUNTIME_COMPONENT_ID,
   OPENMM_RUNTIME_ID,
@@ -254,6 +261,67 @@ export const MOLECULAR_DOCKING_RELEASE_CANDIDATE_METADATA: LiatirToolRuntimeMeta
     officialUrl: "https://autodock-vina.readthedocs.io/en/latest/",
   },
   tags: ["runtime-box", "docking", "virtual-screening", "autodock-vina", "meeko", "pdbfixer", "ringtail"],
+};
+
+/**
+ * Trajectory analysis and interaction fingerprints as a release candidate: MDAnalysis and ProLIF in one
+ * Linux CPU box that also serves Windows through WSL2. It joins the catalog only once published; the
+ * installer requires every requirement here to equal the signed release's exactly.
+ */
+export const MOLECULAR_ANALYSIS_RELEASE_CANDIDATE_METADATA: LiatirToolRuntimeMetadata = {
+  id: MOLECULAR_ANALYSIS_RUNTIME_COMPONENT_ID,
+  name: "MDAnalysis 2.11.0 and ProLIF 2.2.3",
+  description: "Local trajectory analysis (RMSD, RMSF, distances) and protein-ligand interaction fingerprints for simulations and docked poses.",
+  category: "Molecular Analysis",
+  version: MDANALYSIS_VERSION,
+  runtime: { kind: "python-venv", name: "Molecular Analysis Runtime", version: "Python 3.11" },
+  localOnly: true,
+  install: {
+    method: "runtime-box",
+    runtimeId: MOLECULAR_ANALYSIS_RUNTIME_ID,
+    runtimePackages: [
+      { package: "MDAnalysis", specifier: `MDAnalysis==${MDANALYSIS_VERSION}`, importName: "MDAnalysis" },
+      { package: "prolif", specifier: `prolif==${PROLIF_VERSION}`, importName: "prolif" },
+      { package: "rdkit", specifier: "rdkit==2026.9.1", importName: "rdkit" },
+    ],
+    runtimeBox: {
+      boxId: MOLECULAR_ANALYSIS_BOX_ID,
+      channel: "beta",
+      registryBaseUrl: "https://models.liatir.com/v1",
+      publishedTargets: [{
+        target: { platform: "linux", arch: "x86_64", accelerator: "cpu" },
+        hostEnvironments: ["native", "windows-wsl2"],
+        minRamGb: 4,
+      }],
+    },
+    hostRequirements: {
+      os: ["linux", "windows"],
+      arch: ["x86_64"],
+      reason: "Molecular analysis runs on the CPU of a Linux x86_64 computer, natively or on Windows through WSL2. It is not available on macOS.",
+    },
+  },
+  license: {
+    name: "MDAnalysis LGPL-3.0-or-later with Apache-2.0 ProLIF",
+    spdxId: "LGPL-3.0-or-later AND Apache-2.0 AND BSD-3-Clause",
+    url: "https://github.com/MDAnalysis/mdanalysis/blob/package-2.11.0/LICENSE",
+    verifiedAt: "2026-11-03",
+    components: [
+      { scope: "runtime", name: "MDAnalysis 2.11.0", spdxId: "LGPL-3.0-or-later", sourceUrl: "https://github.com/MDAnalysis/mdanalysis/tree/package-2.11.0" },
+      { scope: "runtime", name: "ProLIF 2.2.3", spdxId: "Apache-2.0", sourceUrl: "https://github.com/chemosim-lab/ProLIF/tree/v2.2.3" },
+      { scope: "runtime", name: "RDKit 2026.09.1", spdxId: "BSD-3-Clause", sourceUrl: "https://github.com/rdkit/rdkit/tree/Release_2026_09_1" },
+    ],
+  },
+  hardware: {
+    cpu: true,
+    gpu: false,
+    minRamGb: 4,
+    notes: "Runs on the CPU only. Run time and memory are estimated from retained measurements of this exact release.",
+  },
+  documentation: {
+    liatirPath: "/tools/molecular-analysis",
+    officialUrl: "https://docs.mdanalysis.org/2.11.0/",
+  },
+  tags: ["runtime-box", "trajectory-analysis", "interaction-fingerprint", "mdanalysis", "prolif"],
 };
 
 /**

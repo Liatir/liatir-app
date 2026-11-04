@@ -21,11 +21,19 @@ import {
   runMolecularRelaxationStep,
 } from './molecular-simulation/openmm';
 import {
+  dockedComplexDefinition,
   molecularDockingDefinition,
   receptorPreparationDefinition,
+  runDockedComplexStep,
   runMolecularDockingStep,
   runReceptorPreparationStep,
 } from './molecular-docking/docking';
+import {
+  interactionFingerprintDefinition,
+  runInteractionFingerprintStep,
+  runTrajectoryAnalysisStep,
+  trajectoryAnalysisDefinition,
+} from './molecular-analysis/analysis';
 import {
   runSimpleafIndexStep,
   runSimpleafQuantStep,
@@ -55,6 +63,7 @@ import type { JsonValue } from '@liatir/core';
 import {
   LIATIR_TOOL_RUNTIME_CATALOG,
   MHCFLURRY_CLASS1_PRESENTATION_MODEL_ID,
+  MOLECULAR_ANALYSIS_RUNTIME_COMPONENT_ID,
   MOLECULAR_DOCKING_RUNTIME_COMPONENT_ID,
   OPENMM_RUNTIME_COMPONENT_ID,
   PVACTOOLS_RUNTIME_COMPONENT_ID,
@@ -583,6 +592,9 @@ export const PIPELINE_REGISTRY: Record<string, PipelineRegistryEntry> = {
   'molecular-dynamics': { definition: molecularDynamicsDefinition, run: runMolecularDynamicsStep },
   'docking-receptor-preparation': { definition: receptorPreparationDefinition, run: runReceptorPreparationStep },
   'molecular-docking': { definition: molecularDockingDefinition, run: runMolecularDockingStep },
+  'docking-selected-complex': { definition: dockedComplexDefinition, run: runDockedComplexStep },
+  'trajectory-analysis': { definition: trajectoryAnalysisDefinition, run: runTrajectoryAnalysisStep },
+  'interaction-fingerprint': { definition: interactionFingerprintDefinition, run: runInteractionFingerprintStep },
   'viewer-structure-3d': { definition: structureViewerDefinition, run: runStructureViewerStep },
   'viewer-genome-track': { definition: genomeViewerDefinition, run: runGenomeViewerStep },
   'viewer-single-cell': { definition: singleCellViewerDefinition, run: runSingleCellViewerStep },
@@ -665,6 +677,11 @@ export function allStepDefinitions(): PipelineStepDefinition[] {
     if (runtime.id === MOLECULAR_DOCKING_RUNTIME_COMPONENT_ID) {
       publishedToolRuntimeSteps.add(receptorPreparationDefinition.id);
       publishedToolRuntimeSteps.add(molecularDockingDefinition.id);
+      publishedToolRuntimeSteps.add(dockedComplexDefinition.id);
+    }
+    if (runtime.id === MOLECULAR_ANALYSIS_RUNTIME_COMPONENT_ID) {
+      publishedToolRuntimeSteps.add(trajectoryAnalysisDefinition.id);
+      publishedToolRuntimeSteps.add(interactionFingerprintDefinition.id);
     }
   }
   return [

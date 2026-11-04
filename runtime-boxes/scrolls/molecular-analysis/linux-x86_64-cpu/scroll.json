@@ -40,7 +40,7 @@
     {
       "sourcePath": "runtime-boxes/scrolls/molecular-analysis/self-test.py",
       "relativePath": "self-tests/molecular-analysis.py",
-      "sha256": "df84675a1ff09296f5e600c42c3c4876d9fe746095b8d4579bd1c05bd7be7ca7"
+      "sha256": "1aec249948f5a8e403c9de4814f111db4605da606a65126f9ed4b9f2df65b5c4"
     }
   ],
   "prunePaths": [

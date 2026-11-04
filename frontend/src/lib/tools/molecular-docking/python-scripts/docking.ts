@@ -443,6 +443,49 @@ def preflight_receptor(payload):
     }
 
 
+def sdf_properties(lines):
+    """The data items of one SDF record, by name."""
+    values = {}
+    for index, line in enumerate(lines[:-1]):
+        # A data header is ">  <name>", which some writers follow with the record number.
+        start = line.find("<") + 1
+        end = line.find(">", start)
+        if line.startswith(">") and start > 0 and end > start:
+            values[line[start:end]] = lines[index + 1].strip()
+    return values
+
+
+def preflight_select_complex(payload):
+    poses, poses_bytes = checked_file(payload.get("posesSdf"), "Docked poses", MAX_LIGAND_LIBRARY_BYTES, (".sdf",))
+    structure, structure_bytes = checked_file(payload.get("receptorStructure"), "Prepared receptor",
+                                              MAX_STRUCTURE_BYTES, (".pdb",))
+    receptor, receptor_bytes = checked_file(payload.get("receptorPdbqt"), "Receptor PDBQT", MAX_RECEPTOR_PDBQT_BYTES,
+                                            (".pdbqt",))
+    available = []
+    for lines in sdf_blocks(poses):
+        properties = sdf_properties(lines)
+        if "liatir_ligand" in properties and "liatir_pose_rank" in properties:
+            score = properties.get("vina_score_kcal_per_mol")
+            available.append({"ligand": properties["liatir_ligand"],
+                              "poseRank": integer(properties["liatir_pose_rank"], "Pose rank", 1),
+                              "scoreKcalPerMol": finite_number(score, "Vina score") if score else None})
+    if not available:
+        fail("These poses do not come from Liatir's Molecular Docking; select a complex from its docked poses.")
+    return {
+        "schemaVersion": 1,
+        "kind": "liatir.molecular-docking-preflight",
+        "action": "select-complex",
+        "workloadId": "docking:select-complex",
+        "tokenCount": 1,
+        "atomCount": structure_summary(structure)["atoms"],
+        "stepCount": 1,
+        "outputItemCount": 1,
+        "poses": available[:1000],
+        "inputBytes": poses_bytes + structure_bytes + receptor_bytes,
+        "networkAccess": False,
+    }
+
+
 # ── receptor preparation ────────────────────────────────────────────────────
 
 def residue_label(residue, chains):
@@ -863,6 +906,71 @@ def write_complex(Chem, structure, pose, output_path):
     return {"chain": chain, "receptorAtoms": serial, "ligandAtoms": ligand.GetNumAtoms()}
 
 
+def select_complex(payload, output_dir):
+    """One docked pose with its receptor, written as the two files a molecular simulation starts from.
+
+    The pose must record the receptor PDBQT it was docked into, and the receptor structure must be the
+    one that PDBQT was written from, so the complex places the ligand where it was actually docked.
+    """
+    poses_path, _ = checked_file(payload.get("posesSdf"), "Docked poses", MAX_LIGAND_LIBRARY_BYTES, (".sdf",))
+    receptor, _ = checked_file(payload.get("receptorPdbqt"), "Receptor PDBQT", MAX_RECEPTOR_PDBQT_BYTES, (".pdbqt",))
+    structure, _ = checked_file(payload.get("receptorStructure"), "Prepared receptor", MAX_STRUCTURE_BYTES, (".pdb",))
+    ligand = str(payload.get("ligand") or "").strip()
+    if not ligand:
+        fail("Choose the docked ligand to take into a simulation.")
+    rank = integer(payload.get("poseRank", 1), "Pose rank", 1)
+    check_receptor_structure(structure, receptor)
+    from rdkit import Chem, RDLogger
+    RDLogger.DisableLog("rdApp.*")
+    matches = []
+    for index, molecule in enumerate(Chem.SDMolSupplier(str(poses_path), removeHs=False, sanitize=True)):
+        if molecule is None:
+            fail("Docked pose %d could not be read." % (index + 1))
+        if (molecule.HasProp("liatir_ligand") and molecule.GetProp("liatir_ligand") == ligand
+                and molecule.HasProp("liatir_pose_rank") and molecule.GetProp("liatir_pose_rank") == str(rank)):
+            matches.append(molecule)
+    if len(matches) != 1:
+        fail("The docked poses hold %d poses of %s at rank %d; choose a ligand and rank from this docking run."
+             % (len(matches), ligand, rank))
+    pose = matches[0]
+    if not pose.HasProp("liatir_receptor_pdbqt_sha256"):
+        fail("These poses do not record the receptor they were docked into; dock them again to select a complex.")
+    if pose.GetProp("liatir_receptor_pdbqt_sha256") != sha256_file(receptor):
+        fail("These poses were not docked into this receptor PDBQT.")
+    if Chem.AddHs(pose).GetNumAtoms() != pose.GetNumAtoms():
+        fail("The pose lacks hydrogens, and a simulation needs every one; dock with ligand hydrogens added.")
+    complex_path = output_dir / "docked-complex.pdb"
+    facts = write_complex(Chem, structure, pose, complex_path)
+    if facts is None:
+        fail("The complex exceeds the 99,999 atoms a PDB file can number.")
+    ligand_path = output_dir / "docked-ligand.sdf"
+    writer = Chem.SDWriter(str(ligand_path))
+    writer.write(pose)
+    writer.close()
+    summary = {
+        "schemaVersion": 1,
+        "kind": "liatir.docked-complex-summary",
+        "runtimeId": RUNTIME_ID,
+        "runtimeBoxRelease": payload.get("runtimeBoxRelease"),
+        "targetId": payload.get("targetId"),
+        "versions": versions(),
+        "ligand": ligand,
+        "poseRank": rank,
+        "scoreKcalPerMol": float(pose.GetProp("vina_score_kcal_per_mol")),
+        "smiles": pose.GetProp("liatir_input_smiles") if pose.HasProp("liatir_input_smiles") else None,
+        "complex": facts,
+        "receptorPdbqtSha256": pose.GetProp("liatir_receptor_pdbqt_sha256"),
+        "posesSha256": sha256_file(poses_path),
+        "networkAccess": False,
+        "hardwareEstimate": payload.get("hardwareEstimate"),
+    }
+    summary_path = output_dir / "docked-complex.json"
+    write_json_atomic(summary_path, summary)
+    return {"schemaVersion": 1, "kind": "liatir.molecular-docking-result", "action": "select-complex",
+            "paths": {"complexPdb": str(complex_path), "ligandSdf": str(ligand_path), "summaryJson": str(summary_path)},
+            "summary": summary}
+
+
 def ingest_in_fresh_process(output_dir, request):
     """Stores Vina results with Ringtail from a new interpreter that never ran Vina's threads.
 
@@ -979,7 +1087,8 @@ def dock(payload, output_dir, metrics):
                                    ("liatir_pose_rank", str(rank)), ("vina_score_kcal_per_mol", "%.3f" % score),
                                    ("vina_inter_kcal_per_mol", "%.3f" % inter),
                                    ("vina_intra_kcal_per_mol", "%.3f" % intra),
-                                   ("liatir_input_smiles", facts["inputSmiles"])):
+                                   ("liatir_input_smiles", facts["inputSmiles"]),
+                                   ("liatir_receptor_pdbqt_sha256", identity["receptorPdbqtSha256"])):
                     pose.SetProp(key, value)
                 writer.write(pose)
                 if rank == 1:
@@ -1089,6 +1198,9 @@ def main():
     if action == "preflight-dock":
         print(json.dumps(preflight_docking(payload), separators=(",", ":")))
         return
+    if action == "preflight-select-complex":
+        print(json.dumps(preflight_select_complex(payload), separators=(",", ":")))
+        return
     deny_network()
     if action == "prepare-receptor":
         metrics = preflight_receptor(payload)
@@ -1098,6 +1210,10 @@ def main():
         metrics = preflight_docking(payload)
         require_measured_envelope(payload, metrics)
         result = dock(payload, output_directory(payload), metrics)
+    elif action == "select-complex":
+        metrics = preflight_select_complex(payload)
+        require_measured_envelope(payload, metrics)
+        result = select_complex(payload, output_directory(payload))
     elif action == "ringtail-ingest":
         result = ringtail_ingest(payload)
     else:

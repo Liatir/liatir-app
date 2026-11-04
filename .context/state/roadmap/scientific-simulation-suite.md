@@ -221,6 +221,18 @@ Each was checked, not inferred; the evidence is named.
     did exactly that; adding ProLIF's own negative control (`acceptor_false.mol2`) exposed it.
     Interactions are tested with `Interaction.any`, which returns `True` or `None`, as ProLIF's test
     suite does with `next(..., False)`.
+22. **MDAnalysis caches an XTC file's frame offsets in hidden files beside the path it opens**
+    (`.name_offsets.npz` and a `.lock`), and `refresh_offsets=True` still writes them. The build
+    self-test therefore baked two cache files into the signed archive, and the first validator run
+    rewrote one, so the payload no longer matched its signature. In the product it would have written
+    beside every user's trajectory. The runner and the self-test now open a trajectory through a link
+    in a temporary directory; the validator re-verifies the signed payload after every run and the
+    lifecycle spec checks that the user's data directory is unchanged.
+23. **MDAnalysis's distance rule misses disulfide bonds**: it bonds two sulfurs only below 1.98 Å,
+    and a disulfide is 2.0–2.1 Å (2.03 Å in ProLIF's trajectory), so an unbonded cysteine sulfur
+    would read as a charged thiolate. The runner adds OpenMM's rule (two SG atoms without hydrogens
+    within 3 Å, one partner each, otherwise refused); distance-derived bonds then equal the recorded
+    ones exactly on both reference structures (5,053 of 5,053).
 
 ## Licensing and redistribution review
 
@@ -378,7 +390,7 @@ component.
 - **B3 — Signer policy.** Each new box needs an entry in `services/runtime-box-signer/policy.json`
   and a signer redeploy before a production signature: a remote, authorized action.
 - **B3 now applies on this branch**: `services/runtime-box-signer/policy.json` lists
-  `molecular-docking`. Merging it into `main` makes the deployed signer stale for every box until
+  `molecular-docking` and `molecular-analysis`. Merging it into `main` makes the deployed signer stale for every box until
   `runtime-box-signer-deploy.yml` runs (`verify-signer-policy` compares the whole policy).
 - **B4 — Publication.** Production releases run `runtime-box-release.yml` on this machine's
   self-hosted runner from `main`; merging, pushing and releasing each need the owner's explicit go.
@@ -417,7 +429,8 @@ component.
 | --- | --- | --- |
 | Vina, RDKit, Meeko, PDBFixer, Ringtail | SCIENTIFICALLY VALIDATED and PRODUCT VALIDATED on native Linux (development build); Windows through WSL2 and publication pending | `runtime-boxes/measurements/molecular-docking-linux-x86_64-cpu-development-2026-11-03.json`, `runtime-boxes/measurements/molecular-docking-linux-x86_64-cpu-product-lifecycle-development-2026-11-03.json` |
 | GNINA | BLOCKED (B1) | finding 8 |
-| MDAnalysis, ProLIF | IMPLEMENTED (recipe, development build and self-test); validation in progress | finding 9; box `molecular-analysis` `2.11.0-beta.1` |
+| MDAnalysis, ProLIF | SCIENTIFICALLY VALIDATED on a development-signed build; product lifecycle and publication pending | `runtime-boxes/measurements/molecular-analysis-linux-x86_64-cpu-development-2026-11-04.json` |
+| Docked Complex (docking box) | IMPLEMENTED; validated in the docking validator rerun and the Docking → OpenMM → analysis chain, both pending | `select-complex` action |
 | PySB, BioNetGen | not started | resolves (finding 10) |
 | COBRApy | not started | resolves (finding 11) |
 | PhysiCell | not started; B2 open | finding 12 |
@@ -462,6 +475,28 @@ Peak memory over every case 1.25 GB (process-tree PSS, finding 16); slowest case
 103 s. The 2.0 Å threshold is the standard redocking success criterion (D6); scores
 are reported, never treated as affinities.
 
+## Phase 3 evidence (development build, 2026-11-04)
+
+Box `molecular-analysis` `2.11.0-beta.1` / `linux-x86_64-cpu`, lock `6badab47…`, 188 packages,
+Python 3.11.18, signed with the WSL2 development key: archive `2c975cdb…`, 316,696,256 bytes,
+installed 1,116,869,916 bytes; no cache file in the archive (finding 22). The validator
+`scripts/validate-molecular-analysis-runtime.mjs` ran the product's own runner in the signed, extracted
+payload: **20 cases, all passed** (8 measured runs, 12 refusals), record
+`runtime-boxes/measurements/molecular-analysis-linux-x86_64-cpu-development-2026-11-04.json`.
+
+| Check | Result |
+| --- | --- |
+| RMSD, RMSF, minimum and centroid distances against an independent NumPy computation (unwrapping recurrence, Kabsch by SVD, minimum image) | max difference 5.0 × 10⁻⁵ Å on XTC and on the same frames as DCD; strided window equal |
+| ProLIF's 61 official interaction test vectors, loaded as its `conftest.py` loads them | 61 of 61 |
+| Runner against ProLIF run directly | identical: 5,076 trajectory rows, 159 pose rows; ProLIF's pinned anchors present |
+| Distance-derived protein bonds against recorded bonds | identical, 5,053 of 5,053, on both reference structures |
+| Reproducibility | the same request twice gives byte-identical tables |
+| Signed payload after every run | re-verified unchanged |
+| Refusals | mismatched topology, truncated XTC and DCD, non-finite frame, empty and invalid selections, frame range beyond the trajectory, ligand without bond records, ligand not the reference molecule, receptor or poses without hydrogens, unknown interaction |
+
+Peak memory 282 MB; slowest case the 250-frame trajectory fingerprint, 197 s. Reference data is
+ProLIF 2.2.3's packaged trajectory, Vina poses and interaction test molecules (Apache-2.0).
+
 ## Progress log
 
 - 2026-11-03 — Phase 1. Context read; WSL2 host and toolchain measured; Linux checkout brought to
@@ -476,6 +511,13 @@ are reported, never treated as affinities.
   Receptor Preparation and Molecular Docking pages, unit tests (13), validator, catalog entry,
   signer-policy entry, CI workflow and release option written; findings 13–19 recorded; SDK types
   regenerated; core build, frontend check (0 errors) and catalog check pass.
+- 2026-11-04 — The host rebooted unexpectedly at 09:12 (bugcheck 0x1E, in-page error); the last agent
+  process had ended at 23:05 the day before, so no run was interrupted. Phase 3: analysis box recipe
+  committed (`34ba9f57`); runner (trajectory measures, interaction fingerprints for trajectories and
+  docked poses), shared contract, release-candidate metadata, Trajectory Analysis and Interaction
+  Fingerprint pages and pipeline steps, restart finalizers, unit tests (13), validator, lifecycle spec,
+  catalog entry, signer-policy entry, CI workflow and release option written; Docked Complex added to
+  the docking runner, page and pipeline; findings 20–23 recorded; validator passed (above).
 
 ## For the owner
 
@@ -491,4 +533,8 @@ are reported, never treated as affinities.
 2. Production release (B3, B4): merge, signer redeploy, `runtime-box-release.yml` with
    `model_id=autodock-vina-molecular-docking`, `target_id=linux-x86_64-cpu`, `channel=beta`; then the
    publication commit (catalog, product catalog, docs, measurement from the production build).
-3. Phase 3: the `molecular-analysis` box (MDAnalysis, ProLIF).
+3. Rerun the docking validator for Docked Complex and transcribe its envelope sample; run
+   `scripts/validate-docking-simulation-chain.mjs` (Docking → Docked Complex → OpenMM CUDA in explicit
+   water → analysis) on this host's RTX 4060 Ti, then the analysis validator on that trajectory.
+4. Real-app lifecycle of the analysis tools on native Linux, then through WSL2 with item 1.
+5. Phase 4, in the order 4B COBRApy, 4A PySB + BioNetGen, 4C PhysiCell.

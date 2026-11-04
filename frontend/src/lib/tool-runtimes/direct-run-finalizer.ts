@@ -14,11 +14,19 @@ import {
   molecularRelaxationDefinition,
 } from '$lib/tools/molecular-simulation/openmm';
 import {
+  dockedComplexDefinition,
+  finalizeDockedComplexResult,
   finalizeDockingResult,
   finalizeReceptorPreparationResult,
   molecularDockingDefinition,
   receptorPreparationDefinition,
 } from '$lib/tools/molecular-docking/docking';
+import {
+  finalizeInteractionFingerprintResult,
+  finalizeTrajectoryAnalysisResult,
+  interactionFingerprintDefinition,
+  trajectoryAnalysisDefinition,
+} from '$lib/tools/molecular-analysis/analysis';
 import { parseToolRuntimeDirectRunContext } from './direct-run-context';
 
 const finalizing = new Set<string>();
@@ -97,7 +105,15 @@ export async function finalizeCompletedToolRuntimeDirectRuns(jobs: JobEntry[]): 
                 ? await finalizeDockingResult(
                     runtime, context.params, context.outputDir, runtimeResult, appendLog,
                   )
-                : null;
+                : context.toolId === dockedComplexDefinition.id
+                  ? await finalizeDockedComplexResult(
+                      runtime, context.params, context.outputDir, runtimeResult, appendLog,
+                    )
+                  : context.toolId === trajectoryAnalysisDefinition.id
+                    ? await finalizeTrajectoryAnalysisResult(runtime, context.outputDir, runtimeResult, appendLog)
+                    : context.toolId === interactionFingerprintDefinition.id
+                      ? await finalizeInteractionFingerprintResult(runtime, context.outputDir, runtimeResult, appendLog)
+                      : null;
       if (!finalized) throw new Error(`Unsupported Tool Runtime finalizer: ${context.toolId}`);
       const endedAt = job.endedAtMs ?? Date.now();
       await finalizeExecutionResult(context.execution.runId, 'done', {

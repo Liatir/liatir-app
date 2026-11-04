@@ -153,6 +153,28 @@ describe.skipIf(process.platform === 'win32')('molecular docking product Python 
       site: { center: [2, 1, 0], size: [14, 12, 10] } });
   });
 
+  it('lists the docked poses a complex can be selected from', () => {
+    const root = workspace('liatir-docking-select-');
+    const { receptor } = dockingInputs(root);
+    const structure = join(root, 'receptor.pdb');
+    writeFileSync(structure, PDB);
+    // RDKit may follow a data item's name with the record number; both forms must read the same.
+    const tagged = (rank: number, score: string) => sdfRecord('STI', [['C', 0, 0, 0], ['H', 0, 0, 1]]).replace('M  END\n',
+      `M  END\n>  <liatir_ligand>  (${rank}) \nSTI\n\n>  <liatir_pose_rank>\n${rank}\n\n>  <vina_score_kcal_per_mol>\n${score}\n\n`);
+    const poses = join(root, 'poses.sdf');
+    writeFileSync(poses, tagged(1, '-13.200') + tagged(2, '-11.300'));
+    const result = run({ action: 'preflight-select-complex', posesSdf: poses, receptorPdbqt: receptor,
+      receptorStructure: structure });
+    expect(result.status, result.stderr).toBe(0);
+    expect(JSON.parse(result.stdout)).toMatchObject({ workloadId: 'docking:select-complex', tokenCount: 1, atomCount: 6,
+      stepCount: 1, outputItemCount: 1, poses: [{ ligand: 'STI', poseRank: 1, scoreKcalPerMol: -13.2 },
+        { ligand: 'STI', poseRank: 2, scoreKcalPerMol: -11.3 }] });
+    const plain = join(root, 'plain.sdf');
+    writeFileSync(plain, sdfRecord('STI', [['C', 0, 0, 0]]));
+    expect(run({ action: 'preflight-select-complex', posesSdf: plain, receptorPdbqt: receptor,
+      receptorStructure: structure }).stderr).toContain("do not come from Liatir's Molecular Docking");
+  });
+
   it('will not load the scientific stack without an accepted measured envelope', () => {
     const root = workspace('liatir-docking-envelope-');
     const structure = join(root, 'input.pdb');

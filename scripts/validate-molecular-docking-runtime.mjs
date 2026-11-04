@@ -207,7 +207,8 @@ try {
 
   async function productCase(id, action, input) {
     const payload = { ...base, ...input, outputDir: join(workDir, id) };
-    const preflightAction = action === 'prepare-receptor' ? 'preflight-receptor' : 'preflight-dock';
+    const preflightAction = { 'prepare-receptor': 'preflight-receptor', dock: 'preflight-dock',
+      'select-complex': 'preflight-select-complex' }[action];
     const metrics = parseResult(await execute(productPath, { ...payload, action: preflightAction }, { measured: false }),
       `${id} preflight`);
     const execution = await execute(productPath, { ...payload, action, measurementMode: true });
@@ -279,6 +280,7 @@ try {
 
   // Redocking: the official receptor, the receptor prepared here from the same file, and the raw entry.
   const redock = {};
+  const redockResults = {};
   for (const [id, receptorPdbqt, receptorStructure] of [
     ['official-redocking', join(reference, '1iep_receptor.pdbqt'), ''],
     ['prepared-redocking', official.paths.receptorPdbqt, official.paths.preparedReceptorPdb],
@@ -296,8 +298,29 @@ try {
     if (receptorStructure) assert.ok(result.paths.bestPoseComplexPdb, `${id}: no receptor-plus-pose complex`);
     redock[id] = { topPoseRmsdAngstrom: top.heavyAtomRmsdAngstrom, topScoreKcalPerMol: Number(top.vina_score_kcal_per_mol),
       poses: analysis.poses.length, coordinateSha256: analysis.coordinateSha256 };
+    redockResults[id] = result;
     cases.find((item) => item.id === id).redocking = redock[id];
   }
+
+  // The selected complex hands one pose to a simulation: the receptor it was docked into, then the
+  // pose itself with every hydrogen and bond, and the same pose as the ligand's own SDF.
+  const selection = { posesSdf: redockResults['prepared-redocking'].paths.posesSdf,
+    receptorPdbqt: official.paths.receptorPdbqt, receptorStructure: official.paths.preparedReceptorPdb, ligand: 'STI',
+    poseRank: 1 };
+  const selected = await productCase('select-complex', 'select-complex', selection);
+  assert.equal(selected.summary.complex.ligandAtoms, 69);
+  assert.equal(selected.summary.complex.receptorAtoms, official.summary.after.atoms);
+  const selectedPose = await analyze({ poses: selected.paths.ligandSdf, crystalLigand: 'STI' });
+  assert.equal(selectedPose.poses.length, 1);
+  assert.ok(Math.abs(selectedPose.poses[0].heavyAtomRmsdAngstrom - redock['prepared-redocking'].topPoseRmsdAngstrom) < 1e-6);
+  const complexLigandLines = (await readFile(selected.paths.complexPdb, 'utf8')).split(/\r?\n/u)
+    .filter((line) => line.startsWith('HETATM') && line.slice(17, 20) === 'LIG');
+  assert.equal(complexLigandLines.length, 69);
+  cases.find((item) => item.id === 'select-complex').complex = selected.summary.complex;
+  await refused('select-complex-other-receptor', 'select-complex',
+    { ...selection, posesSdf: redockResults['official-redocking'].paths.posesSdf }, 'were not docked into this receptor PDBQT');
+  await refused('select-complex-absent-pose', 'select-complex', { ...selection, ligand: 'nilotinib' },
+    'hold 0 poses of nilotinib at rank 1');
 
   // Reproducibility, measured rather than assumed: the same seed and thread count twice, then one thread.
   const reproducibility = {};

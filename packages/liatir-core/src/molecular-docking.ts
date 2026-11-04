@@ -10,6 +10,7 @@ export const PDBFIXER_VERSION = "1.12.0" as const;
 
 export const RECEPTOR_PREPARATION_TOOL_ID = "docking-receptor-preparation" as const;
 export const MOLECULAR_DOCKING_TOOL_ID = "molecular-docking" as const;
+export const DOCKED_COMPLEX_TOOL_ID = "docking-selected-complex" as const;
 
 export const MOLECULAR_DOCKING_INTERPRETATION_NOTICE =
   "Vina scores are empirical scoring-function values in kcal/mol used to rank poses. They are not measured binding affinities, free energies or evidence of biological activity, and a docked pose is a hypothesis to test, not a result." as const;

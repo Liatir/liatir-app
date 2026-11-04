@@ -17,6 +17,7 @@
   import {
     BOLTZ_2_MODEL_ID,
     LIATIR_TOOL_RUNTIME_CATALOG,
+    MOLECULAR_ANALYSIS_RUNTIME_COMPONENT_ID,
     MOLECULAR_DOCKING_RUNTIME_COMPONENT_ID,
     OPENMM_RUNTIME_COMPONENT_ID,
     PVACTOOLS_RUNTIME_COMPONENT_ID,
@@ -47,6 +48,10 @@
   );
   const dockingPublished = LIATIR_TOOL_RUNTIME_CATALOG.some(
     (runtime) => runtime.id === MOLECULAR_DOCKING_RUNTIME_COMPONENT_ID
+      && runtime.install.runtimeBox.publishedTargets.length > 0,
+  );
+  const analysisPublished = LIATIR_TOOL_RUNTIME_CATALOG.some(
+    (runtime) => runtime.id === MOLECULAR_ANALYSIS_RUNTIME_COMPONENT_ID
       && runtime.install.runtimeBox.publishedTargets.length > 0,
   );
   // An AI Model enters the registry only once a target is published, so membership is the gate.
@@ -224,6 +229,33 @@
       status: dockingPublished ? 'available' : 'soon',
       tags: ['SDF', 'PDBQT', 'AutoDock Vina', 'Ringtail', 'Screening'],
       category: 'Molecular Docking',
+    },
+    {
+      id: 'docking-selected-complex',
+      label: 'Docked Complex',
+      description: 'Take one docked pose, with its receptor, to a molecular dynamics simulation.',
+      ...(dockingPublished ? { href: '/tools/molecular-docking/complex' } : {}),
+      status: dockingPublished ? 'available' : 'soon',
+      tags: ['SDF', 'PDB', 'OpenMM', 'Docking'],
+      category: 'Molecular Docking',
+    },
+    {
+      id: 'trajectory-analysis',
+      label: 'Trajectory Analysis',
+      description: 'Measure how a simulated protein and its ligand move: RMSD, fluctuation and distances.',
+      ...(analysisPublished ? { href: '/tools/molecular-analysis/trajectory' } : {}),
+      status: analysisPublished ? 'available' : 'soon',
+      tags: ['DCD', 'XTC', 'RMSD', 'RMSF', 'MDAnalysis'],
+      category: 'Molecular Simulation',
+    },
+    {
+      id: 'interaction-fingerprint',
+      label: 'Interaction Fingerprint',
+      description: 'List the contacts between a ligand and its protein, frame by frame or pose by pose.',
+      ...(analysisPublished ? { href: '/tools/molecular-analysis/fingerprint' } : {}),
+      status: analysisPublished ? 'available' : 'soon',
+      tags: ['Hydrogen bonds', 'Contacts', 'ProLIF', 'Docking', 'Trajectory'],
+      category: 'Molecular Simulation',
     },
     {
       id: 'biomolecular-structure-prediction',

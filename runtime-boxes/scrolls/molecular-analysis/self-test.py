@@ -48,17 +48,28 @@ for distribution in ("MDAnalysis", "prolif"):
     files = importlib.metadata.files(distribution) or []
     assert any("LICENSE" in str(path).upper() or "COPYING" in str(path).upper() for path in files), distribution
 
+import tempfile
+
 import MDAnalysis as mda
 from MDAnalysis.analysis import rms
 import prolif
 from prolif import datafiles
 from rdkit import Chem
 
-universe = mda.Universe(datafiles.TOP, datafiles.TRAJ)
-assert universe.atoms.n_atoms == 5067 and universe.trajectory.n_frames == 250
-analysis = rms.RMSD(universe, select="protein and name CA").run(stop=5)
+# MDAnalysis caches an XTC file's frame offsets in hidden files beside the path it opens. Opening the
+# packaged trajectory through a link in a temporary directory keeps them out of the environment
+# being packed and signed.
+with tempfile.TemporaryDirectory(prefix="liatir-self-test-") as scratch:
+    link = Path(scratch) / Path(datafiles.TRAJ).name
+    link.symlink_to(datafiles.TRAJ)
+    universe = mda.Universe(datafiles.TOP, str(link))
+    atoms, frames = universe.atoms.n_atoms, universe.trajectory.n_frames
+    assert atoms == 5067 and frames == 250
+    analysis = rms.RMSD(universe, select="protein and name CA").run(stop=5)
+    universe.trajectory.close()
 first = analysis.results.rmsd[0][2]
 assert abs(first) < 1e-6 and all(math.isfinite(value) for value in analysis.results.rmsd[:, 2])
+assert not list(Path(datafiles.TRAJ).parent.glob(".*_offsets.*")), "the self-test wrote into the environment"
 
 # ProLIF's own packaged pair and its negative control: a donor must bond to the acceptor and must
 # not bond to the decoy whose geometry its test suite marks as no hydrogen bond. Calling an
@@ -78,8 +89,8 @@ assert fingerprint.hbdonor.any(donor[0], decoy[0]) is None
 print(json.dumps({
     "status": "passed",
     "versions": EXPECTED_VERSIONS,
-    "trajectoryAtoms": universe.atoms.n_atoms,
-    "trajectoryFrames": universe.trajectory.n_frames,
+    "trajectoryAtoms": atoms,
+    "trajectoryFrames": frames,
     "caRmsdFrame4Angstrom": round(float(analysis.results.rmsd[4][2]), 4),
     "networkAccess": False,
 }, sort_keys=True))

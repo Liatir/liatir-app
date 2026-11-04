@@ -122,6 +122,7 @@
     "runtime-box:validate:protenix": "node scripts/validate-protenix-runtime.mjs",
     "runtime-box:validate:geneformer": "node scripts/validate-geneformer-parity.mjs",
     "runtime-box:validate:mhcflurry": "node scripts/validate-mhcflurry-runtime.mjs",
+    "runtime-box:validate:molecular-analysis": "node scripts/validate-molecular-analysis-runtime.mjs",
     "runtime-box:validate:molecular-docking": "node scripts/validate-molecular-docking-runtime.mjs",
     "runtime-box:validate:openmm": "node scripts/validate-openmm-runtime.mjs",
     "runtime-box:validate:pvactools": "node scripts/validate-pvactools-runtime.mjs",

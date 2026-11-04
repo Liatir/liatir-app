@@ -1,6 +1,7 @@
 import {
   AUTODOCK_VINA_VERSION,
   DEFAULT_DOCKING_OPTIONS,
+  DOCKED_COMPLEX_TOOL_ID,
   DEFAULT_RECEPTOR_PREPARATION_OPTIONS,
   LIATIR_STRUCTURE_PROFILE_V1,
   MEEKO_VERSION,
@@ -53,7 +54,7 @@ import type { RunOutputFile } from '$lib/types/pipeline';
 import type { ToolOutput } from '$lib/types/tool-output';
 import { MOLECULAR_DOCKING_SCRIPT } from './python-scripts/docking';
 
-export type DockingToolMode = 'prepare-receptor' | 'dock';
+export type DockingToolMode = 'prepare-receptor' | 'dock' | 'select-complex';
 
 /** Either accepted outcome may start a run; only the measured one carries real figures. */
 export type DockingAcceptedEstimate = LiatirHardwareResourceEstimate | LiatirHardwareResourceExtrapolation;
@@ -175,6 +176,30 @@ export const molecularDockingDefinition: LiatirStepDefinition = {
   },
 };
 
+export const dockedComplexDefinition: LiatirStepDefinition = {
+  id: DOCKED_COMPLEX_TOOL_ID,
+  type: 'tool-runtime',
+  label: 'Docked Complex',
+  description: 'Take one docked pose, with the receptor it was docked into, to a molecular simulation.',
+  category: 'Molecular Docking',
+  inputSchema: {
+    posesSdf: { type: 'file', label: 'Docked poses (SDF)', required: true, accept: ['sdf'],
+      description: 'The poses Molecular Docking wrote.' },
+    receptorPdbqt: { type: 'file', label: 'Receptor the poses were docked into (PDBQT)', required: true, accept: ['pdbqt'] },
+    receptorStructure: { type: 'file', label: 'Prepared receptor (PDB)', required: true, accept: ['pdb'],
+      description: 'The PDB written together with that PDBQT by Receptor Preparation.' },
+    ligand: { type: 'string', label: 'Ligand', required: true, default: '', connectable: false },
+    poseRank: { type: 'number', label: 'Pose rank', required: true, default: 1, connectable: false },
+  },
+  outputSchema: {
+    complexPdb: { type: 'file', label: 'Receptor with the pose', ext: ['pdb'], artifact: structureArtifact('pdb') },
+    ligandSdf: { type: 'file', label: 'Ligand as posed', ext: ['sdf'], artifact: structureArtifact('sdf') },
+    summaryJson: { type: 'file', label: 'Complex summary', ext: ['json'] },
+    scoreKcalPerMol: { type: 'number', label: 'Vina score (kcal/mol)', format: 'decimal' },
+    provenance: { type: 'json', label: 'Provenance' },
+  },
+};
+
 interface DockingPreflightPayload extends LiatirHardwareWorkloadMetrics {
   schemaVersion: 1;
   kind: 'liatir.molecular-docking-preflight';
@@ -187,6 +212,7 @@ interface DockingPreflightPayload extends LiatirHardwareWorkloadMetrics {
   maxLigandHeavyAtoms?: number;
   oversizedLigands?: string[];
   site?: { center: number[]; size: number[]; volumeCubicAngstrom: number; largeSearchSpace: boolean };
+  poses?: Array<{ ligand: string; poseRank: number; scoreKcalPerMol: number | null }>;
 }
 
 export interface DockingResourcePreflight {
@@ -266,7 +292,30 @@ type DockingResultPayload = {
     bestPoseComplexPdb?: string;
   };
   summary: DockingSummary;
+} | {
+  schemaVersion: 1;
+  kind: 'liatir.molecular-docking-result';
+  action: 'select-complex';
+  paths: { complexPdb: string; ligandSdf: string; summaryJson: string };
+  summary: DockedComplexSummary;
 };
+
+interface DockedComplexSummary {
+  kind: 'liatir.docked-complex-summary';
+  runtimeId: string;
+  runtimeBoxRelease: string;
+  targetId: string;
+  versions: Record<string, string>;
+  ligand: string;
+  poseRank: number;
+  scoreKcalPerMol: number;
+  smiles: string | null;
+  complex: { chain: string; receptorAtoms: number; ligandAtoms: number };
+  receptorPdbqtSha256: string;
+  posesSha256: string;
+  networkAccess: false;
+  hardwareEstimate: DockingAcceptedEstimate;
+}
 
 function basename(path: string): string {
   return path.split(/[\\/]/u).pop() ?? path;
@@ -364,7 +413,7 @@ function activationFor(runtime: LiatirToolRuntimeRecord): LiatirRuntimeBoxActiva
 }
 
 function pythonInput(
-  action: 'preflight-receptor' | 'preflight-dock' | DockingToolMode,
+  action: 'preflight-receptor' | 'preflight-dock' | 'preflight-select-complex' | DockingToolMode,
   mode: DockingToolMode,
   inputs: Record<string, string>,
   activation: LiatirRuntimeBoxActivationMetadata,
@@ -384,6 +433,16 @@ function pythonInput(
       preparation: receptorPreparationOptions(inputs) as unknown as JsonValue,
     };
   }
+  if (mode === 'select-complex') {
+    return {
+      ...common,
+      posesSdf: inputs.posesSdf,
+      receptorPdbqt: inputs.receptorPdbqt,
+      receptorStructure: inputs.receptorStructure,
+      ligand: inputs.ligand ?? '',
+      poseRank: Number(inputs.poseRank || 1),
+    };
+  }
   const site = dockingSite(inputs);
   return {
     ...common,
@@ -395,6 +454,12 @@ function pythonInput(
     docking: dockingOptions(inputs) as unknown as JsonValue,
   };
 }
+
+const PREFLIGHT_ACTIONS = {
+  'prepare-receptor': 'preflight-receptor',
+  dock: 'preflight-dock',
+  'select-complex': 'preflight-select-complex',
+} as const;
 
 /** Lightweight standard-library preflight, then the measured envelope for this exact release and target. */
 export async function preflightDockingWithRuntime(
@@ -410,11 +475,14 @@ export async function preflightDockingWithRuntime(
   if (mode === 'dock' && (!inputs.receptorPdbqt || !inputs.ligandsSdf)) {
     throw new Error('A receptor PDBQT and a ligand SDF are required.');
   }
+  if (mode === 'select-complex' && (!inputs.posesSdf || !inputs.receptorPdbqt || !inputs.receptorStructure)) {
+    throw new Error('The docked poses, the receptor PDBQT they were docked into and its prepared PDB are required.');
+  }
   const activation = activationFor(runtime);
   const result = await runToolRuntimePython(
     runtime,
     MOLECULAR_DOCKING_SCRIPT,
-    pythonInput(mode === 'prepare-receptor' ? 'preflight-receptor' : 'preflight-dock', mode, inputs, activation),
+    pythonInput(PREFLIGHT_ACTIONS[mode], mode, inputs, activation),
     { trackJob: false, timeoutSeconds: 120 },
   );
   if (!result.ok) throw new Error(result.stderr || `Docking preflight exited with code ${result.exitCode}`);
@@ -771,6 +839,95 @@ export async function finalizeDockingResult(
   };
 }
 
+export async function finalizeDockedComplexResult(
+  runtime: LiatirToolRuntimeRecord,
+  inputs: Record<string, string>,
+  outputDir: string,
+  result: LiatirRuntimeComponentPythonRunResult,
+  onLog: (line: string) => void,
+): Promise<DockingFinalizedResult> {
+  if (!result.ok) throw new Error(result.stderr || `Docked Complex exited with code ${result.exitCode}`);
+  if (result.stderr.trim()) onLog(result.stderr.trim());
+  const parsed = parsePythonJson<DockingResultPayload>(result.stdout, 'Docked Complex');
+  if (parsed.schemaVersion !== 1 || parsed.kind !== 'liatir.molecular-docking-result' || parsed.action !== 'select-complex') {
+    throw new Error('Docked Complex returned an unsupported result contract.');
+  }
+  const activation = result.runtimeBoxActivation ?? activationFor(runtime);
+  const summary = parsed.summary;
+  assertRuntimeIdentity(runtime, activation, summary.versions, summary);
+  if (summary.networkAccess !== false || summary.runtimeId !== MOLECULAR_DOCKING_RUNTIME_ID) {
+    throw new Error('The Docked Complex runtime or offline boundary is invalid.');
+  }
+  if (summary.ligand !== inputs.ligand || summary.poseRank !== Number(inputs.poseRank || 1)) {
+    throw new Error('Docked Complex wrote a different pose than the one selected.');
+  }
+  await dataFiles.init();
+  const paths = {
+    complex: safeOutputPath(parsed.paths.complexPdb, outputDir, 'Complex'),
+    ligand: safeOutputPath(parsed.paths.ligandSdf, outputDir, 'Ligand'),
+    summary: safeOutputPath(parsed.paths.summaryJson, outputDir, 'Complex summary'),
+  };
+  const posesScientific = await inspectStructureArtifact(inputs.posesSdf, {
+    format: 'sdf', recognizedFormat: true, finiteCoordinates: true,
+  });
+  await dataFiles.setScientific(inputs.posesSdf, posesScientific);
+  const lineage = {
+    sources: [liatirArtifactLineageSource(posesScientific, 'input', 'posesSdf')],
+    transformation: {
+      id: dockedComplexDefinition.id,
+      label: dockedComplexDefinition.label,
+      version: '1',
+      sourceRevision: `vina-${AUTODOCK_VINA_VERSION}+meeko-${MEEKO_VERSION}`,
+      parameters: { ligand: summary.ligand, poseRank: summary.poseRank,
+        receptorPdbqtSha256: summary.receptorPdbqtSha256 },
+    },
+  };
+  const complexScientific = await inspectStructureArtifact(paths.complex, {
+    format: 'pdb', recognizedFormat: true, modelCount: 1, finiteCoordinates: true,
+    atomCount: summary.complex.receptorAtoms + summary.complex.ligandAtoms,
+  }, { lineage, viewerHints: { preferredViewer: 'structure-viewer' } });
+  const ligandScientific = await inspectStructureArtifact(paths.ligand, {
+    format: 'sdf', recognizedFormat: true, modelCount: 1, finiteCoordinates: true, atomCount: summary.complex.ligandAtoms,
+  }, { lineage });
+  // Selecting a pose draws nothing at random.
+  const provenance = provenanceFor(activation, summary.hardwareEstimate, 0, 'CPU · 1 process',
+    { id: 'autodock-vina-vina', version: AUTODOCK_VINA_VERSION });
+  const output: ToolOutput = { sections: [
+    { type: 'stats', cols: 4, items: [
+      { label: 'Ligand', value: summary.ligand },
+      { label: 'Pose rank', value: summary.poseRank },
+      { label: 'Vina score', value: `${summary.scoreKcalPerMol.toFixed(3)} kcal/mol` },
+      { label: 'Atoms', value: (summary.complex.receptorAtoms + summary.complex.ligandAtoms).toLocaleString() },
+    ] },
+    { type: 'text', label: 'Next step', content: 'Run Molecular Dynamics with the receptor-and-pose PDB as the structure and the ligand SDF as the ligand: OpenMM then parameterizes this exact molecule in this exact place.' },
+    { type: 'text', label: 'Interpretation', content: MOLECULAR_DOCKING_INTERPRETATION_NOTICE },
+    { type: 'structure-viewer', label: `Receptor with ${summary.ligand} (pose ${summary.poseRank}, chain ${summary.complex.chain})`,
+      path: paths.complex, format: 'pdb', style: 'cartoon', colorScheme: 'chain', height: 460 },
+    { type: 'table', label: 'Provenance', headers: ['Field', 'Value'], rows: provenanceRows(provenance, [
+      ['Tool Runtime', `AutoDock Vina ${AUTODOCK_VINA_VERSION} · Meeko ${MEEKO_VERSION}`],
+      ['Receptor PDBQT SHA-256', summary.receptorPdbqtSha256],
+      ['Docked poses SHA-256', summary.posesSha256],
+    ]) },
+  ] };
+  return {
+    outputFiles: [
+      await outputFile('Receptor with the pose', paths.complex, 'pdb', 'complexPdb', complexScientific),
+      await outputFile('Ligand as posed', paths.ligand, 'sdf', 'ligandSdf', ligandScientific),
+      await outputFile('Complex summary', paths.summary, 'json', 'summaryJson'),
+    ],
+    output,
+    metrics: { scoreKcalPerMol: summary.scoreKcalPerMol },
+    values: { scoreKcalPerMol: summary.scoreKcalPerMol, provenance: provenance as unknown as JsonValue },
+    executionEvidence: provenance as unknown as Record<string, JsonValue>,
+  };
+}
+
+const DEFINITIONS = {
+  'prepare-receptor': receptorPreparationDefinition,
+  dock: molecularDockingDefinition,
+  'select-complex': dockedComplexDefinition,
+} as const;
+
 export async function runDockingWithRuntime(
   runtime: LiatirToolRuntimeRecord,
   mode: DockingToolMode,
@@ -790,18 +947,20 @@ export async function runDockingWithRuntime(
   if (preflight.estimate.confirmationRequired && !options.confirmedBeyondEvidence) {
     throw new Error('This run is larger than any retained measurement and was not confirmed.');
   }
-  const definition = mode === 'prepare-receptor' ? receptorPreparationDefinition : molecularDockingDefinition;
+  const definition = DEFINITIONS[mode];
   onLog(`tool-runtime ${runtime.id}`);
   onLog(mode === 'prepare-receptor'
     ? `input ${basename(inputs.inputStructure)} · ${preflight.metrics.atomCount} atoms`
-    : `ligands ${preflight.metrics.tokenCount} · receptor ${preflight.metrics.atomCount} atoms`);
+    : mode === 'dock'
+      ? `ligands ${preflight.metrics.tokenCount} · receptor ${preflight.metrics.atomCount} atoms`
+      : `pose ${inputs.ligand} rank ${inputs.poseRank || 1} · receptor ${preflight.metrics.atomCount} atoms`);
   onLog(`hardware evidence ${preflight.estimate.hardwareProfileId} (${preflight.estimate.evidence})`);
   const result = await runToolRuntimePython(
     runtime,
     MOLECULAR_DOCKING_SCRIPT,
     pythonInput(mode, mode, inputs, activation, { outputDir, estimate: preflight.estimate }),
     {
-      timeoutSeconds: mode === 'prepare-receptor' ? 3_600 : 7 * 24 * 3_600,
+      timeoutSeconds: mode === 'dock' ? 7 * 24 * 3_600 : 3_600,
       jobLabel: runContext?.runKind === 'pipeline-step'
         ? `${runContext.pipelineName}: ${definition.label}`
         : definition.label,
@@ -817,9 +976,10 @@ export async function runDockingWithRuntime(
       onJobId: runContext?.onJobId,
     },
   );
-  return mode === 'prepare-receptor'
-    ? finalizeReceptorPreparationResult(runtime, inputs, outputDir, result, onLog)
-    : finalizeDockingResult(runtime, inputs, outputDir, result, onLog);
+  if (mode === 'prepare-receptor') return finalizeReceptorPreparationResult(runtime, inputs, outputDir, result, onLog);
+  return mode === 'dock'
+    ? finalizeDockingResult(runtime, inputs, outputDir, result, onLog)
+    : finalizeDockedComplexResult(runtime, inputs, outputDir, result, onLog);
 }
 
 async function runDockingStep(
@@ -851,4 +1011,13 @@ export function runMolecularDockingStep(
   runContext?: AIRunContext | ToolRuntimeDirectRunContext,
 ) {
   return runDockingStep('dock', inputs, outputDir, onLog, runContext);
+}
+
+export function runDockedComplexStep(
+  inputs: Record<string, string>,
+  outputDir: string,
+  onLog: (line: string) => void,
+  runContext?: AIRunContext | ToolRuntimeDirectRunContext,
+) {
+  return runDockingStep('select-complex', inputs, outputDir, onLog, runContext);
 }

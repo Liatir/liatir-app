@@ -17,6 +17,8 @@ export const tests = [{
           ? '/tools/molecular-simulation/relaxation'
         : candidateId === 'autodock-vina-molecular-docking'
           ? '/tools/molecular-docking/docking'
+        : candidateId === 'mdanalysis-molecular-analysis'
+          ? '/tools/molecular-analysis/trajectory'
         : ['jwohlwend-boltz-2', 'bytedance-protenix-base-v1-0-0', 'bytedance-protenix-v2', 'bytedance-protenix-mini-default-v0-5-0'].includes(candidateId)
           ? '/tools/structure/prediction'
         : null;

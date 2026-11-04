@@ -15,6 +15,7 @@ on:
           - griffithlab-pvactools-pvacseq
           - openmm-openmm
           - autodock-vina-molecular-docking
+          - mdanalysis-molecular-analysis
           - jwohlwend-boltz-2
           - bytedance-protenix-base-v1-0-0
       target_id:

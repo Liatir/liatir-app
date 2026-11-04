@@ -1,0 +1,588 @@
+{
+  "schemaVersion": 1,
+  "kind": "liatir.molecular-analysis-scientific-validation",
+  "createdAt": "2026-11-04T09:46:23.133Z",
+  "status": "passed",
+  "modelId": "mdanalysis-molecular-analysis",
+  "sourceRevision": "mdanalysis-2.11.0+prolif-2.2.3+rdkit-2026.09.1",
+  "targetId": "linux-x86_64-cpu",
+  "productRunnerSha256": "e465c6d88fd27e196cede53e33bb8e08bad5c465d266d554010a7e8425652b23",
+  "cases": [
+    {
+      "id": "prolif-official-interaction-vectors",
+      "vectors": 61,
+      "passed": 61
+    },
+    {
+      "id": "reference-trajectory-analysis-xtc",
+      "metrics": {
+        "workloadId": "mdanalysis:trajectory-analysis",
+        "tokenCount": 5,
+        "atomCount": 5067,
+        "stepCount": 250,
+        "outputItemCount": 250
+      },
+      "measurement": {
+        "elapsedMs": 2827,
+        "peakRamBytes": 158724096,
+        "peakVramBytes": null,
+        "vramMeasurementMethod": null,
+        "vramDeviceBaselineBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 74914,
+      "independentComparison": {
+        "maxAbsoluteDifferenceAngstrom": 0.000050058478993531,
+        "rmsd": [
+          {
+            "label": "Protein C-alpha",
+            "selection": "protein and name CA",
+            "atoms": 302,
+            "minimum": 0,
+            "maximum": 6.2475,
+            "mean": 3.2975,
+            "final": 3.5225
+          },
+          {
+            "label": "Ligand",
+            "selection": "resname LIG and not element H",
+            "atoms": 43,
+            "minimum": 0,
+            "maximum": 4.3102,
+            "mean": 1.9257,
+            "final": 2.3325
+          }
+        ],
+        "rmsf": {
+          "selection": "protein and name CA",
+          "atoms": 302,
+          "frames": 250,
+          "maximum": 13.9876,
+          "mean": 1.9981
+        },
+        "rmsdCsvSha256": "59f80b3d581ce8d5508d1fc72a139676a741eebac2d5ab46a5f98377a4d4a50b"
+      }
+    },
+    {
+      "id": "reference-trajectory-analysis-dcd",
+      "metrics": {
+        "workloadId": "mdanalysis:trajectory-analysis",
+        "tokenCount": 5,
+        "atomCount": 5067,
+        "stepCount": 250,
+        "outputItemCount": 250
+      },
+      "measurement": {
+        "elapsedMs": 2669,
+        "peakRamBytes": 154951680,
+        "peakVramBytes": null,
+        "vramMeasurementMethod": null,
+        "vramDeviceBaselineBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 78462,
+      "independentComparison": {
+        "maxAbsoluteDifferenceAngstrom": 0.000050058478993531,
+        "rmsd": [
+          {
+            "label": "Protein C-alpha",
+            "selection": "protein and name CA",
+            "atoms": 302,
+            "minimum": 0,
+            "maximum": 6.2475,
+            "mean": 3.2975,
+            "final": 3.5225
+          },
+          {
+            "label": "Ligand",
+            "selection": "resname LIG and not element H",
+            "atoms": 43,
+            "minimum": 0,
+            "maximum": 4.3102,
+            "mean": 1.9257,
+            "final": 2.3325
+          }
+        ],
+        "rmsf": {
+          "selection": "protein and name CA",
+          "atoms": 302,
+          "frames": 250,
+          "maximum": 13.9876,
+          "mean": 1.9981
+        },
+        "rmsdCsvSha256": "c0435b867ee13d814ae5dd204daf5321bfcad926013b03780fe23b1ee6b8cb0e"
+      }
+    },
+    {
+      "id": "reference-trajectory-analysis-strided",
+      "metrics": {
+        "workloadId": "mdanalysis:trajectory-analysis",
+        "tokenCount": 5,
+        "atomCount": 5067,
+        "stepCount": 250,
+        "outputItemCount": 36
+      },
+      "measurement": {
+        "elapsedMs": 2626,
+        "peakRamBytes": 155222016,
+        "peakVramBytes": null,
+        "vramMeasurementMethod": null,
+        "vramDeviceBaselineBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 28418
+    },
+    {
+      "id": "reference-trajectory-analysis-repeat",
+      "metrics": {
+        "workloadId": "mdanalysis:trajectory-analysis",
+        "tokenCount": 5,
+        "atomCount": 5067,
+        "stepCount": 250,
+        "outputItemCount": 250
+      },
+      "measurement": {
+        "elapsedMs": 2716,
+        "peakRamBytes": 155049984,
+        "peakVramBytes": null,
+        "vramMeasurementMethod": null,
+        "vramDeviceBaselineBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 74914
+    },
+    {
+      "id": "reference-trajectory-fingerprint",
+      "metrics": {
+        "workloadId": "prolif:trajectory-fingerprint",
+        "tokenCount": 9,
+        "atomCount": 5067,
+        "stepCount": 250,
+        "outputItemCount": 250
+      },
+      "measurement": {
+        "elapsedMs": 196728,
+        "peakRamBytes": 282152960,
+        "peakVramBytes": null,
+        "vramMeasurementMethod": null,
+        "vramDeviceBaselineBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 388555
+    },
+    {
+      "id": "derived-protein-bonds-trajectory-fingerprint",
+      "metrics": {
+        "workloadId": "prolif:trajectory-fingerprint",
+        "tokenCount": 9,
+        "atomCount": 5067,
+        "stepCount": 250,
+        "outputItemCount": 25
+      },
+      "measurement": {
+        "elapsedMs": 31331,
+        "peakRamBytes": 279863296,
+        "peakVramBytes": null,
+        "vramMeasurementMethod": null,
+        "vramDeviceBaselineBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 48407
+    },
+    {
+      "id": "reference-poses-fingerprint",
+      "metrics": {
+        "workloadId": "prolif:pose-fingerprint",
+        "tokenCount": 9,
+        "atomCount": 4988,
+        "stepCount": 9,
+        "outputItemCount": 9
+      },
+      "measurement": {
+        "elapsedMs": 3846,
+        "peakRamBytes": 250884096,
+        "peakVramBytes": null,
+        "vramMeasurementMethod": null,
+        "vramDeviceBaselineBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 19163
+    },
+    {
+      "id": "derived-protein-bonds-poses-fingerprint",
+      "metrics": {
+        "workloadId": "prolif:pose-fingerprint",
+        "tokenCount": 9,
+        "atomCount": 4988,
+        "stepCount": 9,
+        "outputItemCount": 9
+      },
+      "measurement": {
+        "elapsedMs": 8405,
+        "peakRamBytes": 256012288,
+        "peakVramBytes": null,
+        "vramMeasurementMethod": null,
+        "vramDeviceBaselineBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 19171
+    },
+    {
+      "id": "prolif-reference-agreement",
+      "trajectoryRows": 5076,
+      "poseRows": 159,
+      "anchors": [
+        [
+          0,
+          "LIG1.G",
+          "VAL201.A",
+          "Hydrophobic"
+        ],
+        [
+          0,
+          "LIG1.G",
+          "PHE351.B",
+          "Hydrophobic"
+        ],
+        [
+          1,
+          "LIG1.G",
+          "MET337.B",
+          "Hydrophobic"
+        ]
+      ],
+      "bondPerception": {
+        "trajectory": {
+          "recorded": 5053,
+          "derived": 5053,
+          "identical": true
+        },
+        "receptor": {
+          "recorded": 5053,
+          "derived": 5053,
+          "identical": true
+        }
+      }
+    },
+    {
+      "id": "mismatched-topology",
+      "rejected": true,
+      "message": "atoms per frame but the topology has"
+    },
+    {
+      "id": "truncated-xtc",
+      "rejected": true,
+      "message": "truncated"
+    },
+    {
+      "id": "truncated-dcd",
+      "rejected": true,
+      "message": "truncated"
+    },
+    {
+      "id": "nonfinite-frame",
+      "rejected": true,
+      "message": "Frame 2 holds a non-finite coordinate"
+    },
+    {
+      "id": "empty-selection",
+      "rejected": true,
+      "message": "matched 0 atoms"
+    },
+    {
+      "id": "invalid-selection",
+      "rejected": true,
+      "message": "is not valid"
+    },
+    {
+      "id": "frame-range-beyond-trajectory",
+      "rejected": true,
+      "message": "Frame range end must be at most 250"
+    },
+    {
+      "id": "ligand-without-bonds",
+      "rejected": true,
+      "message": "The ligand has no bond records"
+    },
+    {
+      "id": "ligand-reference-mismatch",
+      "rejected": true,
+      "message": "is not the reference molecule"
+    },
+    {
+      "id": "receptor-without-hydrogens",
+      "rejected": true,
+      "message": "explicit hydrogens"
+    },
+    {
+      "id": "poses-without-hydrogens",
+      "rejected": true,
+      "message": "Pose 1 has no hydrogens"
+    },
+    {
+      "id": "unknown-interaction",
+      "rejected": true,
+      "message": "Interactions must be chosen from"
+    },
+    {
+      "id": "payload-unchanged-after-runs",
+      "signedPayloadReverified": true
+    }
+  ],
+  "hardwareSamples": [
+    {
+      "fixtureId": "reference-trajectory-analysis-xtc",
+      "workloadId": "mdanalysis:trajectory-analysis",
+      "maxTokenCount": 5,
+      "maxAtomCount": 5067,
+      "maxStepCount": 250,
+      "maxOutputItemCount": 250,
+      "peakRamBytes": 158724096,
+      "peakVramBytes": null,
+      "elapsedMs": 2827,
+      "outputBytes": 74914
+    },
+    {
+      "fixtureId": "reference-trajectory-analysis-dcd",
+      "workloadId": "mdanalysis:trajectory-analysis",
+      "maxTokenCount": 5,
+      "maxAtomCount": 5067,
+      "maxStepCount": 250,
+      "maxOutputItemCount": 250,
+      "peakRamBytes": 154951680,
+      "peakVramBytes": null,
+      "elapsedMs": 2669,
+      "outputBytes": 78462
+    },
+    {
+      "fixtureId": "reference-trajectory-analysis-strided",
+      "workloadId": "mdanalysis:trajectory-analysis",
+      "maxTokenCount": 5,
+      "maxAtomCount": 5067,
+      "maxStepCount": 250,
+      "maxOutputItemCount": 36,
+      "peakRamBytes": 155222016,
+      "peakVramBytes": null,
+      "elapsedMs": 2626,
+      "outputBytes": 28418
+    },
+    {
+      "fixtureId": "reference-trajectory-analysis-repeat",
+      "workloadId": "mdanalysis:trajectory-analysis",
+      "maxTokenCount": 5,
+      "maxAtomCount": 5067,
+      "maxStepCount": 250,
+      "maxOutputItemCount": 250,
+      "peakRamBytes": 155049984,
+      "peakVramBytes": null,
+      "elapsedMs": 2716,
+      "outputBytes": 74914
+    },
+    {
+      "fixtureId": "reference-trajectory-fingerprint",
+      "workloadId": "prolif:trajectory-fingerprint",
+      "maxTokenCount": 9,
+      "maxAtomCount": 5067,
+      "maxStepCount": 250,
+      "maxOutputItemCount": 250,
+      "peakRamBytes": 282152960,
+      "peakVramBytes": null,
+      "elapsedMs": 196728,
+      "outputBytes": 388555
+    },
+    {
+      "fixtureId": "derived-protein-bonds-trajectory-fingerprint",
+      "workloadId": "prolif:trajectory-fingerprint",
+      "maxTokenCount": 9,
+      "maxAtomCount": 5067,
+      "maxStepCount": 250,
+      "maxOutputItemCount": 25,
+      "peakRamBytes": 279863296,
+      "peakVramBytes": null,
+      "elapsedMs": 31331,
+      "outputBytes": 48407
+    },
+    {
+      "fixtureId": "reference-poses-fingerprint",
+      "workloadId": "prolif:pose-fingerprint",
+      "maxTokenCount": 9,
+      "maxAtomCount": 4988,
+      "maxStepCount": 9,
+      "maxOutputItemCount": 9,
+      "peakRamBytes": 250884096,
+      "peakVramBytes": null,
+      "elapsedMs": 3846,
+      "outputBytes": 19163
+    },
+    {
+      "fixtureId": "derived-protein-bonds-poses-fingerprint",
+      "workloadId": "prolif:pose-fingerprint",
+      "maxTokenCount": 9,
+      "maxAtomCount": 4988,
+      "maxStepCount": 9,
+      "maxOutputItemCount": 9,
+      "peakRamBytes": 256012288,
+      "peakVramBytes": null,
+      "elapsedMs": 8405,
+      "outputBytes": 19171
+    }
+  ],
+  "runtimeEvidence": {
+    "kind": "signed-payload",
+    "signedPayloadVerified": true,
+    "releaseManifestSha256": "8042f76d9fca7e9218864ef5d809b6f1326f2d92d9d222d8b940674e6ddeb44e",
+    "archiveSha256": "2c975cdbac29cf727969370493d4d62823a3c6f5566f8852115218fd66e1beee",
+    "payloadDigestSha256": "8411bdb93f85f6d9f0193b50cb6e748088219884f76a1073fb5476af2d8dd423",
+    "provenance": {
+      "scrollId": "molecular-analysis-linux-x86_64-cpu",
+      "scrollVersion": "1.0.0",
+      "builderRevision": "34ba9f578633fca0573e187511710b9ca7049fe6",
+      "sourceTreeDirty": true,
+      "sourceRevision": "mdanalysis-2.11.0+prolif-2.2.3+rdkit-2026.09.1",
+      "runtimeVersion": "3.11.18",
+      "pixiVersion": "0.73.0",
+      "dependencyLockSha256": "6badab470813cb241f0e85124a8d6f3bd79ae15ee1b1e25fadfd006c951d6cef",
+      "builtAt": "2026-11-03T22:51:40+01:00"
+    }
+  },
+  "reference": {
+    "lengthToleranceAngstrom": 0.001,
+    "comparison": {
+      "reference-trajectory-analysis-xtc": {
+        "maxAbsoluteDifferenceAngstrom": 0.000050058478993531,
+        "rmsd": [
+          {
+            "label": "Protein C-alpha",
+            "selection": "protein and name CA",
+            "atoms": 302,
+            "minimum": 0,
+            "maximum": 6.2475,
+            "mean": 3.2975,
+            "final": 3.5225
+          },
+          {
+            "label": "Ligand",
+            "selection": "resname LIG and not element H",
+            "atoms": 43,
+            "minimum": 0,
+            "maximum": 4.3102,
+            "mean": 1.9257,
+            "final": 2.3325
+          }
+        ],
+        "rmsf": {
+          "selection": "protein and name CA",
+          "atoms": 302,
+          "frames": 250,
+          "maximum": 13.9876,
+          "mean": 1.9981
+        },
+        "rmsdCsvSha256": "59f80b3d581ce8d5508d1fc72a139676a741eebac2d5ab46a5f98377a4d4a50b"
+      },
+      "reference-trajectory-analysis-dcd": {
+        "maxAbsoluteDifferenceAngstrom": 0.000050058478993531,
+        "rmsd": [
+          {
+            "label": "Protein C-alpha",
+            "selection": "protein and name CA",
+            "atoms": 302,
+            "minimum": 0,
+            "maximum": 6.2475,
+            "mean": 3.2975,
+            "final": 3.5225
+          },
+          {
+            "label": "Ligand",
+            "selection": "resname LIG and not element H",
+            "atoms": 43,
+            "minimum": 0,
+            "maximum": 4.3102,
+            "mean": 1.9257,
+            "final": 2.3325
+          }
+        ],
+        "rmsf": {
+          "selection": "protein and name CA",
+          "atoms": 302,
+          "frames": 250,
+          "maximum": 13.9876,
+          "mean": 1.9981
+        },
+        "rmsdCsvSha256": "c0435b867ee13d814ae5dd204daf5321bfcad926013b03780fe23b1ee6b8cb0e"
+      }
+    },
+    "officialVectors": 61,
+    "prolifTrajectoryAnchors": [
+      [
+        0,
+        "LIG1.G",
+        "VAL201.A",
+        "Hydrophobic"
+      ],
+      [
+        0,
+        "LIG1.G",
+        "PHE351.B",
+        "Hydrophobic"
+      ],
+      [
+        1,
+        "LIG1.G",
+        "MET337.B",
+        "Hydrophobic"
+      ]
+    ],
+    "openmm": null
+  },
+  "measurementHost": {
+    "platform": "linux",
+    "arch": "x64",
+    "osRelease": "6.18.33.2-microsoft-standard-WSL2",
+    "cpuModel": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+    "logicalCpuCount": 6,
+    "totalMemoryBytes": 12543184896
+  },
+  "validatorSource": {
+    "gitCommit": "34ba9f578633fca0573e187511710b9ca7049fe6",
+    "sourceTreeDirty": true,
+    "scriptSha256": "987a4c7633e0a64abe4adff9a4f0ff9be6f21f8aea92dc7a3eda843f6d5b7445",
+    "measurementScriptSha256": "69b3d3ea2b3d8ea402477442b3b45fd64df884e5e1397b9f916a13fe8fa9832e",
+    "fixturePreparationSha256": "f311a959c3136f4b635876c38601996ab474d77607895e8faac071894d29f409",
+    "recipeSha256": "6af63008fed174b03024fe4def43638247a23ee853d46db37957ecc1ad547c6a"
+  },
+  "provenance": {
+    "recipeId": "molecular-analysis-linux-x86_64-cpu",
+    "recipeVersion": "1.0.0",
+    "pythonVersion": "3.11.18",
+    "pixiVersion": "0.73.0",
+    "dependencyLockSha256": "6badab470813cb241f0e85124a8d6f3bd79ae15ee1b1e25fadfd006c951d6cef"
+  },
+  "evidence": {
+    "fixture": {
+      "id": "prolif-2.2.3-packaged-data",
+      "topologySha256": "387ec524c3e82b7c891e9a7aa317222c9651a73ecdb61f67a872a9f87fdaa76a",
+      "trajectorySha256": "fbaa07a24a3550bf85a6dab6435768a1da5b3fde65deb37abf47f1899a0dabdf"
+    },
+    "framework": {
+      "name": "mdanalysis-prolif",
+      "version": "2.11.0+2.2.3",
+      "backend": "cpu"
+    },
+    "accelerator": {
+      "kind": "cpu"
+    },
+    "finiteValues": true,
+    "peakRamBytes": 282152960,
+    "peakVramBytes": null,
+    "outputContract": "passed",
+    "provenanceContract": "passed"
+  }
+}

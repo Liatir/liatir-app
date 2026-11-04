@@ -21,6 +21,7 @@
   import { finalizeExecutionResult } from '$lib/execution/finalization';
   import type { ToolRuntimeDirectRunContext } from '$lib/tool-runtimes/direct-run-context';
   import {
+    dockedComplexDefinition,
     molecularDockingDefinition,
     preflightDockingWithRuntime,
     receptorPreparationDefinition,
@@ -69,6 +70,11 @@
   let cpuThreads = $state(4);
   let addLigandHydrogens = $state(true);
   let screeningDatabase = $state('');
+  // Docked complex
+  let posesSdf = $state('');
+  let complexPose = $state('');
+  // The poses belong to the file, so the list survives choosing one of them.
+  let dockedPoses = $state<Array<{ ligand: string; poseRank: number; scoreKcalPerMol: number | null }>>([]);
 
   let checking = $state(false);
   let checkedFingerprint = $state('');
@@ -83,7 +89,8 @@
   let loadingOutput = $state(false);
   let logs = $state<string[]>([]);
 
-  const definition = $derived(mode === 'prepare-receptor' ? receptorPreparationDefinition : molecularDockingDefinition);
+  const definition = $derived({ 'prepare-receptor': receptorPreparationDefinition, dock: molecularDockingDefinition,
+    'select-complex': dockedComplexDefinition }[mode]);
   const runtime = $derived(toolRuntimesStore.runtimes.find((item) => item.id === MOLECULAR_DOCKING_RUNTIME_COMPONENT_ID) ?? null);
   const structureFiles = $derived(dataFiles.files.filter((file) => /\.(?:pdb|cif|mmcif)$/iu.test(file.path)));
   const pdbFiles = $derived(dataFiles.files.filter((file) => /\.pdb$/iu.test(file.path)));
@@ -99,15 +106,18 @@
     && metadataString(job, 'toolId') === definition.id
   ) ?? null);
   const runActive = $derived(running || !!activeJob);
-  const currentFingerprint = $derived(JSON.stringify(buildParams()));
+  // Which pose to take is checked when it runs; the measured envelope depends only on the files.
+  const currentFingerprint = $derived(JSON.stringify({ ...buildParams(), ligand: '', poseRank: '' }));
   const inputsReady = $derived(mode === 'prepare-receptor'
     ? !!inputStructure
-    : !!receptorPdbqt && !!ligandsSdf && (siteMode === 'box' || !!referenceLigand));
+    : mode === 'select-complex'
+      ? !!posesSdf && !!receptorPdbqt && !!receptorStructure
+      : !!receptorPdbqt && !!ligandsSdf && (siteMode === 'box' || !!referenceLigand));
   const canCheck = $derived(runtime?.status === 'installed' && inputsReady && !runActive && !checking);
   const beyondEvidence = $derived(preflight?.estimate.accepted === true && preflight.estimate.confirmationRequired);
   const canRun = $derived(
     canCheck && preflight?.estimate.accepted === true && checkedFingerprint === currentFingerprint
-    && (!beyondEvidence || beyondEvidenceAccepted)
+    && (!beyondEvidence || beyondEvidenceAccepted) && (mode !== 'select-complex' || !!complexPose)
   );
   const nonWaterHeterogens = $derived((preflight?.metrics.heterogens ?? []).filter((item) => item.kind !== 'water'));
   const structureRequirement = {
@@ -123,7 +133,7 @@
       checkedFingerprint = '';
       // The residue list belongs to the structure, so it survives option changes (choosing what to
       // remove is one of them) and is cleared only when another structure is picked.
-      if (mode !== 'prepare-receptor') preflight = null;
+      if (mode === 'dock') preflight = null;
       preflightError = null;
       beyondEvidenceAccepted = false;
     }
@@ -177,6 +187,10 @@
         ph: String(ph),
       };
     }
+    if (mode === 'select-complex') {
+      const [ligand, poseRank] = complexPose ? JSON.parse(complexPose) as [string, number] : ['', 1];
+      return { posesSdf, receptorPdbqt, receptorStructure, ligand, poseRank: String(poseRank) };
+    }
     return {
       receptorPdbqt,
       receptorStructure,
@@ -200,7 +214,9 @@
   function inputPaths(params: Record<string, string>): string[] {
     const keys = mode === 'prepare-receptor'
       ? ['inputStructure']
-      : ['receptorPdbqt', 'receptorStructure', 'ligandsSdf', 'referenceLigand', 'screeningDatabase'];
+      : mode === 'select-complex'
+        ? ['posesSdf', 'receptorPdbqt', 'receptorStructure']
+        : ['receptorPdbqt', 'receptorStructure', 'ligandsSdf', 'referenceLigand', 'screeningDatabase'];
     return keys.map((key) => params[key]).filter(Boolean);
   }
 
@@ -226,6 +242,12 @@
       const result = await preflightDockingWithRuntime(runtime, mode, buildParams(), host);
       if (currentFingerprint !== fingerprint) return;
       preflight = result;
+      if (mode === 'select-complex') {
+        dockedPoses = result.metrics.poses ?? [];
+        if (!dockedPoses.some((pose) => JSON.stringify([pose.ligand, pose.poseRank]) === complexPose)) {
+          complexPose = dockedPoses.length ? JSON.stringify([dockedPoses[0].ligand, dockedPoses[0].poseRank]) : '';
+        }
+      }
       checkedFingerprint = fingerprint;
       if (!result.estimate.accepted) preflightError = result.estimate.error;
     } catch (error) {
@@ -249,7 +271,9 @@
     });
     const label = mode === 'prepare-receptor'
       ? `${basename(inputStructure)} · receptor`
-      : `${basename(ligandsSdf)} → ${basename(receptorPdbqt)}`;
+      : mode === 'select-complex'
+        ? `${params.ligand} pose ${params.poseRank} · complex`
+        : `${basename(ligandsSdf)} → ${basename(receptorPdbqt)}`;
     running = true;
     activeExecutionRunId = runId;
     selectedRunId = null;
@@ -285,7 +309,8 @@
         sideEffects: [], params, startedAt, endedAt, durationMs: endedAt - startedAt, output: result.output,
         error: null, log: logs,
       });
-      toast.success(mode === 'prepare-receptor' ? 'Receptor ready for docking' : 'Docking finished');
+      toast.success({ 'prepare-receptor': 'Receptor ready for docking', dock: 'Docking finished',
+        'select-complex': 'Complex ready for simulation' }[mode]);
     } catch (error) {
       const endedAt = Date.now();
       const message = error instanceof Error ? error.message : String(error);
@@ -378,6 +403,21 @@
                   </div>
                 {/if}
                 <p class="text-xs text-text-subtle">Every hydrogen is re-assigned with OpenMM's rules at this pH. To dock against a receptor protonated elsewhere, use its PDBQT directly in Molecular Docking.</p>
+              {:else if mode === 'select-complex'}
+                <FilePickerPopup files={sdfFiles} value={posesSdf} label="Docked poses (SDF)" testId="complex-poses" info="The poses Molecular Docking wrote." emptyText="No SDF files in Data. Run Molecular Docking first." onchange={(path) => { posesSdf = path; dockedPoses = []; complexPose = ''; }} />
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <FilePickerPopup files={pdbqtFiles} value={receptorPdbqt} label="Receptor the poses were docked into (PDBQT)" testId="complex-receptor-pdbqt" emptyText="No PDBQT files in Data." onchange={(path) => (receptorPdbqt = path)} />
+                  <FilePickerPopup files={pdbFiles} value={receptorStructure} label="Prepared receptor (PDB)" testId="complex-receptor-structure" info="The PDB written together with that PDBQT by Receptor Preparation." emptyText="No PDB files in Data." onchange={(path) => (receptorStructure = path)} />
+                </div>
+                {#if dockedPoses.length}
+                  <div><label for="complex-pose" class="text-xs text-text-secondary">Pose to simulate</label><select id="complex-pose" data-testid="complex-pose" bind:value={complexPose} class={inputClass}>
+                    {#each dockedPoses as pose (`${pose.ligand}:${pose.poseRank}`)}
+                      <option value={JSON.stringify([pose.ligand, pose.poseRank])}>{pose.ligand} · pose {pose.poseRank}{pose.scoreKcalPerMol === null ? '' : ` · ${pose.scoreKcalPerMol.toFixed(3)} kcal/mol`}</option>
+                    {/each}
+                  </select></div>
+                {:else}
+                  <p class="text-xs text-text-subtle">Check the run to list the poses in this file.</p>
+                {/if}
               {:else}
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <FilePickerPopup files={pdbqtFiles} value={receptorPdbqt} label="Receptor for docking (PDBQT)" testId="docking-receptor-pdbqt" emptyText="Prepare a receptor first, or add a PDBQT to Data." onchange={(path) => (receptorPdbqt = path)} />

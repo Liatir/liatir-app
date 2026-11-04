@@ -1,6 +1,6 @@
 # Current project status
 
-Last updated 2026-11-03. This page says where Liatir stands and what comes next. How each piece got
+Last updated 2026-11-04. This page says where Liatir stands and what comes next. How each piece got
 here is in the [status log, July to September 2026](../history/status-log-2026-07-to-2026-09.md)
 and in the plans under `history/`; the readiness of each product area, with its evidence, is in
 [Beta 1 readiness](./roadmap/beta-readiness.md).
@@ -16,9 +16,13 @@ box boundaries, blockers and progress are in the
 [Scientific Simulation Suite plan](./roadmap/scientific-simulation-suite.md). Phase 1 (feasibility)
 is complete. Phase 2: the `molecular-docking` box (Vina, Meeko, PDBFixer, Ringtail, RDKit) is built,
 scientifically validated on a development-signed build — imatinib redocks within 0.4 Å of the 1IEP
-crystal pose — and integrated as Receptor Preparation and Molecular Docking; the real-app lifecycle and
-publication are next. Merging the branch requires a signer redeploy before any further Runtime Box
-release (the signer policy gains the docking box). GNINA is blocked on a redistribution decision. Work happens
+crystal pose — integrated as Receptor Preparation, Molecular Docking and Docked Complex, and passed the
+real-app lifecycle on native Linux; Windows through WSL2 and publication are next. Phase 3: the
+`molecular-analysis` box (MDAnalysis, ProLIF) is scientifically validated the same way — its measures
+match an independent computation to 5 × 10⁻⁵ Å and ProLIF's 61 official test vectors pass — and
+integrated as Trajectory Analysis and Interaction Fingerprint; the Docking → OpenMM → analysis chain is
+next. Merging the branch requires a signer redeploy before any further Runtime Box release (the signer
+policy gains both boxes). GNINA is blocked on a redistribution decision. Work happens
 on branch `simulation-suite` in the WSL2 checkout `/home/lorenzo/liatir-stack-gate8-mcp`. The owner
 told the agent on 2026-11-03 to proceed autonomously without asking for permissions.
 
