@@ -358,6 +358,7 @@ pub(crate) fn install(
     release_path: &Path,
     trust_path: &Path,
     archive_path: &Path,
+    downloads_dir: &Path,
     archive_digest: &str,
     release_payload_digest: &str,
     activation_path: &Path,
@@ -371,6 +372,7 @@ pub(crate) fn install(
         trust_path.to_string_lossy().to_string(),
         archive_path.to_string_lossy().to_string(),
         activation_path.to_string_lossy().to_string(),
+        downloads_dir.to_string_lossy().to_string(),
     ];
     let mapped = map_host_paths_to_wsl(&distribution, &host_paths)?;
     let command = vec![
@@ -387,6 +389,7 @@ pub(crate) fn install(
         archive_digest.into(),
         release_payload_digest.into(),
         mapped[4].clone(),
+        mapped[5].clone(),
     ];
     let state: ConsumerRuntimeState = parse_consumer_json(run_wsl(Some(&distribution), &command)?)?;
     compare_consumer_state(&state, expected_activation, kind, runtime_id)?;
