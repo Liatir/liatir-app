@@ -24,11 +24,13 @@ integrated as Trajectory Analysis and Interaction Fingerprint. The whole chain â
 the pose to OpenMM on the GPU in explicit water, analyse the trajectory â€” passes, with the crystal's
 hinge hydrogen bond held in every frame. Phase 4B: the `metabolic-modeling` box (COBRApy with HiGHS,
 confirmed by GLPK) reproduces COBRApy's own published results for E. coli core, settles solver
-disagreements on genome-scale models in exact arithmetic, and is integrated as Metabolic Modeling.
+disagreements on genome-scale models in exact arithmetic, is integrated as Metabolic Modeling, and
+passed the real-app lifecycle on native Linux.
 Phase 4A: the `biochemical-simulation` box (PySB with BioNetGen) matches the reference solution of
 Robertson's stiff problem, an exact solution and the expected stochastic statistics, refuses a model
 whose reaction network never closes instead of running for hours, and is integrated as Biochemical
-Simulation. Merging the branch requires a signer redeploy before any further Runtime Box release (the
+Simulation; installed, it cannot start BioNetGen until Scrollcase can mark files unpacked from an
+archive executable (B5 in the plan, the owner's decision). Merging the branch requires a signer redeploy before any further Runtime Box release (the
 signer policy gains the new boxes). GNINA is blocked on a redistribution decision. Work happens
 on branch `simulation-suite` in the WSL2 checkout `/home/lorenzo/liatir-stack-gate8-mcp`. The owner
 told the agent on 2026-11-03 to proceed autonomously without asking for permissions.

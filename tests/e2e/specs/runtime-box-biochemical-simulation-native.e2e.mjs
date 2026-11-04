@@ -23,6 +23,7 @@ import {
   readDataJson,
   reloadLiatirApp,
   selectFileFromPicker,
+  setAppInputValue,
 } from '../support/liatir-app.mjs';
 
 const BOX_ID = 'biochemical-simulation';
@@ -113,10 +114,12 @@ async function openTool(browser, label) {
   });
 }
 
-async function setValue(browser, testId, value) {
-  const field = await browser.$(`[data-testid="${testId}"]`);
-  await field.clearValue();
-  await field.setValue(String(value));
+/** Sets a field once the page has rendered it: some appear only after another choice. */
+async function setField(browser, selector, value) {
+  await browser.waitUntil(async () => (await browser.$(selector)).isExisting(), {
+    timeout: 5_000, timeoutMsg: `${selector} did not appear`,
+  });
+  await setAppInputValue(browser, selector, String(value));
 }
 
 async function checkAndRun(browser, label) {
@@ -195,9 +198,9 @@ print(json.dumps({"copied": 1}))
 
     // Deterministic: synthesis and degradation with a parameter changed, against its exact solution.
     await openTool(browser, 'deterministic');
-    await (await browser.$('[data-testid="biochemical-builtin"]')).selectByAttribute('value', 'synth_deg');
-    await setValue(browser, 'biochemical-tend', 50);
-    await (await browser.$('#biochemical-parameters')).setValue(`kA_syn ${SYNTHESIS.kA_syn}`);
+    await setField(browser, '[data-testid="biochemical-builtin"]', 'synth_deg');
+    await setField(browser, '[data-testid="biochemical-tend"]', 50);
+    await setField(browser, '#biochemical-parameters', `kA_syn ${SYNTHESIS.kA_syn}`);
     await checkAndRun(browser, 'Deterministic simulation');
     const ode = await runToResult(browser, 1, 'Deterministic simulation');
     expect(ode.provenance).toMatchObject({
@@ -218,11 +221,11 @@ print(json.dumps({"copied": 1}))
 
     // Stochastic: the same model's stationary distribution, Poisson with mean 10.
     await openTool(browser, 'stochastic');
-    await (await browser.$('[data-testid="biochemical-builtin"]')).selectByAttribute('value', 'synth_deg');
-    await (await browser.$('[data-testid="biochemical-method"]')).selectByAttribute('value', 'ssa');
-    await setValue(browser, 'biochemical-tend', 200);
-    await setValue(browser, 'biochemical-runs', SSA_RUNS);
-    await (await browser.$('#biochemical-parameters')).setValue(`kA_syn ${SYNTHESIS.kA_syn}`);
+    await setField(browser, '[data-testid="biochemical-builtin"]', 'synth_deg');
+    await setField(browser, '[data-testid="biochemical-method"]', 'ssa');
+    await setField(browser, '[data-testid="biochemical-tend"]', 200);
+    await setField(browser, '[data-testid="biochemical-runs"]', SSA_RUNS);
+    await setField(browser, '#biochemical-parameters', `kA_syn ${SYNTHESIS.kA_syn}`);
     await checkAndRun(browser, 'Stochastic simulation');
     const ssa = await runToResult(browser, 2, 'Stochastic simulation');
     const finals = csvRows(fs.readFileSync(outputPath(ssa.result, 'runsCsv'), 'utf8'))
@@ -234,7 +237,7 @@ print(json.dumps({"copied": 1}))
 
     // A BNGL file from the user's Data: generated and simulated here, its own actions read and not run.
     await openTool(browser, 'BNGL');
-    await (await browser.$('[data-testid="biochemical-source"]')).selectByAttribute('value', 'bngl');
+    await setField(browser, '[data-testid="biochemical-source"]', 'bngl');
     await selectFileFromPicker(browser, 'biochemical-bngl', path.basename(modelPath));
     await checkAndRun(browser, 'BNGL simulation');
     const bngl = await runToResult(browser, 3, 'BNGL simulation');

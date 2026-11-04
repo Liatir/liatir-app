@@ -22,6 +22,7 @@ import {
   readDataJson,
   reloadLiatirApp,
   selectFileFromPicker,
+  setAppInputValue,
 } from '../support/liatir-app.mjs';
 
 const BOX_ID = 'metabolic-modeling';
@@ -198,7 +199,7 @@ print(json.dumps({"copied": 1}))
       timeout: 20_000, timeoutMsg: 'Metabolic Modeling did not render again',
     });
     await selectFileFromPicker(browser, 'metabolic-model', path.basename(modelPath));
-    await (await browser.$('[data-testid="metabolic-analysis"]')).selectByAttribute('value', 'gene-deletion');
+    await setAppInputValue(browser, '[data-testid="metabolic-analysis"]', 'gene-deletion');
     await checkAndRun(browser, 'Gene deletions');
     const deletions = await runToResult(browser, 2, 'Gene deletions');
     const deletionSummary = JSON.parse(fs.readFileSync(outputPath(deletions.result, 'summaryJson'), 'utf8'));

@@ -91,7 +91,7 @@ describe('Runtime Box product E2E support', () => {
     expect(() => resolveRuntimeBoxReleaseCandidate('unknown-component')).toThrow(/Unsupported/);
   });
 
-  it('selects a picker file through standard CSS instead of unsupported text-selector syntax', async () => {
+  it('selects a picker file through standard CSS, inside the picker dialog only', async () => {
     let pickerClicked = false;
     let optionClicked = false;
     const option = {
@@ -108,7 +108,8 @@ describe('Runtime Box product E2E support', () => {
         };
       },
       $$: async (selector: string) => {
-        expect(selector).toBe('button');
+        // A run-history entry outside the dialog can carry the same file name.
+        expect(selector).toBe('[role="dialog"] button');
         expect(pickerClicked).toBe(true);
         return [{
           getText: async () => 'Close',

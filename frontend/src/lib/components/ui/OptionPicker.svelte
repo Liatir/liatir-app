@@ -159,7 +159,8 @@
 
   {#if open}
   <!-- Popup (nowheel: scrolling the list must not zoom the pipeline canvas) -->
-  <div class="nowheel fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
+  <div role="dialog" aria-label={label ?? 'Choose an option'}
+       class="nowheel fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
               w-full max-w-md rounded-xl border border-border bg-surface shadow-xl overflow-hidden">
 
     <!-- Search -->

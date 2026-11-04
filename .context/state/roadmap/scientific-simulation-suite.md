@@ -283,6 +283,13 @@ Each was checked, not inferred; the evidence is named.
     BioNetGen 2.9.3 ships** (the largest, `egfr_net`, 356 species and 3,749 reactions in 5.8 s). PySB's
     importer refuses 6 (Arrhenius and saturation rate laws, exclude-reactant declarations), one file
     has no rules, and two (`blbr`, `tlbr`) are written for network-free simulation and never close.
+37. **Scrollcase 1.4.0 cannot give a file unpacked from `assetArchives` the executable bit.** The
+    archive's modes are synthesised from declarations — `assets[].executable`, `localFiles[].executable`
+    and the runtime's `venv/bin` rule — and an archive member has none, so BioNetGen's `BNG2.pl` and
+    `bin/run_network` install as 0644 and PySB refuses to start BioNetGen. The box self-test and the
+    validator both ran on the build directory, where extraction had kept the bits; only the real-app
+    lifecycle, installing the signed archive, saw it. A validator must run on the payload as a consumer
+    extracts it. See B5.
 
 ## Licensing and redistribution review
 
@@ -432,11 +439,24 @@ component.
   complete corresponding source; a box that fetches the official binary from GitHub at install with a
   pinned SHA-256; or a user-supplied binary validated by digest. Download of the 2 GB binary is held
   until then. GNINA's work does not block anything else.
-- **B2 — Native executables for PhysiCell (and optionally BioNetGen).** Scrollcase has no compile
-  step and the upstream PhysiCell binaries need glibc ≥ 2.38. Candidate paths: a reproducible compile
-  with conda-forge's toolchain (glibc 2.17 sysroot, portable `-march`, OpenMP) supplied as a hashed
-  asset, or a pixi-build source package. Decide in Phase 4C, with the Scrollcase maintainer if the
-  build needs a new Scrollcase feature.
+- **B2 — A portable PhysiCell executable.** Packaging is not the problem: Scrollcase boxes carry
+  and start compiled binaries (its `native` runtime; a binary supplied as a hashed asset, with what is
+  linked inside it declared in a `bundledLicenseDeclaration`), as BioNetGen's executables show here.
+  Scrollcase does not compile source, and PhysiCell has no usable binary: it is on no conda channel,
+  and the upstream executables need glibc ≥ 2.38 (finding 12). The path: compile the pinned
+  PhysiCell source with conda-forge's toolchain (glibc 2.17 sysroot, portable `-march`, OpenMP) from a
+  recipe and toolchain lock kept in this repository, so the bytes can be rebuilt and compared, and
+  supply the result as a hashed asset. Development builds can serve it locally (an asset URL is any
+  URL); a production release needs it at an immutable public URL, a publishing action that needs
+  the owner's go. Owner clarification, 2026-11-04: Scrollcase supports native runtimes, so no
+  Scrollcase feature is needed.
+- **B5 — Executable files inside an expanded asset archive.** Scrollcase has no declaration for them
+  (finding 37), so Biochemical Simulation cannot start BioNetGen once installed. Recommended fix, in
+  Scrollcase: `assetArchives[].executables` (paths below `destination`, checked to exist after
+  extraction) feeding the same synthesised modes, and a self-test that runs on those modes rather
+  than on the build directory's. Scrollcase is the owner's project and its release is theirs; the
+  alternative inside 1.4.0 — unpacking BioNetGen under `venv/bin`, which the runtime marks executable
+  wholesale — puts Perl modules and models among the box's programs and is not taken.
 - **B3 — Signer policy.** Each new box needs an entry in `services/runtime-box-signer/policy.json`
   and a signer redeploy before a production signature: a remote, authorized action.
 - **B3 now applies on this branch**: `services/runtime-box-signer/policy.json` lists
@@ -481,8 +501,8 @@ component.
 | GNINA | BLOCKED (B1) | finding 8 |
 | MDAnalysis, ProLIF | SCIENTIFICALLY VALIDATED on a development-signed build; product lifecycle and publication pending | `runtime-boxes/measurements/molecular-analysis-linux-x86_64-cpu-development-2026-11-04.json` |
 | Docked Complex (docking box) | SCIENTIFICALLY VALIDATED on the development build; real-app lifecycle pending | `runtime-boxes/measurements/molecular-docking-linux-x86_64-cpu-development-2026-11-04.json`, `runtime-boxes/measurements/docking-simulation-chain-development-2026-11-04.json` |
-| PySB, BioNetGen | SCIENTIFICALLY VALIDATED on a development-signed build; real-app lifecycle and publication pending | `runtime-boxes/measurements/biochemical-simulation-linux-x86_64-cpu-development-2026-11-04.json` |
-| COBRApy | SCIENTIFICALLY VALIDATED on a development-signed build; real-app lifecycle and publication pending | `runtime-boxes/measurements/metabolic-modeling-linux-x86_64-cpu-development-2026-11-04.json` |
+| PySB, BioNetGen | SCIENTIFICALLY VALIDATED on the development build's directory; the installed box cannot start BioNetGen (B5) | `runtime-boxes/measurements/biochemical-simulation-linux-x86_64-cpu-development-2026-11-04.json` |
+| COBRApy | SCIENTIFICALLY VALIDATED and PRODUCT VALIDATED on native Linux (development build); Windows through WSL2 and publication pending | `runtime-boxes/measurements/metabolic-modeling-linux-x86_64-cpu-development-2026-11-04.json`, `runtime-boxes/measurements/metabolic-modeling-linux-x86_64-cpu-product-lifecycle-development-2026-11-04.json` |
 | PhysiCell | not started; B2 open | finding 12 |
 
 ## Phase 2 evidence (development build, 2026-11-03)
@@ -598,6 +618,19 @@ runner in the signed payload, every run confirmed by GLPK: **passed**, record `r
 Peak memory 547 MB. Reference data ships in COBRApy; the FVA table is committed as
 `runtime-boxes/fixtures/metabolic/cobrapy-0.32.1-textbook-fva.json`.
 
+**Real-app lifecycle, native Linux (WSL2, Xvfb), 2026-11-04: 2 of 2 passed** —
+`runtime-box-release-candidate.e2e.mjs` and `runtime-box-metabolic-modeling-native.e2e.mjs` on a test
+binary built with the metabolic candidate, against the loopback registry and the development key. The
+box installed with signature verification; a killed Job reached `killed`; FBA on E. coli core ran
+through the page inside the measured envelope at 0.8739215069684303 (documented 0.8739215069684307),
+confirmed by GLPK; single gene deletions found COBRApy's 7 essential genes; Jobs, Results, provenance,
+the offline boundary and the interpretation notice held; removal kept every Result file. Record
+`runtime-boxes/measurements/metabolic-modeling-linux-x86_64-cpu-product-lifecycle-development-2026-11-04.json`. Two test-only
+defects were fixed on the way: the spec chose a dropdown value through a WebDriver call the harness
+does not have (it now uses `setAppInputValue`), and the file-picker helper clicked the run-history entry
+named after the same input file (the picker popup is now a labelled `role="dialog"`, and the helper
+looks only inside it).
+
 ## Phase 4A evidence (development build, 2026-11-04)
 
 Box `biochemical-simulation` `1.17.0-beta.1` / `linux-x86_64-cpu`, lock `a7e83046…`, 43 packages: PySB
@@ -671,5 +704,5 @@ only, so a stochastic run of a larger network asks the user to confirm a run bey
    publication commit (catalog, product catalog, docs, measurement from the production build).
 3. Real-app lifecycle of Docked Complex and the analysis tools on native Linux, then through WSL2
    with item 1.
-4. Real-app lifecycle of Metabolic Modeling and Biochemical Simulation.
+4. Real-app lifecycle of Biochemical Simulation, once B5 is resolved.
 5. Phase 4C PhysiCell (B2).
