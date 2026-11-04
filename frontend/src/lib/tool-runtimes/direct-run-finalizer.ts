@@ -29,6 +29,7 @@ import {
 } from '$lib/tools/molecular-analysis/analysis';
 import { finalizeMetabolicResult, metabolicModelingDefinition } from '$lib/tools/metabolic-modeling/metabolic';
 import { biochemicalSimulationDefinition, finalizeBiochemicalResult } from '$lib/tools/biochemical-simulation/biochemical';
+import { finalizePhysiCellResult, multicellularSimulationDefinition } from '$lib/tools/physicell/physicell';
 import { parseToolRuntimeDirectRunContext } from './direct-run-context';
 
 const finalizing = new Set<string>();
@@ -119,7 +120,9 @@ export async function finalizeCompletedToolRuntimeDirectRuns(jobs: JobEntry[]): 
                         ? await finalizeMetabolicResult(runtime, context.outputDir, runtimeResult, appendLog)
                         : context.toolId === biochemicalSimulationDefinition.id
                           ? await finalizeBiochemicalResult(runtime, context.outputDir, runtimeResult, appendLog)
-                          : null;
+                          : context.toolId === multicellularSimulationDefinition.id
+                            ? await finalizePhysiCellResult(runtime, context.outputDir, runtimeResult, appendLog)
+                            : null;
       if (!finalized) throw new Error(`Unsupported Tool Runtime finalizer: ${context.toolId}`);
       const endedAt = job.endedAtMs ?? Date.now();
       await finalizeExecutionResult(context.execution.runId, 'done', {

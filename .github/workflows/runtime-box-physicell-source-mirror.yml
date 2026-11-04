@@ -1,0 +1,104 @@
+name: Runtime Box PhysiCell source mirror
+
+on:
+  workflow_dispatch:
+    inputs:
+      mirror_id:
+        description: Reviewed source mirror to rebuild and upload
+        required: true
+        type: choice
+        options:
+          - physicell-1-14-2-template
+      confirm:
+        description: Type UPLOAD PHYSICELL SOURCE MIRROR to confirm the immutable R2 write
+        required: true
+        type: string
+
+concurrency:
+  group: runtime-box-source-mirror-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Rebuild, upload and publicly verify the reviewed executable
+    environment: runtime-box-production
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      LIATIR_RUNTIME_BOX_ADMIN_TOKEN: ${{ secrets.LIATIR_RUNTIME_BOX_ADMIN_TOKEN }}
+      LIATIR_RUNTIME_BOX_REGISTRY: ${{ vars.LIATIR_RUNTIME_BOX_REGISTRY }}
+      MIRROR_ID: ${{ inputs.mirror_id }}
+      MIRROR_DIR: ${{ github.workspace }}/.runtime-box-source-mirror
+      UPLOAD_CONFIRMATION: ${{ inputs.confirm }}
+    steps:
+      - name: Require the exact main ref
+        run: test "${{ github.ref }}" = "refs/heads/main"
+
+      - name: Require the exact reviewed operation
+        run: |
+          test "$MIRROR_ID" = "physicell-1-14-2-template"
+          test "$UPLOAD_CONFIRMATION" = "UPLOAD PHYSICELL SOURCE MIRROR"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Validate the bounded uploader
+        run: npm run test:unit -- tests/unit/runtime-box-publisher.test.ts
+
+      - name: Install the pinned pixi
+        env:
+          PIXI_VERSION: v0.73.0
+          PIXI_HOME: ${{ github.workspace }}/.runtime-box-ci/pixi
+          PIXI_NO_PATH_UPDATE: "1"
+        run: |
+          curl -fsSL https://pixi.sh/install.sh | bash
+          echo "$PIXI_HOME/bin" >> "$GITHUB_PATH"
+
+      - name: Download and verify the PhysiCell 1.14.2 release source
+        run: |
+          set -euo pipefail
+          mkdir -p "$MIRROR_DIR"
+          curl -fL --retry 3 --retry-delay 2 \
+            --output "$MIRROR_DIR/PhysiCell_V.1.14.2.zip" \
+            https://github.com/MathCancer/PhysiCell/releases/download/1.14.2/PhysiCell_V.1.14.2.zip
+          echo '15b190ac3420683b1f8e9d61dd9573b7afe0f6bc4c0011b0b0756693ccd0b9f4  '"$MIRROR_DIR/PhysiCell_V.1.14.2.zip" | sha256sum --check --strict
+
+      # The upload accepts only the reviewed SHA-256, so it also proves this machine rebuilt the same bytes.
+      - name: Rebuild the executable from the locked toolchain
+        run: runtime-boxes/native-builds/physicell/build.sh "$MIRROR_DIR/PhysiCell_V.1.14.2.zip" "$MIRROR_DIR/build"
+
+      - name: Upload through the restricted Registry surface and verify the public bytes
+        run: >-
+          npm run runtime-box -- publish-source-mirror "$MIRROR_ID"
+          --file "$MIRROR_DIR/build/physicell-1.14.2-template-linux-x86_64"
+          --registry "$LIATIR_RUNTIME_BOX_REGISTRY"
+          --receipt "$MIRROR_DIR/publish-receipt.json"
+
+      - name: Record the exact public result
+        if: success()
+        run: |
+          {
+            echo '### PhysiCell source mirror'
+            echo
+            jq -r '"- URL: `\(.url)`\n- Bytes: `\(.sizeBytes)`\n- SHA-256: `\(.sha256)`"' "$MIRROR_DIR/publish-receipt.json"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the publication receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: physicell-source-mirror-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.MIRROR_DIR }}/publish-receipt.json
+          if-no-files-found: warn
+          retention-days: 90

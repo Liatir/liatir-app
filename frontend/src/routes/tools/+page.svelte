@@ -22,6 +22,7 @@
     MOLECULAR_ANALYSIS_RUNTIME_COMPONENT_ID,
     MOLECULAR_DOCKING_RUNTIME_COMPONENT_ID,
     OPENMM_RUNTIME_COMPONENT_ID,
+    PHYSICELL_RUNTIME_COMPONENT_ID,
     PVACTOOLS_RUNTIME_COMPONENT_ID,
     isLiatirStructureModelId,
   } from '@liatir/core';
@@ -58,6 +59,10 @@
   );
   const biochemicalPublished = LIATIR_TOOL_RUNTIME_CATALOG.some(
     (runtime) => runtime.id === BIOCHEMICAL_SIMULATION_RUNTIME_COMPONENT_ID
+      && runtime.install.runtimeBox.publishedTargets.length > 0,
+  );
+  const physicellPublished = LIATIR_TOOL_RUNTIME_CATALOG.some(
+    (runtime) => runtime.id === PHYSICELL_RUNTIME_COMPONENT_ID
       && runtime.install.runtimeBox.publishedTargets.length > 0,
   );
   const analysisPublished = LIATIR_TOOL_RUNTIME_CATALOG.some(
@@ -283,6 +288,15 @@
       ...(biochemicalPublished ? { href: '/tools/biochemical-simulation' } : {}),
       status: biochemicalPublished ? 'available' : 'soon',
       tags: ['BNGL', 'ODE', 'Stochastic', 'Rule-based', 'PySB'],
+      category: 'Systems Biology',
+    },
+    {
+      id: 'multicellular-simulation',
+      label: 'Multicellular Simulation',
+      description: 'Simulate how a population of cells grows, moves, dies and shapes its environment, cell by cell.',
+      ...(physicellPublished ? { href: '/tools/multicellular-simulation' } : {}),
+      status: physicellPublished ? 'available' : 'soon',
+      tags: ['Agent-based', 'Cells', 'Tissue', 'PhysiCell'],
       category: 'Systems Biology',
     },
     {

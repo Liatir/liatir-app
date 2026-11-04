@@ -35,6 +35,11 @@ runtime-boxes/native-tools/** text eol=lf
 runtime-boxes/scrolls/**/*.json text eol=lf
 runtime-boxes/measurements/** text eol=lf
 
+# PhysiCell's own settings and licence files ship as its release has them, with CRLF line endings,
+# and the scroll pins their bytes: Git must neither normalise nor convert them.
+runtime-boxes/scrolls/physicell/template/** -text
+runtime-boxes/scrolls/physicell/licenses/** -text
+
 # Each of these embeds the exact Python a product runner executes, and a scientific validator
 # records the SHA-256 of that extracted text as evidence. Left to `text=auto` the same runner hashes
 # one way on a Windows checkout and another on Linux CI, so one evidence record could never be

@@ -125,6 +125,7 @@
     "runtime-box:validate:docking-simulation-chain": "node scripts/validate-docking-simulation-chain.mjs",
     "runtime-box:validate:metabolic-modeling": "node scripts/validate-metabolic-modeling-runtime.mjs",
     "runtime-box:validate:biochemical-simulation": "node scripts/validate-biochemical-simulation-runtime.mjs",
+    "runtime-box:validate:physicell": "node scripts/validate-physicell-runtime.mjs",
     "runtime-box:validate:molecular-analysis": "node scripts/validate-molecular-analysis-runtime.mjs",
     "runtime-box:validate:molecular-docking": "node scripts/validate-molecular-docking-runtime.mjs",
     "runtime-box:validate:openmm": "node scripts/validate-openmm-runtime.mjs",

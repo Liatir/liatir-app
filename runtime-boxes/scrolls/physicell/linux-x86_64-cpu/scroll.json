@@ -1,0 +1,104 @@
+{
+  "$schema": "https://scrollcase.dev/schema/v3/scroll.schema.json",
+  "schemaVersion": 3,
+  "scrollId": "physicell-linux-x86_64-cpu",
+  "scrollVersion": "1.0.0",
+  "boxId": "physicell",
+  "labels": {
+    "model": "physicell-multicellular-simulation",
+    "runtime": "physicell-1-14-2"
+  },
+  "version": "1.14.2-beta.1",
+  "sourceRevision": "physicell-1.14.2+2dd954ad781f",
+  "target": {
+    "platform": "linux",
+    "arch": "x86_64",
+    "accelerator": "cpu"
+  },
+  "compatibility": {
+    "minLiatirVersion": "0.2.1",
+    "minRamGb": 4,
+    "hostEnvironments": [
+      "native",
+      "windows-wsl2"
+    ]
+  },
+  "runtime": {
+    "id": "python",
+    "version": "3.11.18",
+    "entryPoint": "venv/bin/python"
+  },
+  "pixiVersion": "0.73.0",
+  "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/physicell-linux-x86_64-cpu.json",
+  "bundledLicenseDeclaration": "runtime-boxes/legal/audits/physicell-linux-x86_64-cpu-bundled-declaration.json",
+  "publishBaseUrl": "https://assets.models.liatir.com/ai-runtime-boxes",
+  "assets": [
+    {
+      "url": "https://assets.models.liatir.com/ai-runtime-boxes/source-mirrors/physicell/physicell-1.14.2-template-linux-x86_64",
+      "relativePath": "physicell/bin/physicell-1.14.2-template-linux-x86_64",
+      "sizeBytes": 2544576,
+      "sha256": "2dd954ad781fe9088a483a070b120701ce70b57a2ef253276617142fe34952f1",
+      "executable": true
+    }
+  ],
+  "localFiles": [
+    {
+      "sourcePath": "runtime-boxes/legal/physicell.md",
+      "relativePath": "THIRD_PARTY_NOTICES/physicell.md",
+      "sha256": "5584c6809cb39bad55112c766a2b9cb8471ec7644f6827cff5dddbe4b855ea16"
+    },
+    {
+      "sourcePath": "runtime-boxes/scrolls/physicell/self-test.py",
+      "relativePath": "self-tests/physicell.py",
+      "sha256": "045abc9798bed098439cdb24e3fe5834f89a121ba485307b2b52e1c8551ad75b"
+    },
+    {
+      "sourcePath": "runtime-boxes/scrolls/physicell/template/PhysiCell_settings.xml",
+      "relativePath": "physicell/config/PhysiCell_settings.xml",
+      "sha256": "4707709ca1e182647d4dba96455c773cf2363a7714a88083a71519e4d6141e58"
+    },
+    {
+      "sourcePath": "runtime-boxes/scrolls/physicell/licenses/PhysiCell.txt",
+      "relativePath": "physicell/licenses/PhysiCell.txt",
+      "sha256": "653b5b98a6c9740560e6b28901ee0d06bdaa9ef7f0dfb6980983ec06023aa3f2"
+    },
+    {
+      "sourcePath": "runtime-boxes/scrolls/physicell/licenses/BioFVM.txt",
+      "relativePath": "physicell/licenses/BioFVM.txt",
+      "sha256": "c18f6b31cf9ec87ae707a7a49216dfb64a724946e1719ad777cd14c96c1d8365"
+    },
+    {
+      "sourcePath": "runtime-boxes/scrolls/physicell/licenses/pugixml.txt",
+      "relativePath": "physicell/licenses/pugixml.txt",
+      "sha256": "b6fd111dc17f22f3ed18684c9f9a729e953b24641d211f34b1a01aa6188f3bad"
+    },
+    {
+      "sourcePath": "runtime-boxes/scrolls/physicell/licenses/CITATION.txt",
+      "relativePath": "physicell/licenses/CITATION.txt",
+      "sha256": "a262b04762e50fbcfbdd86b815e99a0c27d48a61a8e8364fc5917f756de362cb"
+    }
+  ],
+  "prunePaths": [
+    "venv/lib/python3.1"
+  ],
+  "selfTest": {
+    "imports": [
+      "numpy",
+      "scipy"
+    ],
+    "files": [
+      "THIRD_PARTY_NOTICES/physicell.md",
+      "self-tests/physicell.py",
+      "physicell/config/PhysiCell_settings.xml",
+      "physicell/licenses/PhysiCell.txt",
+      "physicell/licenses/BioFVM.txt",
+      "physicell/licenses/pugixml.txt",
+      "physicell/licenses/CITATION.txt",
+      "physicell/bin/physicell-1.14.2-template-linux-x86_64"
+    ],
+    "code": "from pathlib import Path\ncode = Path('self-tests/physicell.py').read_text(encoding='utf-8')\nexec(compile(code, 'self-tests/physicell.py', 'exec'), {'__name__': '__main__'})"
+  },
+  "environment": {
+    "PYTHONNOUSERSITE": "1"
+  }
+}

@@ -1032,6 +1032,53 @@
       ]
     },
     {
+      "componentKind": "tool-runtime",
+      "componentId": "physicell-multicellular-simulation",
+      "modelId": "physicell-multicellular-simulation",
+      "boxId": "physicell",
+      "runtimeId": "physicell-1-14-2",
+      "legalRecord": "runtime-boxes/legal/physicell.md",
+      "legalStatus": "approved",
+      "validatorScript": "runtime-box:validate:physicell",
+      "validatorPath": "scripts/validate-physicell-runtime.mjs",
+      "productScriptPath": "frontend/src/lib/tools/physicell/python-scripts/physicell.ts",
+      "productLifecycleSpec": "tests/e2e/specs/runtime-box-physicell-native.e2e.mjs",
+      "callerWorkflow": ".github/workflows/runtime-box-physicell.yml",
+      "targets": [
+        {
+          "targetId": "linux-x86_64-cpu",
+          "target": {
+            "platform": "linux",
+            "arch": "x86_64",
+            "accelerator": "cpu"
+          },
+          "hostEnvironments": [
+            "native",
+            "windows-wsl2"
+          ],
+          "recipeId": "physicell-linux-x86_64-cpu",
+          "runnerProfileId": "linux-x64-selfhosted",
+          "status": "scientifically-validated",
+          "validationModes": [
+            "build",
+            "scientific",
+            "native-lifecycle"
+          ],
+          "timeoutMinutes": 90,
+          "requiredBuildDiskBytes": 6442450944,
+          "dependencyLockSha256": "d569499becacc9ea266b992f7b3ab42cb8353c469b31f70a0ee491bfc8844d16",
+          "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/physicell-linux-x86_64-cpu.json",
+          "diskPlan": {
+            "estimatedInstalledSizeBytes": 402653184,
+            "estimatedArchiveSizeBytes": 134217728,
+            "safetyMarginBytes": 4294967296
+          },
+          "gpuRequired": false,
+          "nativeCiEnabled": true
+        }
+      ]
+    },
+    {
       "componentKind": "ai-model",
       "componentId": "jwohlwend-boltz-2",
       "modelId": "jwohlwend-boltz-2",

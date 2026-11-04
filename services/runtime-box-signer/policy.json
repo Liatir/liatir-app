@@ -125,6 +125,14 @@
       ]
     },
     {
+      "boxId": "physicell",
+      "modelId": "physicell-multicellular-simulation",
+      "runtimeId": "physicell-1-14-2",
+      "targets": [
+        "linux-x86_64-cpu"
+      ]
+    },
+    {
       "boxId": "boltz-2",
       "modelId": "jwohlwend-boltz-2",
       "runtimeId": "structure-boltz-2-2-1",

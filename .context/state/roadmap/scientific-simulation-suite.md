@@ -290,6 +290,29 @@ Each was checked, not inferred; the evidence is named.
     validator both ran on the build directory, where extraction had kept the bits; only the real-app
     lifecycle, installing the signed archive, saw it. A validator must run on the payload as a consumer
     extracts it. See B5.
+38. **PhysiCell 1.14.2 builds portably and reproducibly with conda-forge's toolchain** (gcc 15.3.0,
+    glibc 2.17 sysroot, `-march=x86-64-v2`, OpenMP). `runtime-boxes/native-builds/physicell/build.sh`
+    compiles the template project from the reviewed release archive, links the GCC runtime and
+    OpenMP in, and checks what it made: the executable (2,544,576 bytes, SHA-256 `2dd954ad…`) needs
+    glibc 2.17 at most (the upstream ones need 2.38), no `GLIBCXX` symbol and no library but glibc's.
+    Two builds, each with the toolchain installed under a different temporary path, are
+    byte-identical. conda-forge's compiler writes its library directory into every dynamic executable
+    as RPATH, and `patchelf --remove-rpath` leaves the path in the string table, so the build links
+    with a copy of the compiler's specs without that clause. pixi does not run the compiler packages'
+    activation scripts, so the compiler is named by path; PhysiCell's Makefile ignores failed
+    commands, so the build reads its log.
+39. **PhysiCell builds shell commands from paths in its settings.** `main.cpp` copies the settings
+    file with `system("cp <argv[1]> <save folder>")`, and `PhysiCell_utilities.cpp` copies the rules
+    and cell files the same way, so a settings file naming a folder `output; <command>` would run the
+    command. The runner never runs a user's settings as written: it writes the settings PhysiCell runs,
+    with its own relative paths and run controls, and copies the user's CSV files itself. The validator
+    runs such a hostile settings file and checks that no command ran.
+40. **PhysiCell 1.14.2 crashes when a simulation starts without cells** (segmentation fault, with or
+    without substrates), though a population that dies out during a run carries on. The runner
+    refuses settings that start no cell.
+41. **Scrollcase's self-test runs on the build directory, where a downloaded executable has no mode**,
+    while the archive marks it executable from the scroll's declaration: finding 37 in reverse. The
+    PhysiCell self-test runs a copy; the box was validated as unpacked from its signed archive. See B5.
 
 ## Licensing and redistribution review
 
@@ -439,7 +462,12 @@ component.
   complete corresponding source; a box that fetches the official binary from GitHub at install with a
   pinned SHA-256; or a user-supplied binary validated by digest. Download of the 2 GB binary is held
   until then. GNINA's work does not block anything else.
-- **B2 — A portable PhysiCell executable.** Packaging is not the problem: Scrollcase boxes carry
+- **B2 — A portable PhysiCell executable.** Resolved for development (finding 38): the recipe and its
+  toolchain lock are in `runtime-boxes/native-builds/physicell/`, and the executable is a reviewed
+  source mirror (`physicell-1-14-2-template` in the Registry worker and the distribution CLI). A
+  production release needs it uploaded by `runtime-box-physicell-source-mirror.yml`, a manual workflow
+  that rebuilds it and uploads only the reviewed bytes, after a Registry deploy that knows the
+  mirror: both are the owner's go. The original note follows. Packaging is not the problem: Scrollcase boxes carry
   and start compiled binaries (its `native` runtime; a binary supplied as a hashed asset, with what is
   linked inside it declared in a `bundledLicenseDeclaration`), as BioNetGen's executables show here.
   Scrollcase does not compile source, and PhysiCell has no usable binary: it is on no conda channel,
@@ -503,7 +531,7 @@ component.
 | Docked Complex (docking box) | SCIENTIFICALLY VALIDATED and PRODUCT VALIDATED on native Linux (development build); Windows through WSL2 and publication pending | `runtime-boxes/measurements/molecular-docking-linux-x86_64-cpu-development-2026-11-04.json`, `runtime-boxes/measurements/docking-simulation-chain-development-2026-11-04.json` |
 | PySB, BioNetGen | SCIENTIFICALLY VALIDATED on the development build's directory; the installed box cannot start BioNetGen (B5) | `runtime-boxes/measurements/biochemical-simulation-linux-x86_64-cpu-development-2026-11-04.json` |
 | COBRApy | SCIENTIFICALLY VALIDATED and PRODUCT VALIDATED on native Linux (development build); Windows through WSL2 and publication pending | `runtime-boxes/measurements/metabolic-modeling-linux-x86_64-cpu-development-2026-11-04.json`, `runtime-boxes/measurements/metabolic-modeling-linux-x86_64-cpu-product-lifecycle-development-2026-11-04.json` |
-| PhysiCell | not started; B2 open | finding 12 |
+| PhysiCell | SCIENTIFICALLY VALIDATED on a development-signed build, as unpacked from its signed archive; real-app lifecycle pending; production needs the source mirror (B2) | `runtime-boxes/measurements/physicell-linux-x86_64-cpu-development-2026-11-04.json` |
 
 ## Phase 2 evidence (development build, 2026-11-03)
 
@@ -669,6 +697,28 @@ product's runner in the signed payload: **passed**, 696 s, record
 Peak memory 166 MB (process tree). The stochastic envelope is measured on synthesis and degradation
 only, so a stochastic run of a larger network asks the user to confirm a run beyond evidence.
 
+## Phase 4C evidence (development build, 2026-11-04)
+
+Box `physicell` `1.14.2-beta.1` / `linux-x86_64-cpu`, lock `d569499b…`, 32 packages: Python 3.11.18,
+NumPy 2.4.6, SciPy 1.17.1, and the PhysiCell 1.14.2 template executable from the native build
+(finding 38), served on the loopback interface for this development build. Signed with the WSL2
+development key: archive `720839ad…`, 109.0 MB, installed 345 MB. The validator
+`scripts/validate-physicell-runtime.mjs` ran the product's runner in the payload unpacked from the
+signed archive with the archive's own modes (finding 37): **passed**, record `runtime-boxes/measurements/physicell-linux-x86_64-cpu-development-2026-11-04.json`.
+
+| Check | Reference | Result |
+| --- | --- | --- |
+| Fixed 600-minute cycles, 50 cells | the cycle model's own durations: 50 · 2^floor(t/600) | exact at all 41 times checked |
+| Stochastic division at 1/600 per minute, 1,000 cells, 100 phenotype steps | Galton-Watson mean and variance for exit probability rate · dt | 2637 cells; expected 2704.8 ± 268.9 (4 SD) |
+| Apoptosis at 1/600 per minute, no division | binomial survival | 367 alive; expected 366.0 ± 60.9 (4 SD) |
+| A uniform substrate decaying at 0.001 per minute (BioFVM) | e^(−λt) | relative error ≤ 2.4e-06; the field stays uniform |
+| PhysiCell's template, seed 1, one thread, twice | — | identical cell, population and substrate tables; seed 2 differs |
+| A settings file with shell metacharacters in its paths (finding 39) | — | ran; no command executed; the run's settings hold Liatir's paths |
+| Refusals | — | entities, intracellular models, `.mat` initial conditions, a 4-million-voxel domain, rules without their CSV, no starting cell (finding 40), seed and thread overflow, an unknown model source |
+| Nothing written outside the run | — | the home directory stays empty; the signed payload re-verifies |
+
+Peak memory 62 MB; slowest case fixed-cycle-doubling, 87 s.
+
 ## Progress log
 
 - 2026-11-03 — Phase 1. Context read; WSL2 host and toolchain measured; Linux checkout brought to
@@ -701,6 +751,11 @@ only, so a stochastic run of a larger network asks the user to confirm a run bey
   limits (finding 36). Runner, contract, release candidate, Biochemical Simulation page and pipeline
   step, restart finalizer, unit tests, lifecycle spec, catalog and signer-policy entries, CI workflow
   and release option; findings 30–36.
+- 2026-11-04 — Real-app lifecycles passed on native Linux for Metabolic Modeling, the analysis tools
+  and Docked Complex; Biochemical Simulation's found finding 37 (B5). Phase 4C: PhysiCell's native
+  build recipe, box, runner, contract, release candidate, Multicellular Simulation page and pipeline
+  step, restart finalizer, unit tests, lifecycle spec, catalog and signer-policy entries, CI workflow,
+  release option and source-mirror workflow; validated (above); findings 38–41.
 
 ## For the owner
 
@@ -711,6 +766,9 @@ only, so a stochastic run of a larger network asks the user to confirm a run bey
 
 ## Next concrete actions
 
+0. **Before the suite closes, discuss B1 (GNINA's redistribution) with the owner** — their request
+   of 2026-11-04. GNINA stays blocked until then; nothing about it is decided by default.
+
 1. The Windows-through-WSL2 lifecycle with a Windows test app built with the same candidate (the
    only build outside WSL2 the plan allows: the product shell, not a scientific component).
 2. Production release (B3, B4): merge, signer redeploy, `runtime-box-release.yml` with
@@ -719,4 +777,5 @@ only, so a stochastic run of a larger network asks the user to confirm a run bey
 3. Real-app lifecycle of every tool through WSL2 with item 1 (all pass on native Linux except
    Biochemical Simulation, B5).
 4. Real-app lifecycle of Biochemical Simulation, once B5 is resolved.
-5. Phase 4C PhysiCell (B2).
+5. Real-app lifecycle of Multicellular Simulation; the PhysiCell source mirror and its Registry
+   deploy with the production release (B2, B4).

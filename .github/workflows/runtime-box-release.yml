@@ -18,6 +18,7 @@ on:
           - mdanalysis-molecular-analysis
           - cobrapy-metabolic-modeling
           - pysb-biochemical-simulation
+          - physicell-multicellular-simulation
           - jwohlwend-boltz-2
           - bytedance-protenix-base-v1-0-0
       target_id:

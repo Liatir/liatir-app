@@ -38,6 +38,12 @@ import {
   PYSB_VERSION,
 } from "./biochemical-simulation.js";
 import {
+  PHYSICELL_BOX_ID,
+  PHYSICELL_RUNTIME_COMPONENT_ID,
+  PHYSICELL_RUNTIME_ID,
+  PHYSICELL_VERSION,
+} from "./physicell.js";
+import {
   OPENMM_BOX_ID,
   OPENMM_RUNTIME_COMPONENT_ID,
   OPENMM_RUNTIME_ID,
@@ -461,6 +467,66 @@ export const BIOCHEMICAL_SIMULATION_RELEASE_CANDIDATE_METADATA: LiatirToolRuntim
     officialUrl: "https://pysb.readthedocs.io/en/v1.17.0/",
   },
   tags: ["runtime-box", "biochemical-simulation", "rule-based-modeling", "pysb", "bionetgen"],
+};
+
+/**
+ * PhysiCell, kept out of the product catalog until a signed target is published; the installer
+ * requires every requirement here to equal the signed release's exactly.
+ */
+export const PHYSICELL_RELEASE_CANDIDATE_METADATA: LiatirToolRuntimeMetadata = {
+  id: PHYSICELL_RUNTIME_COMPONENT_ID,
+  name: "PhysiCell 1.14.2",
+  description: "Local agent-based simulation of multicellular systems: cells that grow, divide, move, die and exchange substrates.",
+  category: "Systems Biology",
+  version: PHYSICELL_VERSION,
+  runtime: { kind: "python-venv", name: "Multicellular Simulation Runtime", version: "Python 3.11" },
+  localOnly: true,
+  install: {
+    method: "runtime-box",
+    runtimeId: PHYSICELL_RUNTIME_ID,
+    runtimePackages: [
+      { package: "numpy", specifier: "numpy==2.4.6", importName: "numpy" },
+      { package: "scipy", specifier: "scipy==1.17.1", importName: "scipy" },
+    ],
+    runtimeBox: {
+      boxId: PHYSICELL_BOX_ID,
+      channel: "beta",
+      registryBaseUrl: "https://models.liatir.com/v1",
+      publishedTargets: [{
+        target: { platform: "linux", arch: "x86_64", accelerator: "cpu" },
+        hostEnvironments: ["native", "windows-wsl2"],
+        minRamGb: 4,
+      }],
+    },
+    hostRequirements: {
+      os: ["linux", "windows"],
+      arch: ["x86_64"],
+      reason: "Multicellular simulation runs on the CPU of a Linux x86_64 computer, natively or on Windows through WSL2. It is not available on macOS.",
+    },
+  },
+  license: {
+    name: "PhysiCell BSD-3-Clause with BioFVM and pugixml",
+    spdxId: "BSD-3-Clause AND MIT",
+    url: "https://github.com/MathCancer/PhysiCell/blob/1.14.2/LICENSE.md",
+    verifiedAt: "2026-11-04",
+    components: [
+      { scope: "runtime", name: "PhysiCell 1.14.2", spdxId: "BSD-3-Clause", sourceUrl: "https://github.com/MathCancer/PhysiCell/releases/tag/1.14.2" },
+      { scope: "runtime", name: "BioFVM, in PhysiCell 1.14.2", spdxId: "BSD-3-Clause", sourceUrl: "https://github.com/MathCancer/PhysiCell/tree/1.14.2/BioFVM" },
+      { scope: "runtime", name: "pugixml, in PhysiCell 1.14.2", spdxId: "MIT", sourceUrl: "https://github.com/zeux/pugixml" },
+      { scope: "runtime", name: "GCC runtime libraries 15.3.0, linked into the executable", spdxId: "GPL-3.0-or-later WITH GCC-exception-3.1", sourceUrl: "https://gcc.gnu.org/" },
+    ],
+  },
+  hardware: {
+    cpu: true,
+    gpu: false,
+    minRamGb: 4,
+    notes: "Runs on the CPU, with one thread by default so that a seed repeats a run exactly. Run time grows with the number of cells a model makes; estimates come from retained measurements of this exact release.",
+  },
+  documentation: {
+    liatirPath: "/tools/multicellular-simulation",
+    officialUrl: "http://physicell.org/",
+  },
+  tags: ["runtime-box", "multicellular-simulation", "agent-based-model", "physicell"],
 };
 
 /**
