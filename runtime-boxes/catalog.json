@@ -1058,7 +1058,7 @@
           ],
           "recipeId": "physicell-linux-x86_64-cpu",
           "runnerProfileId": "linux-x64-selfhosted",
-          "status": "scientifically-validated",
+          "status": "native-lifecycle-validated",
           "validationModes": [
             "build",
             "scientific",

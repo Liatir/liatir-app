@@ -531,7 +531,7 @@ component.
 | Docked Complex (docking box) | SCIENTIFICALLY VALIDATED and PRODUCT VALIDATED on native Linux (development build); Windows through WSL2 and publication pending | `runtime-boxes/measurements/molecular-docking-linux-x86_64-cpu-development-2026-11-04.json`, `runtime-boxes/measurements/docking-simulation-chain-development-2026-11-04.json` |
 | PySB, BioNetGen | SCIENTIFICALLY VALIDATED on the development build's directory; the installed box cannot start BioNetGen (B5) | `runtime-boxes/measurements/biochemical-simulation-linux-x86_64-cpu-development-2026-11-04.json` |
 | COBRApy | SCIENTIFICALLY VALIDATED and PRODUCT VALIDATED on native Linux (development build); Windows through WSL2 and publication pending | `runtime-boxes/measurements/metabolic-modeling-linux-x86_64-cpu-development-2026-11-04.json`, `runtime-boxes/measurements/metabolic-modeling-linux-x86_64-cpu-product-lifecycle-development-2026-11-04.json` |
-| PhysiCell | SCIENTIFICALLY VALIDATED on a development-signed build, as unpacked from its signed archive; real-app lifecycle pending; production needs the source mirror (B2) | `runtime-boxes/measurements/physicell-linux-x86_64-cpu-development-2026-11-04.json` |
+| PhysiCell | SCIENTIFICALLY VALIDATED and PRODUCT VALIDATED on native Linux (development build, validated as unpacked from its signed archive); production needs the source mirror (B2), then Windows through WSL2 and publication | `runtime-boxes/measurements/physicell-linux-x86_64-cpu-development-2026-11-04.json` |
 
 ## Phase 2 evidence (development build, 2026-11-03)
 
@@ -719,6 +719,13 @@ signed archive with the archive's own modes (finding 37): **passed**, record `ru
 
 Peak memory 62 MB; slowest case fixed-cycle-doubling, 87 s.
 
+**Real-app lifecycle, native Linux (WSL2, Xvfb), 2026-11-04: 2 of 2 passed** on the first run — the
+box installed with the executable runnable as declared; a killed Job reached `killed`; PhysiCell's
+template ran for a simulated day and the fixed-cycle settings, read from the user's Data, doubled
+exactly on schedule at all 41 times checked, both inside the measured envelope; Jobs, Results,
+provenance, the offline boundary and the interpretation notice held; removal kept every Result file.
+Record `runtime-boxes/measurements/physicell-linux-x86_64-cpu-product-lifecycle-development-2026-11-04.json`.
+
 ## Progress log
 
 - 2026-11-03 — Phase 1. Context read; WSL2 host and toolchain measured; Linux checkout brought to
@@ -777,5 +784,4 @@ Peak memory 62 MB; slowest case fixed-cycle-doubling, 87 s.
 3. Real-app lifecycle of every tool through WSL2 with item 1 (all pass on native Linux except
    Biochemical Simulation, B5).
 4. Real-app lifecycle of Biochemical Simulation, once B5 is resolved.
-5. Real-app lifecycle of Multicellular Simulation; the PhysiCell source mirror and its Registry
-   deploy with the production release (B2, B4).
+5. The PhysiCell source mirror and its Registry deploy, with the production release (B2, B4).

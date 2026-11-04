@@ -35,7 +35,7 @@ archive executable (B5 in the plan, the owner's decision). Phase 4C: the `physic
 PhysiCell executable Liatir compiles reproducibly for any Linux with glibc 2.17; its runner writes the
 settings PhysiCell runs itself (PhysiCell turns paths in its settings into shell commands), and the
 validator holds cell division, death and substrate decay to the models' own parameters exactly or
-within statistical bounds. It is integrated as Multicellular Simulation. Merging the branch requires a signer redeploy before any further Runtime Box release (the
+within statistical bounds. It is integrated as Multicellular Simulation, which passed the real-app lifecycle on native Linux. Merging the branch requires a signer redeploy before any further Runtime Box release (the
 signer policy gains the new boxes). GNINA is blocked on a redistribution decision. Work happens
 on branch `simulation-suite` in the WSL2 checkout `/home/lorenzo/liatir-stack-gate8-mcp`. The owner
 told the agent on 2026-11-03 to proceed autonomously without asking for permissions.
