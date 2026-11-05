@@ -357,7 +357,8 @@ Each was checked, not inferred; the evidence is named.
     package's exports and dependencies are unchanged, the release format stays schema 3, and the Rust
     `scrollcase-consumer` stays 0.4.0. A box that relied on build-directory modes now fails at build
     time: every suite box keeps its programs under `venv/bin` or declares them, and the bundled Native
-    Tools box's programs are all under `venv/bin`.
+    Tools box's programs are all under `venv/bin`; `npm run native-tools:build` with 1.5.0 passed its
+    self-test on 2026-11-05 (WSL2, 90 s).
 
 ## Licensing and redistribution review
 
