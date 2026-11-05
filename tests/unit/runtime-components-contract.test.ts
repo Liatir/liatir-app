@@ -5,6 +5,12 @@ import {
   LIATIR_TOOL_RUNTIME_CATALOG,
   OPENMM_RUNTIME_COMPONENT_ID,
   PVACTOOLS_RUNTIME_COMPONENT_ID,
+  MOLECULAR_DOCKING_RUNTIME_COMPONENT_ID,
+  MOLECULAR_ANALYSIS_RUNTIME_COMPONENT_ID,
+  METABOLIC_MODELING_RUNTIME_COMPONENT_ID,
+  BIOCHEMICAL_SIMULATION_RUNTIME_COMPONENT_ID,
+  PHYSICELL_RUNTIME_COMPONENT_ID,
+  GNINA_RUNTIME_COMPONENT_ID,
   type LiatirRuntimeComponentKind,
   type LiatirRuntimeBoxCiCatalog,
   type LiatirAIProvenance,
@@ -18,7 +24,10 @@ describe('Runtime Component production contract', () => {
     const kinds: LiatirRuntimeComponentKind[] = ['ai-model', 'tool-runtime'];
     expect(kinds).toEqual(['ai-model', 'tool-runtime']);
     expect(LIATIR_TOOL_RUNTIME_CATALOG.map((runtime) => runtime.id))
-      .toEqual([PVACTOOLS_RUNTIME_COMPONENT_ID, OPENMM_RUNTIME_COMPONENT_ID]);
+      .toEqual([PVACTOOLS_RUNTIME_COMPONENT_ID, OPENMM_RUNTIME_COMPONENT_ID,
+        MOLECULAR_DOCKING_RUNTIME_COMPONENT_ID, MOLECULAR_ANALYSIS_RUNTIME_COMPONENT_ID,
+        METABOLIC_MODELING_RUNTIME_COMPONENT_ID, BIOCHEMICAL_SIMULATION_RUNTIME_COMPONENT_ID,
+        PHYSICELL_RUNTIME_COMPONENT_ID, GNINA_RUNTIME_COMPONENT_ID]);
     expect(LIATIR_TOOL_RUNTIME_CATALOG[0]?.install.runtimeBox.publishedTargets).toEqual([
       {
         target: { platform: 'macos', arch: 'aarch64', accelerator: 'cpu' },

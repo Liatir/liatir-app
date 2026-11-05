@@ -41,7 +41,7 @@ const EXPECTED_HOST_ENVIRONMENT = process.platform === 'win32' && TARGET_ID.star
   : 'native';
 // Named per target: a measured envelope belongs to the release and machine that produced it.
 const EXPECTED_HARDWARE_PROFILE = {
-  'linux-x86_64-cpu': 'autodock-vina-molecular-docking-1.2.7-beta.1-linux-x86_64-cpu-development-2026-11-04',
+  'linux-x86_64-cpu': 'autodock-vina-molecular-docking-1.2.7-beta.1-linux-x86_64-cpu-production-2026-11-05',
 }[TARGET_ID];
 const REDOCKING_RMSD_ANGSTROM = 2.0;
 const RUN_TIMEOUT_MS = 20 * 60 * 1000;

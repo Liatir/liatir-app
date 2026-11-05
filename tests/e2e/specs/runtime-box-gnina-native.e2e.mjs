@@ -35,7 +35,7 @@ const EXPECTED_HOST_ENVIRONMENT = process.platform === 'win32' && TARGET_ID.star
   : 'native';
 // Named per target: a measured envelope belongs to the release and machine that produced it.
 const EXPECTED_HARDWARE_PROFILE = {
-  'linux-x86_64-cuda12.8': 'gnina-pose-rescoring-1.3.3-beta.1-linux-x86_64-cuda12.8-development-2026-11-05',
+  'linux-x86_64-cuda12.8': 'gnina-pose-rescoring-1.3.3-beta.1-linux-x86_64-cuda12.8-production-2026-11-05',
 }[TARGET_ID];
 // The redocking success criterion the scientific validator holds GNINA's top pose to.
 const REDOCKING_RMSD_ANGSTROM = 2.0;

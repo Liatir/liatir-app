@@ -41,20 +41,20 @@ export interface LiatirGninaLigandComparison {
 /**
  * Every sample is transcribed from the retained record named by `evidenceRecord`, and
  * `tests/unit/phase3-hardware-profiles.test.ts` fails if any value drifts from that file. Tokens and
- * outputs are poses, atoms are the receptor's atoms, and one step is one GNINA scoring pass. GPU memory
- * is a device-wide delta on an NVIDIA GeForce RTX 4060 Ti, so it can only over-state. A development
- * measurement stays valid only for this release identity; a production build is re-measured.
+ * outputs are poses, atoms are the receptor's atoms, and one step is one GNINA scoring pass. GPU
+ * memory is a device-wide delta on an NVIDIA GeForce RTX 4060 Ti, so it can only over-state. They
+ * come from production release run 42085770425, which measured the very archive it published.
  */
-export const GNINA_LINUX_X86_64_CUDA128_DEVELOPMENT_PROFILE: LiatirHardwareValidationProfile = {
+export const GNINA_LINUX_X86_64_CUDA128_PRODUCTION_PROFILE: LiatirHardwareValidationProfile = {
   schemaVersion: 1,
-  profileId: "gnina-pose-rescoring-1.3.3-beta.1-linux-x86_64-cuda12.8-development-2026-11-05",
+  profileId: "gnina-pose-rescoring-1.3.3-beta.1-linux-x86_64-cuda12.8-production-2026-11-05",
   componentId: GNINA_RUNTIME_COMPONENT_ID,
   componentVersion: GNINA_VERSION,
   runtimeBoxRelease: "1.3.3-beta.1",
   target: { platform: "linux", arch: "x86_64", accelerator: "cuda", cudaVersion: "12.8" },
   precision: "upstream default",
-  measuredAt: "2026-11-05T14:59:16.194Z",
-  evidenceRecord: "runtime-boxes/measurements/gnina-linux-x86_64-cuda12.8-development-2026-11-05.json",
+  measuredAt: "2026-11-05T18:45:53.541Z",
+  evidenceRecord: "runtime-boxes/measurements/gnina-linux-x86_64-cuda12.8-production-run-42085770425.json",
   samples: [
     {
       fixtureId: "1iep-redocking",
@@ -63,10 +63,10 @@ export const GNINA_LINUX_X86_64_CUDA128_DEVELOPMENT_PROFILE: LiatirHardwareValid
       maxAtomCount: 2702,
       maxStepCount: 1,
       maxOutputItemCount: 6,
-      peakRamBytes: 1148197888,
-      peakVramBytes: 231735296,
-      elapsedMs: 3149,
-      outputBytes: 44774,
+      peakRamBytes: 957996032,
+      peakVramBytes: 236978176,
+      elapsedMs: 2940,
+      outputBytes: 44936,
     },
     {
       fixtureId: "1iep-screen",
@@ -75,10 +75,10 @@ export const GNINA_LINUX_X86_64_CUDA128_DEVELOPMENT_PROFILE: LiatirHardwareValid
       maxAtomCount: 2702,
       maxStepCount: 1,
       maxOutputItemCount: 38,
-      peakRamBytes: 1174411264,
+      peakRamBytes: 962808832,
       peakVramBytes: 231735296,
-      elapsedMs: 3319,
-      outputBytes: 188870,
+      elapsedMs: 3043,
+      outputBytes: 189032,
     },
     {
       fixtureId: "1iep-screen-repeat",
@@ -87,10 +87,10 @@ export const GNINA_LINUX_X86_64_CUDA128_DEVELOPMENT_PROFILE: LiatirHardwareValid
       maxAtomCount: 2702,
       maxStepCount: 1,
       maxOutputItemCount: 38,
-      peakRamBytes: 1132951552,
+      peakRamBytes: 989902848,
       peakVramBytes: 231735296,
-      elapsedMs: 3206,
-      outputBytes: 188877,
+      elapsedMs: 2988,
+      outputBytes: 189039,
     },
   ],
 };

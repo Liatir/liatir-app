@@ -39,7 +39,7 @@ const EXPECTED_HOST_ENVIRONMENT = process.platform === 'win32' && TARGET_ID.star
   : 'native';
 // Named per target: a measured envelope belongs to the release and machine that produced it.
 const EXPECTED_HARDWARE_PROFILE = {
-  'linux-x86_64-cpu': 'mdanalysis-molecular-analysis-2.11.0-beta.1-linux-x86_64-cpu-development-2026-11-04',
+  'linux-x86_64-cpu': 'mdanalysis-molecular-analysis-2.11.0-beta.1-linux-x86_64-cpu-production-2026-11-05',
 }[TARGET_ID];
 // ProLIF 2.2.3 tests/test_fingerprint.py (test_run_residues) pins these on frame 0 of its trajectory.
 const PROLIF_FRAME_ZERO = [['VAL201.A', 'Hydrophobic'], ['PHE351.B', 'Hydrophobic']];

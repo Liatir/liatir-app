@@ -43,21 +43,21 @@ export function validatePhysiCellOptions(options: LiatirPhysiCellOptions, maxThr
 
 /**
  * Every sample is transcribed from the retained record named by `evidenceRecord`, and
- * `tests/unit/phase3-hardware-profiles.test.ts` fails if any value drifts from that file. Tokens are the
- * cells a run starts with, atoms are voxels times substrates, steps are mechanics steps and outputs are
- * snapshots. A development measurement stays valid only for this release identity; a production build
- * is re-measured.
+ * `tests/unit/phase3-hardware-profiles.test.ts` fails if any value drifts from that file. Tokens are
+ * the cells a run starts with, atoms are voxels times substrates, steps are mechanics steps and
+ * outputs are snapshots. They come from production release run 42080211362, which measured the very
+ * archive it published.
  */
-export const PHYSICELL_LINUX_X86_64_CPU_DEVELOPMENT_PROFILE: LiatirHardwareValidationProfile = {
+export const PHYSICELL_LINUX_X86_64_CPU_PRODUCTION_PROFILE: LiatirHardwareValidationProfile = {
   schemaVersion: 1,
-  profileId: "physicell-multicellular-simulation-1.14.2-beta.1-linux-x86_64-cpu-development-2026-11-04",
+  profileId: "physicell-multicellular-simulation-1.14.2-beta.1-linux-x86_64-cpu-production-2026-11-05",
   componentId: PHYSICELL_RUNTIME_COMPONENT_ID,
   componentVersion: PHYSICELL_VERSION,
   runtimeBoxRelease: "1.14.2-beta.1",
   target: { platform: "linux", arch: "x86_64", accelerator: "cpu" },
   precision: "double",
-  measuredAt: "2026-11-04T21:56:31.472Z",
-  evidenceRecord: "runtime-boxes/measurements/physicell-linux-x86_64-cpu-development-2026-11-04.json",
+  measuredAt: "2026-11-05T18:08:57.141Z",
+  evidenceRecord: "runtime-boxes/measurements/physicell-linux-x86_64-cpu-production-run-42080211362.json",
   samples: [
     {
       fixtureId: "template",
@@ -66,9 +66,9 @@ export const PHYSICELL_LINUX_X86_64_CPU_DEVELOPMENT_PROFILE: LiatirHardwareValid
       maxAtomCount: 2500,
       maxStepCount: 72000,
       maxOutputItemCount: 121,
-      peakRamBytes: 56000512,
+      peakRamBytes: 60055552,
       peakVramBytes: null,
-      elapsedMs: 55803,
+      elapsedMs: 54885,
       outputBytes: 106815,
     },
     {
@@ -78,9 +78,9 @@ export const PHYSICELL_LINUX_X86_64_CPU_DEVELOPMENT_PROFILE: LiatirHardwareValid
       maxAtomCount: 2500,
       maxStepCount: 72000,
       maxOutputItemCount: 121,
-      peakRamBytes: 56188928,
+      peakRamBytes: 54521856,
       peakVramBytes: null,
-      elapsedMs: 56104,
+      elapsedMs: 54580,
       outputBytes: 106815,
     },
     {
@@ -90,9 +90,9 @@ export const PHYSICELL_LINUX_X86_64_CPU_DEVELOPMENT_PROFILE: LiatirHardwareValid
       maxAtomCount: 2500,
       maxStepCount: 72000,
       maxOutputItemCount: 121,
-      peakRamBytes: 55906304,
+      peakRamBytes: 54525952,
       peakVramBytes: null,
-      elapsedMs: 55463,
+      elapsedMs: 53345,
       outputBytes: 92053,
     },
     {
@@ -102,9 +102,9 @@ export const PHYSICELL_LINUX_X86_64_CPU_DEVELOPMENT_PROFILE: LiatirHardwareValid
       maxAtomCount: 10000,
       maxStepCount: 27000,
       maxOutputItemCount: 46,
-      peakRamBytes: 57401344,
+      peakRamBytes: 56135680,
       peakVramBytes: null,
-      elapsedMs: 86926,
+      elapsedMs: 82617,
       outputBytes: 279436,
     },
     {
@@ -114,9 +114,9 @@ export const PHYSICELL_LINUX_X86_64_CPU_DEVELOPMENT_PROFILE: LiatirHardwareValid
       maxAtomCount: 10000,
       maxStepCount: 6000,
       maxOutputItemCount: 11,
-      peakRamBytes: 61517824,
+      peakRamBytes: 59715584,
       peakVramBytes: null,
-      elapsedMs: 39395,
+      elapsedMs: 36409,
       outputBytes: 914602,
     },
     {
@@ -126,9 +126,9 @@ export const PHYSICELL_LINUX_X86_64_CPU_DEVELOPMENT_PROFILE: LiatirHardwareValid
       maxAtomCount: 10000,
       maxStepCount: 6000,
       maxOutputItemCount: 11,
-      peakRamBytes: 57688064,
+      peakRamBytes: 56049664,
       peakVramBytes: null,
-      elapsedMs: 26269,
+      elapsedMs: 24156,
       outputBytes: 296779,
     },
     {
@@ -138,9 +138,9 @@ export const PHYSICELL_LINUX_X86_64_CPU_DEVELOPMENT_PROFILE: LiatirHardwareValid
       maxAtomCount: 2500,
       maxStepCount: 10000,
       maxOutputItemCount: 17,
-      peakRamBytes: 55144448,
+      peakRamBytes: 53481472,
       peakVramBytes: null,
-      elapsedMs: 7054,
+      elapsedMs: 6968,
       outputBytes: 5622,
     },
     {
@@ -150,9 +150,9 @@ export const PHYSICELL_LINUX_X86_64_CPU_DEVELOPMENT_PROFILE: LiatirHardwareValid
       maxAtomCount: 2500,
       maxStepCount: 600,
       maxOutputItemCount: 2,
-      peakRamBytes: 54988800,
+      peakRamBytes: 53436416,
       peakVramBytes: null,
-      elapsedMs: 1677,
+      elapsedMs: 1691,
       outputBytes: 6252,
     },
   ],

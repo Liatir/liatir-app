@@ -39,7 +39,7 @@ const EXPECTED_HOST_ENVIRONMENT = process.platform === 'win32' && TARGET_ID.star
   : 'native';
 // Named per target: a measured envelope belongs to the release and machine that produced it.
 const EXPECTED_HARDWARE_PROFILE = {
-  'linux-x86_64-cpu': 'pysb-biochemical-simulation-1.17.0-beta.1-linux-x86_64-cpu-development-2026-11-05',
+  'linux-x86_64-cpu': 'pysb-biochemical-simulation-1.17.0-beta.1-linux-x86_64-cpu-production-2026-11-05',
 }[TARGET_ID];
 // synth_deg with kA_syn = 2: A(t) = 20 - 19 e^(-0.1 t); the stationary copy number is Poisson with
 // mean kA_syn / kA_deg = 20, and the mean of SSA_RUNS independent runs lies within four of its

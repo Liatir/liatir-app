@@ -130,18 +130,18 @@ export function parseParameterChanges(text: string): LiatirParameterChange[] {
  * Every sample is transcribed from the retained record named by `evidenceRecord`, and
  * `tests/unit/phase3-hardware-profiles.test.ts` fails if any value drifts from that file. Tokens are
  * reactions and atoms are species of the generated network; steps are output times across all runs.
- * A development measurement stays valid only for this release identity; a production build is re-measured.
+ * They come from production release run 42074828679, which measured the very archive it published.
  */
-export const BIOCHEMICAL_SIMULATION_LINUX_X86_64_CPU_DEVELOPMENT_PROFILE: LiatirHardwareValidationProfile = {
+export const BIOCHEMICAL_SIMULATION_LINUX_X86_64_CPU_PRODUCTION_PROFILE: LiatirHardwareValidationProfile = {
   schemaVersion: 1,
-  profileId: "pysb-biochemical-simulation-1.17.0-beta.1-linux-x86_64-cpu-development-2026-11-05",
+  profileId: "pysb-biochemical-simulation-1.17.0-beta.1-linux-x86_64-cpu-production-2026-11-05",
   componentId: BIOCHEMICAL_SIMULATION_RUNTIME_COMPONENT_ID,
   componentVersion: PYSB_VERSION,
   runtimeBoxRelease: "1.17.0-beta.1",
   target: { platform: "linux", arch: "x86_64", accelerator: "cpu" },
   precision: "double",
-  measuredAt: "2026-11-05T10:55:42.431Z",
-  evidenceRecord: "runtime-boxes/measurements/biochemical-simulation-linux-x86_64-cpu-development-2026-11-05.json",
+  measuredAt: "2026-11-05T17:42:14.316Z",
+  evidenceRecord: "runtime-boxes/measurements/biochemical-simulation-linux-x86_64-cpu-production-run-42074828679.json",
   samples: [
     {
       fixtureId: "robertson-ode",
@@ -150,9 +150,9 @@ export const BIOCHEMICAL_SIMULATION_LINUX_X86_64_CPU_DEVELOPMENT_PROFILE: Liatir
       maxAtomCount: 3,
       maxStepCount: 81,
       maxOutputItemCount: 243,
-      peakRamBytes: 155664384,
+      peakRamBytes: 150003712,
       peakVramBytes: null,
-      elapsedMs: 1530,
+      elapsedMs: 1513,
       outputBytes: 21032,
     },
     {
@@ -162,9 +162,9 @@ export const BIOCHEMICAL_SIMULATION_LINUX_X86_64_CPU_DEVELOPMENT_PROFILE: Liatir
       maxAtomCount: 1,
       maxStepCount: 51,
       maxOutputItemCount: 51,
-      peakRamBytes: 136241152,
+      peakRamBytes: 131297280,
       peakVramBytes: null,
-      elapsedMs: 1036,
+      elapsedMs: 998,
       outputBytes: 4882,
     },
     {
@@ -174,9 +174,9 @@ export const BIOCHEMICAL_SIMULATION_LINUX_X86_64_CPU_DEVELOPMENT_PROFILE: Liatir
       maxAtomCount: 1,
       maxStepCount: 201000,
       maxOutputItemCount: 201000,
-      peakRamBytes: 163328000,
+      peakRamBytes: 159727616,
       peakVramBytes: null,
-      elapsedMs: 9199,
+      elapsedMs: 8612,
       outputBytes: 3196426,
     },
     {
@@ -186,9 +186,9 @@ export const BIOCHEMICAL_SIMULATION_LINUX_X86_64_CPU_DEVELOPMENT_PROFILE: Liatir
       maxAtomCount: 1,
       maxStepCount: 201000,
       maxOutputItemCount: 201000,
-      peakRamBytes: 163127296,
+      peakRamBytes: 159727616,
       peakVramBytes: null,
-      elapsedMs: 9451,
+      elapsedMs: 8531,
       outputBytes: 3196426,
     },
     {
@@ -198,9 +198,9 @@ export const BIOCHEMICAL_SIMULATION_LINUX_X86_64_CPU_DEVELOPMENT_PROFILE: Liatir
       maxAtomCount: 356,
       maxStepCount: 101,
       maxOutputItemCount: 1515,
-      peakRamBytes: 172396544,
+      peakRamBytes: 166428672,
       peakVramBytes: null,
-      elapsedMs: 27927,
+      elapsedMs: 27536,
       outputBytes: 264089,
     },
     {
@@ -210,9 +210,9 @@ export const BIOCHEMICAL_SIMULATION_LINUX_X86_64_CPU_DEVELOPMENT_PROFILE: Liatir
       maxAtomCount: 15,
       maxStepCount: 11,
       maxOutputItemCount: 33,
-      peakRamBytes: 137256960,
+      peakRamBytes: 132296704,
       peakVramBytes: null,
-      elapsedMs: 1137,
+      elapsedMs: 1216,
       outputBytes: 8756,
     },
   ],

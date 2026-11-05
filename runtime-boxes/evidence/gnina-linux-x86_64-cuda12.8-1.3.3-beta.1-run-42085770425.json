@@ -1,0 +1,233 @@
+{
+  "schemaVersion": 1,
+  "kind": "liatir.runtime-box.ci-evidence",
+  "phase": "production-release",
+  "status": "passed",
+  "createdAt": "2026-11-05T19:10:10.414Z",
+  "subject": {
+    "componentKind": "tool-runtime",
+    "componentId": "gnina-pose-rescoring",
+    "modelId": "gnina-pose-rescoring",
+    "boxId": "gnina",
+    "runtimeId": "gnina-1-3-3",
+    "recipeId": "gnina-linux-x86_64-cuda12.8",
+    "recipeVersion": "1.0.0",
+    "version": "1.3.3-beta.1",
+    "targetId": "linux-x86_64-cuda12.8",
+    "mode": "native-lifecycle"
+  },
+  "source": {
+    "repository": "Liatir/liatir-app",
+    "commitSha": "13c73a9fd96184c03cf4cdb1ada204ff01589eef",
+    "sourceTreeDirty": false
+  },
+  "workflow": {
+    "provider": "github-actions",
+    "workflow": "Runtime Box production release",
+    "runId": "42085770425",
+    "runAttempt": "1",
+    "runUrl": "https://github.com/Liatir/liatir-app/actions/runs/42085770425",
+    "actor": "suffro",
+    "triggeringActor": "suffro",
+    "environment": "runtime-box-production",
+    "approver": null
+  },
+  "host": {
+    "platform": "linux",
+    "arch": "x86_64",
+    "runnerName": "liatir-linux-cuda-selfhosted-1793903719-567",
+    "runnerLabel": "liatir-linux-cuda-selfhosted",
+    "runnerEnvironment": "self-hosted",
+    "image": null,
+    "freeDiskBytesBefore": 710860226560,
+    "minimumFreeDiskBytes": 704837029888,
+    "peakAdditionalDiskBytes": 5887078400,
+    "gpuModel": "NVIDIA GeForce RTX 4060 Ti",
+    "gpuCount": 1,
+    "gpuMemoryBytes": 8585740288,
+    "computeCapability": "8.9",
+    "driverVersion": "610.88",
+    "reportedCudaCompatibility": "12.8",
+    "existingBuildStateBytes": 0,
+    "calculatedDiskPlan": {
+      "sourceAssetBytes": 2057657017,
+      "localSourceBytes": 16206,
+      "estimatedInstalledSizeBytes": 6442450944,
+      "estimatedArchiveSizeBytes": 2684354560,
+      "safetyMarginBytes": 4294967296,
+      "calculatedPeakDiskBytes": 15479446023,
+      "requiredBuildDiskBytes": 17179869184
+    }
+  },
+  "build": {
+    "recipeSha256": "0eee4b77eaf2ab9b5b0f8eb138840bdd47e897ea2358d4646b35d4a2c70d0c0d",
+    "dependencyLockSha256": "edf8fc870aeb21d354541eefb15535015248a7ecd9b6419a16bbd3295973f9a6",
+    "pythonVersion": "3.11.18",
+    "pixiVersion": "0.73.0",
+    "archiveSha256": "d63525a7e8a18d3513a45c665d68b4d8c61080a156241534bf8b4e201ced9ac8",
+    "archiveSizeBytes": 2255058347,
+    "installedSizeBytes": 3466190650,
+    "elapsedMs": 282135,
+    "selfTest": {
+      "status": "passed",
+      "imports": [
+        "ctypes"
+      ],
+      "localSignatureVerified": true
+    }
+  },
+  "scientific": {
+    "validator": {
+      "path": "scripts/validate-gnina-runtime.mjs",
+      "sha256": "65e8ec99caf6e311bbf41ca29694283ba27221dc3504a57f95b422fce835497e"
+    },
+    "productScript": {
+      "path": "frontend/src/lib/tools/gnina/python-scripts/gnina.ts",
+      "sha256": "b5a5084741eb4d804a97ea02f1aa3e0e2251e03466099f770f6f74d1b122dccb"
+    },
+    "fixture": {
+      "id": "liatir-molecular-docking-1iep-poses",
+      "sha256": "c52ab5944f35cf7caa4cd17d1a35d46b2fa32ec445a3e722c7f08b2a0ceba05f",
+      "receptorPdbqtSha256": "f13cf3b36f61d87c3b58983e0b8ecf1c3456a685eb86dfe9ccfb139c7bdc2586"
+    },
+    "sources": [
+      {
+        "kind": "asset",
+        "identity": "https://github.com/gnina/gnina/releases/download/v1.3.3/gnina.cuda12.8.static",
+        "revision": "gnina-1.3.3+6fe1ce2bb9c3+binary-3340c1f49cd3",
+        "sha256": "3340c1f49cd3c7c84d8699182a1c6af13c7fa2a22448d1204640446106f72172"
+      },
+      {
+        "kind": "asset",
+        "identity": "https://raw.githubusercontent.com/gnina/gnina/6fe1ce2bb9c35c8067de9f49bb9169857dfbad70/test/gnina/data/noelem_rec.pdb",
+        "revision": "gnina-1.3.3+6fe1ce2bb9c3+binary-3340c1f49cd3",
+        "sha256": "e083ee04bb58ec364be0f19005f5e19bd355188007af371c2183472835544b72"
+      },
+      {
+        "kind": "asset",
+        "identity": "https://raw.githubusercontent.com/gnina/gnina/6fe1ce2bb9c35c8067de9f49bb9169857dfbad70/test/gnina/data/noelem.sdf",
+        "revision": "gnina-1.3.3+6fe1ce2bb9c3+binary-3340c1f49cd3",
+        "sha256": "ff12b1c386f7dd3ad890bbd8da1e81d6d05afaa33dbbf1c364f29e7d25c49920"
+      },
+      {
+        "kind": "asset",
+        "identity": "https://raw.githubusercontent.com/gnina/gnina/6fe1ce2bb9c35c8067de9f49bb9169857dfbad70/test/gnina/data/3rod_rec.pdb",
+        "revision": "gnina-1.3.3+6fe1ce2bb9c3+binary-3340c1f49cd3",
+        "sha256": "f0640d31f71c0e33201cea2938ca357541c51ea7bd1bb158182c396c9fb6235e"
+      },
+      {
+        "kind": "asset",
+        "identity": "https://raw.githubusercontent.com/gnina/gnina/6fe1ce2bb9c35c8067de9f49bb9169857dfbad70/test/gnina/data/3rod_lig.pdb",
+        "revision": "gnina-1.3.3+6fe1ce2bb9c3+binary-3340c1f49cd3",
+        "sha256": "316b6c7e7fdbf2fd7cb2f7d7beaf2d9da46766d7d8cf1b8cd1a405f1f75dd511"
+      },
+      {
+        "kind": "asset",
+        "identity": "https://raw.githubusercontent.com/gnina/gnina/6fe1ce2bb9c35c8067de9f49bb9169857dfbad70/test/gnina/data/184l_rec.pdb",
+        "revision": "gnina-1.3.3+6fe1ce2bb9c3+binary-3340c1f49cd3",
+        "sha256": "55746b38d8d54c420d38ee1c37f5a716f6c4bc0f425740881d891c1ab6ae801b"
+      },
+      {
+        "kind": "asset",
+        "identity": "https://raw.githubusercontent.com/gnina/gnina/6fe1ce2bb9c35c8067de9f49bb9169857dfbad70/test/gnina/data/184l_lig.sdf",
+        "revision": "gnina-1.3.3+6fe1ce2bb9c3+binary-3340c1f49cd3",
+        "sha256": "d0b7c10181df629c3f68c58f467e15613ba74c160f981bddc5dc3989edf6fb18"
+      },
+      {
+        "kind": "asset",
+        "identity": "https://raw.githubusercontent.com/ccsb-scripps/AutoDock-Vina/8eb40404f4f45608acb3b01427587ac049f27c1f/example/basic_docking/data/1iep_ligand.sdf",
+        "revision": "gnina-1.3.3+6fe1ce2bb9c3+binary-3340c1f49cd3",
+        "sha256": "051b8742c32adc05c07fb486a4e7c9327f84e131cee33ac4e6a568d07553eb38"
+      },
+      {
+        "kind": "asset",
+        "identity": "https://raw.githubusercontent.com/ccsb-scripps/AutoDock-Vina/8eb40404f4f45608acb3b01427587ac049f27c1f/example/basic_docking/solution/1iep_receptor.pdbqt",
+        "revision": "gnina-1.3.3+6fe1ce2bb9c3+binary-3340c1f49cd3",
+        "sha256": "f13cf3b36f61d87c3b58983e0b8ecf1c3456a685eb86dfe9ccfb139c7bdc2586"
+      }
+    ],
+    "framework": {
+      "name": "gnina",
+      "version": "1.3.3",
+      "backend": "cuda"
+    },
+    "accelerator": {
+      "kind": "cuda",
+      "gpuModel": "NVIDIA GeForce RTX 4060 Ti",
+      "gpuMemoryBytes": 8585740288,
+      "computeCapability": "8.9",
+      "driverVersion": "610.88",
+      "vramMeasurementMethod": "device-wide-delta",
+      "reportedCudaCompatibility": "12.8"
+    },
+    "finiteValues": true,
+    "tolerances": {
+      "absolute": 0.0015,
+      "relative": 0
+    },
+    "parity": {
+      "reference": "GNINA 1.3.3 --no_gpu: test_cnn.py 184l docking and the 1IEP rescorings",
+      "passed": true,
+      "cpuBaselinePassed": true,
+      "acceleratorPassed": true,
+      "maximumAbsoluteDifference": 0.001000000000000334,
+      "meanAbsoluteDifference": null,
+      "minimumCosineSimilarity": null
+    },
+    "elapsedMs": 153985,
+    "peakRamBytes": 989902848,
+    "peakVramBytes": 236978176,
+    "outputContract": "passed",
+    "provenanceContract": "passed"
+  },
+  "productLifecycle": {
+    "status": "passed",
+    "targetId": "linux-x86_64-cuda12.8",
+    "version": "1.3.3-beta.1",
+    "jobId": "job_2",
+    "analysisRunId": "b1c643fe-2762-4c2f-91fb-70250bc7d7a9",
+    "accelerator": "CUDA",
+    "gpuModel": "NVIDIA GeForce RTX 4060 Ti",
+    "computeCapability": "8.9",
+    "reportedCudaCompatibility": "12.8",
+    "peakVramBytes": 231555072,
+    "resultArtifactCount": 6,
+    "assertions": {
+      "install": "passed",
+      "onDemandAsset": "passed",
+      "cancellation": "passed",
+      "rescoring": "passed",
+      "jobs": "passed",
+      "results": "passed",
+      "provenance": "passed",
+      "offline": "passed",
+      "interpretationNotice": "passed",
+      "removal": "passed",
+      "resultArtifactsSurvivedRemoval": "passed"
+    }
+  },
+  "publication": {
+    "signingKeyIds": [
+      "liatir-runtime-box-kms-2026"
+    ],
+    "localSignatureVerified": true,
+    "archive": {
+      "url": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/gnina/1.3.3-beta.1/linux-x86_64-cuda12.8/d63525a7e8a18d3513a45c665d68b4d8c61080a156241534bf8b4e201ced9ac8.zip",
+      "sizeBytes": 2255058347,
+      "sha256": "d63525a7e8a18d3513a45c665d68b4d8c61080a156241534bf8b4e201ced9ac8",
+      "streamedVerification": "passed"
+    },
+    "release": {
+      "url": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/gnina/1.3.3-beta.1/linux-x86_64-cuda12.8/b7149f3208afad5dbaf2d240aadfaa5b9ba4c863ed622240b85688883204152a.release.json",
+      "sizeBytes": 3187,
+      "sha256": "b7149f3208afad5dbaf2d240aadfaa5b9ba4c863ed622240b85688883204152a",
+      "streamedVerification": "passed"
+    },
+    "channelUrl": "https://models.liatir.com/v1/channels/beta/gnina/linux-x86_64-cuda12.8",
+    "promotionHttpStatus": 200,
+    "promotionResponse": {
+      "ok": true,
+      "key": "channels/beta/gnina/linux-x86_64-cuda12.8.json"
+    }
+  }
+}

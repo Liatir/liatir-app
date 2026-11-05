@@ -1,0 +1,1046 @@
+{
+  "schemaVersion": 1,
+  "kind": "liatir.molecular-docking-scientific-validation",
+  "createdAt": "2026-11-05T15:55:50.105Z",
+  "status": "passed",
+  "modelId": "autodock-vina-molecular-docking",
+  "sourceRevision": "vina-1.2.7+meeko-0.8.0+ringtail-2.3.1+pdbfixer-1.12+openmm-8.5.1+rdkit-2024.09.6",
+  "targetId": "linux-x86_64-cpu",
+  "productRunnerSha256": "24677c0ef144339215dfbeeaad8257e22a91ebb85583eeed1241fba22c793868",
+  "cases": [
+    {
+      "id": "official-receptor-preparation",
+      "metrics": {
+        "schemaVersion": 1,
+        "kind": "liatir.molecular-docking-preflight",
+        "action": "prepare-receptor",
+        "workloadId": "docking:receptor-preparation",
+        "tokenCount": 1,
+        "atomCount": 4412,
+        "chains": [
+          "A"
+        ],
+        "heterogens": [],
+        "stepCount": 1,
+        "outputItemCount": 1,
+        "inputBytes": 357444,
+        "networkAccess": false
+      },
+      "measurement": {
+        "elapsedMs": 5706,
+        "peakRamBytes": 355049472,
+        "peakVramBytes": null,
+        "vramMeasurementMethod": null,
+        "vramDeviceBaselineBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": [],
+        "peakProcessTreePssBytes": 350316544,
+        "processTreeMeasurementErrors": []
+      },
+      "outputBytes": 575355
+    },
+    {
+      "id": "raw-receptor-unknown-residue",
+      "rejected": true,
+      "message": "STI"
+    },
+    {
+      "id": "raw-receptor-preparation",
+      "metrics": {
+        "schemaVersion": 1,
+        "kind": "liatir.molecular-docking-preflight",
+        "action": "prepare-receptor",
+        "workloadId": "docking:receptor-preparation",
+        "tokenCount": 1,
+        "atomCount": 4710,
+        "chains": [
+          "A",
+          "B"
+        ],
+        "heterogens": [
+          {
+            "name": "CL",
+            "kind": "ion",
+            "residues": 6
+          },
+          {
+            "name": "STI",
+            "kind": "ligand-or-cofactor",
+            "residues": 2
+          },
+          {
+            "name": "HOH",
+            "kind": "water",
+            "residues": 172
+          }
+        ],
+        "stepCount": 1,
+        "outputItemCount": 1,
+        "inputBytes": 526113,
+        "networkAccess": false
+      },
+      "measurement": {
+        "elapsedMs": 4448,
+        "peakRamBytes": 350576640,
+        "peakVramBytes": null,
+        "vramMeasurementMethod": null,
+        "vramDeviceBaselineBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": [],
+        "peakProcessTreePssBytes": 346233856,
+        "processTreeMeasurementErrors": []
+      },
+      "outputBytes": 612263
+    },
+    {
+      "id": "raw-receptor-absent-residue",
+      "rejected": true,
+      "message": "not in the structure"
+    },
+    {
+      "id": "official-redocking",
+      "metrics": {
+        "schemaVersion": 1,
+        "kind": "liatir.molecular-docking-preflight",
+        "action": "dock",
+        "workloadId": "vina:dock:vina",
+        "tokenCount": 1,
+        "atomCount": 2702,
+        "stepCount": 32,
+        "outputItemCount": 9,
+        "ligandCount": 1,
+        "maxLigandHeavyAtoms": 37,
+        "oversizedLigands": [],
+        "site": {
+          "mode": "box",
+          "center": [
+            15.19,
+            53.903,
+            16.917
+          ],
+          "size": [
+            20,
+            20,
+            20
+          ],
+          "volumeCubicAngstrom": 8000,
+          "largeSearchSpace": false
+        },
+        "options": {
+          "scoringFunction": "vina",
+          "exhaustiveness": 32,
+          "numPoses": 9,
+          "energyRangeKcalPerMol": 3,
+          "minRmsdAngstrom": 1,
+          "seed": 42,
+          "cpu": 6,
+          "addLigandHydrogens": true
+        },
+        "inputBytes": 222781,
+        "networkAccess": false
+      },
+      "measurement": {
+        "elapsedMs": 72225,
+        "peakRamBytes": 946958336,
+        "peakVramBytes": null,
+        "vramMeasurementMethod": null,
+        "vramDeviceBaselineBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": [],
+        "peakProcessTreePssBytes": 910172160,
+        "processTreeMeasurementErrors": []
+      },
+      "outputBytes": 184243,
+      "redocking": {
+        "topPoseRmsdAngstrom": 0.367505616798408,
+        "topScoreKcalPerMol": -13.219,
+        "poses": 6,
+        "coordinateSha256": "84435adf274b9870c18e1e3397b8f3bdd988f66600e1e9d85814e04bad117586"
+      }
+    },
+    {
+      "id": "prepared-redocking",
+      "metrics": {
+        "schemaVersion": 1,
+        "kind": "liatir.molecular-docking-preflight",
+        "action": "dock",
+        "workloadId": "vina:dock:vina",
+        "tokenCount": 1,
+        "atomCount": 2702,
+        "stepCount": 32,
+        "outputItemCount": 9,
+        "ligandCount": 1,
+        "maxLigandHeavyAtoms": 37,
+        "oversizedLigands": [],
+        "site": {
+          "mode": "box",
+          "center": [
+            15.19,
+            53.903,
+            16.917
+          ],
+          "size": [
+            20,
+            20,
+            20
+          ],
+          "volumeCubicAngstrom": 8000,
+          "largeSearchSpace": false
+        },
+        "options": {
+          "scoringFunction": "vina",
+          "exhaustiveness": 32,
+          "numPoses": 9,
+          "energyRangeKcalPerMol": 3,
+          "minRmsdAngstrom": 1,
+          "seed": 42,
+          "cpu": 6,
+          "addLigandHydrogens": true
+        },
+        "inputBytes": 222781,
+        "networkAccess": false
+      },
+      "measurement": {
+        "elapsedMs": 70867,
+        "peakRamBytes": 946028544,
+        "peakVramBytes": null,
+        "vramMeasurementMethod": null,
+        "vramDeviceBaselineBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": [],
+        "peakProcessTreePssBytes": 901577728,
+        "processTreeMeasurementErrors": []
+      },
+      "outputBytes": 541666,
+      "redocking": {
+        "topPoseRmsdAngstrom": 0.36944238478506375,
+        "topScoreKcalPerMol": -13.211,
+        "poses": 5,
+        "coordinateSha256": "15935a4f13919cbf91c43604f96e4023d432781abcaf06c5a55e62ead58390c3"
+      }
+    },
+    {
+      "id": "raw-structure-redocking",
+      "metrics": {
+        "schemaVersion": 1,
+        "kind": "liatir.molecular-docking-preflight",
+        "action": "dock",
+        "workloadId": "vina:dock:vina",
+        "tokenCount": 1,
+        "atomCount": 2706,
+        "stepCount": 32,
+        "outputItemCount": 9,
+        "ligandCount": 1,
+        "maxLigandHeavyAtoms": 37,
+        "oversizedLigands": [],
+        "site": {
+          "mode": "box",
+          "center": [
+            15.19,
+            53.903,
+            16.917
+          ],
+          "size": [
+            20,
+            20,
+            20
+          ],
+          "volumeCubicAngstrom": 8000,
+          "largeSearchSpace": false
+        },
+        "options": {
+          "scoringFunction": "vina",
+          "exhaustiveness": 32,
+          "numPoses": 9,
+          "energyRangeKcalPerMol": 3,
+          "minRmsdAngstrom": 1,
+          "seed": 42,
+          "cpu": 6,
+          "addLigandHydrogens": true
+        },
+        "inputBytes": 223101,
+        "networkAccess": false
+      },
+      "measurement": {
+        "elapsedMs": 74397,
+        "peakRamBytes": 946569216,
+        "peakVramBytes": null,
+        "vramMeasurementMethod": null,
+        "vramDeviceBaselineBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": [],
+        "peakProcessTreePssBytes": 903588864,
+        "processTreeMeasurementErrors": []
+      },
+      "outputBytes": 548471,
+      "redocking": {
+        "topPoseRmsdAngstrom": 0.37362613196414224,
+        "topScoreKcalPerMol": -13.306,
+        "poses": 6,
+        "coordinateSha256": "deeb3cc29d5fc414bd08a018cb63c9db312f97708e26dd73aea5c8093a2d95fb"
+      }
+    },
+    {
+      "id": "select-complex",
+      "metrics": {
+        "schemaVersion": 1,
+        "kind": "liatir.molecular-docking-preflight",
+        "action": "select-complex",
+        "workloadId": "docking:select-complex",
+        "tokenCount": 1,
+        "atomCount": 4411,
+        "stepCount": 1,
+        "outputItemCount": 1,
+        "poses": [
+          {
+            "ligand": "STI",
+            "poseRank": 1,
+            "scoreKcalPerMol": -13.211
+          },
+          {
+            "ligand": "STI",
+            "poseRank": 2,
+            "scoreKcalPerMol": -11.262
+          },
+          {
+            "ligand": "STI",
+            "poseRank": 3,
+            "scoreKcalPerMol": -11.246
+          },
+          {
+            "ligand": "STI",
+            "poseRank": 4,
+            "scoreKcalPerMol": -11.131
+          },
+          {
+            "ligand": "STI",
+            "poseRank": 5,
+            "scoreKcalPerMol": -10.447
+          }
+        ],
+        "inputBytes": 605261,
+        "networkAccess": false
+      },
+      "measurement": {
+        "elapsedMs": 165,
+        "peakRamBytes": 62570496,
+        "peakVramBytes": null,
+        "vramMeasurementMethod": null,
+        "vramDeviceBaselineBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": [],
+        "peakProcessTreePssBytes": 59998208,
+        "processTreeMeasurementErrors": []
+      },
+      "outputBytes": 370853,
+      "complex": {
+        "chain": "L",
+        "receptorAtoms": 4411,
+        "ligandAtoms": 69
+      }
+    },
+    {
+      "id": "select-complex-other-receptor",
+      "rejected": true,
+      "message": "were not docked into this receptor PDBQT"
+    },
+    {
+      "id": "select-complex-absent-pose",
+      "rejected": true,
+      "message": "hold 0 poses of nilotinib at rank 1"
+    },
+    {
+      "id": "reproducibility-repeat-a",
+      "metrics": {
+        "schemaVersion": 1,
+        "kind": "liatir.molecular-docking-preflight",
+        "action": "dock",
+        "workloadId": "vina:dock:vina",
+        "tokenCount": 1,
+        "atomCount": 2702,
+        "stepCount": 8,
+        "outputItemCount": 9,
+        "ligandCount": 1,
+        "maxLigandHeavyAtoms": 37,
+        "oversizedLigands": [],
+        "site": {
+          "mode": "box",
+          "center": [
+            15.19,
+            53.903,
+            16.917
+          ],
+          "size": [
+            20,
+            20,
+            20
+          ],
+          "volumeCubicAngstrom": 8000,
+          "largeSearchSpace": false
+        },
+        "options": {
+          "scoringFunction": "vina",
+          "exhaustiveness": 8,
+          "numPoses": 9,
+          "energyRangeKcalPerMol": 3,
+          "minRmsdAngstrom": 1,
+          "seed": 42,
+          "cpu": 6,
+          "addLigandHydrogens": true
+        },
+        "inputBytes": 222781,
+        "networkAccess": false
+      },
+      "measurement": {
+        "elapsedMs": 25825,
+        "peakRamBytes": 946417664,
+        "peakVramBytes": null,
+        "vramMeasurementMethod": null,
+        "vramDeviceBaselineBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": [],
+        "peakProcessTreePssBytes": 890964992,
+        "processTreeMeasurementErrors": []
+      },
+      "outputBytes": 177786
+    },
+    {
+      "id": "reproducibility-repeat-b",
+      "metrics": {
+        "schemaVersion": 1,
+        "kind": "liatir.molecular-docking-preflight",
+        "action": "dock",
+        "workloadId": "vina:dock:vina",
+        "tokenCount": 1,
+        "atomCount": 2702,
+        "stepCount": 8,
+        "outputItemCount": 9,
+        "ligandCount": 1,
+        "maxLigandHeavyAtoms": 37,
+        "oversizedLigands": [],
+        "site": {
+          "mode": "box",
+          "center": [
+            15.19,
+            53.903,
+            16.917
+          ],
+          "size": [
+            20,
+            20,
+            20
+          ],
+          "volumeCubicAngstrom": 8000,
+          "largeSearchSpace": false
+        },
+        "options": {
+          "scoringFunction": "vina",
+          "exhaustiveness": 8,
+          "numPoses": 9,
+          "energyRangeKcalPerMol": 3,
+          "minRmsdAngstrom": 1,
+          "seed": 42,
+          "cpu": 6,
+          "addLigandHydrogens": true
+        },
+        "inputBytes": 222781,
+        "networkAccess": false
+      },
+      "measurement": {
+        "elapsedMs": 26526,
+        "peakRamBytes": 946372608,
+        "peakVramBytes": null,
+        "vramMeasurementMethod": null,
+        "vramDeviceBaselineBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": [],
+        "peakProcessTreePssBytes": 890124288,
+        "processTreeMeasurementErrors": []
+      },
+      "outputBytes": 177786
+    },
+    {
+      "id": "reproducibility-repeat-one-thread",
+      "metrics": {
+        "schemaVersion": 1,
+        "kind": "liatir.molecular-docking-preflight",
+        "action": "dock",
+        "workloadId": "vina:dock:vina",
+        "tokenCount": 1,
+        "atomCount": 2702,
+        "stepCount": 8,
+        "outputItemCount": 9,
+        "ligandCount": 1,
+        "maxLigandHeavyAtoms": 37,
+        "oversizedLigands": [],
+        "site": {
+          "mode": "box",
+          "center": [
+            15.19,
+            53.903,
+            16.917
+          ],
+          "size": [
+            20,
+            20,
+            20
+          ],
+          "volumeCubicAngstrom": 8000,
+          "largeSearchSpace": false
+        },
+        "options": {
+          "scoringFunction": "vina",
+          "exhaustiveness": 8,
+          "numPoses": 9,
+          "energyRangeKcalPerMol": 3,
+          "minRmsdAngstrom": 1,
+          "seed": 42,
+          "cpu": 1,
+          "addLigandHydrogens": true
+        },
+        "inputBytes": 222781,
+        "networkAccess": false
+      },
+      "measurement": {
+        "elapsedMs": 89514,
+        "peakRamBytes": 945954816,
+        "peakVramBytes": null,
+        "vramMeasurementMethod": null,
+        "vramDeviceBaselineBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": [],
+        "peakProcessTreePssBytes": 888225792,
+        "processTreeMeasurementErrors": []
+      },
+      "outputBytes": 177794
+    },
+    {
+      "id": "batch-screen",
+      "metrics": {
+        "schemaVersion": 1,
+        "kind": "liatir.molecular-docking-preflight",
+        "action": "dock",
+        "workloadId": "vina:dock:vina",
+        "tokenCount": 9,
+        "atomCount": 2702,
+        "stepCount": 8,
+        "outputItemCount": 81,
+        "ligandCount": 9,
+        "maxLigandHeavyAtoms": 39,
+        "oversizedLigands": [],
+        "site": {
+          "mode": "reference-ligand",
+          "referenceLigandSha256": "051b8742c32adc05c07fb486a4e7c9327f84e131cee33ac4e6a568d07553eb38",
+          "paddingAngstrom": 5,
+          "center": [
+            15.107,
+            53.977,
+            17.143
+          ],
+          "size": [
+            20.232,
+            28.644,
+            25.186
+          ],
+          "volumeCubicAngstrom": 14595.927,
+          "largeSearchSpace": false
+        },
+        "options": {
+          "scoringFunction": "vina",
+          "exhaustiveness": 8,
+          "numPoses": 9,
+          "energyRangeKcalPerMol": 3,
+          "minRmsdAngstrom": 1,
+          "seed": 42,
+          "cpu": 6,
+          "addLigandHydrogens": true
+        },
+        "inputBytes": 250055,
+        "networkAccess": false
+      },
+      "measurement": {
+        "elapsedMs": 102120,
+        "peakRamBytes": 1246687232,
+        "peakVramBytes": null,
+        "vramMeasurementMethod": null,
+        "vramDeviceBaselineBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": [],
+        "peakProcessTreePssBytes": 945281024,
+        "processTreeMeasurementErrors": []
+      },
+      "outputBytes": 753785,
+      "screen": {
+        "ranking": [
+          {
+            "ligand": "nilotinib",
+            "scoreKcalPerMol": -13.539
+          },
+          {
+            "ligand": "imatinib-crystal",
+            "scoreKcalPerMol": -13.368
+          },
+          {
+            "ligand": "imatinib-without-hydrogens",
+            "scoreKcalPerMol": -13.368
+          },
+          {
+            "ligand": "dasatinib",
+            "scoreKcalPerMol": -8.388
+          },
+          {
+            "ligand": "decoy_6",
+            "scoreKcalPerMol": -7.156
+          },
+          {
+            "ligand": "decoy",
+            "scoreKcalPerMol": -5.917
+          }
+        ],
+        "rejected": [
+          {
+            "inputIndex": 7,
+            "inputName": "imatinib-2d",
+            "reason": "The molecule has no 3D coordinates."
+          },
+          {
+            "inputIndex": 8,
+            "inputName": "imatinib-chloride-salt",
+            "reason": "The molecule has 2 disconnected fragments (salts or mixtures); supply one parent molecule."
+          },
+          {
+            "inputIndex": 9,
+            "inputName": "phenylboronic-acid",
+            "reason": "Elements B are outside AutoDock Vina's ligand atom types."
+          }
+        ],
+        "crystalTopPoseRmsdAngstrom": 0.24717834681689882
+      }
+    },
+    {
+      "id": "append-same-experiment",
+      "metrics": {
+        "schemaVersion": 1,
+        "kind": "liatir.molecular-docking-preflight",
+        "action": "dock",
+        "workloadId": "vina:dock:vina",
+        "tokenCount": 1,
+        "atomCount": 2702,
+        "stepCount": 8,
+        "outputItemCount": 9,
+        "ligandCount": 1,
+        "maxLigandHeavyAtoms": 11,
+        "oversizedLigands": [],
+        "site": {
+          "mode": "reference-ligand",
+          "referenceLigandSha256": "051b8742c32adc05c07fb486a4e7c9327f84e131cee33ac4e6a568d07553eb38",
+          "paddingAngstrom": 5,
+          "center": [
+            15.107,
+            53.977,
+            17.143
+          ],
+          "size": [
+            20.232,
+            28.644,
+            25.186
+          ],
+          "volumeCubicAngstrom": 14595.927,
+          "largeSearchSpace": false
+        },
+        "options": {
+          "scoringFunction": "vina",
+          "exhaustiveness": 8,
+          "numPoses": 9,
+          "energyRangeKcalPerMol": 3,
+          "minRmsdAngstrom": 1,
+          "seed": 42,
+          "cpu": 6,
+          "addLigandHydrogens": true
+        },
+        "inputBytes": 217908,
+        "networkAccess": false
+      },
+      "measurement": {
+        "elapsedMs": 6498,
+        "peakRamBytes": 817097728,
+        "peakVramBytes": null,
+        "vramMeasurementMethod": null,
+        "vramDeviceBaselineBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": [],
+        "peakProcessTreePssBytes": 817097728,
+        "processTreeMeasurementErrors": []
+      },
+      "outputBytes": 288895
+    },
+    {
+      "id": "append-different-site",
+      "rejected": true,
+      "message": "different docking experiment"
+    },
+    {
+      "id": "append-foreign-database",
+      "rejected": true,
+      "message": "was not created by Liatir"
+    },
+    {
+      "id": "truncated-ligand-file",
+      "rejected": true,
+      "message": "truncated"
+    },
+    {
+      "id": "ligand-as-receptor",
+      "rejected": true,
+      "message": "torsion records"
+    },
+    {
+      "id": "oversized-box",
+      "rejected": true,
+      "message": "Box size x"
+    },
+    {
+      "id": "mismatched-receptor-structure",
+      "rejected": true,
+      "message": "does not match the receptor PDBQT"
+    }
+  ],
+  "hardwareSamples": [
+    {
+      "fixtureId": "official-receptor-preparation",
+      "workloadId": "docking:receptor-preparation",
+      "maxTokenCount": 1,
+      "maxAtomCount": 4412,
+      "maxStepCount": 1,
+      "maxOutputItemCount": 1,
+      "peakRamBytes": 355049472,
+      "peakVramBytes": null,
+      "elapsedMs": 5706,
+      "outputBytes": 575355
+    },
+    {
+      "fixtureId": "raw-receptor-preparation",
+      "workloadId": "docking:receptor-preparation",
+      "maxTokenCount": 1,
+      "maxAtomCount": 4710,
+      "maxStepCount": 1,
+      "maxOutputItemCount": 1,
+      "peakRamBytes": 350576640,
+      "peakVramBytes": null,
+      "elapsedMs": 4448,
+      "outputBytes": 612263
+    },
+    {
+      "fixtureId": "official-redocking",
+      "workloadId": "vina:dock:vina",
+      "maxTokenCount": 1,
+      "maxAtomCount": 2702,
+      "maxStepCount": 32,
+      "maxOutputItemCount": 9,
+      "peakRamBytes": 946958336,
+      "peakVramBytes": null,
+      "elapsedMs": 72225,
+      "outputBytes": 184243
+    },
+    {
+      "fixtureId": "prepared-redocking",
+      "workloadId": "vina:dock:vina",
+      "maxTokenCount": 1,
+      "maxAtomCount": 2702,
+      "maxStepCount": 32,
+      "maxOutputItemCount": 9,
+      "peakRamBytes": 946028544,
+      "peakVramBytes": null,
+      "elapsedMs": 70867,
+      "outputBytes": 541666
+    },
+    {
+      "fixtureId": "raw-structure-redocking",
+      "workloadId": "vina:dock:vina",
+      "maxTokenCount": 1,
+      "maxAtomCount": 2706,
+      "maxStepCount": 32,
+      "maxOutputItemCount": 9,
+      "peakRamBytes": 946569216,
+      "peakVramBytes": null,
+      "elapsedMs": 74397,
+      "outputBytes": 548471
+    },
+    {
+      "fixtureId": "select-complex",
+      "workloadId": "docking:select-complex",
+      "maxTokenCount": 1,
+      "maxAtomCount": 4411,
+      "maxStepCount": 1,
+      "maxOutputItemCount": 1,
+      "peakRamBytes": 62570496,
+      "peakVramBytes": null,
+      "elapsedMs": 165,
+      "outputBytes": 370853
+    },
+    {
+      "fixtureId": "reproducibility-repeat-a",
+      "workloadId": "vina:dock:vina",
+      "maxTokenCount": 1,
+      "maxAtomCount": 2702,
+      "maxStepCount": 8,
+      "maxOutputItemCount": 9,
+      "peakRamBytes": 946417664,
+      "peakVramBytes": null,
+      "elapsedMs": 25825,
+      "outputBytes": 177786
+    },
+    {
+      "fixtureId": "reproducibility-repeat-b",
+      "workloadId": "vina:dock:vina",
+      "maxTokenCount": 1,
+      "maxAtomCount": 2702,
+      "maxStepCount": 8,
+      "maxOutputItemCount": 9,
+      "peakRamBytes": 946372608,
+      "peakVramBytes": null,
+      "elapsedMs": 26526,
+      "outputBytes": 177786
+    },
+    {
+      "fixtureId": "reproducibility-repeat-one-thread",
+      "workloadId": "vina:dock:vina",
+      "maxTokenCount": 1,
+      "maxAtomCount": 2702,
+      "maxStepCount": 8,
+      "maxOutputItemCount": 9,
+      "peakRamBytes": 945954816,
+      "peakVramBytes": null,
+      "elapsedMs": 89514,
+      "outputBytes": 177794
+    },
+    {
+      "fixtureId": "batch-screen",
+      "workloadId": "vina:dock:vina",
+      "maxTokenCount": 9,
+      "maxAtomCount": 2702,
+      "maxStepCount": 8,
+      "maxOutputItemCount": 81,
+      "peakRamBytes": 1246687232,
+      "peakVramBytes": null,
+      "elapsedMs": 102120,
+      "outputBytes": 753785
+    },
+    {
+      "fixtureId": "append-same-experiment",
+      "workloadId": "vina:dock:vina",
+      "maxTokenCount": 1,
+      "maxAtomCount": 2702,
+      "maxStepCount": 8,
+      "maxOutputItemCount": 9,
+      "peakRamBytes": 817097728,
+      "peakVramBytes": null,
+      "elapsedMs": 6498,
+      "outputBytes": 288895
+    }
+  ],
+  "runtimeEvidence": {
+    "kind": "development-environment",
+    "signedPayloadVerified": false
+  },
+  "reference": {
+    "officialTopScoreKcalPerMol": -13.234,
+    "redockingRmsdAngstrom": 2,
+    "redock": {
+      "official-redocking": {
+        "topPoseRmsdAngstrom": 0.367505616798408,
+        "topScoreKcalPerMol": -13.219,
+        "poses": 6,
+        "coordinateSha256": "84435adf274b9870c18e1e3397b8f3bdd988f66600e1e9d85814e04bad117586"
+      },
+      "prepared-redocking": {
+        "topPoseRmsdAngstrom": 0.36944238478506375,
+        "topScoreKcalPerMol": -13.211,
+        "poses": 5,
+        "coordinateSha256": "15935a4f13919cbf91c43604f96e4023d432781abcaf06c5a55e62ead58390c3"
+      },
+      "raw-structure-redocking": {
+        "topPoseRmsdAngstrom": 0.37362613196414224,
+        "topScoreKcalPerMol": -13.306,
+        "poses": 6,
+        "coordinateSha256": "deeb3cc29d5fc414bd08a018cb63c9db312f97708e26dd73aea5c8093a2d95fb"
+      }
+    },
+    "reproducibility": {
+      "repeat-a": {
+        "cpu": 6,
+        "coordinateSha256": "a118ba6dbbfaf078b311cb2a510fe574681c57431de8eb171de5830b26f8194b",
+        "scores": [
+          -13.277,
+          -11.336,
+          -11.237,
+          -11.031,
+          -10.752
+        ]
+      },
+      "repeat-b": {
+        "cpu": 6,
+        "coordinateSha256": "a118ba6dbbfaf078b311cb2a510fe574681c57431de8eb171de5830b26f8194b",
+        "scores": [
+          -13.277,
+          -11.336,
+          -11.237,
+          -11.031,
+          -10.752
+        ]
+      },
+      "repeat-one-thread": {
+        "cpu": 1,
+        "coordinateSha256": "a118ba6dbbfaf078b311cb2a510fe574681c57431de8eb171de5830b26f8194b",
+        "scores": [
+          -13.277,
+          -11.336,
+          -11.237,
+          -11.031,
+          -10.752
+        ]
+      },
+      "sameSeedSameThreadsIdentical": true,
+      "oneThreadMatchesManyThreads": true
+    },
+    "ligandPdbqtParity": {
+      "ours": [
+        [
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "C",
+          "C",
+          "C",
+          "C",
+          "C",
+          "C",
+          "C",
+          "C",
+          "HD",
+          "HD",
+          "HD",
+          "N",
+          "N",
+          "N",
+          "NA",
+          "NA",
+          "NA",
+          "NA",
+          "OA"
+        ],
+        [
+          "7"
+        ]
+      ],
+      "official": [
+        [
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "A",
+          "C",
+          "C",
+          "C",
+          "C",
+          "C",
+          "C",
+          "C",
+          "C",
+          "HD",
+          "HD",
+          "HD",
+          "N",
+          "N",
+          "N",
+          "NA",
+          "NA",
+          "NA",
+          "NA",
+          "OA"
+        ],
+        [
+          "7"
+        ]
+      ]
+    }
+  },
+  "measurementHost": {
+    "platform": "linux",
+    "arch": "x64",
+    "osRelease": "6.18.33.2-microsoft-standard-WSL2",
+    "cpuModel": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+    "logicalCpuCount": 6,
+    "totalMemoryBytes": 12543176704
+  },
+  "validatorSource": {
+    "gitCommit": "1e4943c365d0584b4eb103f43a49cc97e0607f19",
+    "sourceTreeDirty": false,
+    "scriptSha256": "ed01ac1aa6c5fe9e71ce4b074c470d8593b820ddd36ab5baa2ba5673c7004ca8",
+    "measurementScriptSha256": "69b3d3ea2b3d8ea402477442b3b45fd64df884e5e1397b9f916a13fe8fa9832e",
+    "fixturePreparationSha256": "3ec39be0ea137397b2eb54690a86dccfa8638e722d3920770562c041f7c5716a",
+    "recipeSha256": "6e2931dfecfdf556d127a039cc83d52dc989d58031567bedc68d9a6bd27f97cd"
+  },
+  "provenance": {
+    "recipeId": "molecular-docking-linux-x86_64-cpu",
+    "recipeVersion": "1.0.0",
+    "pythonVersion": "3.11.18",
+    "pixiVersion": "0.73.0",
+    "dependencyLockSha256": "271965e6dd5035a9494d974c991dac8a1d10d0fe7f2dbea1ecb856097aa9d2fc"
+  },
+  "evidence": {
+    "fixture": {
+      "id": "autodock-vina-1.2.7-basic-docking-1iep",
+      "sha256": "051b8742c32adc05c07fb486a4e7c9327f84e131cee33ac4e6a568d07553eb38",
+      "rawStructureSha256": "0929a6fae4aa67875ed0c8d06b650f0a4ec7bb104011abfc7c8ee402c672ca27"
+    },
+    "framework": {
+      "name": "autodock-vina",
+      "version": "1.2.7",
+      "backend": "cpu"
+    },
+    "accelerator": {
+      "kind": "cpu"
+    },
+    "finiteValues": true,
+    "peakRamBytes": 1246687232,
+    "peakVramBytes": null,
+    "outputContract": "passed",
+    "provenanceContract": "passed"
+  }
+}

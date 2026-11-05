@@ -183,19 +183,19 @@ export interface LiatirDockingPoseRow {
 
 /**
  * Every sample is transcribed from the retained record named by `evidenceRecord`, and
- * `tests/unit/phase3-hardware-profiles.test.ts` fails if any value drifts from that file. A development
- * measurement stays valid only for this release identity; a production build is re-measured.
+ * `tests/unit/phase3-hardware-profiles.test.ts` fails if any value drifts from that file. They come
+ * from production release run 42057594343, which measured the very archive it published.
  */
-export const MOLECULAR_DOCKING_LINUX_X86_64_CPU_DEVELOPMENT_PROFILE: LiatirHardwareValidationProfile = {
+export const MOLECULAR_DOCKING_LINUX_X86_64_CPU_PRODUCTION_PROFILE: LiatirHardwareValidationProfile = {
   schemaVersion: 1,
-  profileId: "autodock-vina-molecular-docking-1.2.7-beta.1-linux-x86_64-cpu-development-2026-11-04",
+  profileId: "autodock-vina-molecular-docking-1.2.7-beta.1-linux-x86_64-cpu-production-2026-11-05",
   componentId: MOLECULAR_DOCKING_RUNTIME_COMPONENT_ID,
   componentVersion: AUTODOCK_VINA_VERSION,
   runtimeBoxRelease: "1.2.7-beta.1",
   target: { platform: "linux", arch: "x86_64", accelerator: "cpu" },
   precision: "double",
-  measuredAt: "2026-11-04T09:59:59.088Z",
-  evidenceRecord: "runtime-boxes/measurements/molecular-docking-linux-x86_64-cpu-development-2026-11-04.json",
+  measuredAt: "2026-11-05T15:55:50.105Z",
+  evidenceRecord: "runtime-boxes/measurements/molecular-docking-linux-x86_64-cpu-production-run-42057594343.json",
   samples: [
     {
       fixtureId: "official-receptor-preparation",
@@ -204,9 +204,9 @@ export const MOLECULAR_DOCKING_LINUX_X86_64_CPU_DEVELOPMENT_PROFILE: LiatirHardw
       maxAtomCount: 4412,
       maxStepCount: 1,
       maxOutputItemCount: 1,
-      peakRamBytes: 404754432,
+      peakRamBytes: 355049472,
       peakVramBytes: null,
-      elapsedMs: 6302,
+      elapsedMs: 5706,
       outputBytes: 575355,
     },
     {
@@ -216,9 +216,9 @@ export const MOLECULAR_DOCKING_LINUX_X86_64_CPU_DEVELOPMENT_PROFILE: LiatirHardw
       maxAtomCount: 4710,
       maxStepCount: 1,
       maxOutputItemCount: 1,
-      peakRamBytes: 400826368,
+      peakRamBytes: 350576640,
       peakVramBytes: null,
-      elapsedMs: 4664,
+      elapsedMs: 4448,
       outputBytes: 612263,
     },
     {
@@ -228,10 +228,10 @@ export const MOLECULAR_DOCKING_LINUX_X86_64_CPU_DEVELOPMENT_PROFILE: LiatirHardw
       maxAtomCount: 2702,
       maxStepCount: 32,
       maxOutputItemCount: 9,
-      peakRamBytes: 997134336,
+      peakRamBytes: 946958336,
       peakVramBytes: null,
-      elapsedMs: 93355,
-      outputBytes: 184225,
+      elapsedMs: 72225,
+      outputBytes: 184243,
     },
     {
       fixtureId: "prepared-redocking",
@@ -240,10 +240,10 @@ export const MOLECULAR_DOCKING_LINUX_X86_64_CPU_DEVELOPMENT_PROFILE: LiatirHardw
       maxAtomCount: 2702,
       maxStepCount: 32,
       maxOutputItemCount: 9,
-      peakRamBytes: 996478976,
+      peakRamBytes: 946028544,
       peakVramBytes: null,
-      elapsedMs: 84761,
-      outputBytes: 541648,
+      elapsedMs: 70867,
+      outputBytes: 541666,
     },
     {
       fixtureId: "raw-structure-redocking",
@@ -252,10 +252,10 @@ export const MOLECULAR_DOCKING_LINUX_X86_64_CPU_DEVELOPMENT_PROFILE: LiatirHardw
       maxAtomCount: 2706,
       maxStepCount: 32,
       maxOutputItemCount: 9,
-      peakRamBytes: 997138432,
+      peakRamBytes: 946569216,
       peakVramBytes: null,
-      elapsedMs: 87605,
-      outputBytes: 548453,
+      elapsedMs: 74397,
+      outputBytes: 548471,
     },
     {
       fixtureId: "select-complex",
@@ -264,9 +264,9 @@ export const MOLECULAR_DOCKING_LINUX_X86_64_CPU_DEVELOPMENT_PROFILE: LiatirHardw
       maxAtomCount: 4411,
       maxStepCount: 1,
       maxOutputItemCount: 1,
-      peakRamBytes: 64397312,
+      peakRamBytes: 62570496,
       peakVramBytes: null,
-      elapsedMs: 168,
+      elapsedMs: 165,
       outputBytes: 370853,
     },
     {
@@ -276,10 +276,10 @@ export const MOLECULAR_DOCKING_LINUX_X86_64_CPU_DEVELOPMENT_PROFILE: LiatirHardw
       maxAtomCount: 2702,
       maxStepCount: 8,
       maxOutputItemCount: 9,
-      peakRamBytes: 996909056,
+      peakRamBytes: 946417664,
       peakVramBytes: null,
-      elapsedMs: 30252,
-      outputBytes: 177768,
+      elapsedMs: 25825,
+      outputBytes: 177786,
     },
     {
       fixtureId: "reproducibility-repeat-b",
@@ -288,10 +288,10 @@ export const MOLECULAR_DOCKING_LINUX_X86_64_CPU_DEVELOPMENT_PROFILE: LiatirHardw
       maxAtomCount: 2702,
       maxStepCount: 8,
       maxOutputItemCount: 9,
-      peakRamBytes: 996667392,
+      peakRamBytes: 946372608,
       peakVramBytes: null,
-      elapsedMs: 29643,
-      outputBytes: 177768,
+      elapsedMs: 26526,
+      outputBytes: 177786,
     },
     {
       fixtureId: "reproducibility-repeat-one-thread",
@@ -300,10 +300,10 @@ export const MOLECULAR_DOCKING_LINUX_X86_64_CPU_DEVELOPMENT_PROFILE: LiatirHardw
       maxAtomCount: 2702,
       maxStepCount: 8,
       maxOutputItemCount: 9,
-      peakRamBytes: 996704256,
+      peakRamBytes: 945954816,
       peakVramBytes: null,
-      elapsedMs: 104012,
-      outputBytes: 177778,
+      elapsedMs: 89514,
+      outputBytes: 177794,
     },
     {
       fixtureId: "batch-screen",
@@ -312,10 +312,10 @@ export const MOLECULAR_DOCKING_LINUX_X86_64_CPU_DEVELOPMENT_PROFILE: LiatirHardw
       maxAtomCount: 2702,
       maxStepCount: 8,
       maxOutputItemCount: 81,
-      peakRamBytes: 1297035264,
+      peakRamBytes: 1246687232,
       peakVramBytes: null,
-      elapsedMs: 116119,
-      outputBytes: 753768,
+      elapsedMs: 102120,
+      outputBytes: 753785,
     },
     {
       fixtureId: "append-same-experiment",
@@ -324,10 +324,10 @@ export const MOLECULAR_DOCKING_LINUX_X86_64_CPU_DEVELOPMENT_PROFILE: LiatirHardw
       maxAtomCount: 2702,
       maxStepCount: 8,
       maxOutputItemCount: 9,
-      peakRamBytes: 866906112,
+      peakRamBytes: 817097728,
       peakVramBytes: null,
-      elapsedMs: 6544,
-      outputBytes: 288877,
+      elapsedMs: 6498,
+      outputBytes: 288895,
     },
   ],
 };

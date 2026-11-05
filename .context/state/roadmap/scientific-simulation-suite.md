@@ -4,11 +4,11 @@ The canonical, persistent execution plan for adding molecular docking, virtual s
 analysis, biochemical networks, metabolic modeling and multicellular simulation to Liatir. **Read this
 page before continuing any of that work**, and update it in the same change as any progress.
 
-**Status (2026-11-05): every capability is built, scientifically validated on development-signed
-builds and integrated in the product, and all pass the real-app lifecycle on native Linux, GNINA on
-this machine's GPU, and in the Windows app through WSL2.** GNINA is fetched from its own release at
-install (B1 resolved). Publication is next. Nothing is published; no paid, remote or GPU CI action has been
-taken. All work is on branch `simulation-suite`, not pushed.
+**Status (2026-11-05): PUBLISHED.** All six boxes are released to production on the `beta`
+channel from `main`, verified from their public URLs against the production trust root, and in the
+product catalog ([production releases](#production-releases-2026-11-05)). Users receive the tools
+with the next desktop release (next actions). GNINA is fetched from its own release at install (B1).
+Every release ran on this machine's ephemeral self-hosted runner; no paid GPU CI was used.
 
 ## Objective and scope
 
@@ -371,6 +371,13 @@ Each was checked, not inferred; the evidence is named.
     device memory through NVML as the OpenMM runner does, its validator records `--no_gpu` as the CPU
     baseline under `test_cnn.py`'s tolerance, and its lifecycle receipt carries the run's readings.
     Revalidated and rerun on native Linux; all six records are then accepted.
+52. **The release form did not offer GNINA's target.** `runtime-box-release.yml` lists its
+    `target_id` choices by hand and never gained `linux-x86_64-cuda12.8`, so GitHub refused the
+    GNINA dispatch (HTTP 422) before any job started. The target is added (`13c73a9f`), and a
+    catalog test now requires every catalog model and target to be a release input; it fails on
+    the old list for exactly this target. The runner started for the refused dispatch left an
+    offline registration and its runner root; both were removed, after checking their identity,
+    before the retry.
 
 ## Licensing and redistribution review
 
@@ -525,7 +532,9 @@ component.
   complete corresponding source; a box that fetches the official binary from GitHub at install with a
   pinned SHA-256; or a user-supplied binary validated by digest. Download of the 2 GB binary is held
   until then. GNINA's work does not block anything else.
-- **B2 — A portable PhysiCell executable.** Resolved for development (finding 38): the recipe and its
+- **B2 — A portable PhysiCell executable. Resolved 2026-11-05:** the Registry was deployed and
+  `runtime-box-physicell-source-mirror.yml` uploaded the reviewed executable (run 42062147123);
+  the PhysiCell box is published. Resolved for development first (finding 38): the recipe and its
   toolchain lock are in `runtime-boxes/native-builds/physicell/`, and the executable is a reviewed
   source mirror (`physicell-1-14-2-template` in the Registry worker and the distribution CLI). A
   production release needs it uploaded by `runtime-box-physicell-source-mirror.yml`, a manual workflow
@@ -549,12 +558,13 @@ component.
   than on the build directory's. Scrollcase is the owner's project and its release is theirs; the
   alternative inside 1.4.0 — unpacking BioNetGen under `venv/bin`, which the runtime marks executable
   wholesale — puts Perl modules and models among the box's programs and is not taken.
-- **B3 — Signer policy.** Each new box needs an entry in `services/runtime-box-signer/policy.json`
+- **B3 — Signer policy. Resolved 2026-11-05:** the signer was redeployed with the suite's policy
+  (run 42056033136). Each new box needs an entry in `services/runtime-box-signer/policy.json`
   and a signer redeploy before a production signature: a remote, authorized action.
-- **B3 now applies on this branch**: `services/runtime-box-signer/policy.json` lists
+- **B3 as it applied on the branch**: `services/runtime-box-signer/policy.json` lists
   `molecular-docking`, `molecular-analysis` and `metabolic-modeling`. Merging it into `main` makes the deployed signer stale for every box until
   `runtime-box-signer-deploy.yml` runs (`verify-signer-policy` compares the whole policy).
-- **B4 — Publication.** Production releases run `runtime-box-release.yml` on this machine's
+- **B4 — Publication. Resolved 2026-11-05** on the owner's go (below). Production releases run `runtime-box-release.yml` on this machine's
   self-hosted runner from `main`; merging, pushing and releasing each need the owner's explicit go.
 - **R1 — Vina reproducibility** may depend on thread count; measure before claiming.
 - **R2 — WSL2 memory** (12 GB) bounds the size of screens and trajectories accepted by preflight.
@@ -589,13 +599,12 @@ component.
 
 | Component | Status | Evidence |
 | --- | --- | --- |
-| Vina, RDKit, Meeko, PDBFixer, Ringtail | SCIENTIFICALLY VALIDATED and PRODUCT VALIDATED on native Linux (development build), and on Windows through WSL2; publication pending | `runtime-boxes/measurements/molecular-docking-linux-x86_64-cpu-development-2026-11-03.json`, `runtime-boxes/measurements/molecular-docking-linux-x86_64-cpu-product-lifecycle-development-2026-11-03.json` |
-| GNINA | SCIENTIFICALLY VALIDATED and PRODUCT VALIDATED on native Linux on this host's GPU (development build, validated as unpacked from its signed archive with GNINA's release asset placed as the installer places it), and on Windows through WSL2; publication pending | `runtime-boxes/measurements/gnina-linux-x86_64-cuda12.8-development-2026-11-05.json`, `runtime-boxes/measurements/gnina-linux-x86_64-cuda12.8-product-lifecycle-development-2026-11-05.json` |
-| MDAnalysis, ProLIF | SCIENTIFICALLY VALIDATED and PRODUCT VALIDATED on native Linux (development build), and on Windows through WSL2; publication pending | `runtime-boxes/measurements/molecular-analysis-linux-x86_64-cpu-development-2026-11-04.json`, `runtime-boxes/measurements/molecular-analysis-linux-x86_64-cpu-product-lifecycle-development-2026-11-04.json` |
-| Docked Complex (docking box) | SCIENTIFICALLY VALIDATED and PRODUCT VALIDATED on native Linux (development build), and on Windows through WSL2; publication pending | `runtime-boxes/measurements/molecular-docking-linux-x86_64-cpu-development-2026-11-04.json`, `runtime-boxes/measurements/docking-simulation-chain-development-2026-11-04.json` |
-| PySB, BioNetGen | SCIENTIFICALLY VALIDATED and PRODUCT VALIDATED on native Linux (development build, validated as unpacked from its signed archive), and on Windows through WSL2; publication pending | `runtime-boxes/measurements/biochemical-simulation-linux-x86_64-cpu-development-2026-11-05.json`, `runtime-boxes/measurements/biochemical-simulation-linux-x86_64-cpu-product-lifecycle-development-2026-11-05.json` |
-| COBRApy | SCIENTIFICALLY VALIDATED and PRODUCT VALIDATED on native Linux (development build), and on Windows through WSL2; publication pending | `runtime-boxes/measurements/metabolic-modeling-linux-x86_64-cpu-development-2026-11-04.json`, `runtime-boxes/measurements/metabolic-modeling-linux-x86_64-cpu-product-lifecycle-development-2026-11-04.json` |
-| PhysiCell | SCIENTIFICALLY VALIDATED and PRODUCT VALIDATED on native Linux (development build, validated as unpacked from its signed archive), and on Windows through WSL2; production needs the source mirror (B2), then publication | `runtime-boxes/measurements/physicell-linux-x86_64-cpu-development-2026-11-04.json` |
+| Vina, RDKit, Meeko, PDBFixer, Ringtail; Docked Complex | PUBLISHED: `molecular-docking/linux-x86_64-cpu` 1.2.7-beta.1, on Linux and Windows through WSL2 | `runtime-boxes/evidence/molecular-docking-linux-x86_64-cpu-1.2.7-beta.1-run-42057594343.json`, `runtime-boxes/measurements/molecular-docking-linux-x86_64-cpu-production-run-42057594343.json` |
+| GNINA | PUBLISHED: `gnina/linux-x86_64-cuda12.8` 1.3.3-beta.1, on Linux and Windows through WSL2 | `runtime-boxes/evidence/gnina-linux-x86_64-cuda12.8-1.3.3-beta.1-run-42085770425.json`, `runtime-boxes/measurements/gnina-linux-x86_64-cuda12.8-production-run-42085770425.json` |
+| MDAnalysis, ProLIF | PUBLISHED: `molecular-analysis/linux-x86_64-cpu` 2.11.0-beta.1, on Linux and Windows through WSL2 | `runtime-boxes/evidence/molecular-analysis-linux-x86_64-cpu-2.11.0-beta.1-run-42063057536.json`, `runtime-boxes/measurements/molecular-analysis-linux-x86_64-cpu-production-run-42063057536.json` |
+| PySB, BioNetGen | PUBLISHED: `biochemical-simulation/linux-x86_64-cpu` 1.17.0-beta.1, on Linux and Windows through WSL2 | `runtime-boxes/evidence/biochemical-simulation-linux-x86_64-cpu-1.17.0-beta.1-run-42074828679.json`, `runtime-boxes/measurements/biochemical-simulation-linux-x86_64-cpu-production-run-42074828679.json` |
+| COBRApy | PUBLISHED: `metabolic-modeling/linux-x86_64-cpu` 0.32.1-beta.1, on Linux and Windows through WSL2 | `runtime-boxes/evidence/metabolic-modeling-linux-x86_64-cpu-0.32.1-beta.1-run-42068626028.json`, `runtime-boxes/measurements/metabolic-modeling-linux-x86_64-cpu-production-run-42068626028.json` |
+| PhysiCell | PUBLISHED: `physicell/linux-x86_64-cpu` 1.14.2-beta.1, on Linux and Windows through WSL2 | `runtime-boxes/evidence/physicell-linux-x86_64-cpu-1.14.2-beta.1-run-42080211362.json`, `runtime-boxes/measurements/physicell-linux-x86_64-cpu-production-run-42080211362.json` |
 
 ## Phase 2 evidence (development build, 2026-11-03)
 
@@ -859,6 +868,34 @@ lifecycle passed 2 of 2 on the first run, with host environment `windows-wsl2`:
 Each also held cancellation, Jobs, Results, provenance, the offline boundary, the interpretation
 notice, and removal with every Result file kept.
 
+## Production releases (2026-11-05)
+
+Each ran `runtime-box-release.yml` from `main` on an ephemeral self-hosted runner on this machine:
+build, KMS signature, the scientific validator on the built archive, immutable publication, the real
+product lifecycle against the published release, promotion to `beta` at 100 %, signed evidence.
+Each was then verified from its public URLs only: channel and release signatures against
+`runtime-boxes/trust/production-public.json`, and the archive re-hashed as downloaded. Every source
+tree was clean. Before them: the signer redeploy (run 42056033136), the Registry deploy (version
+`2c1aa230`, after the owner's `wrangler login`), PhysiCell's source mirror (run 42062147123), and the
+runner launchers moved to runner 2.338.2 (`1e4943c3`) when GitHub deprecated 2.336.0.
+
+| Box / target | Version | Run | Built from | Release document | Archive |
+| --- | --- | --- | --- | --- | --- |
+| `molecular-docking/linux-x86_64-cpu` | 1.2.7-beta.1 | 42057594343 | `1e4943c3` | `a803336d…` | 592 MB |
+| `molecular-analysis/linux-x86_64-cpu` | 2.11.0-beta.1 | 42063057536 | `1e4943c3` | `52ab8de9…` | 317 MB |
+| `metabolic-modeling/linux-x86_64-cpu` | 0.32.1-beta.1 | 42068626028 | `1e4943c3` | `c3fbd2f0…` | 209 MB |
+| `biochemical-simulation/linux-x86_64-cpu` | 1.17.0-beta.1 | 42074828679 | `1e4943c3` | `a4ea211f…` | 137 MB |
+| `physicell/linux-x86_64-cpu` | 1.14.2-beta.1 | 42080211362 | `1e4943c3` | `29c29b65…` | 109 MB |
+| `gnina/linux-x86_64-cuda12.8` | 1.3.3-beta.1 | 42085770425 | `13c73a9f` | `b7149f32…` | 2.3 GB, and GNINA's 2.1 GB release asset at install |
+
+The production validators reproduced the development figures: imatinib redocked 0.37 Å from the
+crystal at −13.22 kcal/mol; E. coli core at 0.8739 h⁻¹; Robertson within 3.6 × 10⁻¹⁰; all 41
+doubling times; GNINA's top pose 0.90 Å, GPU and CPU within 0.0010, on the same pose files. GNINA's
+lifecycle ran on the RTX 4060 Ti with CUDA 12.8 and a 232 MB VRAM peak. The publication commit takes
+its hardware profiles, catalog targets, product catalog entries and public pages from these records;
+one page figure was corrected against them (BioNetGen's EGFR agreement is 2.02 × 10⁻⁸, just above the
+0.00000002 the page had claimed).
+
 ## Progress log
 
 - 2026-11-03 — Phase 1. Context read; WSL2 host and toolchain measured; Linux checkout brought to
@@ -911,6 +948,11 @@ notice, and removal with every Result file kept.
   `main` (`16a67d2d`); finding 51 fixed and rehearsed. The Registry deploy needs a Cloudflare login
   only the owner can give (`wrangler login`), so PhysiCell's source mirror, and with it PhysiCell's
   release, wait on it; the other five boxes do not depend on it.
+- 2026-11-05 — Published. Signer, Registry and PhysiCell's mirror deployed; the six production
+  releases ran (above), GNINA's after finding 52; the publication commit moved every hardware
+  profile to its production measurement, published each catalog target, added the six boxes to
+  the product catalog and their pages to the public site, and passed `test:verify` (104 files,
+  798 tests) and the site build.
 
 ## For the owner
 
@@ -921,11 +963,8 @@ notice, and removal with every Result file kept.
 
 ## Next concrete actions
 
-1. Production release (B3, B4), each step the owner's go: merge; signer redeploy (the policy gains
-   the suite's boxes and the on-demand asset rule, finding 48); Registry deploy and
-   `runtime-box-physicell-source-mirror.yml` (B2); then `runtime-box-release.yml` per box and target —
-   GNINA's on a GPU runner, prepared so the first run passes; then the publication commit (catalog,
-   product catalog, docs, measurements from the production builds).
-2. The desktop release that carries these tools: its Windows package must take the WSL2 consumer
+1. The desktop release that carries these tools: its Windows package must take the WSL2 consumer
    from a Native Tools artifact built from this code (the normal CI path), because older consumers
    cannot place on-demand assets.
+2. Then, in that released app, install each box from the production Registry and run one tool, on
+   Linux and on Windows through WSL2, to confirm what users receive.

@@ -93,6 +93,15 @@ separate from everything else and runs offline. They are not AI Models.
 | --- | --- | --- |
 | [Molecular Relaxation](/tools/molecular-simulation) | OpenMM 8.5.1 | Linux, or Windows through WSL2, with an NVIDIA GPU |
 | [Molecular Dynamics](/tools/molecular-simulation) | OpenMM 8.5.1 | Linux, or Windows through WSL2, with an NVIDIA GPU |
+| [Receptor Preparation](/tools/molecular-docking) | AutoDock Vina 1.2.7 | Linux, or Windows through WSL2 |
+| [Molecular Docking](/tools/molecular-docking) | AutoDock Vina 1.2.7 | Linux, or Windows through WSL2 |
+| [Docked Complex](/tools/molecular-docking) | AutoDock Vina 1.2.7 | Linux, or Windows through WSL2 |
+| [Neural Pose Rescoring](/tools/neural-pose-rescoring) | GNINA 1.3.3 | Linux, or Windows through WSL2, with an NVIDIA GPU |
+| [Trajectory Analysis](/tools/molecular-analysis) | MDAnalysis 2.11 and ProLIF 2.2.3 | Linux, or Windows through WSL2 |
+| [Interaction Fingerprint](/tools/molecular-analysis) | MDAnalysis 2.11 and ProLIF 2.2.3 | Linux, or Windows through WSL2 |
+| [Metabolic Modeling](/tools/metabolic-modeling) | COBRApy 0.32.1 | Linux, or Windows through WSL2 |
+| [Biochemical Simulation](/tools/biochemical-simulation) | PySB 1.17.0 and BioNetGen 2.9.3 | Linux, or Windows through WSL2 |
+| [Multicellular Simulation](/tools/multicellular-simulation) | PhysiCell 1.14.2 | Linux, or Windows through WSL2 |
 
 ## AI Tools
 

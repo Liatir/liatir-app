@@ -3,7 +3,7 @@
 
 import type { LiatirQuentaContextDocument } from '@liatir/core';
 
-export const QUENTA_DOCS_SEED_HASH = "3ce46247924f32561691ccd603a06ef03563226883229f88e57fc72786b4e551";
+export const QUENTA_DOCS_SEED_HASH = "62dccbc55a4aafecedc81a39b0a898ecd95c69a8d3a5dc4984563367f4cd3aee";
 
 export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
   {
@@ -2191,6 +2191,54 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "content": "Output metrics\n### Summary counts\n\n| Metric | Description |\n|--------|-------------|\n| Total records | All variant records in the file |\n| SNPs | Single-nucleotide polymorphisms (REF and ALT are both single bases) |\n| Indels | Insertions and deletions |\n| MNPs | Multi-nucleotide polymorphisms |\n| Other | Complex variants not in the above categories |\n| Multiallelic sites | Sites with more than one ALT allele |\n\n### Transitions and transversions\n\nTransitions (Ts) are substitutions between chemically similar bases: A↔G (purines) and C↔T (pyrimidines). Transversions (Tv) are substitutions between dissimilar bases: A↔C, A↔T, G↔C, G↔T.\n\nBiological mutation rates favour transitions over transversions, so the Ts/Tv ratio is a standard quality indicator:\n\n| Ts/Tv ratio | Context |\n|-------------|---------|\n| ≥ 2.8 | Expected for whole-exome sequencing |\n| ~2.0–2.1 | Expected for whole-genome sequencing |\n| ≥ 1.8 | Generally acceptable for WGS |\n| < 1.8 | May indicate false positives or low-quality calls |\n\n::: warning Low Ts/Tv\nA Ts/Tv below 1.8 often signals a high false-positive rate in the callset. This typically appears when variant caller quality thresholds are too permissive, or when the sample has very low coverage. Consider tightening QUAL or FILTER thresholds before downstream analysis.\n:::\n\n### Per-sample statistics (multi-sample VCF)\n\nWhen the input VCF contains multiple samples, `bcftools stats` reports per-sample counts:\n\n| Metric | Description |\n|--------|-------------|\n| Homozygous ref | Sites where the sample is homozygous reference |\n| Homozygous alt | Sites where the sample is homozygous alternate |\n| Heterozygous | Sites where the sample is heterozygous |\n| Ts/Tv (per sample) | Per-sample transition-to-transversion ratio |\n\nHigh variability in per-sample Ts/Tv within the same cohort may indicate technical differences between samples (e.g., different sequencing batches or coverage levels)."
   },
   {
+    "id": "docs:tools/biochemical-simulation",
+    "sourceKind": "documentation",
+    "title": "Biochemical Simulation",
+    "locator": "Docs / Tools / Biochemical Simulation",
+    "excerpt": "Simulate how the amounts of molecules in a network of chemical reactions change over time, using [PySB](https://pysb.org) 1.17.0 and [BioNetGen](https://bionetgen.org) 2.9.3. Liatir runs it entirely on your computer. Models are written as *rules* — \"A binds B…",
+    "content": "Simulate how the amounts of molecules in a network of chemical reactions change\nover time, using [PySB](https://pysb.org) 1.17.0 and\n[BioNetGen](https://bionetgen.org) 2.9.3. Liatir runs it entirely on your\ncomputer.\n\nModels are written as *rules* — \"A binds B\", \"the bound form is\nphosphorylated\" — from which BioNetGen works out every species and reaction.\nThe simulation can be:\n\n- **deterministic**: smooth curves for large numbers of molecules (ordinary\n  differential equations);\n- **stochastic**: individual random runs for small numbers of molecules, where\n  chance matters (the Gillespie method), repeated as many times as you ask.\n\nYou find it under **Tools → Systems Biology**, and it is available as a step in\na [pipeline](/pipeline/overview)."
+  },
+  {
+    "id": "docs:tools/biochemical-simulation#what-you-need",
+    "sourceKind": "documentation",
+    "title": "Biochemical Simulation — What you need",
+    "locator": "Docs / Tools / Biochemical Simulation / What you need",
+    "excerpt": "What you need Biochemical Simulation runs on a **Tool Runtime** that Liatir installs once, on request, from **Dependencies → Tool Runtimes**. | Your computer | Can it run this tool? | | --- | --- | | Linux x86_64 with glibc 2.34 or newer (Ubuntu 22.04 or late…",
+    "content": "What you need\nBiochemical Simulation runs on a **Tool Runtime** that Liatir installs once, on\nrequest, from **Dependencies → Tool Runtimes**.\n\n| Your computer | Can it run this tool? |\n| --- | --- |\n| Linux x86_64 with glibc 2.34 or newer (Ubuntu 22.04 or later) | Yes |\n| Windows 11, through WSL2 | Yes |\n| Mac | No |\n\n- **No graphics card is needed.**\n- **Memory and disk.** At least 4 GB of memory. The download is about\n  137 MB and needs about\n  411 MB once installed.\n\nAfter installation everything works offline."
+  },
+  {
+    "id": "docs:tools/biochemical-simulation#using-it",
+    "sourceKind": "documentation",
+    "title": "Biochemical Simulation — Using it",
+    "locator": "Docs / Tools / Biochemical Simulation / Using it",
+    "excerpt": "Using it - **Input:** one of PySB's reviewed example models, or your own model as a BNGL file. Instructions a BNGL file contains (its *actions*) are read and listed, never run: Liatir decides what is simulated. - **Options:** deterministic or stochastic; the…",
+    "content": "Using it\n- **Input:** one of PySB's reviewed example models, or your own model as a\n  BNGL file. Instructions a BNGL file contains (its *actions*) are read and\n  listed, never run: Liatir decides what is simulated.\n- **Options:** deterministic or stochastic; the end time and how many points to\n  report, evenly or logarithmically spaced; the solver's tolerances; for\n  stochastic runs, how many runs and the seed of the first; and changes to any\n  parameter.\n- **Output:** every observable over time as a table and plot, every stochastic\n  run, and the reaction network BioNetGen generated.\n\nSome rule sets never stop generating new species, for example a polymer that\ncan always grow by one more unit. Liatir stops network generation at 4 GB of\nmemory or 5 minutes of computing and tells you why, instead of running for\nhours."
+  },
+  {
+    "id": "docs:tools/biochemical-simulation#how-it-was-checked",
+    "sourceKind": "documentation",
+    "title": "Biochemical Simulation — How it was checked",
+    "locator": "Docs / Tools / Biochemical Simulation / How it was checked",
+    "excerpt": "How it was checked Before publication, the exact package you download was tested against reference solutions: - Robertson's chemical reaction problem, a standard hard test for solvers, matches its published reference solution to nine significant digits. - A m…",
+    "content": "How it was checked\nBefore publication, the exact package you download was tested against reference\nsolutions:\n\n- Robertson's chemical reaction problem, a standard hard test for solvers,\n  matches its published reference solution to nine significant digits.\n- A model with an exact mathematical solution matches it within 0.0000001.\n- 1,000 stochastic runs of a model whose outcome is known reach the expected\n  mean and variance of 10 within their statistical bounds (mean 9.85, variance\n  9.95), and the same seeds repeat exactly.\n- BioNetGen's own EGFR signalling model (356 species, 3,749 reactions) matches\n  BioNetGen's own solver within 0.00000003.\n\nThe same package then ran inside the real Liatir app, from installation to\nresults and removal, on Linux and on Windows through WSL2."
+  },
+  {
+    "id": "docs:tools/biochemical-simulation#what-the-results-mean",
+    "sourceKind": "documentation",
+    "title": "Biochemical Simulation — What the results mean",
+    "locator": "Docs / Tools / Biochemical Simulation / What the results mean",
+    "excerpt": "What the results mean A simulation describes the model's reactions, rate laws and parameters, not the cell they stand for. Deterministic results assume well-mixed, large populations; stochastic results are samples whose statistics depend on the number of runs…",
+    "content": "What the results mean\nA simulation describes the model's reactions, rate laws and parameters, not the\ncell they stand for. Deterministic results assume well-mixed, large\npopulations; stochastic results are samples whose statistics depend on the\nnumber of runs. Liatir shows this notice with every result."
+  },
+  {
+    "id": "docs:tools/biochemical-simulation#licences-and-official-source",
+    "sourceKind": "documentation",
+    "title": "Biochemical Simulation — Licences and official source",
+    "locator": "Docs / Tools / Biochemical Simulation / Licences and official source",
+    "excerpt": "Licences and official source - [PySB 1.17.0](https://github.com/pysb/pysb): BSD-2-Clause. - [BioNetGen 2.9.3](https://github.com/RuleWorld/bionetgen): MIT; its programs include SUNDIALS (BSD-3-Clause). - Perl: Artistic License or GPL.",
+    "content": "Licences and official source\n- [PySB 1.17.0](https://github.com/pysb/pysb): BSD-2-Clause.\n- [BioNetGen 2.9.3](https://github.com/RuleWorld/bionetgen): MIT; its programs\n  include SUNDIALS (BSD-3-Clause).\n- Perl: Artistic License or GPL."
+  },
+  {
     "id": "docs:tools/bwa-mem",
     "sourceKind": "documentation",
     "title": "BWA-MEM",
@@ -2383,6 +2431,54 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "content": "Output metrics\n### Per-base sequence quality\n\nMean Phred quality score at each position across all reads. Positions are numbered from the 5′ end of the read. A declining curve toward the 3′ end is normal for most short-read platforms and reflects signal degradation in the flow cell.\n\nPhred quality interpretation:\n\n| Score | Error rate | Accuracy |\n|-------|-----------|----------|\n| Q10 | 10% | 90% |\n| Q20 | 1% | 99% |\n| Q30 | 0.1% | 99.9% |\n| Q40 | 0.01% | 99.99% |\n\n### GC content\n\nOverall GC percentage across all reads. Most organisms have a characteristic GC content; significant deviation from the expected value can indicate contamination or library preparation problems.\n\n### Adapter detection\n\nIdentified adapter sequences and their frequency per position. Common adapters (Illumina universal, TruSeq, Nextera) are screened automatically. High adapter content toward the 3′ end indicates short inserts and typically warrants trimming before downstream analysis.\n\n### Sequence length distribution\n\nDistribution of read lengths. Uniform length is expected for most platforms. Variable-length distributions appear after adapter trimming or with long-read data.\n\n### Duplication level\n\nEstimated percentage of reads that are likely duplicates (identical or near-identical sequences). Elevated duplication can result from PCR over-amplification during library prep, and can bias downstream quantification.\n\n::: tip What counts as good?\n\nA practical rule of thumb for short-read Illumina data:\n\n- Per-base Q30 > 80% across the full read length: good\n- Adapter content < 5% at any position: acceptable without trimming\n- Duplication level < 30% for DNA-seq: normal; higher for RNA-seq due to transcript abundance\n:::"
   },
   {
+    "id": "docs:tools/metabolic-modeling",
+    "sourceKind": "documentation",
+    "title": "Metabolic Modeling",
+    "locator": "Docs / Tools / Metabolic Modeling",
+    "excerpt": "Predict how fast an organism can grow, how it routes its metabolism, and which of its genes it cannot do without, from a genome-scale metabolic model, using [COBRApy](https://opencobra.github.io/cobrapy/) 0.32.1. Liatir runs it entirely on your computer. You…",
+    "content": "Predict how fast an organism can grow, how it routes its metabolism, and which\nof its genes it cannot do without, from a genome-scale metabolic model, using\n[COBRApy](https://opencobra.github.io/cobrapy/) 0.32.1. Liatir runs it entirely\non your computer.\n\nYou find it under **Tools → Systems Biology**, and it is available as a step in\na [pipeline](/pipeline/overview)."
+  },
+  {
+    "id": "docs:tools/metabolic-modeling#what-you-need",
+    "sourceKind": "documentation",
+    "title": "Metabolic Modeling — What you need",
+    "locator": "Docs / Tools / Metabolic Modeling / What you need",
+    "excerpt": "What you need Metabolic Modeling runs on a **Tool Runtime** that Liatir installs once, on request, from **Dependencies → Tool Runtimes**. | Your computer | Can it run this tool? | | --- | --- | | Linux x86_64 | Yes | | Windows 11, through WSL2 | Yes | | Mac |…",
+    "content": "What you need\nMetabolic Modeling runs on a **Tool Runtime** that Liatir installs once, on\nrequest, from **Dependencies → Tool Runtimes**.\n\n| Your computer | Can it run this tool? |\n| --- | --- |\n| Linux x86_64 | Yes |\n| Windows 11, through WSL2 | Yes |\n| Mac | No |\n\n- **No graphics card is needed.**\n- **Memory and disk.** At least 4 GB of memory. The download is about\n  209 MB and needs about 607 MB\n  once installed.\n\nAfter installation everything works offline. Liatir never downloads models: you\nchoose the model file."
+  },
+  {
+    "id": "docs:tools/metabolic-modeling#using-it",
+    "sourceKind": "documentation",
+    "title": "Metabolic Modeling — Using it",
+    "locator": "Docs / Tools / Metabolic Modeling / Using it",
+    "excerpt": "Using it - **Input:** a metabolic model as SBML (`.xml`, also gzipped) or COBRA JSON, for example one from [BiGG Models](http://bigg.ucsd.edu). - **Analyses:** - **Flux balance analysis (FBA)** finds the fluxes that maximise (or minimise) one reaction, usuall…",
+    "content": "Using it\n- **Input:** a metabolic model as SBML (`.xml`, also gzipped) or COBRA JSON,\n  for example one from [BiGG Models](http://bigg.ucsd.edu).\n- **Analyses:**\n  - **Flux balance analysis (FBA)** finds the fluxes that maximise (or\n    minimise) one reaction, usually growth. Optionally the solution with the\n    least total flux among the optimal ones (pFBA).\n  - **Flux variability analysis (FVA)** gives the range each reaction can take\n    while keeping the objective near its optimum.\n  - **Single gene or reaction deletions** remove each gene or reaction in turn\n    and report which ones the model cannot grow without.\n- **Options:** the reaction to optimise, bound changes (for example a different\n  sugar or no oxygen), genes to knock out first, and a confirmation of every\n  result by a second, independent solver.\n- **Output:** tables of fluxes, flux ranges and deletion results, with the\n  objective value.\n\nThe default solver is HiGHS; GLPK is the independent second opinion."
+  },
+  {
+    "id": "docs:tools/metabolic-modeling#how-it-was-checked",
+    "sourceKind": "documentation",
+    "title": "Metabolic Modeling — How it was checked",
+    "locator": "Docs / Tools / Metabolic Modeling / How it was checked",
+    "excerpt": "How it was checked Before publication, the exact package you download was tested on the models and reference results COBRApy itself ships: - E. coli core grows at 0.8739 per hour, the value COBRApy documents (0.8739), within 0.000000001. - Flux variability fo…",
+    "content": "How it was checked\nBefore publication, the exact package you download was tested on the models and\nreference results COBRApy itself ships:\n\n- E. coli core grows at 0.8739 per hour, the value COBRApy documents\n  (0.8739), within 0.000000001.\n- Flux variability for all 95 reactions matches COBRApy's own reference table.\n- Single gene deletions find COBRApy's 7 essential genes; single reaction\n  deletions find its 18 essential reactions.\n- On the full E. coli model iJO1366 — 2,583 reactions and 1,367 genes — the two\n  solvers agree.\n- Models that cannot grow, unknown reactions or genes, impossible bounds and\n  malformed files are refused with a clear reason.\n\nThe same package then ran inside the real Liatir app, from installation to\nresults and removal, on Linux and on Windows through WSL2."
+  },
+  {
+    "id": "docs:tools/metabolic-modeling#what-the-results-mean",
+    "sourceKind": "documentation",
+    "title": "Metabolic Modeling — What the results mean",
+    "locator": "Docs / Tools / Metabolic Modeling / What the results mean",
+    "excerpt": "What the results mean Flux balance analysis predicts steady-state fluxes that optimize the chosen objective under the model's stoichiometry and bounds. A predicted growth rate or flux is a property of the model and its assumptions, not a measurement; an essen…",
+    "content": "What the results mean\nFlux balance analysis predicts steady-state fluxes that optimize the chosen\nobjective under the model's stoichiometry and bounds. A predicted growth rate or\nflux is a property of the model and its assumptions, not a measurement; an\nessential gene in the model is a hypothesis about the organism. Liatir shows\nthis notice with every result."
+  },
+  {
+    "id": "docs:tools/metabolic-modeling#licences-and-official-source",
+    "sourceKind": "documentation",
+    "title": "Metabolic Modeling — Licences and official source",
+    "locator": "Docs / Tools / Metabolic Modeling / Licences and official source",
+    "excerpt": "Licences and official source - [COBRApy 0.32.1](https://github.com/opencobra/cobrapy): LGPL-2.0-or-later or GPL-2.0-or-later; Liatir uses it under the LGPL. - [optlang 1.9.1](https://github.com/opencobra/optlang): Apache-2.0. - [HiGHS 1.15.1](https://highs.de…",
+    "content": "Licences and official source\n- [COBRApy 0.32.1](https://github.com/opencobra/cobrapy): LGPL-2.0-or-later or\n  GPL-2.0-or-later; Liatir uses it under the LGPL.\n- [optlang 1.9.1](https://github.com/opencobra/optlang): Apache-2.0.\n- [HiGHS 1.15.1](https://highs.dev): MIT.\n- [GLPK 5.0](https://www.gnu.org/software/glpk/) and swiglpk: GPL-3.0."
+  },
+  {
     "id": "docs:tools/minimap2",
     "sourceKind": "documentation",
     "title": "Minimap2",
@@ -2421,6 +2517,126 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "locator": "Docs / Tools / Minimap2 / How to read the result",
     "excerpt": "How to read the result The SAM output is usually an intermediate artifact. For downstream analysis, convert and sort it with Samtools or another alignment-processing tool. Minimap2 supports many presets. Liatir currently exposes a practical default configurat…",
     "content": "How to read the result\nThe SAM output is usually an intermediate artifact. For downstream analysis,\nconvert and sort it with Samtools or another alignment-processing tool.\n\nMinimap2 supports many presets. Liatir currently exposes a practical default\nconfiguration, with more preset controls planned."
+  },
+  {
+    "id": "docs:tools/molecular-analysis",
+    "sourceKind": "documentation",
+    "title": "Trajectory Analysis and Interaction Fingerprint",
+    "locator": "Docs / Tools / Molecular Analysis",
+    "excerpt": "Two tools that measure what happens in a molecular simulation or a docking run, using [MDAnalysis](https://www.mdanalysis.org) 2.11 and [ProLIF](https://prolif.readthedocs.io) 2.2.3. Liatir runs them entirely on your computer. - **Trajectory Analysis** measur…",
+    "content": "Two tools that measure what happens in a molecular simulation or a docking run,\nusing [MDAnalysis](https://www.mdanalysis.org) 2.11 and\n[ProLIF](https://prolif.readthedocs.io) 2.2.3. Liatir runs them entirely on your\ncomputer.\n\n- **Trajectory Analysis** measures how a protein and its ligand move during a\n  simulation: how far they drift from their starting shape (RMSD), how much\n  each residue fluctuates (RMSF), and the distance between any two groups of\n  atoms you name.\n- **Interaction Fingerprint** lists the contacts between a ligand and its\n  protein — hydrogen bonds, hydrophobic contacts, π-stacking and more — frame by\n  frame in a simulation, or pose by pose after docking.\n\nYou find them under **Tools → Molecular Simulation**, and both are available as\nsteps in a [pipeline](/pipeline/overview), for example right after\n[Molecular Dynamics](/tools/molecular-simulation) or\n[Molecular Docking](/tools/molecular-docking)."
+  },
+  {
+    "id": "docs:tools/molecular-analysis#what-you-need",
+    "sourceKind": "documentation",
+    "title": "Trajectory Analysis and Interaction Fingerprint — What you need",
+    "locator": "Docs / Tools / Molecular Analysis / What you need",
+    "excerpt": "What you need These tools run on a **Tool Runtime** that Liatir installs once, on request, from **Dependencies → Tool Runtimes**. | Your computer | Can it run these tools? | | --- | --- | | Linux x86_64 | Yes | | Windows 11, through WSL2 | Yes | | Mac | No |…",
+    "content": "What you need\nThese tools run on a **Tool Runtime** that Liatir installs once, on request,\nfrom **Dependencies → Tool Runtimes**.\n\n| Your computer | Can it run these tools? |\n| --- | --- |\n| Linux x86_64 | Yes |\n| Windows 11, through WSL2 | Yes |\n| Mac | No |\n\n- **No graphics card is needed.** The analysis runs on the processor.\n- **Memory and disk.** At least 4 GB of memory. The download is about\n  317 MB and needs about 945 MB\n  once installed.\n\nAfter installation everything works offline, and the tools never change the\nfiles you give them."
+  },
+  {
+    "id": "docs:tools/molecular-analysis#trajectory-analysis",
+    "sourceKind": "documentation",
+    "title": "Trajectory Analysis and Interaction Fingerprint — Trajectory Analysis",
+    "locator": "Docs / Tools / Molecular Analysis / Trajectory Analysis",
+    "excerpt": "Trajectory Analysis - **Input:** a topology (PDB) and its trajectory (DCD or XTC), such as the ones Molecular Dynamics writes, and optionally the simulation's state record, so frame times are checked against it. - **Options:** which atoms are the ligand, what…",
+    "content": "Trajectory Analysis\n- **Input:** a topology (PDB) and its trajectory (DCD or XTC), such as the ones\n  Molecular Dynamics writes, and optionally the simulation's state record, so\n  frame times are checked against it.\n- **Options:** which atoms are the ligand, what to superpose on before measuring,\n  whether to compute per-residue fluctuation, a named distance between two atom\n  selections, and which frames to read.\n- **Output:** tables of RMSD, RMSF and distances over time, with plots."
+  },
+  {
+    "id": "docs:tools/molecular-analysis#interaction-fingerprint",
+    "sourceKind": "documentation",
+    "title": "Trajectory Analysis and Interaction Fingerprint — Interaction Fingerprint",
+    "locator": "Docs / Tools / Molecular Analysis / Interaction Fingerprint",
+    "excerpt": "Interaction Fingerprint - **Input:** either a simulation (topology, trajectory and the ligand's atoms, optionally the ligand as an SDF file so its chemistry is exact), or docked poses (the receptor with its hydrogens, and the poses as SDF). - **Options:** whi…",
+    "content": "Interaction Fingerprint\n- **Input:** either a simulation (topology, trajectory and the ligand's atoms,\n  optionally the ligand as an SDF file so its chemistry is exact), or docked\n  poses (the receptor with its hydrogens, and the poses as SDF).\n- **Options:** which kinds of interaction to look for, and which frames to read.\n- **Output:** every interaction found, how often each one occurs, and the full\n  fingerprint table, one row per frame or pose."
+  },
+  {
+    "id": "docs:tools/molecular-analysis#how-it-was-checked",
+    "sourceKind": "documentation",
+    "title": "Trajectory Analysis and Interaction Fingerprint — How it was checked",
+    "locator": "Docs / Tools / Molecular Analysis / How it was checked",
+    "excerpt": "How it was checked Before publication, the exact package you download was tested: - RMSD, RMSF and distances agree with an independent calculation to within 0.00005 Å. - All 61 of ProLIF's own official interaction tests pass. - On ProLIF's own example traject…",
+    "content": "How it was checked\nBefore publication, the exact package you download was tested:\n\n- RMSD, RMSF and distances agree with an independent calculation to within\n  0.00005 Å.\n- All 61 of ProLIF's own official interaction tests pass.\n- On ProLIF's own example trajectory and docked poses, the tool finds exactly\n  what ProLIF finds when run directly.\n- A real 100 ps simulation of imatinib in its protein, in water — 61,538 atoms —\n  was analysed in seconds, and the key hydrogen bond held in every frame.\n- The same request twice gives identical tables.\n\nThe same package then ran inside the real Liatir app, from installation to\nresults and removal, on Linux and on Windows through WSL2."
+  },
+  {
+    "id": "docs:tools/molecular-analysis#what-the-results-mean",
+    "sourceKind": "documentation",
+    "title": "Trajectory Analysis and Interaction Fingerprint — What the results mean",
+    "locator": "Docs / Tools / Molecular Analysis / What the results mean",
+    "excerpt": "What the results mean Trajectory measures describe the simulation that produced the trajectory, under its force field and sampling; they are not experimental observations. A detected interaction is a geometric criterion met in a frame or pose, not a measured…",
+    "content": "What the results mean\nTrajectory measures describe the simulation that produced the trajectory, under\nits force field and sampling; they are not experimental observations. A detected\ninteraction is a geometric criterion met in a frame or pose, not a measured\nbinding contribution. Liatir shows this notice with every result."
+  },
+  {
+    "id": "docs:tools/molecular-analysis#licences-and-official-source",
+    "sourceKind": "documentation",
+    "title": "Trajectory Analysis and Interaction Fingerprint — Licences and official source",
+    "locator": "Docs / Tools / Molecular Analysis / Licences and official source",
+    "excerpt": "Licences and official source - [MDAnalysis 2.11.0](https://github.com/MDAnalysis/mdanalysis): LGPL-3.0-or-later. - [ProLIF 2.2.3](https://github.com/chemosim-lab/ProLIF): Apache-2.0. - [RDKit](https://www.rdkit.org): BSD-3-Clause.",
+    "content": "Licences and official source\n- [MDAnalysis 2.11.0](https://github.com/MDAnalysis/mdanalysis): LGPL-3.0-or-later.\n- [ProLIF 2.2.3](https://github.com/chemosim-lab/ProLIF): Apache-2.0.\n- [RDKit](https://www.rdkit.org): BSD-3-Clause."
+  },
+  {
+    "id": "docs:tools/molecular-docking",
+    "sourceKind": "documentation",
+    "title": "Receptor Preparation, Molecular Docking and Docked Complex",
+    "locator": "Docs / Tools / Molecular Docking",
+    "excerpt": "Three tools that predict how a small molecule (a ligand) could sit inside a protein, using [AutoDock Vina](https://vina.scripps.edu) 1.2.7, a widely used open-source docking program. Liatir runs them entirely on your computer. - **Receptor Preparation** turns…",
+    "content": "Three tools that predict how a small molecule (a ligand) could sit inside a\nprotein, using [AutoDock Vina](https://vina.scripps.edu) 1.2.7, a widely used\nopen-source docking program. Liatir runs them entirely on your computer.\n\n- **Receptor Preparation** turns a protein structure into the file Vina docks\n  into: it repairs missing atoms, adds hydrogens at the pH you choose, and tells\n  you every change it made.\n- **Molecular Docking** places one ligand, or a whole library of them, into the\n  binding site you choose and ranks the poses it finds by Vina score.\n- **Docked Complex** takes one docked pose together with its protein, as the\n  starting structure for a [molecular simulation](/tools/molecular-simulation).\n\nYou find them under **Tools → Molecular Docking**, and all three are available\nas steps in a [pipeline](/pipeline/overview)."
+  },
+  {
+    "id": "docs:tools/molecular-docking#what-you-need",
+    "sourceKind": "documentation",
+    "title": "Receptor Preparation, Molecular Docking and Docked Complex — What you need",
+    "locator": "Docs / Tools / Molecular Docking / What you need",
+    "excerpt": "What you need These tools run on a **Tool Runtime**: a scientific program that Liatir installs once, on request, and keeps separate from everything else. Install it from **Dependencies → Tool Runtimes**. | Your computer | Can it run these tools? | | --- | ---…",
+    "content": "What you need\nThese tools run on a **Tool Runtime**: a scientific program that Liatir installs\nonce, on request, and keeps separate from everything else. Install it from\n**Dependencies → Tool Runtimes**.\n\n| Your computer | Can it run these tools? |\n| --- | --- |\n| Linux x86_64 | Yes |\n| Windows 11, through WSL2 | Yes |\n| Mac | No |\n\n- **No graphics card is needed.** Docking runs on the processor.\n- **Memory and disk.** At least 4 GB of memory. The download is about\n  592 MB and needs about 1.5 GB\n  once installed.\n- **On Windows**, the tools run inside WSL2, as the\n  [native tools](/tools/overview#windows-and-wsl2) do.\n\nAfter installation everything works offline."
+  },
+  {
+    "id": "docs:tools/molecular-docking#receptor-preparation",
+    "sourceKind": "documentation",
+    "title": "Receptor Preparation, Molecular Docking and Docked Complex — Receptor Preparation",
+    "locator": "Docs / Tools / Molecular Docking / Receptor Preparation",
+    "excerpt": "Receptor Preparation - **Input:** a protein structure as PDB or mmCIF. - **Options:** which chains to keep, whether to remove crystallographic waters, which other residues to remove (for example a ligand already in the structure), whether to repair missing at…",
+    "content": "Receptor Preparation\n- **Input:** a protein structure as PDB or mmCIF.\n- **Options:** which chains to keep, whether to remove crystallographic waters,\n  which other residues to remove (for example a ligand already in the\n  structure), whether to repair missing atoms or model short missing loops, and\n  the pH at which hydrogens are added.\n- **Output:** the prepared receptor as PDB, which opens in the\n  [3D Structure Viewer](/visualization/structure-viewer), the receptor file\n  Vina docks into (PDBQT), and a report of every change.\n\nEvery residue is re-protonated at the pH you choose, replacing any hydrogens the\nfile already had. Nothing is removed unless you asked for it. A residue Liatir\ncannot describe is refused by name instead of being dropped."
+  },
+  {
+    "id": "docs:tools/molecular-docking#molecular-docking",
+    "sourceKind": "documentation",
+    "title": "Receptor Preparation, Molecular Docking and Docked Complex — Molecular Docking",
+    "locator": "Docs / Tools / Molecular Docking / Molecular Docking",
+    "excerpt": "Molecular Docking - **Input:** the receptor file from Receptor Preparation, and one or more ligands as an SDF file with 3D coordinates. - **Binding site:** either a box you place by its centre and size, in ångström, or a box drawn around a reference ligand yo…",
+    "content": "Molecular Docking\n- **Input:** the receptor file from Receptor Preparation, and one or more\n  ligands as an SDF file with 3D coordinates.\n- **Binding site:** either a box you place by its centre and size, in ångström,\n  or a box drawn around a reference ligand you supply.\n- **Options:** the scoring function (Vina or Vinardo), how hard to search\n  (exhaustiveness), how many poses to keep per ligand, a seed so the run can be\n  repeated, and how many processor threads to use.\n- **Output:** every pose as SDF, a table of scores, the receptor with the best\n  pose, and a screening database you can extend with later runs on the same\n  site. Molecules Vina cannot dock — a flat 2D drawing, a salt with separate\n  pieces, an element Vina does not know — are listed with the reason."
+  },
+  {
+    "id": "docs:tools/molecular-docking#docked-complex",
+    "sourceKind": "documentation",
+    "title": "Receptor Preparation, Molecular Docking and Docked Complex — Docked Complex",
+    "locator": "Docs / Tools / Molecular Docking / Docked Complex",
+    "excerpt": "Docked Complex Choose a ligand and one of its poses. Liatir writes the protein with that pose as one PDB file, ready for Molecular Relaxation or Molecular Dynamics, and the ligand on its own as SDF. It checks that the pose really was docked into that protein.",
+    "content": "Docked Complex\nChoose a ligand and one of its poses. Liatir writes the protein with that pose\nas one PDB file, ready for Molecular Relaxation or Molecular Dynamics, and the\nligand on its own as SDF. It checks that the pose really was docked into that\nprotein."
+  },
+  {
+    "id": "docs:tools/molecular-docking#how-it-was-checked",
+    "sourceKind": "documentation",
+    "title": "Receptor Preparation, Molecular Docking and Docked Complex — How it was checked",
+    "locator": "Docs / Tools / Molecular Docking / How it was checked",
+    "excerpt": "How it was checked Before publication, the exact package you download was tested on AutoDock Vina's own official example: imatinib, a leukaemia drug, bound to the Abl kinase (PDB entry 1IEP). - Redocked into its protein, imatinib's best pose lies 0.37 Å from…",
+    "content": "How it was checked\nBefore publication, the exact package you download was tested on AutoDock Vina's\nown official example: imatinib, a leukaemia drug, bound to the Abl kinase\n(PDB entry 1IEP).\n\n- Redocked into its protein, imatinib's best pose lies 0.37 Å from where\n  it sits in the crystal structure. The usual criterion for a successful\n  redocking is 2 Å. Its score, −13.22 kcal/mol, matches the official\n  tutorial's −13.23.\n- The same holds when the protein is prepared here from the raw PDB entry.\n- The ligand file Liatir prepares is identical, atom type by atom type, to the\n  official one.\n- The same seed gives identical poses, with 1 thread or with 6.\n- In a screen of nine molecules, six docked and three were refused, each with\n  its reason.\n\nThe same package then ran inside the real Liatir app, from installation to\nresults and removal, on Linux and on Windows through WSL2. A pose taken through\nDocked Complex into a 100 ps simulation in water kept imatinib's key hydrogen\nbond to the protein in every frame."
+  },
+  {
+    "id": "docs:tools/molecular-docking#what-the-results-mean",
+    "sourceKind": "documentation",
+    "title": "Receptor Preparation, Molecular Docking and Docked Complex — What the results mean",
+    "locator": "Docs / Tools / Molecular Docking / What the results mean",
+    "excerpt": "What the results mean Vina scores are empirical scoring-function values in kcal/mol used to rank poses. They are not measured binding affinities, free energies or evidence of biological activity, and a docked pose is a hypothesis to test, not a result. Liatir…",
+    "content": "What the results mean\nVina scores are empirical scoring-function values in kcal/mol used to rank\nposes. They are not measured binding affinities, free energies or evidence of\nbiological activity, and a docked pose is a hypothesis to test, not a result.\nLiatir shows this notice with every result."
+  },
+  {
+    "id": "docs:tools/molecular-docking#licences-and-official-source",
+    "sourceKind": "documentation",
+    "title": "Receptor Preparation, Molecular Docking and Docked Complex — Licences and official source",
+    "locator": "Docs / Tools / Molecular Docking / Licences and official source",
+    "excerpt": "Licences and official source - [AutoDock Vina 1.2.7](https://github.com/ccsb-scripps/AutoDock-Vina): Apache-2.0. - [Meeko 0.8.0](https://github.com/forlilab/Meeko) and [Ringtail 2.3.1](https://github.com/forlilab/Ringtail): LGPL-2.1. - [PDBFixer 1.12](https:/…",
+    "content": "Licences and official source\n- [AutoDock Vina 1.2.7](https://github.com/ccsb-scripps/AutoDock-Vina): Apache-2.0.\n- [Meeko 0.8.0](https://github.com/forlilab/Meeko) and\n  [Ringtail 2.3.1](https://github.com/forlilab/Ringtail): LGPL-2.1.\n- [PDBFixer 1.12](https://github.com/openmm/pdbfixer) and the OpenMM library it\n  uses: MIT, with LGPL-3.0-or-later for OpenMM's GPU platforms.\n- [RDKit](https://www.rdkit.org): BSD-3-Clause."
   },
   {
     "id": "docs:tools/molecular-simulation",
@@ -2487,6 +2703,102 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "content": "Licences and official source\n- [OpenMM 8.5.1](https://github.com/openmm/openmm/tree/8.5.1): MIT for the core,\n  LGPL-3.0-or-later for its GPU platform.\n- [OpenMMForceFields 0.16.0](https://github.com/openmm/openmmforcefields/tree/0.16.0)\n  and the OpenFF Toolkit: MIT. OpenFF force fields and the NAGL charge model:\n  CC-BY-4.0.\n- The package includes NVIDIA's CUDA runtime compiler and FFT library under\n  NVIDIA's own licence. Your NVIDIA driver is not part of it.\n- [OpenMM documentation](https://docs.openmm.org/8.5.0/)"
   },
   {
+    "id": "docs:tools/multicellular-simulation",
+    "sourceKind": "documentation",
+    "title": "Multicellular Simulation",
+    "locator": "Docs / Tools / Multicellular Simulation",
+    "excerpt": "Simulate how a population of cells grows, divides, moves, dies and changes the chemistry around it, cell by cell, using [PhysiCell](http://physicell.org) 1.14.2. Liatir runs it entirely on your computer. Each cell follows the rules of its type: how long its c…",
+    "content": "Simulate how a population of cells grows, divides, moves, dies and changes the\nchemistry around it, cell by cell, using [PhysiCell](http://physicell.org)\n1.14.2. Liatir runs it entirely on your computer.\n\nEach cell follows the rules of its type: how long its cycle lasts, when it dies,\nwhat it secretes or consumes. Substances such as oxygen spread through the\ntissue as the cells use them. The result is a picture of the tissue over time.\n\nYou find it under **Tools → Systems Biology**, and it is available as a step in\na [pipeline](/pipeline/overview)."
+  },
+  {
+    "id": "docs:tools/multicellular-simulation#what-you-need",
+    "sourceKind": "documentation",
+    "title": "Multicellular Simulation — What you need",
+    "locator": "Docs / Tools / Multicellular Simulation / What you need",
+    "excerpt": "What you need Multicellular Simulation runs on a **Tool Runtime** that Liatir installs once, on request, from **Dependencies → Tool Runtimes**. | Your computer | Can it run this tool? | | --- | --- | | Linux x86_64 | Yes | | Windows 11, through WSL2 | Yes | |…",
+    "content": "What you need\nMulticellular Simulation runs on a **Tool Runtime** that Liatir installs once,\non request, from **Dependencies → Tool Runtimes**.\n\n| Your computer | Can it run this tool? |\n| --- | --- |\n| Linux x86_64 | Yes |\n| Windows 11, through WSL2 | Yes |\n| Mac | No |\n\n- **No graphics card is needed.**\n- **Memory and disk.** At least 4 GB of memory. The download is about\n  109 MB and needs about 300 MB once installed.\n\nAfter installation everything works offline."
+  },
+  {
+    "id": "docs:tools/multicellular-simulation#using-it",
+    "sourceKind": "documentation",
+    "title": "Multicellular Simulation — Using it",
+    "locator": "Docs / Tools / Multicellular Simulation / Using it",
+    "excerpt": "Using it - **Input:** PhysiCell's own template model, or your own settings file (`PhysiCell_settings.xml`, for example one saved from PhysiCell Studio), with the cell positions and cell rules files it names, if it uses them. - **Options:** how long to simulat…",
+    "content": "Using it\n- **Input:** PhysiCell's own template model, or your own settings file\n  (`PhysiCell_settings.xml`, for example one saved from PhysiCell Studio), with\n  the cell positions and cell rules files it names, if it uses them.\n- **Options:** how long to simulate, in minutes; the random seed; and how many\n  processor threads to use. With one thread, the same seed repeats a run\n  exactly; with more, runs are faster but no longer repeat exactly.\n- **Output:** the number of live and dead cells of each type over time, every\n  cell at the end with its position and state, the average of each substance\n  over time, a picture of the tissue at the end, and plots.\n\nLiatir writes the settings PhysiCell runs itself: it sets the output folder,\nthreads and seed, and never lets a path in a settings file reach a command.\nSettings that need parts this tool does not include — intracellular models,\nsubstance values loaded from `.mat` files — are refused with the reason, as is\na model that starts with no cells."
+  },
+  {
+    "id": "docs:tools/multicellular-simulation#how-it-was-checked",
+    "sourceKind": "documentation",
+    "title": "Multicellular Simulation — How it was checked",
+    "locator": "Docs / Tools / Multicellular Simulation / How it was checked",
+    "excerpt": "How it was checked Before publication, the exact package you download was tested against what each model's own parameters predict: - Cells set to divide exactly every 600 minutes double exactly on schedule, at every one of 41 times checked. - Cells that divid…",
+    "content": "How it was checked\nBefore publication, the exact package you download was tested against what each\nmodel's own parameters predict:\n\n- Cells set to divide exactly every 600 minutes double exactly on schedule, at\n  every one of 41 times checked.\n- Cells that divide or die at random grow or survive within the statistical\n  bounds their rates predict.\n- A substance that decays at a known rate follows the exact curve within\n  0.00025 %.\n- The same seed on one thread repeats the run exactly; another seed differs.\n- A settings file with commands hidden in its paths ran, and no command did.\n\nThe same package then ran inside the real Liatir app, from installation to\nresults and removal, on Linux and on Windows through WSL2."
+  },
+  {
+    "id": "docs:tools/multicellular-simulation#what-the-results-mean",
+    "sourceKind": "documentation",
+    "title": "Multicellular Simulation — What the results mean",
+    "locator": "Docs / Tools / Multicellular Simulation / What the results mean",
+    "excerpt": "What the results mean An agent-based simulation follows the model's cell definitions, rules and parameters, not the tissue they stand for. Cell behaviour is stochastic, so one seed gives one sample; with more than one thread the same seed does not repeat a ru…",
+    "content": "What the results mean\nAn agent-based simulation follows the model's cell definitions, rules and\nparameters, not the tissue they stand for. Cell behaviour is stochastic, so one\nseed gives one sample; with more than one thread the same seed does not repeat a\nrun exactly. Liatir shows this notice with every result."
+  },
+  {
+    "id": "docs:tools/multicellular-simulation#licences-and-official-source",
+    "sourceKind": "documentation",
+    "title": "Multicellular Simulation — Licences and official source",
+    "locator": "Docs / Tools / Multicellular Simulation / Licences and official source",
+    "excerpt": "Licences and official source - [PhysiCell 1.14.2](https://github.com/MathCancer/PhysiCell), with BioFVM: BSD-3-Clause; pugixml: MIT. Liatir compiles PhysiCell's template project from the official release, reproducibly, and ships the licences and PhysiCell's c…",
+    "content": "Licences and official source\n- [PhysiCell 1.14.2](https://github.com/MathCancer/PhysiCell), with BioFVM:\n  BSD-3-Clause; pugixml: MIT. Liatir compiles PhysiCell's template project from\n  the official release, reproducibly, and ships the licences and PhysiCell's\n  citation with it."
+  },
+  {
+    "id": "docs:tools/neural-pose-rescoring",
+    "sourceKind": "documentation",
+    "title": "Neural Pose Rescoring",
+    "locator": "Docs / Tools / Neural Pose Rescoring",
+    "excerpt": "Rescore the poses [Molecular Docking](/tools/molecular-docking) found with [GNINA](https://github.com/gnina/gnina) 1.3.3, whose neural networks were trained on thousands of known protein–ligand structures, and compare them with their Vina scores. Liatir runs…",
+    "content": "Rescore the poses [Molecular Docking](/tools/molecular-docking) found with\n[GNINA](https://github.com/gnina/gnina) 1.3.3, whose neural networks were trained\non thousands of known protein–ligand structures, and compare them with their\nVina scores. Liatir runs it entirely on your computer, on an NVIDIA graphics\ncard (GPU).\n\nFor every pose, GNINA gives:\n\n- a **CNN pose score**, from 0 to 1: how likely the pose is to be close (within\n  2 Å) to how the molecule really binds;\n- a **CNN affinity**, a predicted binding strength in pK units, where higher\n  means tighter;\n- its own evaluation of the Vina score, on the same pose.\n\nVina often ranks a wrong pose above a correct one; the CNN pose score is a\nsecond, independent opinion on which pose to trust.\n\nYou find it under **Tools → Molecular Docking**, and it is available as a step\nin a [pipeline](/pipeline/overview), right after Molecular Docking."
+  },
+  {
+    "id": "docs:tools/neural-pose-rescoring#what-you-need",
+    "sourceKind": "documentation",
+    "title": "Neural Pose Rescoring — What you need",
+    "locator": "Docs / Tools / Neural Pose Rescoring / What you need",
+    "excerpt": "What you need | Your computer | Can it run this tool? | | --- | --- | | Linux x86_64 with an NVIDIA GPU, driver 570.26 or newer, glibc 2.35 or newer (Ubuntu 22.04 or later) | Yes | | Windows 11 with an NVIDIA GPU, through WSL2, driver 570.65 or newer | Yes |…",
+    "content": "What you need\n| Your computer | Can it run this tool? |\n| --- | --- |\n| Linux x86_64 with an NVIDIA GPU, driver 570.26 or newer, glibc 2.35 or newer (Ubuntu 22.04 or later) | Yes |\n| Windows 11 with an NVIDIA GPU, through WSL2, driver 570.65 or newer | Yes |\n| A computer without an NVIDIA GPU | No |\n| Mac | No |\n\n- **Graphics card.** Pascal (GeForce GTX 10 series) or newer.\n- **GNINA comes from its authors.** When you install the tool from\n  **Dependencies → Tool Runtimes**, Liatir downloads its package (about\n  2.3 GB, NVIDIA's GPU libraries) and GNINA's own 2.1 GB program\n  directly from GNINA's official release, checks that the program is exactly the\n  one Liatir reviewed, and only then installs. Liatir does not redistribute\n  GNINA. Together they need about 5.5 GB on disk.\n- **Memory.** At least 4 GB; the GPU itself needs about 250 MB.\n\nAfter installation everything works offline."
+  },
+  {
+    "id": "docs:tools/neural-pose-rescoring#using-it",
+    "sourceKind": "documentation",
+    "title": "Neural Pose Rescoring — Using it",
+    "locator": "Docs / Tools / Neural Pose Rescoring / Using it",
+    "excerpt": "Using it - **Input:** the docked poses Molecular Docking wrote (SDF), and the receptor file they were docked into (PDBQT). Liatir checks that the poses really were docked into that receptor. - **Output:** every pose with GNINA's scores added, a table with the…",
+    "content": "Using it\n- **Input:** the docked poses Molecular Docking wrote (SDF), and the receptor\n  file they were docked into (PDBQT). Liatir checks that the poses really were\n  docked into that receptor.\n- **Output:** every pose with GNINA's scores added, a table with the Vina and\n  GNINA scores side by side, for each ligand the pose Vina ranks first and the\n  one GNINA ranks first, and a plot of both scores.\n\nGNINA scores each pose where it lies: it does not move it."
+  },
+  {
+    "id": "docs:tools/neural-pose-rescoring#how-it-was-checked",
+    "sourceKind": "documentation",
+    "title": "Neural Pose Rescoring — How it was checked",
+    "locator": "Docs / Tools / Neural Pose Rescoring / How it was checked",
+    "excerpt": "How it was checked Before publication, the exact package was tested on a GeForce RTX 4060 Ti with GNINA's own release program: - GNINA's own official tests pass. - Its results on the GPU and on the processor agree within 0.0015, GNINA's own tolerance. - On im…",
+    "content": "How it was checked\nBefore publication, the exact package was tested on a GeForce RTX 4060 Ti with\nGNINA's own release program:\n\n- GNINA's own official tests pass.\n- Its results on the GPU and on the processor agree within 0.0015, GNINA's own\n  tolerance.\n- On imatinib redocked into the Abl kinase (PDB entry 1IEP), the pose GNINA\n  ranks first is 0.90 Å from the crystal structure; the usual\n  criterion is 2 Å.\n- In a screen of six molecules, GNINA placed every pose close to the crystal\n  structure above every wrong one; Vina had ranked two poses 12 Å away above a\n  correct one.\n- Its Vina evaluation of Vina's best pose matches Vina's own score\n  (−13.22 kcal/mol).\n\nThe same package then ran inside the real Liatir app, from installation —\nincluding GNINA's download — to results and removal, on Linux and on Windows\nthrough WSL2."
+  },
+  {
+    "id": "docs:tools/neural-pose-rescoring#what-the-results-mean",
+    "sourceKind": "documentation",
+    "title": "Neural Pose Rescoring — What the results mean",
+    "locator": "Docs / Tools / Neural Pose Rescoring / What the results mean",
+    "excerpt": "What the results mean GNINA's CNN pose score estimates how likely a pose is to lie within 2 Å of the true binding mode, and its CNN affinity is a predicted binding affinity in pK units; both are predictions of neural networks trained on known complexes, not m…",
+    "content": "What the results mean\nGNINA's CNN pose score estimates how likely a pose is to lie within 2 Å of the\ntrue binding mode, and its CNN affinity is a predicted binding affinity in pK\nunits; both are predictions of neural networks trained on known complexes, not\nmeasurements, and a rescored pose is still a hypothesis to test. Liatir shows\nthis notice with every result."
+  },
+  {
+    "id": "docs:tools/neural-pose-rescoring#licences-and-official-source",
+    "sourceKind": "documentation",
+    "title": "Neural Pose Rescoring — Licences and official source",
+    "locator": "Docs / Tools / Neural Pose Rescoring / Licences and official source",
+    "excerpt": "Licences and official source - [GNINA 1.3.3](https://github.com/gnina/gnina/releases/tag/v1.3.3): dual licensed under GPL and Apache; the released program is GPL-2.0 because it includes OpenBabel. It is downloaded from GNINA's own release, not from Liatir. -…",
+    "content": "Licences and official source\n- [GNINA 1.3.3](https://github.com/gnina/gnina/releases/tag/v1.3.3): dual\n  licensed under GPL and Apache; the released program is GPL-2.0 because it\n  includes OpenBabel. It is downloaded from GNINA's own release, not from\n  Liatir.\n- The package includes NVIDIA's CUDA libraries and cuDNN under NVIDIA's own\n  licences. Your NVIDIA driver is not part of it."
+  },
+  {
     "id": "docs:tools/overview",
     "sourceKind": "documentation",
     "title": "Tools",
@@ -2516,7 +2828,7 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "title": "Tools — Tool Runtimes",
     "locator": "Docs / Tools / Overview / Tool Runtimes",
     "excerpt": "Tool Runtimes Some scientific programs are too large to ship inside Liatir and only make sense on suitable hardware. Liatir installs them once, when you ask, from **Dependencies → Tool Runtimes**: a signed package that Liatir verifies, keeps separate from eve…",
-    "content": "Tool Runtimes\nSome scientific programs are too large to ship inside Liatir and only make sense\non suitable hardware. Liatir installs them once, when you ask, from\n**Dependencies → Tool Runtimes**: a signed package that Liatir verifies, keeps\nseparate from everything else and runs offline. They are not AI Models.\n\n| Tool | Tool Runtime | Runs on |\n| --- | --- | --- |\n| [Molecular Relaxation](/tools/molecular-simulation) | OpenMM 8.5.1 | Linux, or Windows through WSL2, with an NVIDIA GPU |\n| [Molecular Dynamics](/tools/molecular-simulation) | OpenMM 8.5.1 | Linux, or Windows through WSL2, with an NVIDIA GPU |"
+    "content": "Tool Runtimes\nSome scientific programs are too large to ship inside Liatir and only make sense\non suitable hardware. Liatir installs them once, when you ask, from\n**Dependencies → Tool Runtimes**: a signed package that Liatir verifies, keeps\nseparate from everything else and runs offline. They are not AI Models.\n\n| Tool | Tool Runtime | Runs on |\n| --- | --- | --- |\n| [Molecular Relaxation](/tools/molecular-simulation) | OpenMM 8.5.1 | Linux, or Windows through WSL2, with an NVIDIA GPU |\n| [Molecular Dynamics](/tools/molecular-simulation) | OpenMM 8.5.1 | Linux, or Windows through WSL2, with an NVIDIA GPU |\n| [Receptor Preparation](/tools/molecular-docking) | AutoDock Vina 1.2.7 | Linux, or Windows through WSL2 |\n| [Molecular Docking](/tools/molecular-docking) | AutoDock Vina 1.2.7 | Linux, or Windows through WSL2 |\n| [Docked Complex](/tools/molecular-docking) | AutoDock Vina 1.2.7 | Linux, or Windows through WSL2 |\n| [Neural Pose Rescoring](/tools/neural-pose-rescoring) | GNINA 1.3.3 | Linux, or Windows through WSL2, with an NVIDIA GPU |\n| [Trajectory Analysis](/tools/molecular-analysis) | MDAnalysis 2.11 and ProLIF 2.2.3 | Linux, or Windows through WSL2 |\n| [Interaction Fingerprint](/tools/molecular-analysis) | MDAnalysis 2.11 and ProLIF 2.2.3 | Linux, or Windows through WSL2 |\n| [Metabolic Modeling](/tools/metabolic-modeling) | COBRApy 0.32.1 | Linux, or Windows through WSL2 |\n| [Biochemical Simulation](/tools/biochemical-simulation) | PySB 1.17.0 and BioNetGen 2.9.3 | Linux, or Windows through WSL2 |\n| [Multicellular Simulation](/tools/multicellular-simulation) | PhysiCell 1.14.2 | Linux, or Windows through WSL2 |"
   },
   {
     "id": "docs:tools/overview#ai-tools",

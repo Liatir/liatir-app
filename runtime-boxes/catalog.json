@@ -870,7 +870,7 @@
           ],
           "recipeId": "molecular-docking-linux-x86_64-cpu",
           "runnerProfileId": "linux-x64-selfhosted",
-          "status": "native-lifecycle-validated",
+          "status": "published",
           "validationModes": [
             "build",
             "scientific",
@@ -886,7 +886,19 @@
             "safetyMarginBytes": 4294967296
           },
           "gpuRequired": false,
-          "nativeCiEnabled": true
+          "nativeCiEnabled": true,
+          "publication": {
+            "source": "github-actions",
+            "releaseManifestUrl": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/molecular-docking/1.2.7-beta.1/linux-x86_64-cpu/a803336de038bfa3c700b59d05c964f7bb92f980ee63431ece750c5c000059f7.release.json",
+            "archiveSha256": "35cba0e4a601570af6574a2a005781c2e1236af70c8c915bbdba14993cba62c4",
+            "archiveSizeBytes": 591761186,
+            "installedSizeBytes": 1515481884,
+            "signingKeyId": "liatir-runtime-box-kms-2026",
+            "publishedAt": "2026-11-05T16:16:27.107Z",
+            "workflowRunId": "42057594343",
+            "workflowRunUrl": "https://github.com/Liatir/liatir-app/actions/runs/42057594343",
+            "evidenceRecord": "runtime-boxes/evidence/molecular-docking-linux-x86_64-cpu-1.2.7-beta.1-run-42057594343.json"
+          }
         }
       ]
     },
@@ -917,7 +929,7 @@
           ],
           "recipeId": "molecular-analysis-linux-x86_64-cpu",
           "runnerProfileId": "linux-x64-selfhosted",
-          "status": "native-lifecycle-validated",
+          "status": "published",
           "validationModes": [
             "build",
             "scientific",
@@ -933,7 +945,19 @@
             "safetyMarginBytes": 4294967296
           },
           "gpuRequired": false,
-          "nativeCiEnabled": true
+          "nativeCiEnabled": true,
+          "publication": {
+            "source": "github-actions",
+            "releaseManifestUrl": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/molecular-analysis/2.11.0-beta.1/linux-x86_64-cpu/52ab8de94606e9d14b21738b94fec24e8a19a82810c1e805612381a0f8b6bea3.release.json",
+            "archiveSha256": "c06ed46483c350d3142e466bcad9a43b2e8689ea2fc61b108f99c4b1d950bd4e",
+            "archiveSizeBytes": 316696262,
+            "installedSizeBytes": 944857897,
+            "signingKeyId": "liatir-runtime-box-kms-2026",
+            "publishedAt": "2026-11-05T16:49:50.890Z",
+            "workflowRunId": "42063057536",
+            "workflowRunUrl": "https://github.com/Liatir/liatir-app/actions/runs/42063057536",
+            "evidenceRecord": "runtime-boxes/evidence/molecular-analysis-linux-x86_64-cpu-2.11.0-beta.1-run-42063057536.json"
+          }
         }
       ]
     },
@@ -964,7 +988,7 @@
           ],
           "recipeId": "metabolic-modeling-linux-x86_64-cpu",
           "runnerProfileId": "linux-x64-selfhosted",
-          "status": "native-lifecycle-validated",
+          "status": "published",
           "validationModes": [
             "build",
             "scientific",
@@ -980,7 +1004,19 @@
             "safetyMarginBytes": 4294967296
           },
           "gpuRequired": false,
-          "nativeCiEnabled": true
+          "nativeCiEnabled": true,
+          "publication": {
+            "source": "github-actions",
+            "releaseManifestUrl": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/metabolic-modeling/0.32.1-beta.1/linux-x86_64-cpu/c3fbd2f0630aaf866ba7bafd327ccf16fc4555cdd0e0aab37f489cc90a451e9a.release.json",
+            "archiveSha256": "6d72df46704a25000c592ecc78b8732409b8d959502a6fb2d4361ac57c5c9219",
+            "archiveSizeBytes": 208618214,
+            "installedSizeBytes": 606765090,
+            "signingKeyId": "liatir-runtime-box-kms-2026",
+            "publishedAt": "2026-11-05T17:26:49.458Z",
+            "workflowRunId": "42068626028",
+            "workflowRunUrl": "https://github.com/Liatir/liatir-app/actions/runs/42068626028",
+            "evidenceRecord": "runtime-boxes/evidence/metabolic-modeling-linux-x86_64-cpu-0.32.1-beta.1-run-42068626028.json"
+          }
         }
       ]
     },
@@ -1011,7 +1047,7 @@
           ],
           "recipeId": "biochemical-simulation-linux-x86_64-cpu",
           "runnerProfileId": "linux-x64-selfhosted",
-          "status": "native-lifecycle-validated",
+          "status": "published",
           "validationModes": [
             "build",
             "scientific",
@@ -1027,7 +1063,19 @@
             "safetyMarginBytes": 4294967296
           },
           "gpuRequired": false,
-          "nativeCiEnabled": true
+          "nativeCiEnabled": true,
+          "publication": {
+            "source": "github-actions",
+            "releaseManifestUrl": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/biochemical-simulation/1.17.0-beta.1/linux-x86_64-cpu/a4ea211fcf54f91f4ac3caddd72d745c97372cdc31a047f7d9f698443355fde8.release.json",
+            "archiveSha256": "0863b369cfb821e4a5f3fc8c15b24e3355fa9adfd149c2cb7021cd6aa192a947",
+            "archiveSizeBytes": 136743005,
+            "installedSizeBytes": 411219903,
+            "signingKeyId": "liatir-runtime-box-kms-2026",
+            "publishedAt": "2026-11-05T18:00:23.523Z",
+            "workflowRunId": "42074828679",
+            "workflowRunUrl": "https://github.com/Liatir/liatir-app/actions/runs/42074828679",
+            "evidenceRecord": "runtime-boxes/evidence/biochemical-simulation-linux-x86_64-cpu-1.17.0-beta.1-run-42074828679.json"
+          }
         }
       ]
     },
@@ -1058,7 +1106,7 @@
           ],
           "recipeId": "physicell-linux-x86_64-cpu",
           "runnerProfileId": "linux-x64-selfhosted",
-          "status": "native-lifecycle-validated",
+          "status": "published",
           "validationModes": [
             "build",
             "scientific",
@@ -1074,7 +1122,19 @@
             "safetyMarginBytes": 4294967296
           },
           "gpuRequired": false,
-          "nativeCiEnabled": true
+          "nativeCiEnabled": true,
+          "publication": {
+            "source": "github-actions",
+            "releaseManifestUrl": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/physicell/1.14.2-beta.1/linux-x86_64-cpu/29c29b653a3bf331b606f424f559236648a40a239968a5c9c857012169d53e35.release.json",
+            "archiveSha256": "5410ad710050a0521d7cccdf08c236e5964db89dc79a9fca152984245acf46cf",
+            "archiveSizeBytes": 109022965,
+            "installedSizeBytes": 300436632,
+            "signingKeyId": "liatir-runtime-box-kms-2026",
+            "publishedAt": "2026-11-05T18:28:17.453Z",
+            "workflowRunId": "42080211362",
+            "workflowRunUrl": "https://github.com/Liatir/liatir-app/actions/runs/42080211362",
+            "evidenceRecord": "runtime-boxes/evidence/physicell-linux-x86_64-cpu-1.14.2-beta.1-run-42080211362.json"
+          }
         }
       ]
     },
@@ -1106,7 +1166,7 @@
           ],
           "recipeId": "gnina-linux-x86_64-cuda12.8",
           "runnerProfileId": "linux-x64-cuda-selfhosted",
-          "status": "native-lifecycle-validated",
+          "status": "published",
           "validationModes": [
             "build",
             "scientific",
@@ -1122,7 +1182,19 @@
             "safetyMarginBytes": 4294967296
           },
           "gpuRequired": true,
-          "nativeCiEnabled": true
+          "nativeCiEnabled": true,
+          "publication": {
+            "source": "github-actions",
+            "releaseManifestUrl": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/gnina/1.3.3-beta.1/linux-x86_64-cuda12.8/b7149f3208afad5dbaf2d240aadfaa5b9ba4c863ed622240b85688883204152a.release.json",
+            "archiveSha256": "d63525a7e8a18d3513a45c665d68b4d8c61080a156241534bf8b4e201ced9ac8",
+            "archiveSizeBytes": 2255058347,
+            "installedSizeBytes": 3466190650,
+            "signingKeyId": "liatir-runtime-box-kms-2026",
+            "publishedAt": "2026-11-05T19:10:10.414Z",
+            "workflowRunId": "42085770425",
+            "workflowRunUrl": "https://github.com/Liatir/liatir-app/actions/runs/42085770425",
+            "evidenceRecord": "runtime-boxes/evidence/gnina-linux-x86_64-cuda12.8-1.3.3-beta.1-run-42085770425.json"
+          }
         }
       ]
     },

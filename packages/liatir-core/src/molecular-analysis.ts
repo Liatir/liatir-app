@@ -163,19 +163,19 @@ export function validateInteractionFingerprintOptions(
 
 /**
  * Every sample is transcribed from the retained record named by `evidenceRecord`, and
- * `tests/unit/phase3-hardware-profiles.test.ts` fails if any value drifts from that file. A development
- * measurement stays valid only for this release identity; a production build is re-measured.
+ * `tests/unit/phase3-hardware-profiles.test.ts` fails if any value drifts from that file. They come
+ * from production release run 42063057536, which measured the very archive it published.
  */
-export const MOLECULAR_ANALYSIS_LINUX_X86_64_CPU_DEVELOPMENT_PROFILE: LiatirHardwareValidationProfile = {
+export const MOLECULAR_ANALYSIS_LINUX_X86_64_CPU_PRODUCTION_PROFILE: LiatirHardwareValidationProfile = {
   schemaVersion: 1,
-  profileId: "mdanalysis-molecular-analysis-2.11.0-beta.1-linux-x86_64-cpu-development-2026-11-04",
+  profileId: "mdanalysis-molecular-analysis-2.11.0-beta.1-linux-x86_64-cpu-production-2026-11-05",
   componentId: MOLECULAR_ANALYSIS_RUNTIME_COMPONENT_ID,
   componentVersion: MDANALYSIS_VERSION,
   runtimeBoxRelease: "2.11.0-beta.1",
   target: { platform: "linux", arch: "x86_64", accelerator: "cpu" },
   precision: "double",
-  measuredAt: "2026-11-04T10:27:52.849Z",
-  evidenceRecord: "runtime-boxes/measurements/molecular-analysis-linux-x86_64-cpu-development-2026-11-04.json",
+  measuredAt: "2026-11-05T16:30:55.449Z",
+  evidenceRecord: "runtime-boxes/measurements/molecular-analysis-linux-x86_64-cpu-production-run-42063057536.json",
   samples: [
     {
       fixtureId: "reference-trajectory-analysis-xtc",
@@ -184,9 +184,9 @@ export const MOLECULAR_ANALYSIS_LINUX_X86_64_CPU_DEVELOPMENT_PROFILE: LiatirHard
       maxAtomCount: 5067,
       maxStepCount: 250,
       maxOutputItemCount: 250,
-      peakRamBytes: 154771456,
+      peakRamBytes: 158564352,
       peakVramBytes: null,
-      elapsedMs: 2603,
+      elapsedMs: 2977,
       outputBytes: 74914,
     },
     {
@@ -196,9 +196,9 @@ export const MOLECULAR_ANALYSIS_LINUX_X86_64_CPU_DEVELOPMENT_PROFILE: LiatirHard
       maxAtomCount: 5067,
       maxStepCount: 250,
       maxOutputItemCount: 250,
-      peakRamBytes: 154681344,
+      peakRamBytes: 155742208,
       peakVramBytes: null,
-      elapsedMs: 2580,
+      elapsedMs: 2926,
       outputBytes: 78462,
     },
     {
@@ -208,9 +208,9 @@ export const MOLECULAR_ANALYSIS_LINUX_X86_64_CPU_DEVELOPMENT_PROFILE: LiatirHard
       maxAtomCount: 5067,
       maxStepCount: 250,
       maxOutputItemCount: 36,
-      peakRamBytes: 154947584,
+      peakRamBytes: 155090944,
       peakVramBytes: null,
-      elapsedMs: 2530,
+      elapsedMs: 2815,
       outputBytes: 28418,
     },
     {
@@ -220,9 +220,9 @@ export const MOLECULAR_ANALYSIS_LINUX_X86_64_CPU_DEVELOPMENT_PROFILE: LiatirHard
       maxAtomCount: 5067,
       maxStepCount: 250,
       maxOutputItemCount: 250,
-      peakRamBytes: 155004928,
+      peakRamBytes: 155381760,
       peakVramBytes: null,
-      elapsedMs: 2654,
+      elapsedMs: 3103,
       outputBytes: 74914,
     },
     {
@@ -232,9 +232,9 @@ export const MOLECULAR_ANALYSIS_LINUX_X86_64_CPU_DEVELOPMENT_PROFILE: LiatirHard
       maxAtomCount: 5067,
       maxStepCount: 250,
       maxOutputItemCount: 250,
-      peakRamBytes: 282013696,
+      peakRamBytes: 281985024,
       peakVramBytes: null,
-      elapsedMs: 183468,
+      elapsedMs: 184872,
       outputBytes: 388555,
     },
     {
@@ -244,9 +244,9 @@ export const MOLECULAR_ANALYSIS_LINUX_X86_64_CPU_DEVELOPMENT_PROFILE: LiatirHard
       maxAtomCount: 5067,
       maxStepCount: 250,
       maxOutputItemCount: 25,
-      peakRamBytes: 272515072,
+      peakRamBytes: 272932864,
       peakVramBytes: null,
-      elapsedMs: 27826,
+      elapsedMs: 25877,
       outputBytes: 48407,
     },
     {
@@ -256,9 +256,9 @@ export const MOLECULAR_ANALYSIS_LINUX_X86_64_CPU_DEVELOPMENT_PROFILE: LiatirHard
       maxAtomCount: 4988,
       maxStepCount: 9,
       maxOutputItemCount: 9,
-      peakRamBytes: 250757120,
+      peakRamBytes: 249692160,
       peakVramBytes: null,
-      elapsedMs: 3853,
+      elapsedMs: 3751,
       outputBytes: 19163,
     },
     {
@@ -268,34 +268,10 @@ export const MOLECULAR_ANALYSIS_LINUX_X86_64_CPU_DEVELOPMENT_PROFILE: LiatirHard
       maxAtomCount: 4988,
       maxStepCount: 9,
       maxOutputItemCount: 9,
-      peakRamBytes: 247701504,
+      peakRamBytes: 247472128,
       peakVramBytes: null,
-      elapsedMs: 3626,
+      elapsedMs: 3398,
       outputBytes: 19171,
-    },
-    {
-      fixtureId: "openmm-trajectory-analysis",
-      workloadId: "mdanalysis:trajectory-analysis",
-      maxTokenCount: 3,
-      maxAtomCount: 61538,
-      maxStepCount: 50,
-      maxOutputItemCount: 50,
-      peakRamBytes: 183484416,
-      peakVramBytes: null,
-      elapsedMs: 1545,
-      outputBytes: 23741,
-    },
-    {
-      fixtureId: "openmm-trajectory-fingerprint",
-      workloadId: "prolif:trajectory-fingerprint",
-      maxTokenCount: 9,
-      maxAtomCount: 61538,
-      maxStepCount: 50,
-      maxOutputItemCount: 50,
-      peakRamBytes: 279973888,
-      peakVramBytes: null,
-      elapsedMs: 31275,
-      outputBytes: 92754,
     },
   ],
 };

@@ -139,6 +139,12 @@ export default defineConfig({
           { text: 'Single-cell Reference Index', link: '/tools/single-cell-index' },
           { text: 'Single-cell Quantification', link: '/tools/single-cell-quant' },
           { text: 'Molecular Simulation', link: '/tools/molecular-simulation' },
+          { text: 'Molecular Docking', link: '/tools/molecular-docking' },
+          { text: 'Neural Pose Rescoring', link: '/tools/neural-pose-rescoring' },
+          { text: 'Trajectory and Interaction Analysis', link: '/tools/molecular-analysis' },
+          { text: 'Metabolic Modeling', link: '/tools/metabolic-modeling' },
+          { text: 'Biochemical Simulation', link: '/tools/biochemical-simulation' },
+          { text: 'Multicellular Simulation', link: '/tools/multicellular-simulation' },
         ],
       },
       {

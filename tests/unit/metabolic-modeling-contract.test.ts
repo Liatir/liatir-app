@@ -80,8 +80,8 @@ describe('metabolic modeling release candidate', () => {
     expect(metadata.hardware?.minRamGb).toBe(scroll.compatibility.minRamGb);
   });
 
-  it('stays out of the product until a target is published', () => {
-    expect(LIATIR_TOOL_RUNTIME_CATALOG.map((runtime) => runtime.id)).not.toContain(METABOLIC_MODELING_RUNTIME_COMPONENT_ID);
+  it('is in the product catalog, its target published', () => {
+    expect(LIATIR_TOOL_RUNTIME_CATALOG.map((runtime) => runtime.id)).toContain(METABOLIC_MODELING_RUNTIME_COMPONENT_ID);
     expect(resolveRuntimeBoxReleaseCandidate(METABOLIC_MODELING_RUNTIME_COMPONENT_ID))
       .toEqual({ kind: 'tool-runtime', metadata });
   });

@@ -1,0 +1,670 @@
+{
+  "schemaVersion": 1,
+  "kind": "liatir.metabolic-modeling-scientific-validation",
+  "createdAt": "2026-11-05T17:08:26.669Z",
+  "status": "passed",
+  "modelId": "cobrapy-metabolic-modeling",
+  "sourceRevision": "cobrapy-0.32.1+optlang-1.9.1+highs-1.15.1+osqp-1.1.3+glpk-5.0",
+  "targetId": "linux-x86_64-cpu",
+  "productRunnerSha256": "e79768944ac7285313c10d8ad81afd014cb6cedd5f31f24d20fb206b053b3f99",
+  "cases": [
+    {
+      "id": "textbook-fba",
+      "metrics": {
+        "workloadId": "cobra:fba",
+        "tokenCount": 2,
+        "atomCount": 95,
+        "stepCount": 1,
+        "outputItemCount": 95
+      },
+      "measurement": {
+        "elapsedMs": 1365,
+        "peakRamBytes": 241795072,
+        "peakVramBytes": null,
+        "vramMeasurementMethod": null,
+        "vramDeviceBaselineBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 7751,
+      "objective": 0.8739215069684303,
+      "crossCheck": {
+        "solver": "GLPK",
+        "values": 1,
+        "maxAbsoluteDifference": 2.4424906541753444e-15,
+        "tolerance": 0.000001,
+        "settledByExactArithmetic": []
+      }
+    },
+    {
+      "id": "textbook-parsimonious-fba",
+      "metrics": {
+        "workloadId": "cobra:fba",
+        "tokenCount": 2,
+        "atomCount": 95,
+        "stepCount": 2,
+        "outputItemCount": 95
+      },
+      "measurement": {
+        "elapsedMs": 1433,
+        "peakRamBytes": 242204672,
+        "peakVramBytes": null,
+        "vramMeasurementMethod": null,
+        "vramDeviceBaselineBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 7809,
+      "objective": 0.8739215069684307,
+      "crossCheck": {
+        "solver": "GLPK",
+        "values": 2,
+        "maxAbsoluteDifference": 5.684341886080801e-13,
+        "tolerance": 0.000001,
+        "settledByExactArithmetic": []
+      }
+    },
+    {
+      "id": "textbook-json-fba",
+      "metrics": {
+        "workloadId": "cobra:fba",
+        "tokenCount": 2,
+        "atomCount": 95,
+        "stepCount": 1,
+        "outputItemCount": 95
+      },
+      "measurement": {
+        "elapsedMs": 1280,
+        "peakRamBytes": 232996864,
+        "peakVramBytes": null,
+        "vramMeasurementMethod": null,
+        "vramDeviceBaselineBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 7737,
+      "objective": 0.8739215069684306,
+      "crossCheck": {
+        "solver": "GLPK",
+        "values": 1,
+        "maxAbsoluteDifference": 2.7755575615628914e-15,
+        "tolerance": 0.000001,
+        "settledByExactArithmetic": []
+      }
+    },
+    {
+      "id": "textbook-fva",
+      "metrics": {
+        "workloadId": "cobra:fva",
+        "tokenCount": 2,
+        "atomCount": 95,
+        "stepCount": 191,
+        "outputItemCount": 95
+      },
+      "measurement": {
+        "elapsedMs": 1895,
+        "peakRamBytes": 242323456,
+        "peakVramBytes": null,
+        "vramMeasurementMethod": null,
+        "vramDeviceBaselineBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 14611,
+      "objective": 0.8739215069684303,
+      "crossCheck": {
+        "solver": "GLPK",
+        "values": 191,
+        "maxAbsoluteDifference": 9.928058375408e-12,
+        "tolerance": 0.000001,
+        "settledByExactArithmetic": []
+      }
+    },
+    {
+      "id": "textbook-fva-repeat",
+      "metrics": {
+        "workloadId": "cobra:fva",
+        "tokenCount": 2,
+        "atomCount": 95,
+        "stepCount": 191,
+        "outputItemCount": 95
+      },
+      "measurement": {
+        "elapsedMs": 1933,
+        "peakRamBytes": 242266112,
+        "peakVramBytes": null,
+        "vramMeasurementMethod": null,
+        "vramDeviceBaselineBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 14354,
+      "objective": 0.8739215069684306,
+      "crossCheck": {
+        "solver": "GLPK",
+        "values": 191,
+        "maxAbsoluteDifference": 9.615419571673556e-12,
+        "tolerance": 0.000001,
+        "settledByExactArithmetic": []
+      },
+      "maxAbsoluteDifferenceFromFirstRun": 0
+    },
+    {
+      "id": "textbook-fva-minimized-uptake",
+      "metrics": {
+        "workloadId": "cobra:fva",
+        "tokenCount": 2,
+        "atomCount": 95,
+        "stepCount": 191,
+        "outputItemCount": 95
+      },
+      "measurement": {
+        "elapsedMs": 1855,
+        "peakRamBytes": 242397184,
+        "peakVramBytes": null,
+        "vramMeasurementMethod": null,
+        "vramDeviceBaselineBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 13787,
+      "objective": -10,
+      "crossCheck": {
+        "solver": "GLPK",
+        "values": 191,
+        "maxAbsoluteDifference": 1.7621459846850485e-12,
+        "tolerance": 0.000001,
+        "settledByExactArithmetic": []
+      }
+    },
+    {
+      "id": "textbook-gene-deletion",
+      "metrics": {
+        "workloadId": "cobra:gene-deletion",
+        "tokenCount": 2,
+        "atomCount": 95,
+        "stepCount": 138,
+        "outputItemCount": 137
+      },
+      "measurement": {
+        "elapsedMs": 1742,
+        "peakRamBytes": 242544640,
+        "peakVramBytes": null,
+        "vramMeasurementMethod": null,
+        "vramDeviceBaselineBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 14454,
+      "objective": 0.8739215069684304,
+      "crossCheck": {
+        "solver": "GLPK",
+        "values": 138,
+        "maxAbsoluteDifference": 6.5503158452884236e-15,
+        "tolerance": 0.000001,
+        "settledByExactArithmetic": []
+      }
+    },
+    {
+      "id": "textbook-reaction-deletion",
+      "metrics": {
+        "workloadId": "cobra:reaction-deletion",
+        "tokenCount": 2,
+        "atomCount": 95,
+        "stepCount": 96,
+        "outputItemCount": 95
+      },
+      "measurement": {
+        "elapsedMs": 1635,
+        "peakRamBytes": 242012160,
+        "peakVramBytes": null,
+        "vramMeasurementMethod": null,
+        "vramDeviceBaselineBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 12914,
+      "objective": 0.87392150696843,
+      "crossCheck": {
+        "solver": "GLPK",
+        "values": 96,
+        "maxAbsoluteDifference": 8.489586392987363e-15,
+        "tolerance": 0.000001,
+        "settledByExactArithmetic": []
+      }
+    },
+    {
+      "id": "textbook-gapd-gene-knockout",
+      "metrics": {
+        "workloadId": "cobra:fba",
+        "tokenCount": 2,
+        "atomCount": 95,
+        "stepCount": 1,
+        "outputItemCount": 95
+      },
+      "measurement": {
+        "elapsedMs": 1359,
+        "peakRamBytes": 241614848,
+        "peakVramBytes": null,
+        "vramMeasurementMethod": null,
+        "vramDeviceBaselineBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 7237,
+      "objective": 0,
+      "crossCheck": {
+        "solver": "GLPK",
+        "values": 1,
+        "maxAbsoluteDifference": 0,
+        "tolerance": 0.000001,
+        "settledByExactArithmetic": []
+      }
+    },
+    {
+      "id": "ijo1366-fba",
+      "metrics": {
+        "workloadId": "cobra:fba",
+        "tokenCount": 2,
+        "atomCount": 2583,
+        "stepCount": 1,
+        "outputItemCount": 2583
+      },
+      "measurement": {
+        "elapsedMs": 28176,
+        "peakRamBytes": 501895168,
+        "peakVramBytes": null,
+        "vramMeasurementMethod": null,
+        "vramDeviceBaselineBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 242852,
+      "objective": 0.9823718127269764,
+      "crossCheck": {
+        "solver": "GLPK",
+        "values": 1,
+        "maxAbsoluteDifference": 2.1094237467877974e-15,
+        "tolerance": 0.000001,
+        "settledByExactArithmetic": []
+      }
+    },
+    {
+      "id": "ijo1366-fva",
+      "metrics": {
+        "workloadId": "cobra:fva",
+        "tokenCount": 2,
+        "atomCount": 2583,
+        "stepCount": 5167,
+        "outputItemCount": 2583
+      },
+      "measurement": {
+        "elapsedMs": 598396,
+        "peakRamBytes": 537391104,
+        "peakVramBytes": null,
+        "vramMeasurementMethod": null,
+        "vramDeviceBaselineBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 402359,
+      "objective": 0.98237181272698,
+      "crossCheck": {
+        "solver": "GLPK",
+        "values": 5167,
+        "maxAbsoluteDifference": 7.434104498268005e-10,
+        "tolerance": 0.000001,
+        "settledByExactArithmetic": [
+          {
+            "value": "OPHHX3 maximum",
+            "highs": 1.728455373620208e-10,
+            "glpk": 0.00021906886164090112,
+            "exact": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "ijo1366-gene-deletion",
+      "metrics": {
+        "workloadId": "cobra:gene-deletion",
+        "tokenCount": 2,
+        "atomCount": 2583,
+        "stepCount": 1368,
+        "outputItemCount": 1367
+      },
+      "measurement": {
+        "elapsedMs": 181901,
+        "peakRamBytes": 500977664,
+        "peakVramBytes": null,
+        "vramMeasurementMethod": null,
+        "vramDeviceBaselineBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": []
+      },
+      "outputBytes": 298035,
+      "objective": 0.9823718127269803,
+      "crossCheck": {
+        "solver": "GLPK",
+        "values": 1368,
+        "maxAbsoluteDifference": 1.900239743335419e-9,
+        "tolerance": 0.000001,
+        "settledByExactArithmetic": []
+      }
+    },
+    {
+      "id": "no-glucose",
+      "rejected": true,
+      "message": "no optimal flux distribution"
+    },
+    {
+      "id": "unknown-reaction",
+      "rejected": true,
+      "message": "not a reaction in the model"
+    },
+    {
+      "id": "inverted-bounds",
+      "rejected": true,
+      "message": "exceeds its upper bound"
+    },
+    {
+      "id": "unknown-gene",
+      "rejected": true,
+      "message": "not in the model: b9999"
+    },
+    {
+      "id": "unknown-objective",
+      "rejected": true,
+      "message": "is not in the model"
+    },
+    {
+      "id": "entities",
+      "rejected": true,
+      "message": "declares a document type or entities"
+    },
+    {
+      "id": "truncated-gzip",
+      "rejected": true,
+      "message": "damaged"
+    },
+    {
+      "id": "not-sbml",
+      "rejected": true,
+      "message": "not an SBML document"
+    },
+    {
+      "id": "not-a-json-model",
+      "rejected": true,
+      "message": "is not a COBRA model"
+    },
+    {
+      "id": "gene-deletion-without-genes",
+      "rejected": true,
+      "message": "lists no gene products"
+    },
+    {
+      "id": "unsupported-format",
+      "rejected": true,
+      "message": "must use one of these formats"
+    },
+    {
+      "id": "nothing-written-outside-the-run",
+      "homeEmpty": true,
+      "signedPayloadReverified": false
+    }
+  ],
+  "hardwareSamples": [
+    {
+      "fixtureId": "textbook-fba",
+      "workloadId": "cobra:fba",
+      "maxTokenCount": 2,
+      "maxAtomCount": 95,
+      "maxStepCount": 1,
+      "maxOutputItemCount": 95,
+      "peakRamBytes": 241795072,
+      "peakVramBytes": null,
+      "elapsedMs": 1365,
+      "outputBytes": 7751
+    },
+    {
+      "fixtureId": "textbook-parsimonious-fba",
+      "workloadId": "cobra:fba",
+      "maxTokenCount": 2,
+      "maxAtomCount": 95,
+      "maxStepCount": 2,
+      "maxOutputItemCount": 95,
+      "peakRamBytes": 242204672,
+      "peakVramBytes": null,
+      "elapsedMs": 1433,
+      "outputBytes": 7809
+    },
+    {
+      "fixtureId": "textbook-json-fba",
+      "workloadId": "cobra:fba",
+      "maxTokenCount": 2,
+      "maxAtomCount": 95,
+      "maxStepCount": 1,
+      "maxOutputItemCount": 95,
+      "peakRamBytes": 232996864,
+      "peakVramBytes": null,
+      "elapsedMs": 1280,
+      "outputBytes": 7737
+    },
+    {
+      "fixtureId": "textbook-fva",
+      "workloadId": "cobra:fva",
+      "maxTokenCount": 2,
+      "maxAtomCount": 95,
+      "maxStepCount": 191,
+      "maxOutputItemCount": 95,
+      "peakRamBytes": 242323456,
+      "peakVramBytes": null,
+      "elapsedMs": 1895,
+      "outputBytes": 14611
+    },
+    {
+      "fixtureId": "textbook-fva-repeat",
+      "workloadId": "cobra:fva",
+      "maxTokenCount": 2,
+      "maxAtomCount": 95,
+      "maxStepCount": 191,
+      "maxOutputItemCount": 95,
+      "peakRamBytes": 242266112,
+      "peakVramBytes": null,
+      "elapsedMs": 1933,
+      "outputBytes": 14354
+    },
+    {
+      "fixtureId": "textbook-fva-minimized-uptake",
+      "workloadId": "cobra:fva",
+      "maxTokenCount": 2,
+      "maxAtomCount": 95,
+      "maxStepCount": 191,
+      "maxOutputItemCount": 95,
+      "peakRamBytes": 242397184,
+      "peakVramBytes": null,
+      "elapsedMs": 1855,
+      "outputBytes": 13787
+    },
+    {
+      "fixtureId": "textbook-gene-deletion",
+      "workloadId": "cobra:gene-deletion",
+      "maxTokenCount": 2,
+      "maxAtomCount": 95,
+      "maxStepCount": 138,
+      "maxOutputItemCount": 137,
+      "peakRamBytes": 242544640,
+      "peakVramBytes": null,
+      "elapsedMs": 1742,
+      "outputBytes": 14454
+    },
+    {
+      "fixtureId": "textbook-reaction-deletion",
+      "workloadId": "cobra:reaction-deletion",
+      "maxTokenCount": 2,
+      "maxAtomCount": 95,
+      "maxStepCount": 96,
+      "maxOutputItemCount": 95,
+      "peakRamBytes": 242012160,
+      "peakVramBytes": null,
+      "elapsedMs": 1635,
+      "outputBytes": 12914
+    },
+    {
+      "fixtureId": "textbook-gapd-gene-knockout",
+      "workloadId": "cobra:fba",
+      "maxTokenCount": 2,
+      "maxAtomCount": 95,
+      "maxStepCount": 1,
+      "maxOutputItemCount": 95,
+      "peakRamBytes": 241614848,
+      "peakVramBytes": null,
+      "elapsedMs": 1359,
+      "outputBytes": 7237
+    },
+    {
+      "fixtureId": "ijo1366-fba",
+      "workloadId": "cobra:fba",
+      "maxTokenCount": 2,
+      "maxAtomCount": 2583,
+      "maxStepCount": 1,
+      "maxOutputItemCount": 2583,
+      "peakRamBytes": 501895168,
+      "peakVramBytes": null,
+      "elapsedMs": 28176,
+      "outputBytes": 242852
+    },
+    {
+      "fixtureId": "ijo1366-fva",
+      "workloadId": "cobra:fva",
+      "maxTokenCount": 2,
+      "maxAtomCount": 2583,
+      "maxStepCount": 5167,
+      "maxOutputItemCount": 2583,
+      "peakRamBytes": 537391104,
+      "peakVramBytes": null,
+      "elapsedMs": 598396,
+      "outputBytes": 402359
+    },
+    {
+      "fixtureId": "ijo1366-gene-deletion",
+      "workloadId": "cobra:gene-deletion",
+      "maxTokenCount": 2,
+      "maxAtomCount": 2583,
+      "maxStepCount": 1368,
+      "maxOutputItemCount": 1367,
+      "peakRamBytes": 500977664,
+      "peakVramBytes": null,
+      "elapsedMs": 181901,
+      "outputBytes": 298035
+    }
+  ],
+  "runtimeEvidence": {
+    "kind": "development-environment",
+    "signedPayloadVerified": false
+  },
+  "reference": {
+    "documentedTextbookGrowth": 0.8739215069684307,
+    "textbookGrowth": 0.8739215069684303,
+    "fvaReference": {
+      "path": "runtime-boxes/fixtures/metabolic/cobrapy-0.32.1-textbook-fva.json",
+      "sha256": "cbf1767dda4f87bfdc1817d47a2b1ee34d8a6dcaa74897267e14b318c6e3c385"
+    },
+    "fvaMaxAbsoluteDifference": 0.000004950000000114585,
+    "essentialGenes": [
+      "b0720",
+      "b1136",
+      "b1779",
+      "b2415",
+      "b2416",
+      "b2779",
+      "b2926"
+    ],
+    "essentialReactions": [
+      "ACONTa",
+      "ACONTb",
+      "Biomass_Ecoli_core",
+      "CS",
+      "ENO",
+      "EX_glc__D_e",
+      "EX_h_e",
+      "EX_nh4_e",
+      "EX_pi_e",
+      "GAPD",
+      "GLCpts",
+      "GLNS",
+      "ICDHyr",
+      "NH4t",
+      "PGK",
+      "PGM",
+      "PIt2r",
+      "RPI"
+    ],
+    "geneDeletionGrowth": {
+      "b0008": 0.87,
+      "b0114": 0.8,
+      "b0116": 0.78,
+      "b2276": 0.21,
+      "b1779": 0
+    },
+    "reactionDeletionGrowth": {
+      "FBA": 0.70404,
+      "FBP": 0.87392,
+      "CS": 0,
+      "FUM": 0.8143,
+      "GAPD": 0,
+      "GLUDy": 0.85139
+    },
+    "iJO1366Growth": 0.9823718127269764,
+    "iJO1366SettledByExactArithmetic": [
+      {
+        "value": "OPHHX3 maximum",
+        "highs": 1.728455373620208e-10,
+        "glpk": 0.00021906886164090112,
+        "exact": 0
+      }
+    ]
+  },
+  "measurementHost": {
+    "platform": "linux",
+    "arch": "x64",
+    "osRelease": "6.18.33.2-microsoft-standard-WSL2",
+    "cpuModel": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+    "logicalCpuCount": 6,
+    "totalMemoryBytes": 12543176704
+  },
+  "validatorSource": {
+    "gitCommit": "1e4943c365d0584b4eb103f43a49cc97e0607f19",
+    "sourceTreeDirty": false,
+    "scriptSha256": "559c63c74611821a396bce3104572d34722fdeeccd4c48d4a95fe76b8010847f",
+    "measurementScriptSha256": "69b3d3ea2b3d8ea402477442b3b45fd64df884e5e1397b9f916a13fe8fa9832e",
+    "fixturePreparationSha256": "b072f0c5747a385c66a3b35f046171a871391972e67c2104baa83e5f799d0d18",
+    "recipeSha256": "db59184a781fc954791b79995a2d1c549d854c6aad5bc9ce131b834ed6d65145"
+  },
+  "provenance": {
+    "recipeId": "metabolic-modeling-linux-x86_64-cpu",
+    "recipeVersion": "1.0.0",
+    "pythonVersion": "3.11.18",
+    "pixiVersion": "0.73.0",
+    "dependencyLockSha256": "66e2fabee3b105707abba4dd08714c8b6ef8a2a3163cdc4b6e94eefd17ae259e"
+  },
+  "evidence": {
+    "fixture": {
+      "id": "cobrapy-0.32.1-textbook",
+      "sha256": "c674befd7a8199f037fd851c4f8ea8502730d0328ef51b1c46946f19fb44f72a"
+    },
+    "framework": {
+      "name": "cobrapy",
+      "version": "0.32.1",
+      "backend": "cpu"
+    },
+    "accelerator": {
+      "kind": "cpu"
+    },
+    "finiteValues": true,
+    "peakRamBytes": 537391104,
+    "peakVramBytes": null,
+    "outputContract": "passed",
+    "provenanceContract": "passed"
+  }
+}

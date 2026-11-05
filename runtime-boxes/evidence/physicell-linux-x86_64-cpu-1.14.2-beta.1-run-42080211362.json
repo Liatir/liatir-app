@@ -1,0 +1,169 @@
+{
+  "schemaVersion": 1,
+  "kind": "liatir.runtime-box.ci-evidence",
+  "phase": "production-release",
+  "status": "passed",
+  "createdAt": "2026-11-05T18:28:17.453Z",
+  "subject": {
+    "componentKind": "tool-runtime",
+    "componentId": "physicell-multicellular-simulation",
+    "modelId": "physicell-multicellular-simulation",
+    "boxId": "physicell",
+    "runtimeId": "physicell-1-14-2",
+    "recipeId": "physicell-linux-x86_64-cpu",
+    "recipeVersion": "1.0.0",
+    "version": "1.14.2-beta.1",
+    "targetId": "linux-x86_64-cpu",
+    "mode": "native-lifecycle"
+  },
+  "source": {
+    "repository": "Liatir/liatir-app",
+    "commitSha": "1e4943c365d0584b4eb103f43a49cc97e0607f19",
+    "sourceTreeDirty": false
+  },
+  "workflow": {
+    "provider": "github-actions",
+    "workflow": "Runtime Box production release",
+    "runId": "42080211362",
+    "runAttempt": "1",
+    "runUrl": "https://github.com/Liatir/liatir-app/actions/runs/42080211362",
+    "actor": "suffro",
+    "triggeringActor": "suffro",
+    "environment": "runtime-box-production",
+    "approver": null
+  },
+  "host": {
+    "platform": "linux",
+    "arch": "x86_64",
+    "runnerName": "liatir-linux-selfhosted-1793901636-64278",
+    "runnerLabel": "liatir-linux-selfhosted",
+    "runnerEnvironment": "self-hosted",
+    "image": null,
+    "freeDiskBytesBefore": 710863663104,
+    "minimumFreeDiskBytes": 709996380160,
+    "peakAdditionalDiskBytes": 731111424,
+    "gpuModel": null,
+    "gpuCount": null,
+    "gpuMemoryBytes": null,
+    "computeCapability": null,
+    "driverVersion": null,
+    "reportedCudaCompatibility": null,
+    "existingBuildStateBytes": 0,
+    "calculatedDiskPlan": {
+      "sourceAssetBytes": 2544576,
+      "localSourceBytes": 27728,
+      "estimatedInstalledSizeBytes": 402653184,
+      "estimatedArchiveSizeBytes": 134217728,
+      "safetyMarginBytes": 4294967296,
+      "calculatedPeakDiskBytes": 4834410512,
+      "requiredBuildDiskBytes": 6442450944
+    }
+  },
+  "build": {
+    "recipeSha256": "c6a6a0ab9486120c918d073eeab3336976a45e71b7f005ebb46ed99fdafda9e5",
+    "dependencyLockSha256": "d569499becacc9ea266b992f7b3ab42cb8353c469b31f70a0ee491bfc8844d16",
+    "pythonVersion": "3.11.18",
+    "pixiVersion": "0.73.0",
+    "archiveSha256": "5410ad710050a0521d7cccdf08c236e5964db89dc79a9fca152984245acf46cf",
+    "archiveSizeBytes": 109022965,
+    "installedSizeBytes": 300436632,
+    "elapsedMs": 47678,
+    "selfTest": {
+      "status": "passed",
+      "imports": [
+        "numpy",
+        "scipy"
+      ],
+      "localSignatureVerified": true
+    }
+  },
+  "scientific": {
+    "validator": {
+      "path": "scripts/validate-physicell-runtime.mjs",
+      "sha256": "b0e07051cb75a01b72c01f788f6dd5be9547d83570515249406b635f38635499"
+    },
+    "productScript": {
+      "path": "frontend/src/lib/tools/physicell/python-scripts/physicell.ts",
+      "sha256": "3c96c1c717b504c7a0fcd2ec262f069f09618043f1ca2a460fb931fb1b93c17a"
+    },
+    "fixture": {
+      "id": "physicell-1.14.2-template-settings",
+      "sha256": "4707709ca1e182647d4dba96455c773cf2363a7714a88083a71519e4d6141e58"
+    },
+    "sources": [
+      {
+        "kind": "asset",
+        "identity": "https://assets.models.liatir.com/ai-runtime-boxes/source-mirrors/physicell/physicell-1.14.2-template-linux-x86_64",
+        "revision": "physicell-1.14.2+2dd954ad781f",
+        "sha256": "2dd954ad781fe9088a483a070b120701ce70b57a2ef253276617142fe34952f1"
+      }
+    ],
+    "framework": {
+      "name": "physicell",
+      "version": "1.14.2",
+      "backend": "cpu"
+    },
+    "accelerator": {
+      "kind": "cpu",
+      "gpuModel": null,
+      "driverVersion": null,
+      "reportedCudaCompatibility": null
+    },
+    "finiteValues": true,
+    "elapsedMs": 316583,
+    "peakRamBytes": 60055552,
+    "peakVramBytes": null,
+    "outputContract": "passed",
+    "provenanceContract": "passed"
+  },
+  "productLifecycle": {
+    "status": "passed",
+    "targetId": "linux-x86_64-cpu",
+    "version": "1.14.2-beta.1",
+    "jobId": "job_2",
+    "analysisRunId": "dd88949a-f42c-4b80-b4c1-6c840245bb28",
+    "accelerator": "CPU",
+    "gpuModel": null,
+    "computeCapability": null,
+    "reportedCudaCompatibility": null,
+    "peakVramBytes": null,
+    "resultArtifactCount": 7,
+    "assertions": {
+      "install": "passed",
+      "cancellation": "passed",
+      "template": "passed",
+      "fixedCycleDoubling": "passed",
+      "jobs": "passed",
+      "results": "passed",
+      "provenance": "passed",
+      "offline": "passed",
+      "interpretationNotice": "passed",
+      "removal": "passed",
+      "resultArtifactsSurvivedRemoval": "passed"
+    }
+  },
+  "publication": {
+    "signingKeyIds": [
+      "liatir-runtime-box-kms-2026"
+    ],
+    "localSignatureVerified": true,
+    "archive": {
+      "url": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/physicell/1.14.2-beta.1/linux-x86_64-cpu/5410ad710050a0521d7cccdf08c236e5964db89dc79a9fca152984245acf46cf.zip",
+      "sizeBytes": 109022965,
+      "sha256": "5410ad710050a0521d7cccdf08c236e5964db89dc79a9fca152984245acf46cf",
+      "streamedVerification": "passed"
+    },
+    "release": {
+      "url": "https://assets.models.liatir.com/ai-runtime-boxes/boxes/physicell/1.14.2-beta.1/linux-x86_64-cpu/29c29b653a3bf331b606f424f559236648a40a239968a5c9c857012169d53e35.release.json",
+      "sizeBytes": 3971,
+      "sha256": "29c29b653a3bf331b606f424f559236648a40a239968a5c9c857012169d53e35",
+      "streamedVerification": "passed"
+    },
+    "channelUrl": "https://models.liatir.com/v1/channels/beta/physicell/linux-x86_64-cpu",
+    "promotionHttpStatus": 200,
+    "promotionResponse": {
+      "ok": true,
+      "key": "channels/beta/physicell/linux-x86_64-cpu.json"
+    }
+  }
+}
