@@ -46,7 +46,11 @@
       "relativePath": ".sources/BioNetGen-2.9.3-linux.tar.gz",
       "format": "tar.gz",
       "destination": "bionetgen-release",
-      "removeAfterExtract": true
+      "removeAfterExtract": true,
+      "executables": [
+        "BioNetGen-2.9.3/BNG2.pl",
+        "BioNetGen-2.9.3/bin/run_network"
+      ]
     }
   ],
   "localFiles": [
@@ -58,7 +62,7 @@
     {
       "sourcePath": "runtime-boxes/scrolls/biochemical-simulation/self-test.py",
       "relativePath": "self-tests/biochemical-simulation.py",
-      "sha256": "31e2950f53dc9896de62a6122398acd7ab4101024dce632c7e899a207ec0e544"
+      "sha256": "449eadf62aef30e822dc27705f7d7ffee87029d97427102896a0cc0a0365e8b1"
     }
   ],
   "prunePaths": [

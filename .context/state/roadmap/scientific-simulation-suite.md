@@ -5,8 +5,8 @@ analysis, biochemical networks, metabolic modeling and multicellular simulation 
 page before continuing any of that work**, and update it in the same change as any progress.
 
 **Status (2026-11-05): every capability is built, scientifically validated on development-signed
-builds and integrated in the product; all but Biochemical Simulation (B5) pass the real-app lifecycle
-on native Linux, GNINA on this machine's GPU.** GNINA is fetched from its own release at install (B1 resolved). Windows through
+builds and integrated in the product, and all pass the real-app lifecycle on native Linux, GNINA on
+this machine's GPU.** GNINA is fetched from its own release at install (B1 resolved). Windows through
 WSL2 and publication are next. Nothing is published; no paid, remote or GPU CI action has been
 taken. All work is on branch `simulation-suite`, not pushed.
 
@@ -290,7 +290,7 @@ Each was checked, not inferred; the evidence is named.
     `bin/run_network` install as 0644 and PySB refuses to start BioNetGen. The box self-test and the
     validator both ran on the build directory, where extraction had kept the bits; only the real-app
     lifecycle, installing the signed archive, saw it. A validator must run on the payload as a consumer
-    extracts it. See B5.
+    extracts it. See B5, resolved by Scrollcase 1.5.0 (finding 50).
 38. **PhysiCell 1.14.2 builds portably and reproducibly with conda-forge's toolchain** (gcc 15.3.0,
     glibc 2.17 sysroot, `-march=x86-64-v2`, OpenMP). `runtime-boxes/native-builds/physicell/build.sh`
     compiles the template project from the reviewed release archive, links the GCC runtime and
@@ -311,6 +311,9 @@ Each was checked, not inferred; the evidence is named.
 40. **PhysiCell 1.14.2 crashes when a simulation starts without cells** (segmentation fault, with or
     without substrates), though a population that dies out during a run carries on. The runner
     refuses settings that start no cell.
+41. **Scrollcase's self-test runs on the build directory, where a downloaded executable has no mode**,
+    while the archive marks it executable from the scroll's declaration: finding 37 in reverse. The
+    PhysiCell self-test runs a copy; the box was validated as unpacked from its signed archive. See B5.
 42. **GNINA's "static" release binary links CUDA dynamically.** `readelf -d` on
     `gnina.cuda12.8.static` lists `libcudnn.so.9`, `libcudart.so.12`, `libcublas.so.12`,
     `libcublasLt.so.12`, `libcufft.so.11`, `libcusparse.so.12` and `libcusolver.so.11` beside
@@ -347,10 +350,14 @@ Each was checked, not inferred; the evidence is named.
     −13.223 kcal/mol (screen: −13.277 and −13.284); lower-ranked poses differ by up to 0.6 kcal/mol.
     This is consistent with Vina 1.2 reporting every pose against the top pose's intramolecular energy
     (not verified here). The tool shows both and never mixes them.
-
-41. **Scrollcase's self-test runs on the build directory, where a downloaded executable has no mode**,
-    while the archive marks it executable from the scroll's declaration: finding 37 in reverse. The
-    PhysiCell self-test runs a copy; the box was validated as unpacked from its signed archive. See B5.
+50. **Scrollcase 1.5.0 marks archive members executable and tests what a consumer receives.**
+    `assetArchives[].executables` names `BioNetGen-2.9.3/BNG2.pl` and `BioNetGen-2.9.3/bin/run_network`,
+    and the build now runs the self-test on the modes the archive will carry, so finding 37 can no
+    longer pass a build; the box's self-test also asserts both programs are executable. The npm
+    package's exports and dependencies are unchanged, the release format stays schema 3, and the Rust
+    `scrollcase-consumer` stays 0.4.0. A box that relied on build-directory modes now fails at build
+    time: every suite box keeps its programs under `venv/bin` or declares them, and the bundled Native
+    Tools box's programs are all under `venv/bin`.
 
 ## Licensing and redistribution review
 
@@ -521,8 +528,9 @@ component.
   URL); a production release needs it at an immutable public URL, a publishing action that needs
   the owner's go. Owner clarification, 2026-11-04: Scrollcase supports native runtimes, so no
   Scrollcase feature is needed.
-- **B5 — Executable files inside an expanded asset archive.** Scrollcase has no declaration for them
-  (finding 37), so Biochemical Simulation cannot start BioNetGen once installed. Recommended fix, in
+- **B5 — Executable files inside an expanded asset archive. Resolved 2026-11-05** by Scrollcase 1.5.0
+  (finding 50); the original note follows. Scrollcase had no declaration for them
+  (finding 37), so Biochemical Simulation could not start BioNetGen once installed. Recommended fix, in
   Scrollcase: `assetArchives[].executables` (paths below `destination`, checked to exist after
   extraction) feeding the same synthesised modes, and a self-test that runs on those modes rather
   than on the build directory's. Scrollcase is the owner's project and its release is theirs; the
@@ -572,7 +580,7 @@ component.
 | GNINA | SCIENTIFICALLY VALIDATED and PRODUCT VALIDATED on native Linux on this host's GPU (development build, validated as unpacked from its signed archive with GNINA's release asset placed as the installer places it); Windows through WSL2 and publication pending | `runtime-boxes/measurements/gnina-linux-x86_64-cuda12.8-development-2026-11-05.json`, `runtime-boxes/measurements/gnina-linux-x86_64-cuda12.8-product-lifecycle-development-2026-11-05.json` |
 | MDAnalysis, ProLIF | SCIENTIFICALLY VALIDATED and PRODUCT VALIDATED on native Linux (development build); Windows through WSL2 and publication pending | `runtime-boxes/measurements/molecular-analysis-linux-x86_64-cpu-development-2026-11-04.json`, `runtime-boxes/measurements/molecular-analysis-linux-x86_64-cpu-product-lifecycle-development-2026-11-04.json` |
 | Docked Complex (docking box) | SCIENTIFICALLY VALIDATED and PRODUCT VALIDATED on native Linux (development build); Windows through WSL2 and publication pending | `runtime-boxes/measurements/molecular-docking-linux-x86_64-cpu-development-2026-11-04.json`, `runtime-boxes/measurements/docking-simulation-chain-development-2026-11-04.json` |
-| PySB, BioNetGen | SCIENTIFICALLY VALIDATED on the development build's directory; the installed box cannot start BioNetGen (B5) | `runtime-boxes/measurements/biochemical-simulation-linux-x86_64-cpu-development-2026-11-04.json` |
+| PySB, BioNetGen | SCIENTIFICALLY VALIDATED and PRODUCT VALIDATED on native Linux (development build, validated as unpacked from its signed archive); Windows through WSL2 and publication pending | `runtime-boxes/measurements/biochemical-simulation-linux-x86_64-cpu-development-2026-11-05.json`, `runtime-boxes/measurements/biochemical-simulation-linux-x86_64-cpu-product-lifecycle-development-2026-11-05.json` |
 | COBRApy | SCIENTIFICALLY VALIDATED and PRODUCT VALIDATED on native Linux (development build); Windows through WSL2 and publication pending | `runtime-boxes/measurements/metabolic-modeling-linux-x86_64-cpu-development-2026-11-04.json`, `runtime-boxes/measurements/metabolic-modeling-linux-x86_64-cpu-product-lifecycle-development-2026-11-04.json` |
 | PhysiCell | SCIENTIFICALLY VALIDATED and PRODUCT VALIDATED on native Linux (development build, validated as unpacked from its signed archive); production needs the source mirror (B2), then Windows through WSL2 and publication | `runtime-boxes/measurements/physicell-linux-x86_64-cpu-development-2026-11-04.json` |
 
@@ -716,14 +724,16 @@ does not have (it now uses `setAppInputValue`), and the file-picker helper click
 named after the same input file (the picker popup is now a labelled `role="dialog"`, and the helper
 looks only inside it).
 
-## Phase 4A evidence (development build, 2026-11-04)
+## Phase 4A evidence (development build, 2026-11-04; rebuilt with Scrollcase 1.5.0 on 2026-11-05)
 
 Box `biochemical-simulation` `1.17.0-beta.1` / `linux-x86_64-cpu`, lock `a7e83046…`, 43 packages: PySB
 1.17.0 (PyPI wheel), BioNetGen 2.9.3 (official Linux release, `NFsim` pruned), Perl 5.44.0, SymPy
 1.11.1, SciPy 1.17.1, Python 3.11.18. Signed with the WSL2 development key: archive `bf5ade96…`,
 136.7 MB, installed 478 MB. The validator `scripts/validate-biochemical-simulation-runtime.mjs` ran the
-product's runner in the signed payload: **passed**, 696 s, record
-`runtime-boxes/measurements/biochemical-simulation-linux-x86_64-cpu-development-2026-11-04.json`.
+product's runner in the signed payload: **passed**, 696 s. Rebuilt on 2026-11-05 with Scrollcase
+1.5.0 and BioNetGen's two programs declared executable (finding 50): archive `3dd9da41…`, 136.7 MB,
+448 MB unpacked; validated in the payload unpacked from that archive with its own modes: **passed**,
+702 s, every figure below unchanged, record `runtime-boxes/measurements/biochemical-simulation-linux-x86_64-cpu-development-2026-11-05.json`.
 
 | Check | Reference | Result |
 | --- | --- | --- |
@@ -739,6 +749,17 @@ product's runner in the signed payload: **passed**, 696 s, record
 
 Peak memory 166 MB (process tree). The stochastic envelope is measured on synthesis and degradation
 only, so a stochastic run of a larger network asks the user to confirm a run beyond evidence.
+
+**Real-app lifecycle, native Linux (WSL2, Xvfb), 2026-11-05: 2 of 2 passed** on the box rebuilt
+with Scrollcase 1.5.0, which installs BioNetGen executable (the run that found finding 37 never got
+this far). Its first attempt then caught an error in the lifecycle spec itself: the stochastic run
+changes `kA_syn` to 2, so its stationary mean is kA_syn/kA_deg = 20, but the spec expected the
+unchanged model's 10. The spec now derives the mean from the parameters; nothing in the product
+changed. Results: the deterministic run within 8.1 × 10⁻⁸ of its exact solution; 400 stochastic
+runs with mean 20.045 (bound ±0.89, four standard errors); the BNGL file generated (15 species,
+30 reactions) with its actions read and not run; a killed Job reached `killed`; Jobs, Results,
+provenance, the offline boundary and the interpretation notice held; removal kept every Result
+file. Record `runtime-boxes/measurements/biochemical-simulation-linux-x86_64-cpu-product-lifecycle-development-2026-11-05.json`.
 
 ## Phase 4C evidence (development build, 2026-11-04)
 
@@ -847,6 +868,9 @@ interpretation notice held; removal kept every Result file. 160 s including the 
   finalizer, unit tests, lifecycle spec, catalog and signer-policy entries (with the signer's new
   on-demand asset check, finding 48), CI workflow and release option; validated and the real-app
   lifecycle passed on native Linux (above).
+- 2026-11-05 — B5: Scrollcase 1.5.0 adopted (finding 50); the biochemical box declares BioNetGen's
+  programs executable, was rebuilt, revalidated as unpacked from its signed archive, and passed the
+  real-app lifecycle on native Linux.
 
 ## For the owner
 
@@ -862,8 +886,7 @@ interpretation notice held; removal kept every Result file. 160 s including the 
 2. Production release (B3, B4): merge, signer redeploy, `runtime-box-release.yml` with
    `model_id=autodock-vina-molecular-docking`, `target_id=linux-x86_64-cpu`, `channel=beta`; then the
    publication commit (catalog, product catalog, docs, measurement from the production build).
-3. Real-app lifecycle of every tool through WSL2 with item 1 (all pass on native Linux except
-   Biochemical Simulation, B5). The Windows test app must carry the rebuilt WSL2 consumer, which
+3. Real-app lifecycle of every tool through WSL2 with item 1 (all pass on native Linux). The Windows
+   test app must carry the rebuilt WSL2 consumer, which
    now places on-demand assets (GNINA).
-4. Real-app lifecycle of Biochemical Simulation, once B5 is resolved.
 5. The PhysiCell source mirror and its Registry deploy, with the production release (B2, B4).

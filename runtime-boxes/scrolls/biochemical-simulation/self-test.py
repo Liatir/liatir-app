@@ -39,6 +39,10 @@ assert importlib.metadata.version("pysb") == EXPECTED_PYSB, importlib.metadata.v
 bng = Path("bionetgen-release/BioNetGen-2.9.3").resolve()
 for relative in ("BNG2.pl", "bin/run_network", "LICENSE"):
     assert (bng / relative).is_file(), relative
+# PySB refuses a BioNetGen it cannot execute. The scroll declares both programs executable, and the
+# build runs this test on the modes the archive carries, so a missing declaration fails here.
+for relative in ("BNG2.pl", "bin/run_network"):
+    assert os.access(bng / relative, os.X_OK), relative + " is not executable"
 assert not list(bng.parent.rglob("._*")), "macOS resource forks were not pruned"
 os.environ["BNGPATH"] = str(bng)
 # BioNetGen's BNG2.pl runs on the box's own Perl, never on one the host happens to have.

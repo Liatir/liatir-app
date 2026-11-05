@@ -39,12 +39,15 @@ const EXPECTED_HOST_ENVIRONMENT = process.platform === 'win32' && TARGET_ID.star
   : 'native';
 // Named per target: a measured envelope belongs to the release and machine that produced it.
 const EXPECTED_HARDWARE_PROFILE = {
-  'linux-x86_64-cpu': 'pysb-biochemical-simulation-1.17.0-beta.1-linux-x86_64-cpu-development-2026-11-04',
+  'linux-x86_64-cpu': 'pysb-biochemical-simulation-1.17.0-beta.1-linux-x86_64-cpu-development-2026-11-05',
 }[TARGET_ID];
-// synth_deg with kA_syn = 2: A(t) = 20 - 19 e^(-0.1 t); stationary copy number Poisson with mean 10.
+// synth_deg with kA_syn = 2: A(t) = 20 - 19 e^(-0.1 t); the stationary copy number is Poisson with
+// mean kA_syn / kA_deg = 20, and the mean of SSA_RUNS independent runs lies within four of its
+// standard errors.
 const SYNTHESIS = { kA_syn: 2, kA_deg: 0.1, A0: 1 };
 const SSA_RUNS = 400;
-const SSA_MEAN_BOUND = 4 * Math.sqrt(10 / SSA_RUNS);
+const STATIONARY_MEAN = SYNTHESIS.kA_syn / SYNTHESIS.kA_deg;
+const SSA_MEAN_BOUND = 4 * Math.sqrt(STATIONARY_MEAN / SSA_RUNS);
 const RUN_TIMEOUT_MS = 20 * 60 * 1000;
 const indexPath = 'workspaces/__test__/analysis-runs/index.json';
 
@@ -219,7 +222,7 @@ print(json.dumps({"copied": 1}))
     }
     expect(exactWorst).toBeLessThan(1e-6);
 
-    // Stochastic: the same model's stationary distribution, Poisson with mean 10.
+    // Stochastic: the same model and parameter change, at t = 200, twenty relaxation times in.
     await openTool(browser, 'stochastic');
     await setField(browser, '[data-testid="biochemical-builtin"]', 'synth_deg');
     await setField(browser, '[data-testid="biochemical-method"]', 'ssa');
@@ -232,7 +235,7 @@ print(json.dumps({"copied": 1}))
       .filter((row) => Number(row.Time) === 200).map((row) => Number(row.A_total));
     expect(finals.length).toBe(SSA_RUNS);
     const mean = finals.reduce((sum, value) => sum + value, 0) / finals.length;
-    expect(Math.abs(mean - 10)).toBeLessThan(SSA_MEAN_BOUND);
+    expect(Math.abs(mean - STATIONARY_MEAN)).toBeLessThan(SSA_MEAN_BOUND);
     expect(ssa.provenance.Method).toMatch(/^Gillespie direct method \(BioNetGen run_network\), 400 runs with seeds 1 to 400$/u);
 
     // A BNGL file from the user's Data: generated and simulated here, its own actions read and not run.

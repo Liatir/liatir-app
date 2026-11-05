@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "liatir.biochemical-simulation-scientific-validation",
-  "createdAt": "2026-11-04T16:55:07.991Z",
+  "createdAt": "2026-11-05T10:55:42.431Z",
   "status": "passed",
   "modelId": "pysb-biochemical-simulation",
   "sourceRevision": "pysb-1.17.0+bionetgen-2.9.3",
@@ -18,14 +18,14 @@
         "outputItemCount": 243
       },
       "measurement": {
-        "elapsedMs": 1121,
-        "peakRamBytes": 131444736,
+        "elapsedMs": 1530,
+        "peakRamBytes": 155664384,
         "peakVramBytes": null,
         "vramMeasurementMethod": null,
         "vramDeviceBaselineBytes": null,
         "vramSamplingIntervalMs": null,
         "vramMeasurementErrors": [],
-        "peakProcessTreePssBytes": 128837632,
+        "peakProcessTreePssBytes": 153172992,
         "processTreeMeasurementErrors": []
       },
       "outputBytes": 21032,
@@ -47,14 +47,14 @@
         "outputItemCount": 51
       },
       "measurement": {
-        "elapsedMs": 1051,
-        "peakRamBytes": 130772992,
+        "elapsedMs": 1036,
+        "peakRamBytes": 136241152,
         "peakVramBytes": null,
         "vramMeasurementMethod": null,
         "vramDeviceBaselineBytes": null,
         "vramSamplingIntervalMs": null,
         "vramMeasurementErrors": [],
-        "peakProcessTreePssBytes": 126308352,
+        "peakProcessTreePssBytes": 133951488,
         "processTreeMeasurementErrors": []
       },
       "outputBytes": 4882,
@@ -76,14 +76,14 @@
         "outputItemCount": 201000
       },
       "measurement": {
-        "elapsedMs": 8438,
-        "peakRamBytes": 160698368,
+        "elapsedMs": 9199,
+        "peakRamBytes": 163328000,
         "peakVramBytes": null,
         "vramMeasurementMethod": null,
         "vramDeviceBaselineBytes": null,
         "vramSamplingIntervalMs": null,
         "vramMeasurementErrors": [],
-        "peakProcessTreePssBytes": 158539776,
+        "peakProcessTreePssBytes": 161138688,
         "processTreeMeasurementErrors": []
       },
       "outputBytes": 3196426,
@@ -105,17 +105,17 @@
         "outputItemCount": 201000
       },
       "measurement": {
-        "elapsedMs": 8192,
-        "peakRamBytes": 160751616,
+        "elapsedMs": 9451,
+        "peakRamBytes": 163127296,
         "peakVramBytes": null,
         "vramMeasurementMethod": null,
         "vramDeviceBaselineBytes": null,
         "vramSamplingIntervalMs": null,
         "vramMeasurementErrors": [],
-        "peakProcessTreePssBytes": 141241344,
+        "peakProcessTreePssBytes": 161037312,
         "processTreeMeasurementErrors": []
       },
-      "outputBytes": 3196425,
+      "outputBytes": 3196426,
       "network": {
         "species": 1,
         "reactions": 2,
@@ -134,14 +134,14 @@
         "outputItemCount": 1515
       },
       "measurement": {
-        "elapsedMs": 27086,
-        "peakRamBytes": 166318080,
+        "elapsedMs": 27927,
+        "peakRamBytes": 172396544,
         "peakVramBytes": null,
         "vramMeasurementMethod": null,
         "vramDeviceBaselineBytes": null,
         "vramSamplingIntervalMs": null,
         "vramMeasurementErrors": [],
-        "peakProcessTreePssBytes": 163990528,
+        "peakProcessTreePssBytes": 169646080,
         "processTreeMeasurementErrors": []
       },
       "outputBytes": 264089,
@@ -163,14 +163,14 @@
         "outputItemCount": 33
       },
       "measurement": {
-        "elapsedMs": 1174,
-        "peakRamBytes": 131795968,
+        "elapsedMs": 1137,
+        "peakRamBytes": 137256960,
         "peakVramBytes": null,
         "vramMeasurementMethod": null,
         "vramDeviceBaselineBytes": null,
         "vramSamplingIntervalMs": null,
         "vramMeasurementErrors": [],
-        "peakProcessTreePssBytes": 131795968,
+        "peakProcessTreePssBytes": 135165952,
         "processTreeMeasurementErrors": []
       },
       "outputBytes": 8756,
@@ -296,9 +296,9 @@
       "maxAtomCount": 3,
       "maxStepCount": 81,
       "maxOutputItemCount": 243,
-      "peakRamBytes": 131444736,
+      "peakRamBytes": 155664384,
       "peakVramBytes": null,
-      "elapsedMs": 1121,
+      "elapsedMs": 1530,
       "outputBytes": 21032
     },
     {
@@ -308,9 +308,9 @@
       "maxAtomCount": 1,
       "maxStepCount": 51,
       "maxOutputItemCount": 51,
-      "peakRamBytes": 130772992,
+      "peakRamBytes": 136241152,
       "peakVramBytes": null,
-      "elapsedMs": 1051,
+      "elapsedMs": 1036,
       "outputBytes": 4882
     },
     {
@@ -320,9 +320,9 @@
       "maxAtomCount": 1,
       "maxStepCount": 201000,
       "maxOutputItemCount": 201000,
-      "peakRamBytes": 160698368,
+      "peakRamBytes": 163328000,
       "peakVramBytes": null,
-      "elapsedMs": 8438,
+      "elapsedMs": 9199,
       "outputBytes": 3196426
     },
     {
@@ -332,10 +332,10 @@
       "maxAtomCount": 1,
       "maxStepCount": 201000,
       "maxOutputItemCount": 201000,
-      "peakRamBytes": 160751616,
+      "peakRamBytes": 163127296,
       "peakVramBytes": null,
-      "elapsedMs": 8192,
-      "outputBytes": 3196425
+      "elapsedMs": 9451,
+      "outputBytes": 3196426
     },
     {
       "fixtureId": "egfr-net-ode",
@@ -344,9 +344,9 @@
       "maxAtomCount": 356,
       "maxStepCount": 101,
       "maxOutputItemCount": 1515,
-      "peakRamBytes": 166318080,
+      "peakRamBytes": 172396544,
       "peakVramBytes": null,
-      "elapsedMs": 27086,
+      "elapsedMs": 27927,
       "outputBytes": 264089
     },
     {
@@ -356,28 +356,28 @@
       "maxAtomCount": 15,
       "maxStepCount": 11,
       "maxOutputItemCount": 33,
-      "peakRamBytes": 131795968,
+      "peakRamBytes": 137256960,
       "peakVramBytes": null,
-      "elapsedMs": 1174,
+      "elapsedMs": 1137,
       "outputBytes": 8756
     }
   ],
   "runtimeEvidence": {
     "kind": "signed-payload",
     "signedPayloadVerified": true,
-    "releaseManifestSha256": "24140fd424c4e6cccb65da21cab6d3f9f1195323cced62e44d06994c0ceb937e",
-    "archiveSha256": "bf5ade9671956841e1fe9404abae8239371c5f9ee3dad41c35eff96323862e27",
-    "payloadDigestSha256": "4b8e2af5b45d9594caa1f04046f297e389a004866d11408c2f0af8dd6ae80cfb",
+    "releaseManifestSha256": "45b1dbd683718e6e470b89ed10df47d6b176a431b9880522ad9605e30e2ebc9d",
+    "archiveSha256": "3dd9da41f14050375a4cfc6ef1805fed842a89c660839e87c306167a5c20c5df",
+    "payloadDigestSha256": "5e7247e5f5b4ebfe2f7ee9dc74d951260e98e5040eb66af136262cf0e53a0616",
     "provenance": {
       "scrollId": "biochemical-simulation-linux-x86_64-cpu",
       "scrollVersion": "1.0.0",
-      "builderRevision": "591ef8800c50b86b7253f687ba3661fab7423a0d",
+      "builderRevision": "8dd599e2cac07478f181c45dd04549476ec13513",
       "sourceTreeDirty": true,
       "sourceRevision": "pysb-1.17.0+bionetgen-2.9.3",
       "runtimeVersion": "3.11.18",
       "pixiVersion": "0.73.0",
       "dependencyLockSha256": "a7e830468894a2ffcb0081ac7e12688ec34c1b7813aaebb6dd679c88d4d3c0f7",
-      "builtAt": "2026-11-04T12:18:24+01:00"
+      "builtAt": "2026-11-05T11:37:18+01:00"
     }
   },
   "reference": {
@@ -420,14 +420,14 @@
     "osRelease": "6.18.33.2-microsoft-standard-WSL2",
     "cpuModel": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
     "logicalCpuCount": 6,
-    "totalMemoryBytes": 12543176704
+    "totalMemoryBytes": 12543184896
   },
   "validatorSource": {
-    "gitCommit": "591ef8800c50b86b7253f687ba3661fab7423a0d",
+    "gitCommit": "8dd599e2cac07478f181c45dd04549476ec13513",
     "sourceTreeDirty": true,
     "scriptSha256": "87716761a9018bc4690049bd6609b826d8fb69164c984fe133c3440fb5d9a536",
     "measurementScriptSha256": "69b3d3ea2b3d8ea402477442b3b45fd64df884e5e1397b9f916a13fe8fa9832e",
-    "recipeSha256": "ae9afebf43c6f6cbe37c4e160b3d45d6db074c83c7b687aa56db71e0b3f6943c"
+    "recipeSha256": "7b67a11b2dfd666484d9ea6164a8408b635e92f0676e44209a950f269d6c3be3"
   },
   "provenance": {
     "recipeId": "biochemical-simulation-linux-x86_64-cpu",
@@ -450,7 +450,7 @@
       "kind": "cpu"
     },
     "finiteValues": true,
-    "peakRamBytes": 166318080,
+    "peakRamBytes": 172396544,
     "peakVramBytes": null,
     "outputContract": "passed",
     "provenanceContract": "passed"

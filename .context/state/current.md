@@ -30,8 +30,8 @@ passed the real-app lifecycle on native Linux.
 Phase 4A: the `biochemical-simulation` box (PySB with BioNetGen) matches the reference solution of
 Robertson's stiff problem, an exact solution and the expected stochastic statistics, refuses a model
 whose reaction network never closes instead of running for hours, and is integrated as Biochemical
-Simulation; installed, it cannot start BioNetGen until Scrollcase can mark files unpacked from an
-archive executable (B5 in the plan, the owner's decision). Phase 4C: the `physicell` box carries a
+Simulation, which passed the real-app lifecycle on native Linux once Scrollcase 1.5.0 let the box mark
+the programs it unpacks from BioNetGen's release executable (B5, resolved 2026-11-05). Phase 4C: the `physicell` box carries a
 PhysiCell executable Liatir compiles reproducibly for any Linux with glibc 2.17; its runner writes the
 settings PhysiCell runs itself (PhysiCell turns paths in its settings into shell commands), and the
 validator holds cell division, death and substrate decay to the models' own parameters exactly or
