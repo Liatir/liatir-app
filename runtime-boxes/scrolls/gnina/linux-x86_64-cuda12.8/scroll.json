@@ -1,0 +1,138 @@
+{
+  "$schema": "https://scrollcase.dev/schema/v3/scroll.schema.json",
+  "schemaVersion": 3,
+  "scrollId": "gnina-linux-x86_64-cuda12.8",
+  "scrollVersion": "1.0.0",
+  "boxId": "gnina",
+  "labels": {
+    "model": "gnina-pose-rescoring",
+    "runtime": "gnina-1-3-3"
+  },
+  "version": "1.3.3-beta.1",
+  "sourceRevision": "gnina-1.3.3+6fe1ce2bb9c3+binary-3340c1f49cd3",
+  "target": {
+    "platform": "linux",
+    "arch": "x86_64",
+    "accelerator": "cuda",
+    "cudaVersion": "12.8"
+  },
+  "compatibility": {
+    "minLiatirVersion": "0.2.1",
+    "minRamGb": 4,
+    "minNvidiaDriverVersion": "570.26",
+    "hostEnvironments": [
+      "native",
+      "windows-wsl2"
+    ]
+  },
+  "runtime": {
+    "id": "python",
+    "version": "3.11.18",
+    "entryPoint": "venv/bin/python"
+  },
+  "pixiVersion": "0.73.0",
+  "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/gnina-linux-x86_64-cuda12.8.json",
+  "cacheSubdir": "reference",
+  "publishBaseUrl": "https://assets.models.liatir.com/ai-runtime-boxes",
+  "assets": [
+    {
+      "url": "https://github.com/gnina/gnina/releases/download/v1.3.3/gnina.cuda12.8.static",
+      "relativePath": "gnina/bin/gnina",
+      "sizeBytes": 2056131000,
+      "sha256": "3340c1f49cd3c7c84d8699182a1c6af13c7fa2a22448d1204640446106f72172",
+      "embed": false,
+      "executable": true
+    },
+    {
+      "url": "https://raw.githubusercontent.com/gnina/gnina/6fe1ce2bb9c35c8067de9f49bb9169857dfbad70/test/gnina/data/noelem_rec.pdb",
+      "relativePath": "reference/gnina-tests/noelem_rec.pdb",
+      "sizeBytes": 424991,
+      "sha256": "e083ee04bb58ec364be0f19005f5e19bd355188007af371c2183472835544b72"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/gnina/gnina/6fe1ce2bb9c35c8067de9f49bb9169857dfbad70/test/gnina/data/noelem.sdf",
+      "relativePath": "reference/gnina-tests/noelem.sdf",
+      "sizeBytes": 1698,
+      "sha256": "ff12b1c386f7dd3ad890bbd8da1e81d6d05afaa33dbbf1c364f29e7d25c49920"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/gnina/gnina/6fe1ce2bb9c35c8067de9f49bb9169857dfbad70/test/gnina/data/3rod_rec.pdb",
+      "relativePath": "reference/gnina-tests/3rod_rec.pdb",
+      "sizeBytes": 665549,
+      "sha256": "f0640d31f71c0e33201cea2938ca357541c51ea7bd1bb158182c396c9fb6235e"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/gnina/gnina/6fe1ce2bb9c35c8067de9f49bb9169857dfbad70/test/gnina/data/3rod_lig.pdb",
+      "relativePath": "reference/gnina-tests/3rod_lig.pdb",
+      "sizeBytes": 2702,
+      "sha256": "316b6c7e7fdbf2fd7cb2f7d7beaf2d9da46766d7d8cf1b8cd1a405f1f75dd511"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/gnina/gnina/6fe1ce2bb9c35c8067de9f49bb9169857dfbad70/test/gnina/data/184l_rec.pdb",
+      "relativePath": "reference/gnina-tests/184l_rec.pdb",
+      "sizeBytes": 206499,
+      "sha256": "55746b38d8d54c420d38ee1c37f5a716f6c4bc0f425740881d891c1ab6ae801b"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/gnina/gnina/6fe1ce2bb9c35c8067de9f49bb9169857dfbad70/test/gnina/data/184l_lig.sdf",
+      "relativePath": "reference/gnina-tests/184l_lig.sdf",
+      "sizeBytes": 1797,
+      "sha256": "d0b7c10181df629c3f68c58f467e15613ba74c160f981bddc5dc3989edf6fb18"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/ccsb-scripps/AutoDock-Vina/8eb40404f4f45608acb3b01427587ac049f27c1f/example/basic_docking/data/1iep_ligand.sdf",
+      "relativePath": "reference/vina-1iep/1iep_ligand.sdf",
+      "sizeBytes": 6621,
+      "sha256": "051b8742c32adc05c07fb486a4e7c9327f84e131cee33ac4e6a568d07553eb38"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/ccsb-scripps/AutoDock-Vina/8eb40404f4f45608acb3b01427587ac049f27c1f/example/basic_docking/solution/1iep_receptor.pdbqt",
+      "relativePath": "reference/vina-1iep/1iep_receptor.pdbqt",
+      "sizeBytes": 216160,
+      "sha256": "f13cf3b36f61d87c3b58983e0b8ecf1c3456a685eb86dfe9ccfb139c7bdc2586"
+    }
+  ],
+  "localFiles": [
+    {
+      "sourcePath": "runtime-boxes/legal/licenses/Apache-2.0.txt",
+      "relativePath": "licenses/Apache-2.0.txt",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "sourcePath": "runtime-boxes/legal/gnina.md",
+      "relativePath": "THIRD_PARTY_NOTICES/gnina.md",
+      "sha256": "4c03e65730a250636391a19c3205451f15692d0eeb29c92de9b6ae91f9b9b842"
+    },
+    {
+      "sourcePath": "runtime-boxes/scrolls/gnina/self-test.py",
+      "relativePath": "self-tests/gnina.py",
+      "sha256": "42376c46c44a8ded991b7ba722b09c0b7a3c01fe2d3bbd9d43096e3c11fa5676"
+    }
+  ],
+  "prunePaths": [
+    "venv/lib/python3.1"
+  ],
+  "selfTest": {
+    "imports": [
+      "ctypes"
+    ],
+    "files": [
+      "licenses/Apache-2.0.txt",
+      "THIRD_PARTY_NOTICES/gnina.md",
+      "self-tests/gnina.py",
+      "gnina/bin/gnina",
+      "reference/gnina-tests/noelem_rec.pdb",
+      "reference/gnina-tests/noelem.sdf",
+      "reference/gnina-tests/3rod_rec.pdb",
+      "reference/gnina-tests/3rod_lig.pdb",
+      "reference/gnina-tests/184l_rec.pdb",
+      "reference/gnina-tests/184l_lig.sdf",
+      "reference/vina-1iep/1iep_ligand.sdf",
+      "reference/vina-1iep/1iep_receptor.pdbqt"
+    ],
+    "code": "from pathlib import Path\ncode = Path('self-tests/gnina.py').read_text(encoding='utf-8')\nexec(compile(code, 'self-tests/gnina.py', 'exec'), {'__name__': '__main__'})"
+  },
+  "environment": {
+    "PYTHONNOUSERSITE": "1"
+  }
+}

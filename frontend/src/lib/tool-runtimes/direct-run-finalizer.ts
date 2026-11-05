@@ -13,6 +13,24 @@ import {
   molecularDynamicsDefinition,
   molecularRelaxationDefinition,
 } from '$lib/tools/molecular-simulation/openmm';
+import {
+  dockedComplexDefinition,
+  finalizeDockedComplexResult,
+  finalizeDockingResult,
+  finalizeReceptorPreparationResult,
+  molecularDockingDefinition,
+  receptorPreparationDefinition,
+} from '$lib/tools/molecular-docking/docking';
+import {
+  finalizeInteractionFingerprintResult,
+  finalizeTrajectoryAnalysisResult,
+  interactionFingerprintDefinition,
+  trajectoryAnalysisDefinition,
+} from '$lib/tools/molecular-analysis/analysis';
+import { finalizeMetabolicResult, metabolicModelingDefinition } from '$lib/tools/metabolic-modeling/metabolic';
+import { biochemicalSimulationDefinition, finalizeBiochemicalResult } from '$lib/tools/biochemical-simulation/biochemical';
+import { finalizePhysiCellResult, multicellularSimulationDefinition } from '$lib/tools/physicell/physicell';
+import { finalizeGninaResult, neuralPoseRescoringDefinition } from '$lib/tools/gnina/gnina';
 import { parseToolRuntimeDirectRunContext } from './direct-run-context';
 
 const finalizing = new Set<string>();
@@ -83,7 +101,31 @@ export async function finalizeCompletedToolRuntimeDirectRuns(jobs: JobEntry[]): 
             ? await finalizeOpenMMResult(
                 runtime, 'dynamics', context.params, context.outputDir, runtimeResult, appendLog,
               )
-            : null;
+            : context.toolId === receptorPreparationDefinition.id
+              ? await finalizeReceptorPreparationResult(
+                  runtime, context.params, context.outputDir, runtimeResult, appendLog,
+                )
+              : context.toolId === molecularDockingDefinition.id
+                ? await finalizeDockingResult(
+                    runtime, context.params, context.outputDir, runtimeResult, appendLog,
+                  )
+                : context.toolId === dockedComplexDefinition.id
+                  ? await finalizeDockedComplexResult(
+                      runtime, context.params, context.outputDir, runtimeResult, appendLog,
+                    )
+                  : context.toolId === trajectoryAnalysisDefinition.id
+                    ? await finalizeTrajectoryAnalysisResult(runtime, context.outputDir, runtimeResult, appendLog)
+                    : context.toolId === interactionFingerprintDefinition.id
+                      ? await finalizeInteractionFingerprintResult(runtime, context.outputDir, runtimeResult, appendLog)
+                      : context.toolId === metabolicModelingDefinition.id
+                        ? await finalizeMetabolicResult(runtime, context.outputDir, runtimeResult, appendLog)
+                        : context.toolId === biochemicalSimulationDefinition.id
+                          ? await finalizeBiochemicalResult(runtime, context.outputDir, runtimeResult, appendLog)
+                          : context.toolId === multicellularSimulationDefinition.id
+                            ? await finalizePhysiCellResult(runtime, context.outputDir, runtimeResult, appendLog)
+                            : context.toolId === neuralPoseRescoringDefinition.id
+                              ? await finalizeGninaResult(runtime, context.outputDir, runtimeResult, appendLog)
+                              : null;
       if (!finalized) throw new Error(`Unsupported Tool Runtime finalizer: ${context.toolId}`);
       const endedAt = job.endedAtMs ?? Date.now();
       await finalizeExecutionResult(context.execution.runId, 'done', {

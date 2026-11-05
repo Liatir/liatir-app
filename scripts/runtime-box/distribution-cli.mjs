@@ -71,6 +71,12 @@ const SOURCE_MIRROR_SPECS = Object.freeze({
     key: 'source-mirrors/mhcflurry/models_class1_presentation.20200611.models-only.tar.gz',
     publicUrl: 'https://assets.models.liatir.com/ai-runtime-boxes/source-mirrors/mhcflurry/models_class1_presentation.20200611.models-only.tar.gz',
   }),
+  'physicell-1-14-2-template': Object.freeze({
+    sizeBytes: 2_544_576,
+    sha256: '2dd954ad781fe9088a483a070b120701ce70b57a2ef253276617142fe34952f1',
+    key: 'source-mirrors/physicell/physicell-1.14.2-template-linux-x86_64',
+    publicUrl: 'https://assets.models.liatir.com/ai-runtime-boxes/source-mirrors/physicell/physicell-1.14.2-template-linux-x86_64',
+  }),
 });
 /** The registry the command talks to, trailing slash removed so paths can be appended directly. */
 function registryBaseUrl(flags) {

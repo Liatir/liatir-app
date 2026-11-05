@@ -15,6 +15,18 @@ export const tests = [{
         ? '/tools/oncology/neoantigen-prioritization'
         : candidateId === 'openmm-openmm'
           ? '/tools/molecular-simulation/relaxation'
+        : candidateId === 'autodock-vina-molecular-docking'
+          ? '/tools/molecular-docking/docking'
+        : candidateId === 'mdanalysis-molecular-analysis'
+          ? '/tools/molecular-analysis/trajectory'
+        : candidateId === 'cobrapy-metabolic-modeling'
+          ? '/tools/metabolic-modeling'
+        : candidateId === 'pysb-biochemical-simulation'
+          ? '/tools/biochemical-simulation'
+        : candidateId === 'physicell-multicellular-simulation'
+          ? '/tools/multicellular-simulation'
+        : candidateId === 'gnina-pose-rescoring'
+          ? '/tools/neural-pose-rescoring'
         : ['jwohlwend-boltz-2', 'bytedance-protenix-base-v1-0-0', 'bytedance-protenix-v2', 'bytedance-protenix-mini-default-v0-5-0'].includes(candidateId)
           ? '/tools/structure/prediction'
         : null;

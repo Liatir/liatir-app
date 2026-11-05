@@ -110,7 +110,8 @@ export async function selectFileFromPicker(browser, pickerTestId, filename) {
 
   let option = null;
   await browser.waitUntil(async () => {
-    const buttons = await browser.$$('button');
+    // Only the picker's own options: a run history entry is a button labelled with its input file too.
+    const buttons = await browser.$$('[role="dialog"] button');
     for (const candidate of buttons) {
       const text = (await candidate.getText()).trim();
       if (text.startsWith(filename) && await candidate.isDisplayed()) {

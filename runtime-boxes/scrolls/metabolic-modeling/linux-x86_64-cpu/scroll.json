@@ -1,0 +1,68 @@
+{
+  "$schema": "https://scrollcase.dev/schema/v3/scroll.schema.json",
+  "schemaVersion": 3,
+  "scrollId": "metabolic-modeling-linux-x86_64-cpu",
+  "scrollVersion": "1.0.0",
+  "boxId": "metabolic-modeling",
+  "labels": {
+    "model": "cobrapy-metabolic-modeling",
+    "runtime": "metabolic-modeling-cobrapy-0-32-1"
+  },
+  "version": "0.32.1-beta.1",
+  "sourceRevision": "cobrapy-0.32.1+optlang-1.9.1+highs-1.15.1+osqp-1.1.3+glpk-5.0",
+  "target": {
+    "platform": "linux",
+    "arch": "x86_64",
+    "accelerator": "cpu"
+  },
+  "compatibility": {
+    "minLiatirVersion": "0.2.1",
+    "minRamGb": 4,
+    "hostEnvironments": [
+      "native",
+      "windows-wsl2"
+    ]
+  },
+  "runtime": {
+    "id": "python",
+    "version": "3.11.18",
+    "entryPoint": "venv/bin/python"
+  },
+  "pixiVersion": "0.73.0",
+  "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/metabolic-modeling-linux-x86_64-cpu.json",
+  "publishBaseUrl": "https://assets.models.liatir.com/ai-runtime-boxes",
+  "localFiles": [
+    {
+      "sourcePath": "runtime-boxes/legal/metabolic-modeling.md",
+      "relativePath": "THIRD_PARTY_NOTICES/metabolic-modeling.md",
+      "sha256": "5f9383dfb4f4e46278ddeb586c06696ae2b1b465fcaca0caac28aa48ed76beca"
+    },
+    {
+      "sourcePath": "runtime-boxes/scrolls/metabolic-modeling/self-test.py",
+      "relativePath": "self-tests/metabolic-modeling.py",
+      "sha256": "39cf6bd07a14d2f776eb4b8e9038b258d56b582ca0042e1779d60f40eacd98d8"
+    }
+  ],
+  "prunePaths": [
+    "venv/lib/python3.1"
+  ],
+  "selfTest": {
+    "imports": [
+      "optlang",
+      "highspy",
+      "osqp",
+      "swiglpk",
+      "libsbml",
+      "numpy",
+      "pandas"
+    ],
+    "files": [
+      "THIRD_PARTY_NOTICES/metabolic-modeling.md",
+      "self-tests/metabolic-modeling.py"
+    ],
+    "code": "from pathlib import Path\ncode = Path('self-tests/metabolic-modeling.py').read_text(encoding='utf-8')\nexec(compile(code, 'self-tests/metabolic-modeling.py', 'exec'), {'__name__': '__main__'})"
+  },
+  "environment": {
+    "PYTHONNOUSERSITE": "1"
+  }
+}

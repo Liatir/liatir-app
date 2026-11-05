@@ -36,6 +36,13 @@ const SOURCE_MIRRORS = {
     key: 'source-mirrors/mhcflurry/models_class1_presentation.20200611.models-only.tar.gz',
     contentType: 'application/gzip',
   },
+  // PhysiCell's executable, rebuilt byte for byte from runtime-boxes/native-builds/physicell.
+  'physicell-1-14-2-template': {
+    sha256: '2dd954ad781fe9088a483a070b120701ce70b57a2ef253276617142fe34952f1',
+    sizeBytes: 2_544_576,
+    key: 'source-mirrors/physicell/physicell-1.14.2-template-linux-x86_64',
+    contentType: 'application/octet-stream',
+  },
 } as const;
 /** R2 object holding the Ed25519 public keys this registry accepts signatures from. */
 const TRUSTED_KEYS_OBJECT = 'control/trusted-keys.json';

@@ -21,6 +21,24 @@ import {
   runMolecularRelaxationStep,
 } from './molecular-simulation/openmm';
 import {
+  dockedComplexDefinition,
+  molecularDockingDefinition,
+  receptorPreparationDefinition,
+  runDockedComplexStep,
+  runMolecularDockingStep,
+  runReceptorPreparationStep,
+} from './molecular-docking/docking';
+import {
+  interactionFingerprintDefinition,
+  runInteractionFingerprintStep,
+  runTrajectoryAnalysisStep,
+  trajectoryAnalysisDefinition,
+} from './molecular-analysis/analysis';
+import { metabolicModelingDefinition, runMetabolicModelingStep } from './metabolic-modeling/metabolic';
+import { biochemicalSimulationDefinition, runBiochemicalSimulationStep } from './biochemical-simulation/biochemical';
+import { multicellularSimulationDefinition, runMulticellularSimulationStep } from './physicell/physicell';
+import { neuralPoseRescoringDefinition, runNeuralPoseRescoringStep } from './gnina/gnina';
+import {
   runSimpleafIndexStep,
   runSimpleafQuantStep,
   simpleafIndexDefinition,
@@ -48,7 +66,13 @@ import {
 import type { JsonValue } from '@liatir/core';
 import {
   LIATIR_TOOL_RUNTIME_CATALOG,
+  METABOLIC_MODELING_RUNTIME_COMPONENT_ID,
+  BIOCHEMICAL_SIMULATION_RUNTIME_COMPONENT_ID,
+  PHYSICELL_RUNTIME_COMPONENT_ID,
+  GNINA_RUNTIME_COMPONENT_ID,
   MHCFLURRY_CLASS1_PRESENTATION_MODEL_ID,
+  MOLECULAR_ANALYSIS_RUNTIME_COMPONENT_ID,
+  MOLECULAR_DOCKING_RUNTIME_COMPONENT_ID,
   OPENMM_RUNTIME_COMPONENT_ID,
   PVACTOOLS_RUNTIME_COMPONENT_ID,
   RUNTIME_BOX_AI_MODEL_REGISTRY,
@@ -574,6 +598,15 @@ export const PIPELINE_REGISTRY: Record<string, PipelineRegistryEntry> = {
   'neoantigen-prioritization': { definition: neoantigenPrioritizationDefinition, run: runNeoantigenPrioritizationStep },
   'molecular-relaxation': { definition: molecularRelaxationDefinition, run: runMolecularRelaxationStep },
   'molecular-dynamics': { definition: molecularDynamicsDefinition, run: runMolecularDynamicsStep },
+  'docking-receptor-preparation': { definition: receptorPreparationDefinition, run: runReceptorPreparationStep },
+  'molecular-docking': { definition: molecularDockingDefinition, run: runMolecularDockingStep },
+  'docking-selected-complex': { definition: dockedComplexDefinition, run: runDockedComplexStep },
+  'trajectory-analysis': { definition: trajectoryAnalysisDefinition, run: runTrajectoryAnalysisStep },
+  'interaction-fingerprint': { definition: interactionFingerprintDefinition, run: runInteractionFingerprintStep },
+  'metabolic-modeling': { definition: metabolicModelingDefinition, run: runMetabolicModelingStep },
+  'biochemical-simulation': { definition: biochemicalSimulationDefinition, run: runBiochemicalSimulationStep },
+  'multicellular-simulation': { definition: multicellularSimulationDefinition, run: runMulticellularSimulationStep },
+  'neural-pose-rescoring': { definition: neuralPoseRescoringDefinition, run: runNeuralPoseRescoringStep },
   'viewer-structure-3d': { definition: structureViewerDefinition, run: runStructureViewerStep },
   'viewer-genome-track': { definition: genomeViewerDefinition, run: runGenomeViewerStep },
   'viewer-single-cell': { definition: singleCellViewerDefinition, run: runSingleCellViewerStep },
@@ -652,6 +685,27 @@ export function allStepDefinitions(): PipelineStepDefinition[] {
     if (runtime.id === OPENMM_RUNTIME_COMPONENT_ID) {
       publishedToolRuntimeSteps.add(molecularRelaxationDefinition.id);
       publishedToolRuntimeSteps.add(molecularDynamicsDefinition.id);
+    }
+    if (runtime.id === MOLECULAR_DOCKING_RUNTIME_COMPONENT_ID) {
+      publishedToolRuntimeSteps.add(receptorPreparationDefinition.id);
+      publishedToolRuntimeSteps.add(molecularDockingDefinition.id);
+      publishedToolRuntimeSteps.add(dockedComplexDefinition.id);
+    }
+    if (runtime.id === MOLECULAR_ANALYSIS_RUNTIME_COMPONENT_ID) {
+      publishedToolRuntimeSteps.add(trajectoryAnalysisDefinition.id);
+      publishedToolRuntimeSteps.add(interactionFingerprintDefinition.id);
+    }
+    if (runtime.id === METABOLIC_MODELING_RUNTIME_COMPONENT_ID) {
+      publishedToolRuntimeSteps.add(metabolicModelingDefinition.id);
+    }
+    if (runtime.id === BIOCHEMICAL_SIMULATION_RUNTIME_COMPONENT_ID) {
+      publishedToolRuntimeSteps.add(biochemicalSimulationDefinition.id);
+    }
+    if (runtime.id === PHYSICELL_RUNTIME_COMPONENT_ID) {
+      publishedToolRuntimeSteps.add(multicellularSimulationDefinition.id);
+    }
+    if (runtime.id === GNINA_RUNTIME_COMPONENT_ID) {
+      publishedToolRuntimeSteps.add(neuralPoseRescoringDefinition.id);
     }
   }
   return [

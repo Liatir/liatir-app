@@ -261,13 +261,19 @@ describe('Runtime Box CI cost controls', () => {
   // scGPT's macOS box failed its scientific forward because an inherited prune list removed
   // locked sympy, which PyTorch 2.8 imports lazily. The rule is not scGPT's: a packed conda
   // prefix is only sound whole, and every model pays a native run to rediscover that.
+  // The one exception carries no package content: conda's Python declares `lib/python3.1` as a
+  // link to `python3.11`, and Scrollcase materializes directory links as full copies, so pruning it
+  // removes a duplicate of the library and leaves every locked file in place.
+  const MATERIALIZED_LINK_COPIES = new Set(['venv/lib/python3.1']);
+
   it('keeps every locked runtime dependency in every canonical model box', () => {
     for (const model of catalog.components) {
       for (const target of model.targets ?? []) {
         const authoring = authoringInput(target.recipeId);
         expect(authoring.kind, target.targetId).toBe('scroll-v3');
         expect(
-          (authoring.document.prunePaths ?? []).filter((path: string) => path.startsWith('venv/')),
+          (authoring.document.prunePaths ?? [])
+            .filter((path: string) => path.startsWith('venv/') && !MATERIALIZED_LINK_COPIES.has(path)),
           `${model.boxId} ${target.targetId}`,
         ).toEqual([]);
       }

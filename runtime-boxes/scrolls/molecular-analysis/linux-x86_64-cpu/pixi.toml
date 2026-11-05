@@ -1,0 +1,13 @@
+[workspace]
+name = "molecular-analysis-linux-x86_64-cpu"
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+
+[dependencies]
+python = "3.11.*"
+mdanalysis = "2.11.0.*"
+prolif = "2.2.3.*"
+rdkit = "2026.09.1.*"
+numpy = "*"
+scipy = "*"
+pandas = "*"

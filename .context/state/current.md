@@ -1,11 +1,51 @@
 # Current project status
 
-Last updated 2026-11-03. This page says where Liatir stands and what comes next. How each piece got
+Last updated 2026-11-05. This page says where Liatir stands and what comes next. How each piece got
 here is in the [status log, July to September 2026](../history/status-log-2026-07-to-2026-09.md)
 and in the plans under `history/`; the readiness of each product area, with its evidence, is in
 [Beta 1 readiness](./roadmap/beta-readiness.md).
 
 ## Active implementation
+
+**Scientific Simulation Suite** — the owner asked on 2026-11-03 for a local, validated suite of
+molecular docking and virtual screening (AutoDock Vina, RDKit, Meeko, PDBFixer, Ringtail), neural
+pose scoring (GNINA), trajectory and interaction analysis (MDAnalysis, ProLIF), biochemical networks
+(PySB, BioNetGen), metabolic modeling (COBRApy) and multicellular simulation (PhysiCell), Linux and
+Windows through WSL2 only, developed entirely inside WSL2. The canonical plan, verified versions,
+box boundaries, blockers and progress are in the
+[Scientific Simulation Suite plan](./roadmap/scientific-simulation-suite.md). Phase 1 (feasibility)
+is complete. Phase 2: the `molecular-docking` box (Vina, Meeko, PDBFixer, Ringtail, RDKit) is built,
+scientifically validated on a development-signed build — imatinib redocks within 0.4 Å of the 1IEP
+crystal pose — integrated as Receptor Preparation, Molecular Docking and Docked Complex, all three of
+which passed the real-app lifecycle on native Linux and in the Windows app through WSL2; publication is next. Phase 3: the
+`molecular-analysis` box (MDAnalysis, ProLIF) is scientifically validated the same way — its measures
+match an independent computation to 5 × 10⁻⁵ Å and ProLIF's 61 official test vectors pass — and
+integrated as Trajectory Analysis and Interaction Fingerprint, which passed the real-app lifecycle on
+native Linux. The whole chain — dock imatinib, take
+the pose to OpenMM on the GPU in explicit water, analyse the trajectory — passes, with the crystal's
+hinge hydrogen bond held in every frame. Phase 4B: the `metabolic-modeling` box (COBRApy with HiGHS,
+confirmed by GLPK) reproduces COBRApy's own published results for E. coli core, settles solver
+disagreements on genome-scale models in exact arithmetic, is integrated as Metabolic Modeling, and
+passed the real-app lifecycle on native Linux.
+Phase 4A: the `biochemical-simulation` box (PySB with BioNetGen) matches the reference solution of
+Robertson's stiff problem, an exact solution and the expected stochastic statistics, refuses a model
+whose reaction network never closes instead of running for hours, and is integrated as Biochemical
+Simulation, which passed the real-app lifecycle on native Linux once Scrollcase 1.5.0 let the box mark
+the programs it unpacks from BioNetGen's release executable (B5, resolved 2026-11-05). Phase 4C: the `physicell` box carries a
+PhysiCell executable Liatir compiles reproducibly for any Linux with glibc 2.17; its runner writes the
+settings PhysiCell runs itself (PhysiCell turns paths in its settings into shell commands), and the
+validator holds cell division, death and substrate decay to the models' own parameters exactly or
+within statistical bounds. It is integrated as Multicellular Simulation, which passed the real-app lifecycle on native Linux. Merging the branch requires a signer redeploy before any further Runtime Box release (the
+signer policy gains the new boxes). Phase 3, GNINA: the owner decided on 2026-11-04 that Liatir
+never redistributes GNINA; the installer now downloads GNINA's own release asset beside the box and
+verifies it, and the signer signs only on-demand files its policy names. The `gnina` box carries
+the CUDA libraries the binary needs; GNINA passes its own regression tests on this GPU, agrees with
+itself on the CPU, and in Liatir's 1IEP screen ranks every pose near crystal imatinib above every
+wrong one, where Vina did not. It is integrated as Neural Pose Rescoring, which passed the real-app
+lifecycle on native Linux, and it needs NVIDIA driver 570.26 ([decision](../decisions/gnina-cuda-driver-floor.md)). On 2026-11-05 every suite tool also passed its
+real-app lifecycle in the Windows app through WSL2, GNINA on the GPU. Work happens
+on branch `simulation-suite` in the WSL2 checkout `/home/lorenzo/liatir-stack-gate8-mcp`. The owner
+told the agent on 2026-11-03 to proceed autonomously without asking for permissions.
 
 The public docs now explicitly use the owner's supplied cover for link previews on every page,
 through global Open Graph and Twitter card metadata; see

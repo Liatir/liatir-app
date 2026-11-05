@@ -1,0 +1,321 @@
+{
+  "schemaVersion": 1,
+  "kind": "liatir.docking-simulation-chain-validation",
+  "createdAt": "2026-11-04T10:19:52.530Z",
+  "status": "passed",
+  "boxes": {
+    "docking": {
+      "recipeId": "molecular-docking-linux-x86_64-cpu",
+      "version": "1.2.7-beta.1",
+      "targetId": "linux-x86_64-cpu",
+      "dependencyLockSha256": "271965e6dd5035a9494d974c991dac8a1d10d0fe7f2dbea1ecb856097aa9d2fc",
+      "productRunnerSha256": "24677c0ef144339215dfbeeaad8257e22a91ebb85583eeed1241fba22c793868"
+    },
+    "openmm": {
+      "recipeId": "openmm-linux-x86_64-cuda12.9",
+      "version": "8.5.1-beta.1",
+      "targetId": "linux-x86_64-cuda12.9",
+      "dependencyLockSha256": "0bf2cb447cde30e8ee2ca1b262c88fec72c890519728ed52588a0c59c2afb39f",
+      "productRunnerSha256": "b92777727045a39c79035467eaf62ef7db849cff515d6d776696e2a9f28471ed"
+    },
+    "analysis": {
+      "recipeId": "molecular-analysis-linux-x86_64-cpu",
+      "version": "2.11.0-beta.1",
+      "targetId": "linux-x86_64-cpu",
+      "dependencyLockSha256": "6badab470813cb241f0e85124a8d6f3bd79ae15ee1b1e25fadfd006c951d6cef",
+      "productRunnerSha256": "6876deda3c50300387013634b6e5ddbf62ad513e81e85898e751f37d0778a860"
+    }
+  },
+  "reference": {
+    "fixture": "autodock-vina-1.2.7-basic-docking-1iep",
+    "crystalLigandSha256": "051b8742c32adc05c07fb486a4e7c9327f84e131cee33ac4e6a568d07553eb38",
+    "crystalHydrogenBonds": [
+      [
+        "MET318.A",
+        "HBAcceptor"
+      ],
+      [
+        "THR315.A",
+        "HBDonor"
+      ],
+      [
+        "GLU286.A",
+        "HBDonor"
+      ],
+      [
+        "ASP381.A",
+        "HBAcceptor"
+      ],
+      [
+        "ILE360.A",
+        "HBDonor"
+      ]
+    ],
+    "crystalBifurcatedContact": [
+      "HIS361.A",
+      "VdWContact"
+    ],
+    "source": "Nagar et al., Cancer Res. 2002;62:4236-4243",
+    "poseRmsdAngstrom": 2,
+    "hingeContactAngstrom": 3.5
+  },
+  "docking": {
+    "topScoreKcalPerMol": -13.211,
+    "selectedPoseRmsdAngstrom": 0.36944238478506375,
+    "complex": {
+      "chain": "L",
+      "receptorAtoms": 4411,
+      "ligandAtoms": 69
+    }
+  },
+  "fingerprints": {
+    "crystalPose": [
+      "ALA380.A|VdWContact",
+      "ARG362.A|VdWContact",
+      "ASP381.A|HBAcceptor",
+      "ASP381.A|Hydrophobic",
+      "ASP381.A|VdWContact",
+      "GLU286.A|HBDonor",
+      "GLU286.A|Hydrophobic",
+      "GLU286.A|VdWContact",
+      "GLY321.A|VdWContact",
+      "HIS361.A|VdWContact",
+      "ILE313.A|Hydrophobic",
+      "ILE313.A|VdWContact",
+      "ILE360.A|HBDonor",
+      "ILE360.A|VdWContact",
+      "LEU248.A|Hydrophobic",
+      "LEU370.A|Hydrophobic",
+      "LEU370.A|VdWContact",
+      "LYS271.A|Hydrophobic",
+      "LYS271.A|VdWContact",
+      "MET290.A|Hydrophobic",
+      "MET290.A|VdWContact",
+      "MET318.A|HBAcceptor",
+      "MET318.A|VdWContact",
+      "PHE317.A|Hydrophobic",
+      "PHE317.A|VdWContact",
+      "PHE382.A|Hydrophobic",
+      "PHE382.A|VdWContact",
+      "THR315.A|HBDonor",
+      "THR315.A|VdWContact",
+      "TYR253.A|Hydrophobic",
+      "TYR253.A|VdWContact",
+      "VAL256.A|VdWContact",
+      "VAL289.A|VdWContact",
+      "VAL299.A|VdWContact"
+    ],
+    "dockedPoseRecovers": [
+      "MET318.A HBAcceptor",
+      "GLU286.A HBDonor",
+      "ASP381.A HBAcceptor",
+      "ILE360.A HBDonor"
+    ]
+  },
+  "simulation": {
+    "platform": "CUDA",
+    "accelerator": "cuda",
+    "preparedAtomCount": 61538,
+    "forceField": {
+      "protein": "amber19-all",
+      "water": "tip3p-fb",
+      "ligand": "openff-2.3.0",
+      "ligandCharges": "openff-gnn-am1bcc-1.0.0.pt",
+      "id": "amber19-all+tip3p-fb+openff-2.3.0+nagl-am1bcc-1.0.0"
+    },
+    "durationPs": 100,
+    "frameCount": 50,
+    "gpuModel": "NVIDIA GeForce RTX 4060 Ti",
+    "identity": {
+      "complexSha256": "6d2bf809f2c6fba6e3b65dcf50872502279e58fd931bcff161fdabfe96f0fe40",
+      "ligandSha256": "2163af7db42365e6bdbbbc51461cd26254969708072196f36ea3280977d23743",
+      "trajectorySha256": "fadbe32e730a7a3de06ef4c9c78fe545c58e255b6f25560a118a70e72db3447c"
+    }
+  },
+  "trajectory": {
+    "rmsd": [
+      {
+        "label": "Protein C-alpha",
+        "selection": "protein and name CA",
+        "atoms": 274,
+        "minimum": 0,
+        "maximum": 1.4245,
+        "mean": 1.1346,
+        "final": 1.2515
+      },
+      {
+        "label": "Ligand",
+        "selection": "resname LIG and not element H",
+        "atoms": 37,
+        "minimum": 0,
+        "maximum": 1.8335,
+        "mean": 1.4256,
+        "final": 1.4512
+      }
+    ],
+    "rmsf": {
+      "selection": "protein and name CA",
+      "atoms": 274,
+      "frames": 50,
+      "maximum": 1.1418,
+      "mean": 0.5387
+    },
+    "distances": [
+      {
+        "label": "Ligand to Met318 backbone N",
+        "selectionA": "resname LIG and not element H",
+        "selectionB": "protein and resid 318 and name N",
+        "atomsA": 37,
+        "atomsB": 1,
+        "minimumDistance": {
+          "minimum": 2.7094,
+          "maximum": 3.2085,
+          "mean": 2.9593,
+          "final": 2.8933
+        },
+        "centroidDistance": {
+          "minimum": 10.3588,
+          "maximum": 11.5177,
+          "mean": 10.9929,
+          "final": 11.3046
+        }
+      }
+    ],
+    "stateRecordChecked": true,
+    "periodicTreatment": "MDAnalysis NoJump unwrapping; distances use the minimum image"
+  },
+  "contacts": {
+    "ligandReference": "Cc1ccc(NC(=O)c2ccc(CN3CC[NH+](C)CC3)cc2)cc1Nc1nccc(-c2cccnc2)n1",
+    "persistence": {
+      "MET318.A HBAcceptor": 1,
+      "THR315.A HBDonor": 0.82,
+      "GLU286.A HBDonor": 0.88,
+      "ASP381.A HBAcceptor": 0.68,
+      "ILE360.A HBDonor": 0.02
+    },
+    "mostFrequent": [
+      {
+        "ligandResidue": "LIG1.L",
+        "proteinResidue": "ASP381.A",
+        "interaction": "VdWContact",
+        "count": 50,
+        "fraction": 1
+      },
+      {
+        "ligandResidue": "LIG1.L",
+        "proteinResidue": "HIS361.A",
+        "interaction": "VdWContact",
+        "count": 50,
+        "fraction": 1
+      },
+      {
+        "ligandResidue": "LIG1.L",
+        "proteinResidue": "LYS271.A",
+        "interaction": "Hydrophobic",
+        "count": 50,
+        "fraction": 1
+      },
+      {
+        "ligandResidue": "LIG1.L",
+        "proteinResidue": "MET318.A",
+        "interaction": "HBAcceptor",
+        "count": 50,
+        "fraction": 1
+      },
+      {
+        "ligandResidue": "LIG1.L",
+        "proteinResidue": "MET318.A",
+        "interaction": "VdWContact",
+        "count": 50,
+        "fraction": 1
+      },
+      {
+        "ligandResidue": "LIG1.L",
+        "proteinResidue": "TYR253.A",
+        "interaction": "Hydrophobic",
+        "count": 50,
+        "fraction": 1
+      },
+      {
+        "ligandResidue": "LIG1.L",
+        "proteinResidue": "ASP381.A",
+        "interaction": "Hydrophobic",
+        "count": 49,
+        "fraction": 0.98
+      },
+      {
+        "ligandResidue": "LIG1.L",
+        "proteinResidue": "GLU286.A",
+        "interaction": "Hydrophobic",
+        "count": 49,
+        "fraction": 0.98
+      },
+      {
+        "ligandResidue": "LIG1.L",
+        "proteinResidue": "HIS361.A",
+        "interaction": "HBDonor",
+        "count": 49,
+        "fraction": 0.98
+      },
+      {
+        "ligandResidue": "LIG1.L",
+        "proteinResidue": "MET290.A",
+        "interaction": "Hydrophobic",
+        "count": 49,
+        "fraction": 0.98
+      },
+      {
+        "ligandResidue": "LIG1.L",
+        "proteinResidue": "ILE313.A",
+        "interaction": "Hydrophobic",
+        "count": 48,
+        "fraction": 0.96
+      },
+      {
+        "ligandResidue": "LIG1.L",
+        "proteinResidue": "GLU286.A",
+        "interaction": "VdWContact",
+        "count": 47,
+        "fraction": 0.94
+      },
+      {
+        "ligandResidue": "LIG1.L",
+        "proteinResidue": "LYS271.A",
+        "interaction": "VdWContact",
+        "count": 47,
+        "fraction": 0.94
+      },
+      {
+        "ligandResidue": "LIG1.L",
+        "proteinResidue": "THR315.A",
+        "interaction": "VdWContact",
+        "count": 47,
+        "fraction": 0.94
+      },
+      {
+        "ligandResidue": "LIG1.L",
+        "proteinResidue": "GLU286.A",
+        "interaction": "HBDonor",
+        "count": 44,
+        "fraction": 0.88
+      }
+    ],
+    "bonds": {
+      "protein": "distance-derived",
+      "ligand": "topology"
+    }
+  },
+  "measurementHost": {
+    "platform": "linux",
+    "arch": "x64",
+    "osRelease": "6.18.33.2-microsoft-standard-WSL2",
+    "cpuModel": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+    "logicalCpuCount": 6,
+    "totalMemoryBytes": 12543180800
+  },
+  "validatorSource": {
+    "gitCommit": "b63583c3a270021bf0c548c9ec110fbd106677fe",
+    "sourceTreeDirty": true,
+    "scriptSha256": "9692071a0b4979ae180001740b9f9563b3e79d020fb7f979f087ebe4f584ac00"
+  }
+}

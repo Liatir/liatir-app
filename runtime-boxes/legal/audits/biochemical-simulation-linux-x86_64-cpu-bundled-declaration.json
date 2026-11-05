@@ -1,0 +1,18 @@
+[
+  {
+    "name": "SUNDIALS CVODE",
+    "version": "2.6.0",
+    "declaredLicense": "BSD-3-Clause",
+    "linkedInto": [
+      "bionetgen-release/BioNetGen-2.9.3/bin/run_network"
+    ]
+  },
+  {
+    "name": "muParser",
+    "version": "as bundled in BioNetGen 2.9.3",
+    "declaredLicense": "MIT",
+    "linkedInto": [
+      "bionetgen-release/BioNetGen-2.9.3/bin/run_network"
+    ]
+  }
+]

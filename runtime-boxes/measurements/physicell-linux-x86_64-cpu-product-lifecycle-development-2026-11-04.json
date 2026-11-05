@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "kind": "liatir.runtime-box.product-lifecycle-evidence",
+  "status": "passed",
+  "boxId": "physicell",
+  "modelId": "physicell-multicellular-simulation",
+  "runtimeId": "physicell-1-14-2",
+  "targetId": "linux-x86_64-cpu",
+  "hostEnvironment": "native",
+  "version": "1.14.2-beta.1",
+  "accelerator": "CPU",
+  "jobId": "job_2",
+  "analysisRunId": "6280b7a8-f93f-49e2-86ee-b2b2aa0330a6",
+  "resultArtifactCount": 7,
+  "release": {
+    "archiveSha256": "720839adc44a40831f669199151a002668bca155bca4ef0d9b69fbd483d6f02b",
+    "archiveSizeBytes": 109022967,
+    "installedSizeBytes": 300443634,
+    "signingKeyIds": [
+      "scrollcase-3ebd4c3de1b804b0"
+    ]
+  },
+  "measured": {
+    "hardwareProfileId": "physicell-multicellular-simulation-1.14.2-beta.1-linux-x86_64-cpu-development-2026-11-04",
+    "fixedCycleTimesChecked": 41
+  },
+  "template": {
+    "jobId": "job_2",
+    "analysisRunId": "67fae870-3257-4c42-95dd-b149f71ed54a",
+    "resultArtifactCount": 7
+  },
+  "assertions": {
+    "install": "passed",
+    "cancellation": "passed",
+    "template": "passed",
+    "fixedCycleDoubling": "passed",
+    "jobs": "passed",
+    "results": "passed",
+    "provenance": "passed",
+    "offline": "passed",
+    "interpretationNotice": "passed",
+    "removal": "passed",
+    "resultArtifactsSurvivedRemoval": "passed"
+  }
+}

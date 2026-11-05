@@ -1,0 +1,70 @@
+name: Runtime Box GNINA
+
+on:
+  pull_request:
+    paths:
+      - "runtime-boxes/catalog.json"
+      - "runtime-boxes/scrolls/gnina/linux-x86_64-cuda12.8/**"
+      - "runtime-boxes/scrolls/gnina/self-test.py"
+      - "runtime-boxes/legal/audits/gnina-linux-x86_64-cuda12.8.json"
+      - "runtime-boxes/legal/gnina.md"
+      - "runtime-boxes/fixtures/gnina/**"
+      - "scripts/validate-gnina-runtime.mjs"
+      - "scripts/runtime-box/evidence.mjs"
+      - "scripts/runtime-box/measure-python.py"
+      - "scripts/runtime-box-ci.mjs"
+      - "scripts/runtime-box/validator-context.mjs"
+      - "scripts/install-runtime-box-linux-product-deps.sh"
+      - "frontend/src/lib/tools/gnina/python-scripts/gnina.ts"
+      - "tests/e2e/specs/runtime-box-gnina-native.e2e.mjs"
+      - ".github/workflows/_runtime-box-validate.yml"
+      - ".github/workflows/runtime-box-gnina.yml"
+  push:
+    branches: [main]
+    paths:
+      - "runtime-boxes/catalog.json"
+      - "runtime-boxes/scrolls/gnina/linux-x86_64-cuda12.8/**"
+      - "runtime-boxes/scrolls/gnina/self-test.py"
+      - "runtime-boxes/legal/audits/gnina-linux-x86_64-cuda12.8.json"
+      - "runtime-boxes/legal/gnina.md"
+      - "runtime-boxes/fixtures/gnina/**"
+      - "scripts/validate-gnina-runtime.mjs"
+      - "scripts/runtime-box/evidence.mjs"
+      - "scripts/runtime-box/measure-python.py"
+      - "scripts/runtime-box-ci.mjs"
+      - "scripts/runtime-box/validator-context.mjs"
+      - "scripts/install-runtime-box-linux-product-deps.sh"
+      - "frontend/src/lib/tools/gnina/python-scripts/gnina.ts"
+      - "tests/e2e/specs/runtime-box-gnina-native.e2e.mjs"
+      - ".github/workflows/_runtime-box-validate.yml"
+      - ".github/workflows/runtime-box-gnina.yml"
+  workflow_dispatch:
+    inputs:
+      target_id:
+        description: Checked Runtime Box target
+        required: true
+        type: choice
+        options:
+          - linux-x86_64-cuda12.8
+      mode:
+        description: Native validation depth
+        required: true
+        default: build
+        type: choice
+        options: [build, scientific, native-lifecycle]
+
+concurrency:
+  group: runtime-box-gnina-${{ inputs.target_id || 'linux-x86_64-cuda12.8' }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    uses: ./.github/workflows/_runtime-box-validate.yml
+    with:
+      model_id: gnina-pose-rescoring
+      target_id: ${{ inputs.target_id || 'linux-x86_64-cuda12.8' }}
+      mode: ${{ inputs.mode || 'build' }}
+      native_requested: ${{ github.event_name == 'workflow_dispatch' }}

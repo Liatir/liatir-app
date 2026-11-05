@@ -1,0 +1,70 @@
+name: Runtime Box Metabolic Modeling
+
+on:
+  pull_request:
+    paths:
+      - "runtime-boxes/catalog.json"
+      - "runtime-boxes/scrolls/metabolic-modeling/linux-x86_64-cpu/**"
+      - "runtime-boxes/scrolls/metabolic-modeling/self-test.py"
+      - "runtime-boxes/legal/audits/metabolic-modeling-linux-x86_64-cpu.json"
+      - "runtime-boxes/legal/metabolic-modeling.md"
+      - "runtime-boxes/fixtures/metabolic/cobrapy-0.32.1-textbook-fva.json"
+      - "scripts/validate-metabolic-modeling-runtime.mjs"
+      - "scripts/runtime-box/evidence.mjs"
+      - "scripts/runtime-box/measure-python.py"
+      - "scripts/runtime-box-ci.mjs"
+      - "scripts/runtime-box/validator-context.mjs"
+      - "scripts/install-runtime-box-linux-product-deps.sh"
+      - "frontend/src/lib/tools/metabolic-modeling/python-scripts/metabolic.ts"
+      - "tests/e2e/specs/runtime-box-metabolic-modeling-native.e2e.mjs"
+      - ".github/workflows/_runtime-box-validate.yml"
+      - ".github/workflows/runtime-box-metabolic-modeling.yml"
+  push:
+    branches: [main]
+    paths:
+      - "runtime-boxes/catalog.json"
+      - "runtime-boxes/scrolls/metabolic-modeling/linux-x86_64-cpu/**"
+      - "runtime-boxes/scrolls/metabolic-modeling/self-test.py"
+      - "runtime-boxes/legal/audits/metabolic-modeling-linux-x86_64-cpu.json"
+      - "runtime-boxes/legal/metabolic-modeling.md"
+      - "runtime-boxes/fixtures/metabolic/cobrapy-0.32.1-textbook-fva.json"
+      - "scripts/validate-metabolic-modeling-runtime.mjs"
+      - "scripts/runtime-box/evidence.mjs"
+      - "scripts/runtime-box/measure-python.py"
+      - "scripts/runtime-box-ci.mjs"
+      - "scripts/runtime-box/validator-context.mjs"
+      - "scripts/install-runtime-box-linux-product-deps.sh"
+      - "frontend/src/lib/tools/metabolic-modeling/python-scripts/metabolic.ts"
+      - "tests/e2e/specs/runtime-box-metabolic-modeling-native.e2e.mjs"
+      - ".github/workflows/_runtime-box-validate.yml"
+      - ".github/workflows/runtime-box-metabolic-modeling.yml"
+  workflow_dispatch:
+    inputs:
+      target_id:
+        description: Checked Runtime Box target
+        required: true
+        type: choice
+        options:
+          - linux-x86_64-cpu
+      mode:
+        description: Native validation depth
+        required: true
+        default: build
+        type: choice
+        options: [build, scientific, native-lifecycle]
+
+concurrency:
+  group: runtime-box-metabolic-modeling-${{ inputs.target_id || 'linux-x86_64-cpu' }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    uses: ./.github/workflows/_runtime-box-validate.yml
+    with:
+      model_id: cobrapy-metabolic-modeling
+      target_id: ${{ inputs.target_id || 'linux-x86_64-cpu' }}
+      mode: ${{ inputs.mode || 'build' }}
+      native_requested: ${{ github.event_name == 'workflow_dispatch' }}

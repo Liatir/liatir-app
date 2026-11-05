@@ -1,6 +1,12 @@
 import type { LiatirComplexPolymerEntity, LiatirComplexSpec } from "./complex-spec.js";
 import { validateLiatirComplexSpec } from "./complex-spec.js";
 import { runtimeBoxTargetId, type LiatirRuntimeBoxTarget } from "./runtime-box.js";
+import { METABOLIC_MODELING_LINUX_X86_64_CPU_DEVELOPMENT_PROFILE } from "./metabolic-modeling.js";
+import { BIOCHEMICAL_SIMULATION_LINUX_X86_64_CPU_DEVELOPMENT_PROFILE } from "./biochemical-simulation.js";
+import { PHYSICELL_LINUX_X86_64_CPU_DEVELOPMENT_PROFILE } from "./physicell.js";
+import { GNINA_LINUX_X86_64_CUDA128_DEVELOPMENT_PROFILE } from "./gnina.js";
+import { MOLECULAR_ANALYSIS_LINUX_X86_64_CPU_DEVELOPMENT_PROFILE } from "./molecular-analysis.js";
+import { MOLECULAR_DOCKING_LINUX_X86_64_CPU_DEVELOPMENT_PROFILE } from "./molecular-docking.js";
 
 export const BOLTZ_2_MODEL_ID = "jwohlwend-boltz-2" as const;
 export const PROTENIX_V2_MODEL_ID = "bytedance-protenix-v2" as const;
@@ -1152,6 +1158,12 @@ export const LIATIR_PHASE3_HARDWARE_VALIDATION_PROFILES:
   readonly LiatirHardwareValidationProfile[] = [
     OPENMM_MACOS_AARCH64_CPU_DEVELOPMENT_PROFILE,
     OPENMM_LINUX_X86_64_CUDA129_PRODUCTION_PROFILE,
+    MOLECULAR_DOCKING_LINUX_X86_64_CPU_DEVELOPMENT_PROFILE,
+    MOLECULAR_ANALYSIS_LINUX_X86_64_CPU_DEVELOPMENT_PROFILE,
+    METABOLIC_MODELING_LINUX_X86_64_CPU_DEVELOPMENT_PROFILE,
+    BIOCHEMICAL_SIMULATION_LINUX_X86_64_CPU_DEVELOPMENT_PROFILE,
+    PHYSICELL_LINUX_X86_64_CPU_DEVELOPMENT_PROFILE,
+    GNINA_LINUX_X86_64_CUDA128_DEVELOPMENT_PROFILE,
     BOLTZ_2_LINUX_X86_64_CUDA129_PRODUCTION_PROFILE,
     PROTENIX_BASE_V1_LINUX_X86_64_CUDA126_PRODUCTION_PROFILE,
   ];

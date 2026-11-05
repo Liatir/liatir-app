@@ -19,7 +19,7 @@ The distribution design has two separate paths:
 npm run runtime-box -- keygen
 npm run runtime-box -- lock geneformer-v1-10m-macos-arm64-metal
 npm run runtime-box -- build geneformer-v1-10m-macos-arm64-metal \
-  --asset-base-url http://127.0.0.1:8790/objects --allow-dirty
+  --publish-base-url http://127.0.0.1:8790/objects --allow-dirty
 npm run runtime-box -- verify .runtime-box-dist/<release>.release.json --self-test
 npm run runtime-box -- serve
 npm run runtime-box:validate:geneformer
@@ -32,7 +32,7 @@ generic build and verify commands:
 
 ```bash
 npm run runtime-box -- build uce-4layer-macos-arm64-metal \
-  --asset-base-url http://127.0.0.1:8790/objects
+  --publish-base-url http://127.0.0.1:8790/objects
 npm run runtime-box -- verify \
   .runtime-box-dist/uce-4layer-1.0.0-beta.1-macos-aarch64-metal.release.json \
   --self-test
@@ -155,7 +155,7 @@ For a fast installer-only check, build the small fixture instead:
 
 ```bash
 npm run runtime-box -- build installer-fixture-macos-arm64 \
-  --asset-base-url http://127.0.0.1:8790/objects --channel development --allow-dirty
+  --publish-base-url http://127.0.0.1:8790/objects --channel development --allow-dirty
 npm run runtime-box -- verify \
   .runtime-box-dist/runtime-box-installer-fixture-0.1.0-macos-aarch64-metal.release.json \
   --self-test

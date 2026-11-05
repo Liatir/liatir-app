@@ -1,0 +1,470 @@
+{
+  "schemaVersion": 1,
+  "kind": "liatir.physicell-scientific-validation",
+  "createdAt": "2026-11-04T21:56:31.472Z",
+  "status": "passed",
+  "modelId": "physicell-multicellular-simulation",
+  "sourceRevision": "physicell-1.14.2+2dd954ad781f",
+  "targetId": "linux-x86_64-cpu",
+  "productRunnerSha256": "a8ba0adc009b3a7f00ff973ffc35d51277fc418ee2b36b24a9af7276b0565dc4",
+  "cases": [
+    {
+      "id": "template",
+      "metrics": {
+        "workloadId": "physicell:template",
+        "tokenCount": 5,
+        "atomCount": 2500,
+        "stepCount": 72000,
+        "outputItemCount": 121
+      },
+      "measurement": {
+        "elapsedMs": 55803,
+        "peakRamBytes": 56000512,
+        "peakVramBytes": null,
+        "vramMeasurementMethod": null,
+        "vramDeviceBaselineBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": [],
+        "peakProcessTreePssBytes": 53087232,
+        "processTreeMeasurementErrors": []
+      },
+      "outputBytes": 106815,
+      "final": {
+        "default": {
+          "live": 273,
+          "dead": 5
+        }
+      }
+    },
+    {
+      "id": "template-repeat",
+      "metrics": {
+        "workloadId": "physicell:template",
+        "tokenCount": 5,
+        "atomCount": 2500,
+        "stepCount": 72000,
+        "outputItemCount": 121
+      },
+      "measurement": {
+        "elapsedMs": 56104,
+        "peakRamBytes": 56188928,
+        "peakVramBytes": null,
+        "vramMeasurementMethod": null,
+        "vramDeviceBaselineBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": [],
+        "peakProcessTreePssBytes": 53422080,
+        "processTreeMeasurementErrors": []
+      },
+      "outputBytes": 106815,
+      "final": {
+        "default": {
+          "live": 273,
+          "dead": 5
+        }
+      }
+    },
+    {
+      "id": "template-other-seed",
+      "metrics": {
+        "workloadId": "physicell:template",
+        "tokenCount": 5,
+        "atomCount": 2500,
+        "stepCount": 72000,
+        "outputItemCount": 121
+      },
+      "measurement": {
+        "elapsedMs": 55463,
+        "peakRamBytes": 55906304,
+        "peakVramBytes": null,
+        "vramMeasurementMethod": null,
+        "vramDeviceBaselineBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": [],
+        "peakProcessTreePssBytes": 53191680,
+        "processTreeMeasurementErrors": []
+      },
+      "outputBytes": 92053,
+      "final": {
+        "default": {
+          "live": 231,
+          "dead": 4
+        }
+      }
+    },
+    {
+      "id": "fixed-cycle-doubling",
+      "metrics": {
+        "workloadId": "physicell:template",
+        "tokenCount": 50,
+        "atomCount": 10000,
+        "stepCount": 27000,
+        "outputItemCount": 46
+      },
+      "measurement": {
+        "elapsedMs": 86926,
+        "peakRamBytes": 57401344,
+        "peakVramBytes": null,
+        "vramMeasurementMethod": null,
+        "vramDeviceBaselineBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": [],
+        "peakProcessTreePssBytes": 54146048,
+        "processTreeMeasurementErrors": []
+      },
+      "outputBytes": 279436,
+      "final": {
+        "default": {
+          "live": 800,
+          "dead": 0
+        }
+      }
+    },
+    {
+      "id": "stochastic-growth",
+      "metrics": {
+        "workloadId": "physicell:template",
+        "tokenCount": 1000,
+        "atomCount": 10000,
+        "stepCount": 6000,
+        "outputItemCount": 11
+      },
+      "measurement": {
+        "elapsedMs": 39395,
+        "peakRamBytes": 61517824,
+        "peakVramBytes": null,
+        "vramMeasurementMethod": null,
+        "vramDeviceBaselineBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": [],
+        "peakProcessTreePssBytes": 58684416,
+        "processTreeMeasurementErrors": []
+      },
+      "outputBytes": 914602,
+      "final": {
+        "default": {
+          "live": 2637,
+          "dead": 0
+        }
+      }
+    },
+    {
+      "id": "apoptosis-survival",
+      "metrics": {
+        "workloadId": "physicell:template",
+        "tokenCount": 1000,
+        "atomCount": 10000,
+        "stepCount": 6000,
+        "outputItemCount": 11
+      },
+      "measurement": {
+        "elapsedMs": 26269,
+        "peakRamBytes": 57688064,
+        "peakVramBytes": null,
+        "vramMeasurementMethod": null,
+        "vramDeviceBaselineBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": [],
+        "peakProcessTreePssBytes": 51390464,
+        "processTreeMeasurementErrors": []
+      },
+      "outputBytes": 296779,
+      "final": {
+        "default": {
+          "live": 367,
+          "dead": 485
+        }
+      }
+    },
+    {
+      "id": "substrate-decay",
+      "metrics": {
+        "workloadId": "physicell:template",
+        "tokenCount": 1,
+        "atomCount": 2500,
+        "stepCount": 10000,
+        "outputItemCount": 17
+      },
+      "measurement": {
+        "elapsedMs": 7054,
+        "peakRamBytes": 55144448,
+        "peakVramBytes": null,
+        "vramMeasurementMethod": null,
+        "vramDeviceBaselineBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": [],
+        "peakProcessTreePssBytes": 50529280,
+        "processTreeMeasurementErrors": []
+      },
+      "outputBytes": 5622,
+      "final": {
+        "default": {
+          "live": 2,
+          "dead": 0
+        }
+      }
+    },
+    {
+      "id": "hostile-paths",
+      "metrics": {
+        "workloadId": "physicell:template",
+        "tokenCount": 7,
+        "atomCount": 2500,
+        "stepCount": 600,
+        "outputItemCount": 2
+      },
+      "measurement": {
+        "elapsedMs": 1677,
+        "peakRamBytes": 54988800,
+        "peakVramBytes": null,
+        "vramMeasurementMethod": null,
+        "vramDeviceBaselineBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": [],
+        "peakProcessTreePssBytes": 50002944,
+        "processTreeMeasurementErrors": []
+      },
+      "outputBytes": 6252,
+      "final": {
+        "default": {
+          "live": 7,
+          "dead": 0
+        }
+      }
+    },
+    {
+      "id": "doctype",
+      "rejected": true,
+      "message": "declare a document type or entities"
+    },
+    {
+      "id": "intracellular",
+      "rejected": true,
+      "message": "attach intracellular models"
+    },
+    {
+      "id": "matlab-initial-condition",
+      "rejected": true,
+      "message": "from .mat files"
+    },
+    {
+      "id": "too-many-voxels",
+      "rejected": true,
+      "message": "voxels, more than"
+    },
+    {
+      "id": "no-cells",
+      "rejected": true,
+      "message": "start no cells"
+    },
+    {
+      "id": "rules-without-csv",
+      "rejected": true,
+      "message": "enable cell rules"
+    },
+    {
+      "id": "seed-overflow",
+      "rejected": true,
+      "message": "Seed must be from"
+    },
+    {
+      "id": "threads-beyond-host",
+      "rejected": true,
+      "message": "Threads must be from"
+    },
+    {
+      "id": "unknown-source",
+      "rejected": true,
+      "message": "PhysiCell's template or a settings file"
+    },
+    {
+      "id": "nothing-written-outside-the-run",
+      "homeEmpty": true,
+      "signedPayloadReverified": true
+    }
+  ],
+  "hardwareSamples": [
+    {
+      "fixtureId": "template",
+      "workloadId": "physicell:template",
+      "maxTokenCount": 5,
+      "maxAtomCount": 2500,
+      "maxStepCount": 72000,
+      "maxOutputItemCount": 121,
+      "peakRamBytes": 56000512,
+      "peakVramBytes": null,
+      "elapsedMs": 55803,
+      "outputBytes": 106815
+    },
+    {
+      "fixtureId": "template-repeat",
+      "workloadId": "physicell:template",
+      "maxTokenCount": 5,
+      "maxAtomCount": 2500,
+      "maxStepCount": 72000,
+      "maxOutputItemCount": 121,
+      "peakRamBytes": 56188928,
+      "peakVramBytes": null,
+      "elapsedMs": 56104,
+      "outputBytes": 106815
+    },
+    {
+      "fixtureId": "template-other-seed",
+      "workloadId": "physicell:template",
+      "maxTokenCount": 5,
+      "maxAtomCount": 2500,
+      "maxStepCount": 72000,
+      "maxOutputItemCount": 121,
+      "peakRamBytes": 55906304,
+      "peakVramBytes": null,
+      "elapsedMs": 55463,
+      "outputBytes": 92053
+    },
+    {
+      "fixtureId": "fixed-cycle-doubling",
+      "workloadId": "physicell:template",
+      "maxTokenCount": 50,
+      "maxAtomCount": 10000,
+      "maxStepCount": 27000,
+      "maxOutputItemCount": 46,
+      "peakRamBytes": 57401344,
+      "peakVramBytes": null,
+      "elapsedMs": 86926,
+      "outputBytes": 279436
+    },
+    {
+      "fixtureId": "stochastic-growth",
+      "workloadId": "physicell:template",
+      "maxTokenCount": 1000,
+      "maxAtomCount": 10000,
+      "maxStepCount": 6000,
+      "maxOutputItemCount": 11,
+      "peakRamBytes": 61517824,
+      "peakVramBytes": null,
+      "elapsedMs": 39395,
+      "outputBytes": 914602
+    },
+    {
+      "fixtureId": "apoptosis-survival",
+      "workloadId": "physicell:template",
+      "maxTokenCount": 1000,
+      "maxAtomCount": 10000,
+      "maxStepCount": 6000,
+      "maxOutputItemCount": 11,
+      "peakRamBytes": 57688064,
+      "peakVramBytes": null,
+      "elapsedMs": 26269,
+      "outputBytes": 296779
+    },
+    {
+      "fixtureId": "substrate-decay",
+      "workloadId": "physicell:template",
+      "maxTokenCount": 1,
+      "maxAtomCount": 2500,
+      "maxStepCount": 10000,
+      "maxOutputItemCount": 17,
+      "peakRamBytes": 55144448,
+      "peakVramBytes": null,
+      "elapsedMs": 7054,
+      "outputBytes": 5622
+    },
+    {
+      "fixtureId": "hostile-paths",
+      "workloadId": "physicell:template",
+      "maxTokenCount": 7,
+      "maxAtomCount": 2500,
+      "maxStepCount": 600,
+      "maxOutputItemCount": 2,
+      "peakRamBytes": 54988800,
+      "peakVramBytes": null,
+      "elapsedMs": 1677,
+      "outputBytes": 6252
+    }
+  ],
+  "runtimeEvidence": {
+    "kind": "signed-payload",
+    "signedPayloadVerified": true,
+    "releaseManifestSha256": "c3ba2c7703522e94dc296b75e1dc48ee41a52629215db54269975c4fd9365c1c",
+    "archiveSha256": "720839adc44a40831f669199151a002668bca155bca4ef0d9b69fbd483d6f02b",
+    "payloadDigestSha256": "88173a64cbaf9dcd3f2741c9c16604df6db9aa8a3a6b4e78033019ece9c33e4e",
+    "provenance": {
+      "scrollId": "physicell-linux-x86_64-cpu",
+      "scrollVersion": "1.0.0",
+      "builderRevision": "3c6b525523cb71c1dfb22462925f800289c0ba86",
+      "sourceTreeDirty": true,
+      "sourceRevision": "physicell-1.14.2+2dd954ad781f",
+      "runtimeVersion": "3.11.18",
+      "pixiVersion": "0.73.0",
+      "dependencyLockSha256": "d569499becacc9ea266b992f7b3ab42cb8353c469b31f70a0ee491bfc8844d16",
+      "builtAt": "2026-11-04T18:51:55+01:00"
+    }
+  },
+  "reference": {
+    "fixedCycleDoubling": {
+      "initialCells": 50,
+      "periodMinutes": 600,
+      "checkedTimes": 41
+    },
+    "stochasticGrowth": {
+      "observed": 2637,
+      "expected": 2704.8138294215287,
+      "sd": 67.23014987092967,
+      "slack": 26.780334944767674
+    },
+    "apoptosisSurvival": {
+      "observed": 367,
+      "expected": 366.0323412732291,
+      "sd": 15.233274973401729,
+      "slack": 3.69729637649732
+    },
+    "substrateDecay": {
+      "rate": 0.001,
+      "maxRelativeError": 0.000002400033445972133,
+      "finalField": {
+        "min": 0.36787668210671354,
+        "max": 0.36787668210696767
+      }
+    }
+  },
+  "measurementHost": {
+    "platform": "linux",
+    "arch": "x64",
+    "osRelease": "6.18.33.2-microsoft-standard-WSL2",
+    "cpuModel": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+    "logicalCpuCount": 6,
+    "totalMemoryBytes": 12543184896
+  },
+  "validatorSource": {
+    "gitCommit": "3c6b525523cb71c1dfb22462925f800289c0ba86",
+    "sourceTreeDirty": true,
+    "scriptSha256": "d52745db57ef94b475aceb6ec97927f88487d689b8443fcc2b39a2eabd1bef54",
+    "measurementScriptSha256": "69b3d3ea2b3d8ea402477442b3b45fd64df884e5e1397b9f916a13fe8fa9832e",
+    "recipeSha256": "c6a6a0ab9486120c918d073eeab3336976a45e71b7f005ebb46ed99fdafda9e5"
+  },
+  "provenance": {
+    "recipeId": "physicell-linux-x86_64-cpu",
+    "recipeVersion": "1.0.0",
+    "pythonVersion": "3.11.18",
+    "pixiVersion": "0.73.0",
+    "dependencyLockSha256": "d569499becacc9ea266b992f7b3ab42cb8353c469b31f70a0ee491bfc8844d16"
+  },
+  "evidence": {
+    "fixture": {
+      "id": "physicell-1.14.2-template-settings",
+      "templateSettingsSha256": "4707709ca1e182647d4dba96455c773cf2363a7714a88083a71519e4d6141e58"
+    },
+    "framework": {
+      "name": "physicell",
+      "version": "1.14.2",
+      "backend": "cpu"
+    },
+    "accelerator": {
+      "kind": "cpu"
+    },
+    "finiteValues": true,
+    "peakRamBytes": 61517824,
+    "peakVramBytes": null,
+    "outputContract": "passed",
+    "provenanceContract": "passed"
+  }
+}

@@ -844,6 +844,289 @@
       ]
     },
     {
+      "componentKind": "tool-runtime",
+      "componentId": "autodock-vina-molecular-docking",
+      "modelId": "autodock-vina-molecular-docking",
+      "boxId": "molecular-docking",
+      "runtimeId": "molecular-docking-vina-1-2-7",
+      "legalRecord": "runtime-boxes/legal/molecular-docking.md",
+      "legalStatus": "approved",
+      "validatorScript": "runtime-box:validate:molecular-docking",
+      "validatorPath": "scripts/validate-molecular-docking-runtime.mjs",
+      "productScriptPath": "frontend/src/lib/tools/molecular-docking/python-scripts/docking.ts",
+      "productLifecycleSpec": "tests/e2e/specs/runtime-box-molecular-docking-native.e2e.mjs",
+      "callerWorkflow": ".github/workflows/runtime-box-molecular-docking.yml",
+      "targets": [
+        {
+          "targetId": "linux-x86_64-cpu",
+          "target": {
+            "platform": "linux",
+            "arch": "x86_64",
+            "accelerator": "cpu"
+          },
+          "hostEnvironments": [
+            "native",
+            "windows-wsl2"
+          ],
+          "recipeId": "molecular-docking-linux-x86_64-cpu",
+          "runnerProfileId": "linux-x64-selfhosted",
+          "status": "native-lifecycle-validated",
+          "validationModes": [
+            "build",
+            "scientific",
+            "native-lifecycle"
+          ],
+          "timeoutMinutes": 120,
+          "requiredBuildDiskBytes": 8589934592,
+          "dependencyLockSha256": "271965e6dd5035a9494d974c991dac8a1d10d0fe7f2dbea1ecb856097aa9d2fc",
+          "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/molecular-docking-linux-x86_64-cpu.json",
+          "diskPlan": {
+            "estimatedInstalledSizeBytes": 1610612736,
+            "estimatedArchiveSizeBytes": 536870912,
+            "safetyMarginBytes": 4294967296
+          },
+          "gpuRequired": false,
+          "nativeCiEnabled": true
+        }
+      ]
+    },
+    {
+      "componentKind": "tool-runtime",
+      "componentId": "mdanalysis-molecular-analysis",
+      "modelId": "mdanalysis-molecular-analysis",
+      "boxId": "molecular-analysis",
+      "runtimeId": "molecular-analysis-mdanalysis-2-11-0",
+      "legalRecord": "runtime-boxes/legal/molecular-analysis.md",
+      "legalStatus": "approved",
+      "validatorScript": "runtime-box:validate:molecular-analysis",
+      "validatorPath": "scripts/validate-molecular-analysis-runtime.mjs",
+      "productScriptPath": "frontend/src/lib/tools/molecular-analysis/python-scripts/analysis.ts",
+      "productLifecycleSpec": "tests/e2e/specs/runtime-box-molecular-analysis-native.e2e.mjs",
+      "callerWorkflow": ".github/workflows/runtime-box-molecular-analysis.yml",
+      "targets": [
+        {
+          "targetId": "linux-x86_64-cpu",
+          "target": {
+            "platform": "linux",
+            "arch": "x86_64",
+            "accelerator": "cpu"
+          },
+          "hostEnvironments": [
+            "native",
+            "windows-wsl2"
+          ],
+          "recipeId": "molecular-analysis-linux-x86_64-cpu",
+          "runnerProfileId": "linux-x64-selfhosted",
+          "status": "native-lifecycle-validated",
+          "validationModes": [
+            "build",
+            "scientific",
+            "native-lifecycle"
+          ],
+          "timeoutMinutes": 90,
+          "requiredBuildDiskBytes": 6442450944,
+          "dependencyLockSha256": "6badab470813cb241f0e85124a8d6f3bd79ae15ee1b1e25fadfd006c951d6cef",
+          "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/molecular-analysis-linux-x86_64-cpu.json",
+          "diskPlan": {
+            "estimatedInstalledSizeBytes": 1288490188,
+            "estimatedArchiveSizeBytes": 402653184,
+            "safetyMarginBytes": 4294967296
+          },
+          "gpuRequired": false,
+          "nativeCiEnabled": true
+        }
+      ]
+    },
+    {
+      "componentKind": "tool-runtime",
+      "componentId": "cobrapy-metabolic-modeling",
+      "modelId": "cobrapy-metabolic-modeling",
+      "boxId": "metabolic-modeling",
+      "runtimeId": "metabolic-modeling-cobrapy-0-32-1",
+      "legalRecord": "runtime-boxes/legal/metabolic-modeling.md",
+      "legalStatus": "approved",
+      "validatorScript": "runtime-box:validate:metabolic-modeling",
+      "validatorPath": "scripts/validate-metabolic-modeling-runtime.mjs",
+      "productScriptPath": "frontend/src/lib/tools/metabolic-modeling/python-scripts/metabolic.ts",
+      "productLifecycleSpec": "tests/e2e/specs/runtime-box-metabolic-modeling-native.e2e.mjs",
+      "callerWorkflow": ".github/workflows/runtime-box-metabolic-modeling.yml",
+      "targets": [
+        {
+          "targetId": "linux-x86_64-cpu",
+          "target": {
+            "platform": "linux",
+            "arch": "x86_64",
+            "accelerator": "cpu"
+          },
+          "hostEnvironments": [
+            "native",
+            "windows-wsl2"
+          ],
+          "recipeId": "metabolic-modeling-linux-x86_64-cpu",
+          "runnerProfileId": "linux-x64-selfhosted",
+          "status": "native-lifecycle-validated",
+          "validationModes": [
+            "build",
+            "scientific",
+            "native-lifecycle"
+          ],
+          "timeoutMinutes": 90,
+          "requiredBuildDiskBytes": 6442450944,
+          "dependencyLockSha256": "66e2fabee3b105707abba4dd08714c8b6ef8a2a3163cdc4b6e94eefd17ae259e",
+          "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/metabolic-modeling-linux-x86_64-cpu.json",
+          "diskPlan": {
+            "estimatedInstalledSizeBytes": 858993459,
+            "estimatedArchiveSizeBytes": 268435456,
+            "safetyMarginBytes": 4294967296
+          },
+          "gpuRequired": false,
+          "nativeCiEnabled": true
+        }
+      ]
+    },
+    {
+      "componentKind": "tool-runtime",
+      "componentId": "pysb-biochemical-simulation",
+      "modelId": "pysb-biochemical-simulation",
+      "boxId": "biochemical-simulation",
+      "runtimeId": "biochemical-simulation-pysb-1-17-0",
+      "legalRecord": "runtime-boxes/legal/biochemical-simulation.md",
+      "legalStatus": "approved",
+      "validatorScript": "runtime-box:validate:biochemical-simulation",
+      "validatorPath": "scripts/validate-biochemical-simulation-runtime.mjs",
+      "productScriptPath": "frontend/src/lib/tools/biochemical-simulation/python-scripts/biochemical.ts",
+      "productLifecycleSpec": "tests/e2e/specs/runtime-box-biochemical-simulation-native.e2e.mjs",
+      "callerWorkflow": ".github/workflows/runtime-box-biochemical-simulation.yml",
+      "targets": [
+        {
+          "targetId": "linux-x86_64-cpu",
+          "target": {
+            "platform": "linux",
+            "arch": "x86_64",
+            "accelerator": "cpu"
+          },
+          "hostEnvironments": [
+            "native",
+            "windows-wsl2"
+          ],
+          "recipeId": "biochemical-simulation-linux-x86_64-cpu",
+          "runnerProfileId": "linux-x64-selfhosted",
+          "status": "native-lifecycle-validated",
+          "validationModes": [
+            "build",
+            "scientific",
+            "native-lifecycle"
+          ],
+          "timeoutMinutes": 90,
+          "requiredBuildDiskBytes": 6442450944,
+          "dependencyLockSha256": "a7e830468894a2ffcb0081ac7e12688ec34c1b7813aaebb6dd679c88d4d3c0f7",
+          "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/biochemical-simulation-linux-x86_64-cpu.json",
+          "diskPlan": {
+            "estimatedInstalledSizeBytes": 536870912,
+            "estimatedArchiveSizeBytes": 268435456,
+            "safetyMarginBytes": 4294967296
+          },
+          "gpuRequired": false,
+          "nativeCiEnabled": true
+        }
+      ]
+    },
+    {
+      "componentKind": "tool-runtime",
+      "componentId": "physicell-multicellular-simulation",
+      "modelId": "physicell-multicellular-simulation",
+      "boxId": "physicell",
+      "runtimeId": "physicell-1-14-2",
+      "legalRecord": "runtime-boxes/legal/physicell.md",
+      "legalStatus": "approved",
+      "validatorScript": "runtime-box:validate:physicell",
+      "validatorPath": "scripts/validate-physicell-runtime.mjs",
+      "productScriptPath": "frontend/src/lib/tools/physicell/python-scripts/physicell.ts",
+      "productLifecycleSpec": "tests/e2e/specs/runtime-box-physicell-native.e2e.mjs",
+      "callerWorkflow": ".github/workflows/runtime-box-physicell.yml",
+      "targets": [
+        {
+          "targetId": "linux-x86_64-cpu",
+          "target": {
+            "platform": "linux",
+            "arch": "x86_64",
+            "accelerator": "cpu"
+          },
+          "hostEnvironments": [
+            "native",
+            "windows-wsl2"
+          ],
+          "recipeId": "physicell-linux-x86_64-cpu",
+          "runnerProfileId": "linux-x64-selfhosted",
+          "status": "native-lifecycle-validated",
+          "validationModes": [
+            "build",
+            "scientific",
+            "native-lifecycle"
+          ],
+          "timeoutMinutes": 90,
+          "requiredBuildDiskBytes": 6442450944,
+          "dependencyLockSha256": "d569499becacc9ea266b992f7b3ab42cb8353c469b31f70a0ee491bfc8844d16",
+          "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/physicell-linux-x86_64-cpu.json",
+          "diskPlan": {
+            "estimatedInstalledSizeBytes": 402653184,
+            "estimatedArchiveSizeBytes": 134217728,
+            "safetyMarginBytes": 4294967296
+          },
+          "gpuRequired": false,
+          "nativeCiEnabled": true
+        }
+      ]
+    },
+    {
+      "componentKind": "tool-runtime",
+      "componentId": "gnina-pose-rescoring",
+      "modelId": "gnina-pose-rescoring",
+      "boxId": "gnina",
+      "runtimeId": "gnina-1-3-3",
+      "legalRecord": "runtime-boxes/legal/gnina.md",
+      "legalStatus": "approved",
+      "validatorScript": "runtime-box:validate:gnina",
+      "validatorPath": "scripts/validate-gnina-runtime.mjs",
+      "productScriptPath": "frontend/src/lib/tools/gnina/python-scripts/gnina.ts",
+      "productLifecycleSpec": "tests/e2e/specs/runtime-box-gnina-native.e2e.mjs",
+      "callerWorkflow": ".github/workflows/runtime-box-gnina.yml",
+      "targets": [
+        {
+          "targetId": "linux-x86_64-cuda12.8",
+          "target": {
+            "platform": "linux",
+            "arch": "x86_64",
+            "accelerator": "cuda",
+            "cudaVersion": "12.8"
+          },
+          "hostEnvironments": [
+            "native",
+            "windows-wsl2"
+          ],
+          "recipeId": "gnina-linux-x86_64-cuda12.8",
+          "runnerProfileId": "linux-x64-cuda-selfhosted",
+          "status": "native-lifecycle-validated",
+          "validationModes": [
+            "build",
+            "scientific",
+            "native-lifecycle"
+          ],
+          "timeoutMinutes": 120,
+          "requiredBuildDiskBytes": 17179869184,
+          "dependencyLockSha256": "edf8fc870aeb21d354541eefb15535015248a7ecd9b6419a16bbd3295973f9a6",
+          "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/gnina-linux-x86_64-cuda12.8.json",
+          "diskPlan": {
+            "estimatedInstalledSizeBytes": 6442450944,
+            "estimatedArchiveSizeBytes": 2684354560,
+            "safetyMarginBytes": 4294967296
+          },
+          "gpuRequired": true,
+          "nativeCiEnabled": true
+        }
+      ]
+    },
+    {
       "componentKind": "ai-model",
       "componentId": "jwohlwend-boltz-2",
       "modelId": "jwohlwend-boltz-2",

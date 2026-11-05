@@ -122,6 +122,13 @@
     "runtime-box:validate:protenix": "node scripts/validate-protenix-runtime.mjs",
     "runtime-box:validate:geneformer": "node scripts/validate-geneformer-parity.mjs",
     "runtime-box:validate:mhcflurry": "node scripts/validate-mhcflurry-runtime.mjs",
+    "runtime-box:validate:docking-simulation-chain": "node scripts/validate-docking-simulation-chain.mjs",
+    "runtime-box:validate:metabolic-modeling": "node scripts/validate-metabolic-modeling-runtime.mjs",
+    "runtime-box:validate:biochemical-simulation": "node scripts/validate-biochemical-simulation-runtime.mjs",
+    "runtime-box:validate:physicell": "node scripts/validate-physicell-runtime.mjs",
+    "runtime-box:validate:gnina": "node scripts/validate-gnina-runtime.mjs",
+    "runtime-box:validate:molecular-analysis": "node scripts/validate-molecular-analysis-runtime.mjs",
+    "runtime-box:validate:molecular-docking": "node scripts/validate-molecular-docking-runtime.mjs",
     "runtime-box:validate:openmm": "node scripts/validate-openmm-runtime.mjs",
     "runtime-box:validate:pvactools": "node scripts/validate-pvactools-runtime.mjs",
     "runtime-box:validate:scgpt": "node scripts/validate-scgpt-runtime.mjs",
@@ -141,7 +148,7 @@
     "buffer": "^6.0.3",
     "markdown-it-mathjax3": "^4.3.2",
     "marked": "^18.0.5",
-    "scrollcase": "1.4.0",
+    "scrollcase": "1.5.0",
     "typescript": "^5.9.2"
   }
 }

@@ -1,0 +1,34 @@
+[
+  {
+    "name": "PhysiCell",
+    "version": "1.14.2",
+    "declaredLicense": "BSD-3-Clause",
+    "linkedInto": [
+      "physicell/bin/physicell-1.14.2-template-linux-x86_64"
+    ]
+  },
+  {
+    "name": "BioFVM",
+    "version": "as bundled in PhysiCell 1.14.2",
+    "declaredLicense": "BSD-3-Clause",
+    "linkedInto": [
+      "physicell/bin/physicell-1.14.2-template-linux-x86_64"
+    ]
+  },
+  {
+    "name": "pugixml",
+    "version": "as bundled in PhysiCell 1.14.2",
+    "declaredLicense": "MIT",
+    "linkedInto": [
+      "physicell/bin/physicell-1.14.2-template-linux-x86_64"
+    ]
+  },
+  {
+    "name": "GCC runtime libraries (libstdc++, libgcc, libgomp)",
+    "version": "15.3.0",
+    "declaredLicense": "GPL-3.0-or-later WITH GCC-exception-3.1",
+    "linkedInto": [
+      "physicell/bin/physicell-1.14.2-template-linux-x86_64"
+    ]
+  }
+]

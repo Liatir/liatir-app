@@ -1,0 +1,18 @@
+[workspace]
+name = "molecular-docking-linux-x86_64-cpu"
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+
+[dependencies]
+python = "3.11.*"
+vina = "1.2.7.*"
+meeko = "0.8.0.*"
+ringtail = "2.3.1.*"
+pdbfixer = "1.12.*"
+openmm = { version = "8.5.1.*", build = "py311h6619805_0" }
+cuda-version = "12.9.*"
+rdkit = "2024.09.6.*"
+gemmi = "0.7.5.*"
+prody = "2.6.1.*"
+scipy = "*"
+numpy = "*"

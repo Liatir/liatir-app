@@ -7,10 +7,11 @@
 use scrollcase_consumer::{
     contract::targets::box_target_id,
     prepare::{
-        attach_extracted_box, verify_and_extract_box, verify_extracted_payload, AttachOptions,
-        EnvironmentReportOptions, PrepareOptions, PreparedBox,
+        attach_extracted_box, verify_and_extract_box, verify_extracted_payload,
+        verify_required_assets, AttachOptions, EnvironmentReportOptions, PrepareOptions, PreparedBox,
     },
-    release::ReleaseManifest,
+    path::safe_relative_path,
+    release::{AssetDescriptor, ReleaseManifest},
     trust::TrustAnchors,
     verify::inspect_release_document,
 };
@@ -333,10 +334,10 @@ fn run_self_test(python: &Path, imports: &[String], timeout_seconds: u64) -> Res
 /// and signature-checked that target, and every field below is still compared against the signed
 /// release, so nothing is taken on trust — the caller only says *which* release it approved.
 fn install_runtime(arguments: &[String]) -> Result<RuntimeState, String> {
-    let [kind, expected_box, expected_component, expected_runtime, expected_target, release_path, trusted_key, archive_path, archive_digest, expected_release_digest, activation_path] =
+    let [kind, expected_box, expected_component, expected_runtime, expected_target, release_path, trusted_key, archive_path, archive_digest, expected_release_digest, activation_path, downloads_dir] =
         arguments
     else {
-        return Err("Usage: native-tools-box-consumer runtime-install <kind> <box-id> <component-id> <runtime-id> <target-id> <release> <trusted-key> <archive> <archive-sha256> <release-payload-sha256> <activation>".into());
+        return Err("Usage: native-tools-box-consumer runtime-install <kind> <box-id> <component-id> <runtime-id> <target-id> <release> <trusted-key> <archive> <archive-sha256> <release-payload-sha256> <activation> <downloads-dir>".into());
     };
     identifier(expected_box, "box id")?;
     identifier(expected_component, "component id")?;
@@ -378,7 +379,16 @@ fn install_runtime(arguments: &[String]) -> Result<RuntimeState, String> {
     fs::create_dir_all(parent).map_err(|error| error.to_string())?;
     if let Some(installed_size) = release.installed_size_bytes {
         let available = fs2::available_space(parent).map_err(|error| error.to_string())?;
-        let required = installed_size.saturating_add(DISK_SPACE_MARGIN_BYTES);
+        let assets: u64 = release
+            .assets
+            .as_deref()
+            .unwrap_or_default()
+            .iter()
+            .map(|asset| asset.size_bytes)
+            .sum();
+        let required = installed_size
+            .saturating_add(assets)
+            .saturating_add(DISK_SPACE_MARGIN_BYTES);
         if available < required {
             return Err(format!(
                 "WSL2 needs at least {required} free bytes to install this Runtime Box, but only {available} are available."
@@ -406,6 +416,12 @@ fn install_runtime(arguments: &[String]) -> Result<RuntimeState, String> {
                 "The prepared WSL2 Runtime Box does not match the approved release.".into(),
             );
         }
+        // Before the self-test, which may run what they hold.
+        place_on_demand_assets(
+            &staging,
+            prepared.required_assets(),
+            Path::new(downloads_dir),
+        )?;
         let python_entry = prepared
             .runtime()
             .entry_point
@@ -435,6 +451,34 @@ fn install_runtime(arguments: &[String]) -> Result<RuntimeState, String> {
         let _ = fs::remove_dir_all(staging);
     }
     install
+}
+
+/// Copies each on-demand asset the app downloaded on the Windows side into the staged box, then has
+/// Scrollcase check every one against the signed release. The app names a download by its digest;
+/// HTTP carries no mode, so whoever places an asset owns its executable bit.
+fn place_on_demand_assets(
+    root: &Path,
+    assets: &[AssetDescriptor],
+    downloads_dir: &Path,
+) -> Result<(), String> {
+    use std::os::unix::fs::PermissionsExt;
+    for asset in assets {
+        let relative = safe_relative_path(&asset.relative_path).map_err(|error| error.to_string())?;
+        let destination = root.join(relative);
+        if let Some(parent) = destination.parent() {
+            fs::create_dir_all(parent).map_err(|error| error.to_string())?;
+        }
+        fs::copy(
+            downloads_dir.join(format!("{}.asset", asset.sha256)),
+            &destination,
+        )
+        .map_err(|error| format!("Cannot place on-demand asset {}: {error}", asset.relative_path))?;
+        if asset.executable == Some(true) {
+            fs::set_permissions(&destination, fs::Permissions::from_mode(0o755))
+                .map_err(|error| error.to_string())?;
+        }
+    }
+    verify_required_assets(root, assets).map_err(|error| error.to_string())
 }
 
 /// The interpreter a persisted activation names, relative to the runtime root.

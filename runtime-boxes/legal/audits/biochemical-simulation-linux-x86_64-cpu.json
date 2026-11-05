@@ -1,0 +1,267 @@
+{
+  "schemaVersion": 2,
+  "kind": "scrollcase.box.dependency-license-audit",
+  "targetId": "linux-x86_64-cpu",
+  "dependencyLockSha256": "a7e830468894a2ffcb0081ac7e12688ec34c1b7813aaebb6dd679c88d4d3c0f7",
+  "packages": [
+    {
+      "name": "_openmp_mutex",
+      "version": "4.5",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "bzip2",
+      "version": "1.0.8",
+      "declaredLicense": "bzip2-1.0.6",
+      "source": "conda"
+    },
+    {
+      "name": "ca-certificates",
+      "version": "2026.10.23",
+      "declaredLicense": "ISC",
+      "source": "conda"
+    },
+    {
+      "name": "gmp",
+      "version": "6.3.0",
+      "declaredLicense": "GPL-2.0-or-later OR LGPL-3.0-or-later",
+      "source": "conda"
+    },
+    {
+      "name": "gmpy2",
+      "version": "2.3.2",
+      "declaredLicense": "LGPL-3.0-or-later",
+      "source": "conda"
+    },
+    {
+      "name": "ld_impl_linux-64",
+      "version": "2.46.1",
+      "declaredLicense": "GPL-3.0-only",
+      "source": "conda"
+    },
+    {
+      "name": "libblas",
+      "version": "3.11.0",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "libcblas",
+      "version": "3.11.0",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "libexpat",
+      "version": "2.9.0",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "libffi",
+      "version": "3.7.0",
+      "declaredLicense": "MIT",
+      "source": "conda"
+    },
+    {
+      "name": "libgcc",
+      "version": "16.2.0",
+      "declaredLicense": "GPL-3.0-only WITH GCC-exception-3.1",
+      "source": "conda"
+    },
+    {
+      "name": "libgfortran",
+      "version": "16.2.0",
+      "declaredLicense": "GPL-3.0-only WITH GCC-exception-3.1",
+      "source": "conda"
+    },
+    {
+      "name": "libgfortran5",
+      "version": "16.2.0",
+      "declaredLicense": "GPL-3.0-only WITH GCC-exception-3.1",
+      "source": "conda"
+    },
+    {
+      "name": "libgomp",
+      "version": "16.2.0",
+      "declaredLicense": "GPL-3.0-only WITH GCC-exception-3.1",
+      "source": "conda"
+    },
+    {
+      "name": "liblapack",
+      "version": "3.11.0",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "liblzma",
+      "version": "5.8.3",
+      "declaredLicense": "0BSD",
+      "source": "conda"
+    },
+    {
+      "name": "libnsl",
+      "version": "2.0.1",
+      "declaredLicense": "LGPL-2.1-only",
+      "source": "conda"
+    },
+    {
+      "name": "libopenblas",
+      "version": "0.3.34",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "libpython",
+      "version": "3.11.18",
+      "declaredLicense": "Python-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "libsqlite",
+      "version": "3.54.1",
+      "declaredLicense": "blessing",
+      "source": "conda"
+    },
+    {
+      "name": "libstdcxx",
+      "version": "16.2.0",
+      "declaredLicense": "GPL-3.0-only WITH GCC-exception-3.1",
+      "source": "conda"
+    },
+    {
+      "name": "libuuid",
+      "version": "2.42.4",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "libxcrypt",
+      "version": "4.4.38",
+      "declaredLicense": "LGPL-2.1-or-later",
+      "source": "conda"
+    },
+    {
+      "name": "libzlib",
+      "version": "1.3.2",
+      "declaredLicense": "Zlib",
+      "source": "conda"
+    },
+    {
+      "name": "mpc",
+      "version": "1.4.0",
+      "declaredLicense": "LGPL-3.0-or-later",
+      "source": "conda"
+    },
+    {
+      "name": "mpfr",
+      "version": "4.2.2",
+      "declaredLicense": "LGPL-3.0-only",
+      "source": "conda"
+    },
+    {
+      "name": "mpmath",
+      "version": "1.3.0",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "ncurses",
+      "version": "6.6",
+      "declaredLicense": "X11 AND BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "networkx",
+      "version": "3.6.1",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "numpy",
+      "version": "2.4.6",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "openssl",
+      "version": "3.6.5",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "perl",
+      "version": "5.44.0",
+      "declaredLicense": "GPL-1.0-or-later OR Artistic-1.0-Perl",
+      "source": "conda"
+    },
+    {
+      "name": "pysb",
+      "version": "1.17.0",
+      "declaredLicense": "BSD-2-Clause",
+      "source": "pypi",
+      "licenseDeclaredBy": "project"
+    },
+    {
+      "name": "python",
+      "version": "3.11.18",
+      "declaredLicense": "Python-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "python-dateutil",
+      "version": "4.0.0",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "python-tzdata",
+      "version": "2026.6",
+      "declaredLicense": "Apache-2.0",
+      "source": "conda"
+    },
+    {
+      "name": "python_abi",
+      "version": "3.11",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "readline",
+      "version": "8.3",
+      "declaredLicense": "GPL-3.0-only",
+      "source": "conda"
+    },
+    {
+      "name": "scipy",
+      "version": "1.17.1",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "sympy",
+      "version": "1.11.1",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    },
+    {
+      "name": "tk",
+      "version": "8.6.13",
+      "declaredLicense": "TCL",
+      "source": "conda"
+    },
+    {
+      "name": "tzdata",
+      "version": "2026e",
+      "declaredLicense": "LicenseRef-Public-Domain",
+      "source": "conda"
+    },
+    {
+      "name": "zstd",
+      "version": "1.5.7",
+      "declaredLicense": "BSD-3-Clause",
+      "source": "conda"
+    }
+  ]
+}

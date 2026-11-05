@@ -1,0 +1,134 @@
+{
+  "$schema": "https://scrollcase.dev/schema/v3/scroll.schema.json",
+  "schemaVersion": 3,
+  "scrollId": "molecular-docking-linux-x86_64-cpu",
+  "scrollVersion": "1.0.0",
+  "boxId": "molecular-docking",
+  "labels": {
+    "model": "autodock-vina-molecular-docking",
+    "runtime": "molecular-docking-vina-1-2-7"
+  },
+  "version": "1.2.7-beta.1",
+  "sourceRevision": "vina-1.2.7+meeko-0.8.0+ringtail-2.3.1+pdbfixer-1.12+openmm-8.5.1+rdkit-2024.09.6",
+  "target": {
+    "platform": "linux",
+    "arch": "x86_64",
+    "accelerator": "cpu"
+  },
+  "compatibility": {
+    "minLiatirVersion": "0.2.1",
+    "minRamGb": 4,
+    "hostEnvironments": [
+      "native",
+      "windows-wsl2"
+    ]
+  },
+  "runtime": {
+    "id": "python",
+    "version": "3.11.18",
+    "entryPoint": "venv/bin/python"
+  },
+  "pixiVersion": "0.73.0",
+  "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/molecular-docking-linux-x86_64-cpu.json",
+  "cacheSubdir": "reference",
+  "publishBaseUrl": "https://assets.models.liatir.com/ai-runtime-boxes",
+  "assets": [
+    {
+      "url": "https://raw.githubusercontent.com/ccsb-scripps/AutoDock-Vina/8eb40404f4f45608acb3b01427587ac049f27c1f/example/basic_docking/data/1iep_receptorH.pdb",
+      "relativePath": "reference/vina-1iep/1iep_receptorH.pdb",
+      "sizeBytes": 357444,
+      "sha256": "5f6aee6029f9a2a2c2be32d4eb948ae70808690573e1b69a0850cdffd7048ca7"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/ccsb-scripps/AutoDock-Vina/8eb40404f4f45608acb3b01427587ac049f27c1f/example/basic_docking/data/1iep_ligand.sdf",
+      "relativePath": "reference/vina-1iep/1iep_ligand.sdf",
+      "sizeBytes": 6621,
+      "sha256": "051b8742c32adc05c07fb486a4e7c9327f84e131cee33ac4e6a568d07553eb38"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/ccsb-scripps/AutoDock-Vina/8eb40404f4f45608acb3b01427587ac049f27c1f/example/basic_docking/solution/1iep_ligand.pdbqt",
+      "relativePath": "reference/vina-1iep/1iep_ligand.pdbqt",
+      "sizeBytes": 3841,
+      "sha256": "15fb35648d8c18c70317842f3a0631b73a19429c710a037ab07310084d579bb8"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/ccsb-scripps/AutoDock-Vina/8eb40404f4f45608acb3b01427587ac049f27c1f/example/basic_docking/solution/1iep_receptor.pdbqt",
+      "relativePath": "reference/vina-1iep/1iep_receptor.pdbqt",
+      "sizeBytes": 216160,
+      "sha256": "f13cf3b36f61d87c3b58983e0b8ecf1c3456a685eb86dfe9ccfb139c7bdc2586"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/ccsb-scripps/AutoDock-Vina/8eb40404f4f45608acb3b01427587ac049f27c1f/example/basic_docking/solution/1iep_receptor.box.txt",
+      "relativePath": "reference/vina-1iep/1iep_receptor.box.txt",
+      "sizeBytes": 101,
+      "sha256": "3dff08200b5b9c2ca0932c832c9dffc5823b39caec6c92f76be5f7c5ea49d8de"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/ccsb-scripps/AutoDock-Vina/8eb40404f4f45608acb3b01427587ac049f27c1f/example/basic_docking/solution/1iep_ligand_vina_out.pdbqt",
+      "relativePath": "reference/vina-1iep/1iep_ligand_vina_out.pdbqt",
+      "sizeBytes": 16240,
+      "sha256": "4137e1960b3491f17a24579d991f32a2c0cb254af1f58d7278f77579fc27d93f"
+    }
+  ],
+  "localFiles": [
+    {
+      "sourcePath": "runtime-boxes/legal/licenses/Apache-2.0.txt",
+      "relativePath": "licenses/Apache-2.0.txt",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "sourcePath": "runtime-boxes/legal/molecular-docking.md",
+      "relativePath": "THIRD_PARTY_NOTICES/molecular-docking.md",
+      "sha256": "a67badce09feea12140ad2cc4f634818c213d9f04d90c6c57f03bea424ac7714"
+    },
+    {
+      "sourcePath": "runtime-boxes/scrolls/molecular-docking/self-test.py",
+      "relativePath": "self-tests/molecular-docking.py",
+      "sha256": "1cb4c89cb1debfdcfaddb71a019374879337d27ada21a669edf5e5a3e113420b"
+    },
+    {
+      "sourcePath": "runtime-boxes/scrolls/openmm/python-startup.py",
+      "relativePath": "venv/lib/python3.11/site-packages/liatir_openmm_bootstrap.py",
+      "sha256": "978df97668721e6ccaaca68ad64e1b998324056ebdc5868830364f8f224e7843"
+    },
+    {
+      "sourcePath": "runtime-boxes/scrolls/openmm/liatir-openmm.pth",
+      "relativePath": "venv/lib/python3.11/site-packages/liatir-openmm.pth",
+      "sha256": "78cbbe6f2a961da35924b67c0c0d2bf158cb208e64ea6562c5b2e8043cbb4efe"
+    }
+  ],
+  "prunePaths": [
+    "venv/lib/python3.1"
+  ],
+  "selfTest": {
+    "imports": [
+      "vina",
+      "meeko",
+      "ringtail",
+      "pdbfixer",
+      "openmm",
+      "rdkit",
+      "gemmi",
+      "prody",
+      "scipy",
+      "numpy"
+    ],
+    "files": [
+      "reference/vina-1iep/1iep_receptorH.pdb",
+      "reference/vina-1iep/1iep_ligand.sdf",
+      "reference/vina-1iep/1iep_ligand.pdbqt",
+      "reference/vina-1iep/1iep_receptor.pdbqt",
+      "reference/vina-1iep/1iep_receptor.box.txt",
+      "reference/vina-1iep/1iep_ligand_vina_out.pdbqt",
+      "licenses/Apache-2.0.txt",
+      "THIRD_PARTY_NOTICES/molecular-docking.md",
+      "self-tests/molecular-docking.py",
+      "venv/lib/python3.11/site-packages/liatir_openmm_bootstrap.py",
+      "venv/lib/python3.11/site-packages/liatir-openmm.pth"
+    ],
+    "code": "from pathlib import Path\ncode = Path('self-tests/molecular-docking.py').read_text(encoding='utf-8')\nexec(compile(code, 'self-tests/molecular-docking.py', 'exec'), {'__name__': '__main__'})"
+  },
+  "environment": {
+    "PYTHONNOUSERSITE": "1"
+  }
+}

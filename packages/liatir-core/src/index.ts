@@ -720,6 +720,12 @@ export * from "./tool-runtime-catalog.js";
 export * from "./complex-spec.js";
 export * from "./structure-simulation.js";
 export * from "./structure-draft.js";
+export * from "./metabolic-modeling.js";
+export * from "./biochemical-simulation.js";
+export * from "./physicell.js";
+export * from "./gnina.js";
+export * from "./molecular-analysis.js";
+export * from "./molecular-docking.js";
 
 // Built-in native tools catalog — bioinformatics binaries bundled with Liatir.
 export * from "./native-tools.js";

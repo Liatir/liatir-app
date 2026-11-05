@@ -42,8 +42,13 @@ use scrollcase_consumer::{
     },
     filesystem::payload_size as scrollcase_payload_size,
     path::safe_relative_path as scrollcase_safe_relative_path,
-    prepare::{verify_and_extract_box, EnvironmentReportOptions, PrepareOptions},
-    release::{Compatibility as BoxCompatibility, ReleaseManifest as BoxRelease, SelfTest, SelfTestProbe},
+    prepare::{
+        verify_and_extract_box, verify_required_assets, EnvironmentReportOptions, PrepareOptions,
+    },
+    release::{
+        AssetDescriptor, Compatibility as BoxCompatibility, ReleaseManifest as BoxRelease, SelfTest,
+        SelfTestProbe,
+    },
     trust::{parse_trusted_keys, verify_signed_document, TrustAnchors, TrustedKey},
 };
 use tauri::AppHandle;
@@ -507,6 +512,7 @@ enum RuntimeBoxInstallPhase {
     ProductPolicyChecked,
     DiskChecked,
     ArchiveVerified,
+    AssetsVerified,
     Extracted,
 }
 
@@ -564,12 +570,21 @@ impl RuntimeBoxInstallOrder {
         )
     }
 
+    /// Every on-demand asset the signed release names is downloaded and matches its digest; a
+    /// release that names none passes straight through.
+    fn assets_verified(&mut self) -> Result<(), String> {
+        self.advance(
+            RuntimeBoxInstallPhase::ArchiveVerified,
+            RuntimeBoxInstallPhase::AssetsVerified,
+        )
+    }
+
     /// Runs the extractor only after every Liatir-owned precondition has advanced in order.
     fn extract<T>(&mut self, prepare: impl FnOnce() -> Result<T, String>) -> Result<T, String> {
-        if self.phase != RuntimeBoxInstallPhase::ArchiveVerified {
+        if self.phase != RuntimeBoxInstallPhase::AssetsVerified {
             return Err(format!(
                 "internal Runtime Box install order error: extraction requires {:?}, found {:?}",
-                RuntimeBoxInstallPhase::ArchiveVerified,
+                RuntimeBoxInstallPhase::AssetsVerified,
                 self.phase
             ));
         }
@@ -1653,6 +1668,7 @@ fn verify_release_identity(
         .as_deref()
         .ok_or_else(|| "Runtime Box release declares no archive URL".to_string())?;
     validate_control_url(archive_url)?;
+    validate_on_demand_assets(release)?;
     let adapter = box_target_adapter(&release.target)
         .map_err(|error| format!("invalid Runtime Box target: {}", error.message()))?;
     // Every Liatir box carries a Python interpreter. A release that declares none — which v3 allows,
@@ -1849,6 +1865,7 @@ fn dir_size(path: &Path) -> Result<u64, String> {
 struct RuntimeBoxDiskPlan {
     archive_remaining_bytes: u64,
     installed_size_bytes: u64,
+    assets_remaining_bytes: u64,
     current_runtime_bytes: u64,
     rollback_bytes: u64,
     peak_managed_bytes: u64,
@@ -1856,25 +1873,34 @@ struct RuntimeBoxDiskPlan {
 }
 
 /// Calculate peak disk use without double-counting files already present on the volume.
+///
+/// On-demand assets are downloaded beside the archive and hard-linked into the box, so each counts
+/// once, and only the part not yet on disk is still needed.
 fn runtime_box_disk_plan(
     archive_size_bytes: u64,
     installed_size_bytes: u64,
     archive_bytes_on_disk: u64,
+    asset_size_bytes: u64,
+    asset_bytes_on_disk: u64,
     current_runtime_bytes: u64,
     rollback_bytes: u64,
 ) -> RuntimeBoxDiskPlan {
     let archive_remaining_bytes = archive_size_bytes.saturating_sub(archive_bytes_on_disk);
+    let assets_remaining_bytes = asset_size_bytes.saturating_sub(asset_bytes_on_disk);
     RuntimeBoxDiskPlan {
         archive_remaining_bytes,
         installed_size_bytes,
+        assets_remaining_bytes,
         current_runtime_bytes,
         rollback_bytes,
         peak_managed_bytes: current_runtime_bytes
             .saturating_add(rollback_bytes)
             .saturating_add(archive_size_bytes)
-            .saturating_add(installed_size_bytes),
+            .saturating_add(installed_size_bytes)
+            .saturating_add(asset_size_bytes),
         required_additional_bytes: archive_remaining_bytes
             .saturating_add(installed_size_bytes)
+            .saturating_add(assets_remaining_bytes)
             .saturating_add(DISK_SPACE_MARGIN_BYTES),
     }
 }
@@ -1907,6 +1933,7 @@ fn ensure_runtime_box_disk_space(
     rollback_dir: &Path,
     release: &ReleaseManifest,
     archive_bytes_on_disk: u64,
+    asset_bytes_on_disk: u64,
 ) -> Result<RuntimeBoxDiskPlan, String> {
     let installed_size_bytes = release
         .installed_size_bytes
@@ -1915,6 +1942,8 @@ fn ensure_runtime_box_disk_space(
         release.archive.size_bytes,
         installed_size_bytes,
         archive_bytes_on_disk,
+        on_demand_assets(release).iter().map(|asset| asset.size_bytes).sum(),
+        asset_bytes_on_disk,
         existing_dir_size(runtime_dir)?,
         existing_dir_size(rollback_dir)?,
     );
@@ -1923,6 +1952,125 @@ fn ensure_runtime_box_disk_space(
     };
     validate_runtime_box_disk_plan(&plan, available)?;
     Ok(plan)
+}
+
+/// The files a signed release names for the installer to fetch and place before the box runs: the
+/// assets its scroll declared `embed: false`. Scrollcase records and verifies them but never
+/// downloads them; the application does. A release that names none needs nothing fetched.
+fn on_demand_assets(release: &ReleaseManifest) -> &[AssetDescriptor] {
+    release.assets.as_deref().unwrap_or(&[])
+}
+
+/// Where an on-demand asset waits between its download and its placement: beside the archive and
+/// named by its digest, so no other release's file can be taken for it and a finished download
+/// survives a failed install for the retry.
+fn on_demand_asset_path(downloads_dir: &Path, asset: &AssetDescriptor) -> PathBuf {
+    downloads_dir.join(format!("{}.asset", asset.sha256))
+}
+
+/// The same rules the archive's address and digest obey, for every on-demand asset.
+fn validate_on_demand_assets(release: &ReleaseManifest) -> Result<(), String> {
+    for asset in on_demand_assets(release) {
+        validate_control_url(&asset.url)?;
+        safe_relative_path(&asset.relative_path)?;
+        validate_payload_sha256(&asset.sha256).map_err(|_| {
+            "On-demand asset digests must be 64 lowercase hexadecimal characters".to_string()
+        })?;
+        if asset.size_bytes == 0 {
+            return Err(format!("On-demand asset {} has no size", asset.relative_path));
+        }
+    }
+    Ok(())
+}
+
+/// Bytes of on-demand assets already downloaded, whole or in part, so the disk preflight does not
+/// count them twice.
+fn on_demand_asset_bytes_on_disk(downloads_dir: &Path, release: &ReleaseManifest) -> u64 {
+    on_demand_assets(release)
+        .iter()
+        .map(|asset| {
+            let path = on_demand_asset_path(downloads_dir, asset);
+            std::fs::metadata(&path)
+                .or_else(|_| std::fs::metadata(format!("{}.part", path.to_string_lossy())))
+                .map(|metadata| metadata.len().min(asset.size_bytes))
+                .unwrap_or(0)
+        })
+        .sum()
+}
+
+/// Downloads one on-demand asset unless a verified copy is already waiting. `stream_download`
+/// resumes a partial file and checks the SHA-256 while it writes; progress goes to the same
+/// download id as the archive's, so the install shows it.
+async fn fetch_on_demand_asset(
+    app: &AppHandle,
+    downloads: &DownloadRegistry,
+    download_id: &str,
+    downloads_dir: &Path,
+    asset: &AssetDescriptor,
+) -> Result<(), String> {
+    let path = on_demand_asset_path(downloads_dir, asset);
+    if path.is_file() {
+        if std::fs::metadata(&path).map_err(|error| error.to_string())?.len() == asset.size_bytes
+            && sha256_of_file(&path.to_string_lossy())? == asset.sha256
+        {
+            return Ok(());
+        }
+        std::fs::remove_file(&path).map_err(|error| error.to_string())?;
+    }
+    let cancellation = downloads.register(download_id);
+    let result = stream_download(
+        app,
+        download_id,
+        &asset.url,
+        &path.to_string_lossy(),
+        Some(&asset.sha256),
+        &cancellation,
+    )
+    .await;
+    downloads.unregister(download_id);
+    result?;
+    if std::fs::metadata(&path).map_err(|error| error.to_string())?.len() != asset.size_bytes {
+        let _ = std::fs::remove_file(&path);
+        return Err(format!(
+            "On-demand asset {} does not match its signed size",
+            asset.relative_path
+        ));
+    }
+    Ok(())
+}
+
+/// Puts each downloaded on-demand asset where the box expects it, then has Scrollcase check every
+/// one against the signed release. A hard link: the staging tree and the download share one copy
+/// on the same filesystem, and the download is removed once the box is active.
+fn place_on_demand_assets(
+    root: &Path,
+    assets: &[AssetDescriptor],
+    downloads_dir: &Path,
+) -> Result<(), String> {
+    for asset in assets {
+        let destination = root.join(safe_relative_path(&asset.relative_path)?);
+        if let Some(parent) = destination.parent() {
+            std::fs::create_dir_all(parent).map_err(|error| error.to_string())?;
+        }
+        std::fs::hard_link(on_demand_asset_path(downloads_dir, asset), &destination).map_err(
+            |error| format!("cannot place on-demand asset {}: {error}", asset.relative_path),
+        )?;
+        // HTTP carries no mode, so whoever places an asset owns its executable bit.
+        #[cfg(unix)]
+        if asset.executable == Some(true) {
+            use std::os::unix::fs::PermissionsExt;
+            std::fs::set_permissions(&destination, std::fs::Permissions::from_mode(0o755))
+                .map_err(|error| error.to_string())?;
+        }
+    }
+    verify_required_assets(root, assets)
+        .map_err(|error| format!("Runtime Box preparation failed: {}", error.message()))
+}
+
+fn remove_on_demand_downloads(downloads_dir: &Path, release: &ReleaseManifest) {
+    for asset in on_demand_assets(release) {
+        let _ = std::fs::remove_file(on_demand_asset_path(downloads_dir, asset));
+    }
 }
 
 /// Where a displaced version is parked. Kept as a dot-directory *beside* the runtime dirs, on
@@ -2229,6 +2377,7 @@ async fn install_runtime_box(
             &rollback_root(runtime_parent, &runtime_label),
             &release,
             archive_bytes_on_disk,
+            on_demand_asset_bytes_on_disk(&downloads_dir, &release),
         )?;
     }
     install_order.disk_checked()?;
@@ -2265,6 +2414,10 @@ async fn install_runtime_box(
         return Err("Runtime Box archive size does not match the signed release".to_string());
     }
     install_order.archive_verified()?;
+    for asset in on_demand_assets(&release) {
+        fetch_on_demand_asset(&app, downloads, &download_id, &downloads_dir, asset).await?;
+    }
+    install_order.assets_verified()?;
 
     let activation = RuntimeBoxActivationMetadata {
         schema_version: RUNTIME_BOX_SCHEMA_VERSION,
@@ -2307,6 +2460,7 @@ async fn install_runtime_box(
                 release_document.path(),
                 trust_document.path(),
                 &archive_path,
+                &downloads_dir,
                 &release.archive.sha256,
                 &release_payload_sha256,
                 activation_document.path(),
@@ -2314,6 +2468,7 @@ async fn install_runtime_box(
             )
         })?;
         let _ = std::fs::remove_file(&archive_path);
+        remove_on_demand_downloads(&downloads_dir, &release);
         return Ok(RuntimeBoxInstallResult {
             component_kind,
             component_id,
@@ -2390,6 +2545,8 @@ async fn install_runtime_box(
                 "Prepared Runtime Box does not match the release approved by Liatir".to_string(),
             );
         }
+        // Before the self-test, which may run what they hold.
+        place_on_demand_assets(prepared.root(), prepared.required_assets(), &downloads_dir)?;
         let entry_point = prepared
             .runtime()
             .entry_point
@@ -2431,6 +2588,7 @@ async fn install_runtime_box(
     // archive is deliberately kept on failure, so a retry can reuse the completed download.
     if install_result.is_ok() {
         let _ = std::fs::remove_file(&archive_path);
+        remove_on_demand_downloads(&downloads_dir, &release);
     }
     install_result
 }
@@ -3210,6 +3368,14 @@ mod tests {
         assert!(!invoked.get(), "extractor ran before archive verification");
 
         order.archive_verified().unwrap();
+        let before_assets = order.extract(|| {
+            invoked.set(true);
+            Ok(())
+        });
+        assert!(before_assets.is_err());
+        assert!(!invoked.get(), "extractor ran before on-demand asset verification");
+
+        order.assets_verified().unwrap();
         let prepared = order
             .extract(|| {
                 invoked.set(true);
@@ -3302,7 +3468,7 @@ mod tests {
 
     #[test]
     fn disk_plan_accounts_for_archive_payload_runtime_and_rollback() {
-        let plan = runtime_box_disk_plan(1_000, 5_000, 400, 700, 300);
+        let plan = runtime_box_disk_plan(1_000, 5_000, 400, 0, 0, 700, 300);
         assert_eq!(plan.archive_remaining_bytes, 600);
         assert_eq!(plan.installed_size_bytes, 5_000);
         assert_eq!(plan.current_runtime_bytes, 700);
@@ -3318,6 +3484,74 @@ mod tests {
                 .unwrap_err()
                 .contains("Not enough disk space to install this Runtime Component")
         );
+    }
+
+    #[test]
+    fn disk_plan_counts_on_demand_assets_once_and_only_what_is_left_to_download() {
+        let plan = runtime_box_disk_plan(1_000, 5_000, 0, 2_000, 500, 0, 0);
+        assert_eq!(plan.assets_remaining_bytes, 1_500);
+        assert_eq!(plan.peak_managed_bytes, 8_000);
+        assert_eq!(
+            plan.required_additional_bytes,
+            7_500 + DISK_SPACE_MARGIN_BYTES
+        );
+    }
+
+    fn asset(url: &str, relative_path: &str, bytes: &[u8], executable: bool) -> AssetDescriptor {
+        AssetDescriptor {
+            url: url.to_string(),
+            relative_path: relative_path.to_string(),
+            size_bytes: bytes.len() as u64,
+            sha256: format!("{:x}", Sha256::digest(bytes)),
+            executable: executable.then_some(true),
+        }
+    }
+
+    #[test]
+    fn on_demand_assets_obey_the_archive_rules_for_address_path_and_digest() {
+        let mut release: ReleaseManifest = serde_json::from_value(release_json()).unwrap();
+        release.assets = Some(vec![asset("https://example.org/tool", "bin/tool", b"tool", true)]);
+        assert!(validate_on_demand_assets(&release).is_ok());
+        for (url, path) in [
+            ("ftp://example.org/tool", "bin/tool"),
+            ("http://example.org/tool", "bin/tool"),
+            ("https://example.org/tool", "../outside"),
+            ("https://example.org/tool", "/absolute"),
+        ] {
+            release.assets = Some(vec![asset(url, path, b"tool", false)]);
+            assert!(validate_on_demand_assets(&release).is_err(), "{url} {path} was accepted");
+        }
+        let mut uppercase = asset("https://example.org/tool", "bin/tool", b"tool", false);
+        uppercase.sha256 = uppercase.sha256.to_uppercase();
+        release.assets = Some(vec![uppercase]);
+        assert!(validate_on_demand_assets(&release).is_err());
+    }
+
+    #[test]
+    fn on_demand_assets_are_placed_marked_executable_and_verified() {
+        let root = std::env::temp_dir().join(format!("liatir-on-demand-{}", Uuid::new_v4()));
+        let staging = root.join("staging");
+        let downloads = root.join("downloads");
+        std::fs::create_dir_all(&staging).unwrap();
+        std::fs::create_dir_all(&downloads).unwrap();
+        let tool = asset("https://example.org/tool", "bin/tool", b"#!/bin/sh\nexit 0\n", true);
+        std::fs::write(on_demand_asset_path(&downloads, &tool), b"#!/bin/sh\nexit 0\n").unwrap();
+        place_on_demand_assets(&staging, std::slice::from_ref(&tool), &downloads).unwrap();
+        let placed = staging.join("bin/tool");
+        assert_eq!(std::fs::read(&placed).unwrap(), b"#!/bin/sh\nexit 0\n");
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            assert_eq!(std::fs::metadata(&placed).unwrap().permissions().mode() & 0o777, 0o755);
+        }
+
+        // A download that is not the signed file is refused by Scrollcase's own check.
+        let other = asset("https://example.org/data", "share/data", b"signed bytes", false);
+        std::fs::write(on_demand_asset_path(&downloads, &other), b"other bytes!").unwrap();
+        let error = place_on_demand_assets(&staging, std::slice::from_ref(&other), &downloads)
+            .unwrap_err();
+        assert!(error.contains("on-demand asset"), "{error}");
+        let _ = std::fs::remove_dir_all(root);
     }
 
     fn fixture_release(version: &str) -> ReleaseManifest {
@@ -3583,6 +3817,7 @@ mod tests {
         order.product_policy_checked().unwrap();
         order.disk_checked().unwrap();
         order.archive_verified().unwrap();
+        order.assets_verified().unwrap();
         let prepared = order
             .extract(|| {
                 verify_and_extract_box(

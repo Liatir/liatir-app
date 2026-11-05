@@ -93,6 +93,63 @@
       ]
     },
     {
+      "boxId": "molecular-docking",
+      "modelId": "autodock-vina-molecular-docking",
+      "runtimeId": "molecular-docking-vina-1-2-7",
+      "targets": [
+        "linux-x86_64-cpu"
+      ]
+    },
+    {
+      "boxId": "molecular-analysis",
+      "modelId": "mdanalysis-molecular-analysis",
+      "runtimeId": "molecular-analysis-mdanalysis-2-11-0",
+      "targets": [
+        "linux-x86_64-cpu"
+      ]
+    },
+    {
+      "boxId": "metabolic-modeling",
+      "modelId": "cobrapy-metabolic-modeling",
+      "runtimeId": "metabolic-modeling-cobrapy-0-32-1",
+      "targets": [
+        "linux-x86_64-cpu"
+      ]
+    },
+    {
+      "boxId": "biochemical-simulation",
+      "modelId": "pysb-biochemical-simulation",
+      "runtimeId": "biochemical-simulation-pysb-1-17-0",
+      "targets": [
+        "linux-x86_64-cpu"
+      ]
+    },
+    {
+      "boxId": "physicell",
+      "modelId": "physicell-multicellular-simulation",
+      "runtimeId": "physicell-1-14-2",
+      "targets": [
+        "linux-x86_64-cpu"
+      ]
+    },
+    {
+      "boxId": "gnina",
+      "modelId": "gnina-pose-rescoring",
+      "runtimeId": "gnina-1-3-3",
+      "targets": [
+        "linux-x86_64-cuda12.8"
+      ],
+      "onDemandAssets": [
+        {
+          "url": "https://github.com/gnina/gnina/releases/download/v1.3.3/gnina.cuda12.8.static",
+          "relativePath": "gnina/bin/gnina",
+          "sizeBytes": 2056131000,
+          "sha256": "3340c1f49cd3c7c84d8699182a1c6af13c7fa2a22448d1204640446106f72172",
+          "executable": true
+        }
+      ]
+    },
+    {
       "boxId": "boltz-2",
       "modelId": "jwohlwend-boltz-2",
       "runtimeId": "structure-boltz-2-2-1",

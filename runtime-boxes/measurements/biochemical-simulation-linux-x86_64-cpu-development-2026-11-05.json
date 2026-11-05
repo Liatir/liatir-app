@@ -1,0 +1,458 @@
+{
+  "schemaVersion": 1,
+  "kind": "liatir.biochemical-simulation-scientific-validation",
+  "createdAt": "2026-11-05T10:55:42.431Z",
+  "status": "passed",
+  "modelId": "pysb-biochemical-simulation",
+  "sourceRevision": "pysb-1.17.0+bionetgen-2.9.3",
+  "targetId": "linux-x86_64-cpu",
+  "productRunnerSha256": "1687a4c52f32c13782fdcf625107ea74536d9116b5a72dc496a75480dfa0f0f1",
+  "cases": [
+    {
+      "id": "robertson-ode",
+      "metrics": {
+        "workloadId": "pysb:ode",
+        "tokenCount": 3,
+        "atomCount": 3,
+        "stepCount": 81,
+        "outputItemCount": 243
+      },
+      "measurement": {
+        "elapsedMs": 1530,
+        "peakRamBytes": 155664384,
+        "peakVramBytes": null,
+        "vramMeasurementMethod": null,
+        "vramDeviceBaselineBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": [],
+        "peakProcessTreePssBytes": 153172992,
+        "processTreeMeasurementErrors": []
+      },
+      "outputBytes": 21032,
+      "network": {
+        "species": 3,
+        "reactions": 3,
+        "observables": 3,
+        "iterations": 1,
+        "sha256": "b5b4ac504b5ab9e48f1fd4764f22515a8b601ce06c1b6eb3d4bd5e0ee11711b5"
+      }
+    },
+    {
+      "id": "synthesis-degradation-ode",
+      "metrics": {
+        "workloadId": "pysb:ode",
+        "tokenCount": 2,
+        "atomCount": 1,
+        "stepCount": 51,
+        "outputItemCount": 51
+      },
+      "measurement": {
+        "elapsedMs": 1036,
+        "peakRamBytes": 136241152,
+        "peakVramBytes": null,
+        "vramMeasurementMethod": null,
+        "vramDeviceBaselineBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": [],
+        "peakProcessTreePssBytes": 133951488,
+        "processTreeMeasurementErrors": []
+      },
+      "outputBytes": 4882,
+      "network": {
+        "species": 1,
+        "reactions": 2,
+        "observables": 1,
+        "iterations": 1,
+        "sha256": "c91b026366b5a8881ec140f618cecd12cec1d85ae5ddbdcb4fc9fbd59082c996"
+      }
+    },
+    {
+      "id": "synthesis-degradation-ssa",
+      "metrics": {
+        "workloadId": "pysb:ssa",
+        "tokenCount": 2,
+        "atomCount": 1,
+        "stepCount": 201000,
+        "outputItemCount": 201000
+      },
+      "measurement": {
+        "elapsedMs": 9199,
+        "peakRamBytes": 163328000,
+        "peakVramBytes": null,
+        "vramMeasurementMethod": null,
+        "vramDeviceBaselineBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": [],
+        "peakProcessTreePssBytes": 161138688,
+        "processTreeMeasurementErrors": []
+      },
+      "outputBytes": 3196426,
+      "network": {
+        "species": 1,
+        "reactions": 2,
+        "observables": 1,
+        "iterations": 1,
+        "sha256": "b3dd4c8b0227605d845f3f694eeb678a7dd0dcdf1ea066c7ceeb822a52579ddb"
+      }
+    },
+    {
+      "id": "synthesis-degradation-ssa-repeat",
+      "metrics": {
+        "workloadId": "pysb:ssa",
+        "tokenCount": 2,
+        "atomCount": 1,
+        "stepCount": 201000,
+        "outputItemCount": 201000
+      },
+      "measurement": {
+        "elapsedMs": 9451,
+        "peakRamBytes": 163127296,
+        "peakVramBytes": null,
+        "vramMeasurementMethod": null,
+        "vramDeviceBaselineBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": [],
+        "peakProcessTreePssBytes": 161037312,
+        "processTreeMeasurementErrors": []
+      },
+      "outputBytes": 3196426,
+      "network": {
+        "species": 1,
+        "reactions": 2,
+        "observables": 1,
+        "iterations": 1,
+        "sha256": "b3dd4c8b0227605d845f3f694eeb678a7dd0dcdf1ea066c7ceeb822a52579ddb"
+      }
+    },
+    {
+      "id": "egfr-net-ode",
+      "metrics": {
+        "workloadId": "pysb:ode",
+        "tokenCount": 3749,
+        "atomCount": 356,
+        "stepCount": 101,
+        "outputItemCount": 1515
+      },
+      "measurement": {
+        "elapsedMs": 27927,
+        "peakRamBytes": 172396544,
+        "peakVramBytes": null,
+        "vramMeasurementMethod": null,
+        "vramDeviceBaselineBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": [],
+        "peakProcessTreePssBytes": 169646080,
+        "processTreeMeasurementErrors": []
+      },
+      "outputBytes": 264089,
+      "network": {
+        "species": 356,
+        "reactions": 3749,
+        "observables": 15,
+        "iterations": 10,
+        "sha256": "f3af1ec0db7d44fd4a767befaa2f43f530c4e3574d827c3343080395ff829abd"
+      }
+    },
+    {
+      "id": "bngl-actions-ignored",
+      "metrics": {
+        "workloadId": "pysb:ode",
+        "tokenCount": 30,
+        "atomCount": 15,
+        "stepCount": 11,
+        "outputItemCount": 33
+      },
+      "measurement": {
+        "elapsedMs": 1137,
+        "peakRamBytes": 137256960,
+        "peakVramBytes": null,
+        "vramMeasurementMethod": null,
+        "vramDeviceBaselineBytes": null,
+        "vramSamplingIntervalMs": null,
+        "vramMeasurementErrors": [],
+        "peakProcessTreePssBytes": 135165952,
+        "processTreeMeasurementErrors": []
+      },
+      "outputBytes": 8756,
+      "network": {
+        "species": 15,
+        "reactions": 30,
+        "observables": 3,
+        "iterations": 3,
+        "sha256": "7f124aa781ab6d25536f3a15241f3f25de0e220311548edee0a94dbecf6c7523"
+      }
+    },
+    {
+      "id": "builtin-michment",
+      "network": {
+        "species": 4,
+        "reactions": 3,
+        "observables": 4,
+        "iterations": 3,
+        "sha256": "8978903f0f97b25a5626af59c91d9a7b93d0cf62ce0ff120dceffa63bdbfe9c7"
+      }
+    },
+    {
+      "id": "builtin-tyson_oscillator",
+      "network": {
+        "species": 5,
+        "reactions": 7,
+        "observables": 8,
+        "iterations": 3,
+        "sha256": "9cf9643dbe128fa2d5078a99cdc6fa2822d5147907b9331cee4046f439f63ebb"
+      }
+    },
+    {
+      "id": "builtin-kinase_cascade",
+      "network": {
+        "species": 21,
+        "reactions": 30,
+        "observables": 2,
+        "iterations": 12,
+        "sha256": "a4794525b26df1bfcad5abfb03e518e80805ac2b855b15111e5e02b42474b6a8"
+      }
+    },
+    {
+      "id": "builtin-earm_1_0",
+      "network": {
+        "species": 58,
+        "reactions": 70,
+        "observables": 6,
+        "iterations": 21,
+        "sha256": "e9416f7e4023c66f1da7e33bb1d7902b88539041f2b3678903487ec0a50e5c24"
+      }
+    },
+    {
+      "id": "builtin-bngwiki_egfr_simple",
+      "network": {
+        "species": 22,
+        "reactions": 86,
+        "observables": 6,
+        "iterations": 7,
+        "sha256": "7d664395e1d9041cf0f204b9ed80d42ecb236b5b8dd82b3bb01e3b58db6408d2"
+      }
+    },
+    {
+      "id": "builtin-schloegl",
+      "network": {
+        "species": 2,
+        "reactions": 4,
+        "observables": 1,
+        "iterations": 1,
+        "sha256": "7681fc0d3e9caf903df4c0869751ef8ca5e251000fa9219ed13ddb44eddd3552"
+      }
+    },
+    {
+      "id": "unbounded-polymer",
+      "rejected": true,
+      "message": "needs network-free simulation"
+    },
+    {
+      "id": "bionetgen-tlbr-unbounded",
+      "rejected": true,
+      "message": "needs network-free simulation"
+    },
+    {
+      "id": "arrhenius-rate-law",
+      "rejected": true,
+      "message": "PySB cannot import this BNGL model"
+    },
+    {
+      "id": "broken-bngl",
+      "rejected": true,
+      "message": "BioNetGen could not read this BNGL model"
+    },
+    {
+      "id": "unknown-builtin",
+      "rejected": true,
+      "message": "The built-in model must be one of"
+    },
+    {
+      "id": "unknown-parameter",
+      "rejected": true,
+      "message": "not in the BNGL file"
+    },
+    {
+      "id": "seed-overflow",
+      "rejected": true,
+      "message": "Seed must be at most"
+    },
+    {
+      "id": "log-spaced-ssa",
+      "rejected": true,
+      "message": "choose linear spacing"
+    },
+    {
+      "id": "nothing-written-outside-the-run",
+      "homeEmpty": true,
+      "signedPayloadReverified": true
+    }
+  ],
+  "hardwareSamples": [
+    {
+      "fixtureId": "robertson-ode",
+      "workloadId": "pysb:ode",
+      "maxTokenCount": 3,
+      "maxAtomCount": 3,
+      "maxStepCount": 81,
+      "maxOutputItemCount": 243,
+      "peakRamBytes": 155664384,
+      "peakVramBytes": null,
+      "elapsedMs": 1530,
+      "outputBytes": 21032
+    },
+    {
+      "fixtureId": "synthesis-degradation-ode",
+      "workloadId": "pysb:ode",
+      "maxTokenCount": 2,
+      "maxAtomCount": 1,
+      "maxStepCount": 51,
+      "maxOutputItemCount": 51,
+      "peakRamBytes": 136241152,
+      "peakVramBytes": null,
+      "elapsedMs": 1036,
+      "outputBytes": 4882
+    },
+    {
+      "fixtureId": "synthesis-degradation-ssa",
+      "workloadId": "pysb:ssa",
+      "maxTokenCount": 2,
+      "maxAtomCount": 1,
+      "maxStepCount": 201000,
+      "maxOutputItemCount": 201000,
+      "peakRamBytes": 163328000,
+      "peakVramBytes": null,
+      "elapsedMs": 9199,
+      "outputBytes": 3196426
+    },
+    {
+      "fixtureId": "synthesis-degradation-ssa-repeat",
+      "workloadId": "pysb:ssa",
+      "maxTokenCount": 2,
+      "maxAtomCount": 1,
+      "maxStepCount": 201000,
+      "maxOutputItemCount": 201000,
+      "peakRamBytes": 163127296,
+      "peakVramBytes": null,
+      "elapsedMs": 9451,
+      "outputBytes": 3196426
+    },
+    {
+      "fixtureId": "egfr-net-ode",
+      "workloadId": "pysb:ode",
+      "maxTokenCount": 3749,
+      "maxAtomCount": 356,
+      "maxStepCount": 101,
+      "maxOutputItemCount": 1515,
+      "peakRamBytes": 172396544,
+      "peakVramBytes": null,
+      "elapsedMs": 27927,
+      "outputBytes": 264089
+    },
+    {
+      "fixtureId": "bngl-actions-ignored",
+      "workloadId": "pysb:ode",
+      "maxTokenCount": 30,
+      "maxAtomCount": 15,
+      "maxStepCount": 11,
+      "maxOutputItemCount": 33,
+      "peakRamBytes": 137256960,
+      "peakVramBytes": null,
+      "elapsedMs": 1137,
+      "outputBytes": 8756
+    }
+  ],
+  "runtimeEvidence": {
+    "kind": "signed-payload",
+    "signedPayloadVerified": true,
+    "releaseManifestSha256": "45b1dbd683718e6e470b89ed10df47d6b176a431b9880522ad9605e30e2ebc9d",
+    "archiveSha256": "3dd9da41f14050375a4cfc6ef1805fed842a89c660839e87c306167a5c20c5df",
+    "payloadDigestSha256": "5e7247e5f5b4ebfe2f7ee9dc74d951260e98e5040eb66af136262cf0e53a0616",
+    "provenance": {
+      "scrollId": "biochemical-simulation-linux-x86_64-cpu",
+      "scrollVersion": "1.0.0",
+      "builderRevision": "8dd599e2cac07478f181c45dd04549476ec13513",
+      "sourceTreeDirty": true,
+      "sourceRevision": "pysb-1.17.0+bionetgen-2.9.3",
+      "runtimeVersion": "3.11.18",
+      "pixiVersion": "0.73.0",
+      "dependencyLockSha256": "a7e830468894a2ffcb0081ac7e12688ec34c1b7813aaebb6dd679c88d4d3c0f7",
+      "builtAt": "2026-11-05T11:37:18+01:00"
+    }
+  },
+  "reference": {
+    "robertson": {
+      "reference": {
+        "A_total": 2.083340149701255e-8,
+        "B_total": 8.333360770334713e-14,
+        "C_total": 0.999999979166505
+      },
+      "relativeErrors": {
+        "A_total": 3.550802377941842e-10,
+        "B_total": 3.551019546259821e-10,
+        "C_total": 2.153832712644667e-14
+      },
+      "source": "Mazzia and Magherini, Test Set for IVP Solvers, problem ROBER"
+    },
+    "synthesisDegradation": {
+      "exactSolutionMaxAbsoluteError": 8.101058668330552e-8,
+      "ssaRuns": 1000,
+      "ssaMean": 9.848,
+      "ssaVariance": 9.952848848848804,
+      "meanBound": 0.4,
+      "varianceBound": 1.83390381514495,
+      "distinctTrajectories": 1000
+    },
+    "egfrNet": {
+      "network": {
+        "species": 356,
+        "reactions": 3749,
+        "observables": 15,
+        "iterations": 10,
+        "sha256": "f3af1ec0db7d44fd4a767befaa2f43f530c4e3574d827c3343080395ff829abd"
+      },
+      "lsodaAgainstCvodeMaxRelativeDifference": 2.0248364520778624e-8
+    }
+  },
+  "measurementHost": {
+    "platform": "linux",
+    "arch": "x64",
+    "osRelease": "6.18.33.2-microsoft-standard-WSL2",
+    "cpuModel": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+    "logicalCpuCount": 6,
+    "totalMemoryBytes": 12543184896
+  },
+  "validatorSource": {
+    "gitCommit": "8dd599e2cac07478f181c45dd04549476ec13513",
+    "sourceTreeDirty": true,
+    "scriptSha256": "87716761a9018bc4690049bd6609b826d8fb69164c984fe133c3440fb5d9a536",
+    "measurementScriptSha256": "69b3d3ea2b3d8ea402477442b3b45fd64df884e5e1397b9f916a13fe8fa9832e",
+    "recipeSha256": "7b67a11b2dfd666484d9ea6164a8408b635e92f0676e44209a950f269d6c3be3"
+  },
+  "provenance": {
+    "recipeId": "biochemical-simulation-linux-x86_64-cpu",
+    "recipeVersion": "1.0.0",
+    "pythonVersion": "3.11.18",
+    "pixiVersion": "0.73.0",
+    "dependencyLockSha256": "a7e830468894a2ffcb0081ac7e12688ec34c1b7813aaebb6dd679c88d4d3c0f7"
+  },
+  "evidence": {
+    "fixture": {
+      "id": "pysb-1.17.0-examples-and-bionetgen-2.9.3-models",
+      "egfrNetSha256": "a82c8a61384af13ecc5052d766d3e97949e13f52c8aa58f07208e1a70d34c9f7"
+    },
+    "framework": {
+      "name": "pysb-bionetgen",
+      "version": "1.17.0+2.9.3",
+      "backend": "cpu"
+    },
+    "accelerator": {
+      "kind": "cpu"
+    },
+    "finiteValues": true,
+    "peakRamBytes": 172396544,
+    "peakVramBytes": null,
+    "outputContract": "passed",
+    "provenanceContract": "passed"
+  }
+}

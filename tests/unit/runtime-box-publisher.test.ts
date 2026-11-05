@@ -94,7 +94,7 @@ describe('Runtime Box large-archive publisher', () => {
     expect(parseImmutableReleaseIdentity('../geneformer', '1.0.0', 'macos-aarch64-metal', sha256)).toBeNull();
   });
 
-  it('allows exactly the reviewed MHCflurry source mirror', () => {
+  it('allows exactly the reviewed source mirrors', () => {
     const expected = {
       mirrorId: 'mhcflurry-class1-presentation',
       sha256: '44784a00d480298b66bfc232e2d1bb1a2df5e564f894a2fcc15d29fbd83f0d1e',
@@ -111,7 +111,34 @@ describe('Runtime Box large-archive publisher', () => {
       key: expected.key,
       publicUrl: `https://assets.models.liatir.com/ai-runtime-boxes/${expected.key}`,
     });
-    expect(Object.keys(SOURCE_MIRROR_SPECS)).toEqual(['mhcflurry-class1-presentation']);
+    const physicell = {
+      mirrorId: 'physicell-1-14-2-template',
+      sha256: '2dd954ad781fe9088a483a070b120701ce70b57a2ef253276617142fe34952f1',
+      sizeBytes: 2_544_576,
+      key: 'source-mirrors/physicell/physicell-1.14.2-template-linux-x86_64',
+      contentType: 'application/octet-stream',
+    };
+    expect(parseSourceMirrorIdentity('physicell-1-14-2-template')).toEqual(physicell);
+    expect(SOURCE_MIRROR_SPECS['physicell-1-14-2-template']).toEqual({
+      sizeBytes: physicell.sizeBytes,
+      sha256: physicell.sha256,
+      key: physicell.key,
+      publicUrl: `https://assets.models.liatir.com/ai-runtime-boxes/${physicell.key}`,
+    });
+    expect(Object.keys(SOURCE_MIRROR_SPECS)).toEqual(['mhcflurry-class1-presentation', 'physicell-1-14-2-template']);
+  });
+
+  it('keeps the PhysiCell source-mirror workflow manual, and its upload bound to bytes it rebuilt', () => {
+    const workflow = readFileSync(resolve('.github/workflows/runtime-box-physicell-source-mirror.yml'), 'utf8');
+    const triggers = workflow.slice(0, workflow.indexOf('\nconcurrency:'));
+    expect(triggers).toContain('workflow_dispatch:');
+    expect(triggers).not.toContain('\n  push:');
+    expect(triggers).not.toContain('\n  pull_request:');
+    expect(workflow).toContain('environment: runtime-box-production');
+    expect(workflow).toContain('test "$UPLOAD_CONFIRMATION" = "UPLOAD PHYSICELL SOURCE MIRROR"');
+    expect(workflow).toContain('runtime-boxes/native-builds/physicell/build.sh');
+    expect(workflow).toContain('publish-source-mirror "$MIRROR_ID"');
+    expect(workflow).not.toMatch(/CLOUDFLARE_API_TOKEN|wrangler r2 object put|runtime-box -- publish /);
   });
 
   it('rejects unknown and unauthenticated source-mirror upload routes before touching R2', async () => {

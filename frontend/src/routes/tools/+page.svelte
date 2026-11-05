@@ -15,9 +15,15 @@
   import { toast } from '$lib/stores/toast.svelte';
 	import PageContent from '$lib/components/layout/PageContent.svelte';
   import {
+    BIOCHEMICAL_SIMULATION_RUNTIME_COMPONENT_ID,
     BOLTZ_2_MODEL_ID,
     LIATIR_TOOL_RUNTIME_CATALOG,
+    METABOLIC_MODELING_RUNTIME_COMPONENT_ID,
+    MOLECULAR_ANALYSIS_RUNTIME_COMPONENT_ID,
+    MOLECULAR_DOCKING_RUNTIME_COMPONENT_ID,
     OPENMM_RUNTIME_COMPONENT_ID,
+    PHYSICELL_RUNTIME_COMPONENT_ID,
+    GNINA_RUNTIME_COMPONENT_ID,
     PVACTOOLS_RUNTIME_COMPONENT_ID,
     isLiatirStructureModelId,
   } from '@liatir/core';
@@ -42,6 +48,30 @@
   );
   const openmmPublished = LIATIR_TOOL_RUNTIME_CATALOG.some(
     (runtime) => runtime.id === OPENMM_RUNTIME_COMPONENT_ID
+      && runtime.install.runtimeBox.publishedTargets.length > 0,
+  );
+  const dockingPublished = LIATIR_TOOL_RUNTIME_CATALOG.some(
+    (runtime) => runtime.id === MOLECULAR_DOCKING_RUNTIME_COMPONENT_ID
+      && runtime.install.runtimeBox.publishedTargets.length > 0,
+  );
+  const metabolicPublished = LIATIR_TOOL_RUNTIME_CATALOG.some(
+    (runtime) => runtime.id === METABOLIC_MODELING_RUNTIME_COMPONENT_ID
+      && runtime.install.runtimeBox.publishedTargets.length > 0,
+  );
+  const biochemicalPublished = LIATIR_TOOL_RUNTIME_CATALOG.some(
+    (runtime) => runtime.id === BIOCHEMICAL_SIMULATION_RUNTIME_COMPONENT_ID
+      && runtime.install.runtimeBox.publishedTargets.length > 0,
+  );
+  const gninaPublished = LIATIR_TOOL_RUNTIME_CATALOG.some(
+    (runtime) => runtime.id === GNINA_RUNTIME_COMPONENT_ID
+      && runtime.install.runtimeBox.publishedTargets.length > 0,
+  );
+  const physicellPublished = LIATIR_TOOL_RUNTIME_CATALOG.some(
+    (runtime) => runtime.id === PHYSICELL_RUNTIME_COMPONENT_ID
+      && runtime.install.runtimeBox.publishedTargets.length > 0,
+  );
+  const analysisPublished = LIATIR_TOOL_RUNTIME_CATALOG.some(
+    (runtime) => runtime.id === MOLECULAR_ANALYSIS_RUNTIME_COMPONENT_ID
       && runtime.install.runtimeBox.publishedTargets.length > 0,
   );
   // An AI Model enters the registry only once a target is published, so membership is the gate.
@@ -201,6 +231,87 @@
       status: openmmPublished ? 'available' : 'soon',
       tags: ['DCD', 'Trajectory', 'OpenMM', 'CUDA'],
       category: 'Molecular Simulation',
+    },
+    {
+      id: 'docking-receptor-preparation',
+      label: 'Receptor Preparation',
+      description: 'Repair and protonate a protein structure for docking, recording every change.',
+      ...(dockingPublished ? { href: '/tools/molecular-docking/receptor-preparation' } : {}),
+      status: dockingPublished ? 'available' : 'soon',
+      tags: ['PDB', 'mmCIF', 'PDBFixer', 'Meeko'],
+      category: 'Molecular Docking',
+    },
+    {
+      id: 'molecular-docking',
+      label: 'Molecular Docking',
+      description: 'Dock a ligand or a library into a receptor with AutoDock Vina and rank the poses.',
+      ...(dockingPublished ? { href: '/tools/molecular-docking/docking' } : {}),
+      status: dockingPublished ? 'available' : 'soon',
+      tags: ['SDF', 'PDBQT', 'AutoDock Vina', 'Ringtail', 'Screening'],
+      category: 'Molecular Docking',
+    },
+    {
+      id: 'docking-selected-complex',
+      label: 'Docked Complex',
+      description: 'Take one docked pose, with its receptor, to a molecular dynamics simulation.',
+      ...(dockingPublished ? { href: '/tools/molecular-docking/complex' } : {}),
+      status: dockingPublished ? 'available' : 'soon',
+      tags: ['SDF', 'PDB', 'OpenMM', 'Docking'],
+      category: 'Molecular Docking',
+    },
+    {
+      id: 'trajectory-analysis',
+      label: 'Trajectory Analysis',
+      description: 'Measure how a simulated protein and its ligand move: RMSD, fluctuation and distances.',
+      ...(analysisPublished ? { href: '/tools/molecular-analysis/trajectory' } : {}),
+      status: analysisPublished ? 'available' : 'soon',
+      tags: ['DCD', 'XTC', 'RMSD', 'RMSF', 'MDAnalysis'],
+      category: 'Molecular Simulation',
+    },
+    {
+      id: 'interaction-fingerprint',
+      label: 'Interaction Fingerprint',
+      description: 'List the contacts between a ligand and its protein, frame by frame or pose by pose.',
+      ...(analysisPublished ? { href: '/tools/molecular-analysis/fingerprint' } : {}),
+      status: analysisPublished ? 'available' : 'soon',
+      tags: ['Hydrogen bonds', 'Contacts', 'ProLIF', 'Docking', 'Trajectory'],
+      category: 'Molecular Simulation',
+    },
+    {
+      id: 'metabolic-modeling',
+      label: 'Metabolic Modeling',
+      description: 'Predict growth and metabolic fluxes from a genome-scale model, and which genes it cannot do without.',
+      ...(metabolicPublished ? { href: '/tools/metabolic-modeling' } : {}),
+      status: metabolicPublished ? 'available' : 'soon',
+      tags: ['SBML', 'FBA', 'FVA', 'Gene essentiality', 'COBRApy'],
+      category: 'Systems Biology',
+    },
+    {
+      id: 'biochemical-simulation',
+      label: 'Biochemical Simulation',
+      description: 'Simulate how the amounts of molecules in a reaction network change over time, deterministically or stochastically.',
+      ...(biochemicalPublished ? { href: '/tools/biochemical-simulation' } : {}),
+      status: biochemicalPublished ? 'available' : 'soon',
+      tags: ['BNGL', 'ODE', 'Stochastic', 'Rule-based', 'PySB'],
+      category: 'Systems Biology',
+    },
+    {
+      id: 'neural-pose-rescoring',
+      label: 'Neural Pose Rescoring',
+      description: 'Rescore docked poses with GNINA’s neural networks and compare them with their Vina scores.',
+      ...(gninaPublished ? { href: '/tools/neural-pose-rescoring' } : {}),
+      status: gninaPublished ? 'available' : 'soon',
+      tags: ['GNINA', 'CNN', 'Docking', 'Rescoring'],
+      category: 'Molecular Docking',
+    },
+    {
+      id: 'multicellular-simulation',
+      label: 'Multicellular Simulation',
+      description: 'Simulate how a population of cells grows, moves, dies and shapes its environment, cell by cell.',
+      ...(physicellPublished ? { href: '/tools/multicellular-simulation' } : {}),
+      status: physicellPublished ? 'available' : 'soon',
+      tags: ['Agent-based', 'Cells', 'Tissue', 'PhysiCell'],
+      category: 'Systems Biology',
     },
     {
       id: 'biomolecular-structure-prediction',
