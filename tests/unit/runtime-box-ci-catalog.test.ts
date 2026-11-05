@@ -464,6 +464,25 @@ describe('Runtime Box CI catalog', () => {
     expect(launcher).toContain('RUNNER_ONLINE_TIMEOUT_SECONDS=11400');
   });
 
+  // GitHub refuses a dispatch whose input is not among a choice's options, so a catalog target
+  // missing here cannot be released at all: the GNINA release of 2026-11-05 was refused with
+  // HTTP 422 because linux-x86_64-cuda12.8 had never been added to the target list.
+  it('offers every catalog model and target as a release input', () => {
+    const release = readFileSync(
+      new URL('../../.github/workflows/runtime-box-release.yml', import.meta.url),
+      'utf8',
+    );
+    const models = release.slice(release.indexOf('\n      model_id:\n'), release.indexOf('\n      target_id:\n') + 1);
+    const targets = release.match(/\n      target_id:\n(?: {8}.*\n)*? {8}options: \[(.*)\]\n/)?.[1].split(', ');
+    expect(targets).toBeDefined();
+    for (const model of catalog.components) {
+      expect(models, model.modelId).toContain(`\n          - ${model.modelId}\n`);
+      for (const target of model.targets) {
+        expect(targets, `${model.modelId}/${target.targetId}`).toContain(target.targetId);
+      }
+    }
+  });
+
   // The release drives each model's real product lifecycle through an end-to-end spec, and every
   // spec pins its own box and component. The runner used to hardcode Geneformer's, which only worked
   // while Geneformer was the only model with a native lifecycle: run 31288741734 published the
