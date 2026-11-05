@@ -6,8 +6,8 @@ page before continuing any of that work**, and update it in the same change as a
 
 **Status (2026-11-05): every capability is built, scientifically validated on development-signed
 builds and integrated in the product, and all pass the real-app lifecycle on native Linux, GNINA on
-this machine's GPU.** GNINA is fetched from its own release at install (B1 resolved). Windows through
-WSL2 and publication are next. Nothing is published; no paid, remote or GPU CI action has been
+this machine's GPU, and in the Windows app through WSL2.** GNINA is fetched from its own release at
+install (B1 resolved). Publication is next. Nothing is published; no paid, remote or GPU CI action has been
 taken. All work is on branch `simulation-suite`, not pushed.
 
 ## Objective and scope
@@ -577,13 +577,13 @@ component.
 
 | Component | Status | Evidence |
 | --- | --- | --- |
-| Vina, RDKit, Meeko, PDBFixer, Ringtail | SCIENTIFICALLY VALIDATED and PRODUCT VALIDATED on native Linux (development build); Windows through WSL2 and publication pending | `runtime-boxes/measurements/molecular-docking-linux-x86_64-cpu-development-2026-11-03.json`, `runtime-boxes/measurements/molecular-docking-linux-x86_64-cpu-product-lifecycle-development-2026-11-03.json` |
-| GNINA | SCIENTIFICALLY VALIDATED and PRODUCT VALIDATED on native Linux on this host's GPU (development build, validated as unpacked from its signed archive with GNINA's release asset placed as the installer places it); Windows through WSL2 and publication pending | `runtime-boxes/measurements/gnina-linux-x86_64-cuda12.8-development-2026-11-05.json`, `runtime-boxes/measurements/gnina-linux-x86_64-cuda12.8-product-lifecycle-development-2026-11-05.json` |
-| MDAnalysis, ProLIF | SCIENTIFICALLY VALIDATED and PRODUCT VALIDATED on native Linux (development build); Windows through WSL2 and publication pending | `runtime-boxes/measurements/molecular-analysis-linux-x86_64-cpu-development-2026-11-04.json`, `runtime-boxes/measurements/molecular-analysis-linux-x86_64-cpu-product-lifecycle-development-2026-11-04.json` |
-| Docked Complex (docking box) | SCIENTIFICALLY VALIDATED and PRODUCT VALIDATED on native Linux (development build); Windows through WSL2 and publication pending | `runtime-boxes/measurements/molecular-docking-linux-x86_64-cpu-development-2026-11-04.json`, `runtime-boxes/measurements/docking-simulation-chain-development-2026-11-04.json` |
-| PySB, BioNetGen | SCIENTIFICALLY VALIDATED and PRODUCT VALIDATED on native Linux (development build, validated as unpacked from its signed archive); Windows through WSL2 and publication pending | `runtime-boxes/measurements/biochemical-simulation-linux-x86_64-cpu-development-2026-11-05.json`, `runtime-boxes/measurements/biochemical-simulation-linux-x86_64-cpu-product-lifecycle-development-2026-11-05.json` |
-| COBRApy | SCIENTIFICALLY VALIDATED and PRODUCT VALIDATED on native Linux (development build); Windows through WSL2 and publication pending | `runtime-boxes/measurements/metabolic-modeling-linux-x86_64-cpu-development-2026-11-04.json`, `runtime-boxes/measurements/metabolic-modeling-linux-x86_64-cpu-product-lifecycle-development-2026-11-04.json` |
-| PhysiCell | SCIENTIFICALLY VALIDATED and PRODUCT VALIDATED on native Linux (development build, validated as unpacked from its signed archive); production needs the source mirror (B2), then Windows through WSL2 and publication | `runtime-boxes/measurements/physicell-linux-x86_64-cpu-development-2026-11-04.json` |
+| Vina, RDKit, Meeko, PDBFixer, Ringtail | SCIENTIFICALLY VALIDATED and PRODUCT VALIDATED on native Linux (development build), and on Windows through WSL2; publication pending | `runtime-boxes/measurements/molecular-docking-linux-x86_64-cpu-development-2026-11-03.json`, `runtime-boxes/measurements/molecular-docking-linux-x86_64-cpu-product-lifecycle-development-2026-11-03.json` |
+| GNINA | SCIENTIFICALLY VALIDATED and PRODUCT VALIDATED on native Linux on this host's GPU (development build, validated as unpacked from its signed archive with GNINA's release asset placed as the installer places it), and on Windows through WSL2; publication pending | `runtime-boxes/measurements/gnina-linux-x86_64-cuda12.8-development-2026-11-05.json`, `runtime-boxes/measurements/gnina-linux-x86_64-cuda12.8-product-lifecycle-development-2026-11-05.json` |
+| MDAnalysis, ProLIF | SCIENTIFICALLY VALIDATED and PRODUCT VALIDATED on native Linux (development build), and on Windows through WSL2; publication pending | `runtime-boxes/measurements/molecular-analysis-linux-x86_64-cpu-development-2026-11-04.json`, `runtime-boxes/measurements/molecular-analysis-linux-x86_64-cpu-product-lifecycle-development-2026-11-04.json` |
+| Docked Complex (docking box) | SCIENTIFICALLY VALIDATED and PRODUCT VALIDATED on native Linux (development build), and on Windows through WSL2; publication pending | `runtime-boxes/measurements/molecular-docking-linux-x86_64-cpu-development-2026-11-04.json`, `runtime-boxes/measurements/docking-simulation-chain-development-2026-11-04.json` |
+| PySB, BioNetGen | SCIENTIFICALLY VALIDATED and PRODUCT VALIDATED on native Linux (development build, validated as unpacked from its signed archive), and on Windows through WSL2; publication pending | `runtime-boxes/measurements/biochemical-simulation-linux-x86_64-cpu-development-2026-11-05.json`, `runtime-boxes/measurements/biochemical-simulation-linux-x86_64-cpu-product-lifecycle-development-2026-11-05.json` |
+| COBRApy | SCIENTIFICALLY VALIDATED and PRODUCT VALIDATED on native Linux (development build), and on Windows through WSL2; publication pending | `runtime-boxes/measurements/metabolic-modeling-linux-x86_64-cpu-development-2026-11-04.json`, `runtime-boxes/measurements/metabolic-modeling-linux-x86_64-cpu-product-lifecycle-development-2026-11-04.json` |
+| PhysiCell | SCIENTIFICALLY VALIDATED and PRODUCT VALIDATED on native Linux (development build, validated as unpacked from its signed archive), and on Windows through WSL2; production needs the source mirror (B2), then publication | `runtime-boxes/measurements/physicell-linux-x86_64-cpu-development-2026-11-04.json` |
 
 ## Phase 2 evidence (development build, 2026-11-03)
 
@@ -826,6 +826,27 @@ imatinib; Jobs, Results, provenance (with GNINA's SHA-256), the offline boundary
 interpretation notice held; removal kept every Result file. 160 s including the download. Record
 `runtime-boxes/measurements/gnina-linux-x86_64-cuda12.8-product-lifecycle-development-2026-11-05.json`.
 
+## Windows through WSL2 (development builds, 2026-11-05)
+
+The Windows 11 test app, built from this branch in a separate worktree with each release candidate
+compiled in, carrying the WSL2 consumer built from this branch (`npm run native-tools:wsl-consumer:build`,
+static, its three tests passing; the 0.3.1 MSIX's consumer cannot place on-demand assets) and the
+Native Tools box built with Scrollcase 1.5.0. The same development-signed boxes as the native runs,
+from the loopback candidate registry on Windows; WSL2 limited to 12 GB; Windows driver 610.88. Every
+lifecycle passed 2 of 2 on the first run, with host environment `windows-wsl2`:
+
+| Tool | Box | What it proved | Time | Record |
+| --- | --- | --- | --- | --- |
+| Neural Pose Rescoring | `gnina` | GNINA downloaded from GitHub by the Windows app, placed into the box inside WSL2 by the consumer; CUDA through WSL2 (RTX 4060 Ti); top pose 0.90 Å | 284 s | `runtime-boxes/measurements/gnina-linux-x86_64-cuda12.8-product-lifecycle-wsl2-development-2026-11-05.json` |
+| Receptor Preparation, Molecular Docking, Docked Complex | `molecular-docking` | imatinib redocked within 2 Å of the crystal, complex built | 166 s | `runtime-boxes/measurements/molecular-docking-linux-x86_64-cpu-product-lifecycle-wsl2-development-2026-11-05.json` |
+| Trajectory Analysis, Interaction Fingerprint | `molecular-analysis` | ProLIF's reference interactions; input data unchanged | 134 s | `runtime-boxes/measurements/molecular-analysis-linux-x86_64-cpu-product-lifecycle-wsl2-development-2026-11-05.json` |
+| Metabolic Modeling | `metabolic-modeling` | E. coli core optimum and essential genes, two solvers agreeing | 90 s | `runtime-boxes/measurements/metabolic-modeling-linux-x86_64-cpu-product-lifecycle-wsl2-development-2026-11-05.json` |
+| Biochemical Simulation | `biochemical-simulation` | BioNetGen started from the installed box; exact, stochastic and BNGL runs | 91 s | `runtime-boxes/measurements/biochemical-simulation-linux-x86_64-cpu-product-lifecycle-wsl2-development-2026-11-05.json` |
+| Multicellular Simulation | `physicell` | template, and exact doubling at all 41 times checked | 160 s | `runtime-boxes/measurements/physicell-linux-x86_64-cpu-product-lifecycle-wsl2-development-2026-11-05.json` |
+
+Each also held cancellation, Jobs, Results, provenance, the offline boundary, the interpretation
+notice, and removal with every Result file kept.
+
 ## Progress log
 
 - 2026-11-03 — Phase 1. Context read; WSL2 host and toolchain measured; Linux checkout brought to
@@ -872,6 +893,8 @@ interpretation notice held; removal kept every Result file. 160 s including the 
 - 2026-11-05 — B5: Scrollcase 1.5.0 adopted (finding 50); the biochemical box declares BioNetGen's
   programs executable, was rebuilt, revalidated as unpacked from its signed archive, and passed the
   real-app lifecycle on native Linux.
+- 2026-11-05 — Windows through WSL2: the WSL2 consumer rebuilt from this branch, a Windows worktree
+  and test app per candidate; all six boxes passed their real-app lifecycle (above).
 
 ## For the owner
 
@@ -882,12 +905,11 @@ interpretation notice held; removal kept every Result file. 160 s including the 
 
 ## Next concrete actions
 
-1. The Windows-through-WSL2 lifecycle with a Windows test app built with the same candidate (the
-   only build outside WSL2 the plan allows: the product shell, not a scientific component).
-2. Production release (B3, B4): merge, signer redeploy, `runtime-box-release.yml` with
-   `model_id=autodock-vina-molecular-docking`, `target_id=linux-x86_64-cpu`, `channel=beta`; then the
-   publication commit (catalog, product catalog, docs, measurement from the production build).
-3. Real-app lifecycle of every tool through WSL2 with item 1 (all pass on native Linux). The Windows
-   test app must carry the rebuilt WSL2 consumer, which
-   now places on-demand assets (GNINA).
-5. The PhysiCell source mirror and its Registry deploy, with the production release (B2, B4).
+1. Production release (B3, B4), each step the owner's go: merge; signer redeploy (the policy gains
+   the suite's boxes and the on-demand asset rule, finding 48); Registry deploy and
+   `runtime-box-physicell-source-mirror.yml` (B2); then `runtime-box-release.yml` per box and target —
+   GNINA's on a GPU runner, prepared so the first run passes; then the publication commit (catalog,
+   product catalog, docs, measurements from the production builds).
+2. The desktop release that carries these tools: its Windows package must take the WSL2 consumer
+   from a Native Tools artifact built from this code (the normal CI path), because older consumers
+   cannot place on-demand assets.

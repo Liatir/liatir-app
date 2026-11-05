@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "kind": "liatir.runtime-box.product-lifecycle-evidence",
+  "status": "passed",
+  "boxId": "gnina",
+  "modelId": "gnina-pose-rescoring",
+  "runtimeId": "gnina-1-3-3",
+  "targetId": "linux-x86_64-cuda12.8",
+  "hostEnvironment": "windows-wsl2",
+  "version": "1.3.3-beta.1",
+  "accelerator": "NVIDIA GeForce RTX 4060 Ti · compute capability 8.9 · driver CUDA 13.3",
+  "jobId": "job_2",
+  "analysisRunId": "07d4781a-e89b-4fef-85bd-c0b95c58933b",
+  "resultArtifactCount": 6,
+  "release": {
+    "archiveSha256": "14ca0d359346c177923ea6c55934695843362a94e80e1fdc5e91240261c66d10",
+    "archiveSizeBytes": 2255058345,
+    "installedSizeBytes": 5522375234,
+    "signingKeyIds": [
+      "scrollcase-3ebd4c3de1b804b0"
+    ]
+  },
+  "measured": {
+    "hardwareProfileId": "gnina-pose-rescoring-1.3.3-beta.1-linux-x86_64-cuda12.8-development-2026-11-05",
+    "gninaTopPoseRank": 2,
+    "gninaTopPoseRmsdAngstrom": 0.898
+  },
+  "assertions": {
+    "install": "passed",
+    "onDemandAsset": "passed",
+    "cancellation": "passed",
+    "rescoring": "passed",
+    "jobs": "passed",
+    "results": "passed",
+    "provenance": "passed",
+    "offline": "passed",
+    "interpretationNotice": "passed",
+    "removal": "passed",
+    "resultArtifactsSurvivedRemoval": "passed"
+  }
+}

@@ -17,7 +17,7 @@ box boundaries, blockers and progress are in the
 is complete. Phase 2: the `molecular-docking` box (Vina, Meeko, PDBFixer, Ringtail, RDKit) is built,
 scientifically validated on a development-signed build — imatinib redocks within 0.4 Å of the 1IEP
 crystal pose — integrated as Receptor Preparation, Molecular Docking and Docked Complex, all three of
-which passed the real-app lifecycle on native Linux; Windows through WSL2 and publication are next. Phase 3: the
+which passed the real-app lifecycle on native Linux and in the Windows app through WSL2; publication is next. Phase 3: the
 `molecular-analysis` box (MDAnalysis, ProLIF) is scientifically validated the same way — its measures
 match an independent computation to 5 × 10⁻⁵ Å and ProLIF's 61 official test vectors pass — and
 integrated as Trajectory Analysis and Interaction Fingerprint, which passed the real-app lifecycle on
@@ -42,7 +42,8 @@ verifies it, and the signer signs only on-demand files its policy names. The `gn
 the CUDA libraries the binary needs; GNINA passes its own regression tests on this GPU, agrees with
 itself on the CPU, and in Liatir's 1IEP screen ranks every pose near crystal imatinib above every
 wrong one, where Vina did not. It is integrated as Neural Pose Rescoring, which passed the real-app
-lifecycle on native Linux, and it needs NVIDIA driver 570.26 ([decision](../decisions/gnina-cuda-driver-floor.md)). Work happens
+lifecycle on native Linux, and it needs NVIDIA driver 570.26 ([decision](../decisions/gnina-cuda-driver-floor.md)). On 2026-11-05 every suite tool also passed its
+real-app lifecycle in the Windows app through WSL2, GNINA on the GPU. Work happens
 on branch `simulation-suite` in the WSL2 checkout `/home/lorenzo/liatir-stack-gate8-mcp`. The owner
 told the agent on 2026-11-03 to proceed autonomously without asking for permissions.
 
