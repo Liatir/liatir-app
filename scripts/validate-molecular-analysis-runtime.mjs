@@ -548,8 +548,10 @@ try {
     provenance: { recipeId: authoringId, recipeVersion: authoringVersion, pythonVersion: recipe.runtime.version,
       ...builderVersionFields(recipe), dependencyLockSha256 },
     evidence: {
-      fixture: { id: 'prolif-2.2.3-packaged-data', topologySha256: sha256(await readFile(topology)),
-        trajectorySha256: sha256(await readFile(xtc)) },
+      // One identity for the pair: the SHA-256 of their two digests, one per line.
+      fixture: { id: 'prolif-2.2.3-packaged-data',
+        sha256: sha256(`${sha256(await readFile(topology))}\n${sha256(await readFile(xtc))}\n`),
+        topologySha256: sha256(await readFile(topology)), trajectorySha256: sha256(await readFile(xtc)) },
       framework: { name: 'mdanalysis-prolif', version: '2.11.0+2.2.3', backend: 'cpu' },
       accelerator: { kind: 'cpu' },
       finiteValues: true,

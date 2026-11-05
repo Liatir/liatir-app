@@ -204,6 +204,10 @@ export const tests = [{
     expect(rmsd.get(top.poseRank)).toBeLessThanOrEqual(REDOCKING_RMSD_ANGSTROM);
     const rescored = fs.readFileSync(outputPath(rescoring.result, 'rescoredPosesSdf'), 'utf8');
     expect(rescored.match(/<gnina_cnn_pose_score>/gu)?.length).toBe(6);
+    // The run's own readings of its GPU, which a CUDA release holds against the host it ran on.
+    const { device } = JSON.parse(fs.readFileSync(outputPath(rescoring.result, 'summaryJson'), 'utf8'));
+    expect(device.reportedCudaCompatibility).toBe(TARGET_ID.replace(/^.*-cuda/u, ''));
+    expect(device.peakVramBytes).toBeGreaterThan(0);
 
     await navigateInApp(browser, `/results?run=${rescoring.result.id}`);
     await browser.waitUntil(
@@ -226,7 +230,9 @@ export const tests = [{
       fs.writeFileSync(evidencePath, `${JSON.stringify({
         schemaVersion: 1, kind: 'liatir.runtime-box.product-lifecycle-evidence', status: 'passed',
         boxId: BOX_ID, modelId: MODEL_ID, runtimeId: RUNTIME_ID, targetId: TARGET_ID,
-        hostEnvironment: EXPECTED_HOST_ENVIRONMENT, version: VERSION, accelerator: rescoring.provenance.GPU,
+        hostEnvironment: EXPECTED_HOST_ENVIRONMENT, version: VERSION, accelerator: 'CUDA',
+        gpuModel: device.name, computeCapability: device.computeCapability,
+        reportedCudaCompatibility: device.reportedCudaCompatibility, peakVramBytes: device.peakVramBytes,
         jobId: rescoring.job.id, analysisRunId: rescoring.result.id, resultArtifactCount: rescoring.result.outputFiles.length,
         release: {
           archiveSha256: installed.activation.release.archive.sha256,

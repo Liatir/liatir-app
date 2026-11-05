@@ -264,9 +264,13 @@ try {
     assert.deepEqual(measurement.processTreeMeasurementErrors, []);
     assert.deepEqual(measurement.vramMeasurementErrors, []);
     assert.ok(measurement.peakVramBytes > 0, `${id}: no measured GPU memory`);
-    // The runner's own reading of its GPU, held to the measuring process's separate nvidia-smi query.
+    // The runner's own reading of its GPU, held to the measuring process's separate nvidia-smi query,
+    // and the CUDA runtime GNINA ran on, read from the box's libcudart: the target's CUDA, as measured.
     assert.equal(result.summary.device.name, measurement.gpuName, `${id} GPU`);
     assert.equal(result.summary.device.computeCapability, measurement.gpuComputeCapability, `${id} compute capability`);
+    assert.equal(result.summary.device.reportedCudaCompatibility, recipe.target.cudaVersion, `${id} CUDA runtime`);
+    assert.ok(result.summary.device.peakVramBytes > 0, `${id} reported no VRAM peak of its own`);
+    assert.equal(result.summary.device.vramMeasurementMethod, 'device-wide-delta');
     // GNINA runs as a child of the runner: the envelope keeps the whole tree.
     const peakRamBytes = Math.max(measurement.peakRamBytes, measurement.peakProcessTreePssBytes ?? 0);
     samples.push({ fixtureId: id, workloadId: metrics.workloadId, maxTokenCount: metrics.tokenCount,
@@ -404,6 +408,8 @@ try {
   if (releasePath) await verifyExtractedPayload(releasePath, { publicPath, root: runtimeDir });
   cases.push({ id: 'nothing-written-outside-the-run', homeEmpty: true, signedPayloadReverified: Boolean(releasePath) });
 
+  const cudaRuntimes = [...new Set(cases.filter((item) => item.device).map((item) => item.device.reportedCudaCompatibility))];
+  assert.deepEqual(cudaRuntimes, [recipe.target.cudaVersion], 'Every run reports the target CUDA runtime');
   const measured = (field) => {
     const values = [...new Set(cases.filter((item) => item.measurement).map((item) => item.measurement[field]))];
     assert.equal(values.length, 1, `Measurements disagree on ${field}`);
@@ -432,12 +438,20 @@ try {
     provenance: { recipeId: authoringId, recipeVersion: authoringVersion, pythonVersion: recipe.runtime.version,
       ...builderVersionFields(recipe), dependencyLockSha256 },
     evidence: {
-      fixture: { id: 'liatir-molecular-docking-1iep-poses', provenanceSha256: sha256(await readFile(join(FIXTURES, 'provenance.json'))),
+      // The fixture's provenance names every pose file and the receptor by SHA-256.
+      fixture: { id: 'liatir-molecular-docking-1iep-poses', sha256: sha256(await readFile(join(FIXTURES, 'provenance.json'))),
         receptorPdbqtSha256: provenance.receptorPdbqtSha256 },
       framework: { name: 'gnina', version: '1.3.3', build: GNINA_BUILD, backend: 'cuda', binarySha256: binaryAsset.sha256 },
       accelerator: { kind: 'cuda', gpuModel: measured('gpuName'), gpuMemoryBytes: measured('gpuMemoryBytes'),
         computeCapability: measured('gpuComputeCapability'), driverVersion: measured('gpuDriverVersion'),
-        vramMeasurementMethod: measured('vramMeasurementMethod') },
+        vramMeasurementMethod: measured('vramMeasurementMethod'),
+        reportedCudaCompatibility: cudaRuntimes[0] },
+      tolerances: { absolute: GPU_CPU_TOLERANCE, relative: 0 },
+      // The CPU baseline is GNINA itself without the GPU (--no_gpu), held to test_cnn.py's tolerance.
+      parity: { reference: 'GNINA 1.3.3 --no_gpu: test_cnn.py 184l docking and the 1IEP rescorings', passed: true,
+        cpuBaselinePassed: true, acceleratorPassed: true,
+        maximumAbsoluteDifference: Math.max(dockingWorst, ...Object.values(redocking).map((item) => item.gpuCpuMaxAbsoluteDifference)),
+        meanAbsoluteDifference: null, minimumCosineSimilarity: null },
       finiteValues: true,
       peakRamBytes: Math.max(...samples.map((sample) => sample.peakRamBytes)),
       peakVramBytes: Math.max(...samples.map((sample) => sample.peakVramBytes)),

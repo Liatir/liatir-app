@@ -27,6 +27,7 @@ import socket
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 
 GNINA_VERSION = "1.3.3"
@@ -45,6 +46,8 @@ PRELOADED_LIBRARIES = (
 )
 # GNINA prints this and carries on with the CPU when it cannot use a GPU.
 NO_GPU_WARNING = "No GPU detected"
+# The interval at which device memory is sampled while GNINA runs, as the OpenMM runner samples it.
+GPU_SAMPLE_SECONDS = 0.05
 MAX_POSES_BYTES = 256 * 1024 * 1024
 MAX_RECEPTOR_PDBQT_BYTES = 64 * 1024 * 1024
 MAX_POSES = 100_000
@@ -270,7 +273,10 @@ def executable():
 
 
 def cuda_device():
-    """The GPU GNINA will use, read through the NVIDIA driver without creating a GPU context."""
+    """The GPU GNINA will use, read through the NVIDIA driver without creating a GPU context.
+
+    Also returns its PCI bus, which is what ties it to NVML's own numbering of devices.
+    """
     try:
         driver = ctypes.CDLL("libcuda.so.1")
     except OSError:
@@ -279,12 +285,14 @@ def cuda_device():
     if driver.cuInit(0) != 0 or driver.cuDeviceGetCount(ctypes.byref(count)) != 0 or count.value < 1:
         fail("The NVIDIA driver reports no usable GPU; GNINA rescoring needs one.")
     name = ctypes.create_string_buffer(256)
+    bus = ctypes.create_string_buffer(64)
     major, minor = ctypes.c_int(0), ctypes.c_int(0)
     # GNINA uses device 0 of the GPUs this process can see; CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_* are 75, 76.
     if (driver.cuDeviceGet(ctypes.byref(device), 0) != 0 or driver.cuDeviceGetName(name, 256, device) != 0
             or driver.cuDeviceGetAttribute(ctypes.byref(major), 75, device) != 0
             or driver.cuDeviceGetAttribute(ctypes.byref(minor), 76, device) != 0
-            or driver.cuDriverGetVersion(ctypes.byref(version)) != 0):
+            or driver.cuDriverGetVersion(ctypes.byref(version)) != 0
+            or driver.cuDeviceGetPCIBusId(bus, 64, device) != 0):
         fail("The NVIDIA driver could not describe its GPU.")
     # GNINA 1.3.3 ships compiled GPU code from compute capability 6.0 (Pascal) on, almost none for Maxwell.
     if major.value < 6:
@@ -292,7 +300,72 @@ def cuda_device():
              % (name.value.decode("utf-8", "replace"), major.value, minor.value))
     return {"index": 0, "name": name.value.decode("utf-8", "replace"),
             "computeCapability": "%d.%d" % (major.value, minor.value),
-            "driverCudaVersion": "%d.%d" % (version.value // 1000, version.value % 1000 // 10)}
+            "driverCudaVersion": "%d.%d" % (version.value // 1000, version.value % 1000 // 10)}, bus.value
+
+
+def box_cuda_version():
+    """The CUDA runtime the box carries and GNINA runs on, read from the box's own libcudart."""
+    version = ctypes.c_int(0)
+    runtime = ctypes.CDLL(str(payload_root() / "venv" / "lib" / "libcudart.so.12"))
+    if runtime.cudaRuntimeGetVersion(ctypes.byref(version)) != 0:
+        fail("The Runtime Box's CUDA runtime could not report its version; reinstall the tool.")
+    return "%d.%d" % (version.value // 1000, version.value % 1000 // 10)
+
+
+class NvmlMemory(ctypes.Structure):
+    _fields_ = [("total", ctypes.c_ulonglong), ("free", ctypes.c_ulonglong), ("used", ctypes.c_ulonglong)]
+
+
+class DeviceMemory:
+    """GPU memory while GNINA runs: the device's total use sampled every 50 ms, over a baseline read first.
+
+    NVML attributes no memory to a process under WSL2, so this measures the whole device, the method the
+    scientific validator records; like it, it can only over-state. Without NVML the readings stay None:
+    they are provenance, and a run never depends on them.
+    """
+
+    def __init__(self, bus_id):
+        self.handle = None
+        self.peak = self.baseline = self.total = None
+        self.stopped = threading.Event()
+        self.thread = None
+        try:
+            self.nvml = ctypes.CDLL("libnvidia-ml.so.1")
+        except OSError:
+            return
+        handle = ctypes.c_void_p()
+        if self.nvml.nvmlInit_v2() != 0 or self.nvml.nvmlDeviceGetHandleByPciBusId_v2(bus_id, ctypes.byref(handle)) != 0:
+            return
+        self.handle = handle
+        reading = self.read()
+        if reading is None:
+            self.handle = None
+            return
+        self.baseline = self.peak = reading.used
+        self.total = reading.total
+        self.thread = threading.Thread(target=self.sample, daemon=True)
+        self.thread.start()
+
+    def read(self):
+        memory = NvmlMemory()
+        return memory if self.nvml.nvmlDeviceGetMemoryInfo(self.handle, ctypes.byref(memory)) == 0 else None
+
+    def sample(self):
+        while not self.stopped.wait(GPU_SAMPLE_SECONDS):
+            reading = self.read()
+            if reading is None:
+                self.peak = None
+                return
+            self.peak = max(self.peak, reading.used)
+
+    def finish(self):
+        self.stopped.set()
+        if self.thread is not None:
+            self.thread.join(timeout=5)
+        if self.handle is None or self.peak is None or self.peak <= self.baseline:
+            return {"gpuMemoryBytes": self.total, "peakVramBytes": None, "vramMeasurementMethod": None}
+        return {"gpuMemoryBytes": self.total, "peakVramBytes": self.peak - self.baseline,
+                "vramMeasurementMethod": "device-wide-delta"}
 
 
 def gnina_environment():
@@ -339,12 +412,18 @@ def rescore(payload, output_dir, metrics, inputs, started):
         # An empty working directory: GNINA's RPATH ends in an empty entry, which the loader reads as ".".
         empty = os.path.join(scratch, "cwd")
         os.mkdir(empty)
-        device = cuda_device()
+        device, bus_id = cuda_device()
+        device["reportedCudaCompatibility"] = box_cuda_version()
         environment = gnina_environment()
-        with open(log_path, "w", encoding="utf-8") as log:
-            completed = subprocess.run([str(exe)] + gnina_arguments(str(receptor_path), str(poses_path), str(raw_output)),
-                                       cwd=empty, env=environment, stdout=log, stderr=subprocess.STDOUT,
-                                       stdin=subprocess.DEVNULL, check=False)
+        memory = DeviceMemory(bus_id)
+        try:
+            with open(log_path, "w", encoding="utf-8") as log:
+                completed = subprocess.run([str(exe)] + gnina_arguments(str(receptor_path), str(poses_path),
+                                                                        str(raw_output)),
+                                           cwd=empty, env=environment, stdout=log, stderr=subprocess.STDOUT,
+                                           stdin=subprocess.DEVNULL, check=False)
+        finally:
+            device.update(memory.finish())
     text = log_path.read_text(encoding="utf-8", errors="replace")
     if completed.returncode != 0:
         fail("GNINA stopped with exit code %d:\n%s" % (completed.returncode, text[-1500:]))

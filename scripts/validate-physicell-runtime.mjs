@@ -282,7 +282,7 @@ try {
       ...builderVersionFields(recipe), dependencyLockSha256 },
     evidence: {
       fixture: { id: 'physicell-1.14.2-template-settings',
-        templateSettingsSha256: sha256(await readFile(join(runtimeDir, 'physicell/config/PhysiCell_settings.xml'))) },
+        sha256: sha256(await readFile(join(runtimeDir, 'physicell/config/PhysiCell_settings.xml'))) },
       framework: { name: 'physicell', version: '1.14.2', backend: 'cpu' },
       accelerator: { kind: 'cpu' },
       finiteValues: true,

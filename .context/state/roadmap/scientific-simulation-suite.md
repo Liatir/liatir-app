@@ -359,6 +359,18 @@ Each was checked, not inferred; the evidence is named.
     time: every suite box keeps its programs under `venv/bin` or declares them, and the bundled Native
     Tools box's programs are all under `venv/bin`; `npm run native-tools:build` with 1.5.0 passed its
     self-test on 2026-11-05 (WSL2, 90 s).
+51. **The release evidence contract would have refused four boxes after publication.** Composing each
+    box's model-validation and production-release records locally, with the release's own
+    `scripts/runtime-box/evidence.mjs`, this host's readings, the retained validator output and
+    lifecycle receipt, and stand-ins only for the upload and promotion receipts, showed: the analysis,
+    biochemical, PhysiCell and GNINA validators named their fixture digest other than `sha256`; and
+    GNINA's evidence lacked what a CUDA release requires — the CUDA the run used, a CPU baseline and
+    accelerator parity, and a product lifecycle receipt with its own GPU readings and VRAM peak. The
+    record is written after promotion, so a refusal there leaves the channel on an unrecorded release.
+    Each validator now names `sha256`; GNINA's runner reads the box's CUDA runtime (12.8) and samples
+    device memory through NVML as the OpenMM runner does, its validator records `--no_gpu` as the CPU
+    baseline under `test_cnn.py`'s tolerance, and its lifecycle receipt carries the run's readings.
+    Revalidated and rerun on native Linux; all six records are then accepted.
 
 ## Licensing and redistribution review
 
@@ -895,6 +907,10 @@ notice, and removal with every Result file kept.
   real-app lifecycle on native Linux.
 - 2026-11-05 — Windows through WSL2: the WSL2 consumer rebuilt from this branch, a Windows worktree
   and test app per candidate; all six boxes passed their real-app lifecycle (above).
+- 2026-11-05 — Publication started on the owner's go (every step authorized). The branch merged into
+  `main` (`16a67d2d`); finding 51 fixed and rehearsed. The Registry deploy needs a Cloudflare login
+  only the owner can give (`wrangler login`), so PhysiCell's source mirror, and with it PhysiCell's
+  release, wait on it; the other five boxes do not depend on it.
 
 ## For the owner
 

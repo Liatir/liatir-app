@@ -91,7 +91,11 @@ interface GninaSummary {
   runtimeBoxRelease: string;
   targetId: string;
   versions: { gnina: string; build: string; executableSha256: string };
-  device: { index: number; name: string; computeCapability: string; driverCudaVersion: string };
+  device: {
+    index: number; name: string; computeCapability: string; driverCudaVersion: string;
+    reportedCudaCompatibility: string; gpuMemoryBytes: number | null; peakVramBytes: number | null;
+    vramMeasurementMethod: 'device-wide-delta' | null;
+  };
   inputs: { posesSha256: string; receptorPdbqtSha256: string; poses: number; ligands: number };
   command: string[];
   ligands: LiatirGninaLigandComparison[];
@@ -274,6 +278,9 @@ export async function finalizeGninaResult(
       ['Tool Runtime', `GNINA ${GNINA_VERSION} (${summary.versions.build})`],
       ['Method', summary.method],
       ['GPU', `${summary.device.name} · compute capability ${summary.device.computeCapability} · driver CUDA ${summary.device.driverCudaVersion}`],
+      ['CUDA runtime (in the Runtime Box)', summary.device.reportedCudaCompatibility],
+      ['GPU memory, peak over the whole device', summary.device.peakVramBytes === null
+        ? 'Not measured (NVML unavailable)' : `${(summary.device.peakVramBytes / 1_048_576).toFixed(0)} MiB`],
       ['GNINA command', summary.command.join(' ')],
       ['GNINA program SHA-256', summary.versions.executableSha256],
       ['Docked poses SHA-256', summary.inputs.posesSha256],

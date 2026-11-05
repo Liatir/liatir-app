@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
   "kind": "liatir.gnina-scientific-validation",
-  "createdAt": "2026-11-05T10:24:46.973Z",
+  "createdAt": "2026-11-05T14:59:16.194Z",
   "status": "passed",
   "modelId": "gnina-pose-rescoring",
   "sourceRevision": "gnina-1.3.3+6fe1ce2bb9c3+binary-3340c1f49cd3",
   "targetId": "linux-x86_64-cuda12.8",
-  "productRunnerSha256": "4a49e600d957287099109c30b685ce5db30c6c67cf43c171c9a74a5199dbfc02",
+  "productRunnerSha256": "87231ea32f5998a68602f883d69bf166fa8897e2533580cf5c5056ac705eef74",
   "cases": [
     {
       "id": "installed-self-test",
@@ -156,26 +156,30 @@
         "outputItemCount": 6
       },
       "measurement": {
-        "elapsedMs": 2816,
-        "peakRamBytes": 998859776,
-        "peakVramBytes": 230686720,
+        "elapsedMs": 3149,
+        "peakRamBytes": 1148197888,
+        "peakVramBytes": 231735296,
         "vramMeasurementMethod": "device-wide-delta",
-        "vramDeviceBaselineBytes": 1070596096,
+        "vramDeviceBaselineBytes": 1064304640,
         "gpuName": "NVIDIA GeForce RTX 4060 Ti",
         "gpuDriverVersion": "610.88",
         "gpuMemoryBytes": 8585740288,
         "gpuComputeCapability": "8.9",
         "vramSamplingIntervalMs": 50,
         "vramMeasurementErrors": [],
-        "peakProcessTreePssBytes": 998859776,
+        "peakProcessTreePssBytes": 1148197888,
         "processTreeMeasurementErrors": []
       },
-      "outputBytes": 44617,
+      "outputBytes": 44774,
       "device": {
         "index": 0,
         "name": "NVIDIA GeForce RTX 4060 Ti",
         "computeCapability": "8.9",
-        "driverCudaVersion": "13.3"
+        "driverCudaVersion": "13.3",
+        "reportedCudaCompatibility": "12.8",
+        "gpuMemoryBytes": 8585740288,
+        "peakVramBytes": 231424000,
+        "vramMeasurementMethod": "device-wide-delta"
       },
       "ligands": [
         {
@@ -199,26 +203,30 @@
         "outputItemCount": 38
       },
       "measurement": {
-        "elapsedMs": 3134,
-        "peakRamBytes": 944718848,
-        "peakVramBytes": 230686720,
+        "elapsedMs": 3319,
+        "peakRamBytes": 1174411264,
+        "peakVramBytes": 231735296,
         "vramMeasurementMethod": "device-wide-delta",
-        "vramDeviceBaselineBytes": 1070596096,
+        "vramDeviceBaselineBytes": 1064304640,
         "gpuName": "NVIDIA GeForce RTX 4060 Ti",
         "gpuDriverVersion": "610.88",
         "gpuMemoryBytes": 8585740288,
         "gpuComputeCapability": "8.9",
         "vramSamplingIntervalMs": 50,
         "vramMeasurementErrors": [],
-        "peakProcessTreePssBytes": 944718848,
+        "peakProcessTreePssBytes": 1174411264,
         "processTreeMeasurementErrors": []
       },
-      "outputBytes": 188713,
+      "outputBytes": 188870,
       "device": {
         "index": 0,
         "name": "NVIDIA GeForce RTX 4060 Ti",
         "computeCapability": "8.9",
-        "driverCudaVersion": "13.3"
+        "driverCudaVersion": "13.3",
+        "reportedCudaCompatibility": "12.8",
+        "gpuMemoryBytes": 8585740288,
+        "peakVramBytes": 231424000,
+        "vramMeasurementMethod": "device-wide-delta"
       },
       "ligands": [
         {
@@ -287,26 +295,30 @@
         "outputItemCount": 38
       },
       "measurement": {
-        "elapsedMs": 3019,
-        "peakRamBytes": 989062144,
+        "elapsedMs": 3206,
+        "peakRamBytes": 1132951552,
         "peakVramBytes": 231735296,
         "vramMeasurementMethod": "device-wide-delta",
-        "vramDeviceBaselineBytes": 1070596096,
+        "vramDeviceBaselineBytes": 1064304640,
         "gpuName": "NVIDIA GeForce RTX 4060 Ti",
         "gpuDriverVersion": "610.88",
         "gpuMemoryBytes": 8585740288,
         "gpuComputeCapability": "8.9",
         "vramSamplingIntervalMs": 50,
         "vramMeasurementErrors": [],
-        "peakProcessTreePssBytes": 989062144,
+        "peakProcessTreePssBytes": 1132951552,
         "processTreeMeasurementErrors": []
       },
-      "outputBytes": 188720,
+      "outputBytes": 188877,
       "device": {
         "index": 0,
         "name": "NVIDIA GeForce RTX 4060 Ti",
         "computeCapability": "8.9",
-        "driverCudaVersion": "13.3"
+        "driverCudaVersion": "13.3",
+        "reportedCudaCompatibility": "12.8",
+        "gpuMemoryBytes": 8585740288,
+        "peakVramBytes": 231424000,
+        "vramMeasurementMethod": "device-wide-delta"
       },
       "ligands": [
         {
@@ -418,10 +430,10 @@
       "maxAtomCount": 2702,
       "maxStepCount": 1,
       "maxOutputItemCount": 6,
-      "peakRamBytes": 998859776,
-      "peakVramBytes": 230686720,
-      "elapsedMs": 2816,
-      "outputBytes": 44617
+      "peakRamBytes": 1148197888,
+      "peakVramBytes": 231735296,
+      "elapsedMs": 3149,
+      "outputBytes": 44774
     },
     {
       "fixtureId": "1iep-screen",
@@ -430,10 +442,10 @@
       "maxAtomCount": 2702,
       "maxStepCount": 1,
       "maxOutputItemCount": 38,
-      "peakRamBytes": 944718848,
-      "peakVramBytes": 230686720,
-      "elapsedMs": 3134,
-      "outputBytes": 188713
+      "peakRamBytes": 1174411264,
+      "peakVramBytes": 231735296,
+      "elapsedMs": 3319,
+      "outputBytes": 188870
     },
     {
       "fixtureId": "1iep-screen-repeat",
@@ -442,10 +454,10 @@
       "maxAtomCount": 2702,
       "maxStepCount": 1,
       "maxOutputItemCount": 38,
-      "peakRamBytes": 989062144,
+      "peakRamBytes": 1132951552,
       "peakVramBytes": 231735296,
-      "elapsedMs": 3019,
-      "outputBytes": 188720
+      "elapsedMs": 3206,
+      "outputBytes": 188877
     }
   ],
   "runtimeEvidence": {
@@ -539,12 +551,12 @@
     "osRelease": "6.18.33.2-microsoft-standard-WSL2",
     "cpuModel": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
     "logicalCpuCount": 6,
-    "totalMemoryBytes": 12543180800
+    "totalMemoryBytes": 12543184896
   },
   "validatorSource": {
-    "gitCommit": "a606094f753a6cd088a24e46c824cb185f11032c",
+    "gitCommit": "16a67d2df6a5f67ce725a44ee22c647282c9a3f5",
     "sourceTreeDirty": true,
-    "scriptSha256": "1de11e34a2f772b74bf62a67f2f730b7ccf099c4a8f9b07bfa7a685c1e30e557",
+    "scriptSha256": "65e8ec99caf6e311bbf41ca29694283ba27221dc3504a57f95b422fce835497e",
     "measurementScriptSha256": "69b3d3ea2b3d8ea402477442b3b45fd64df884e5e1397b9f916a13fe8fa9832e",
     "recipeSha256": "0eee4b77eaf2ab9b5b0f8eb138840bdd47e897ea2358d4646b35d4a2c70d0c0d"
   },
@@ -558,7 +570,7 @@
   "evidence": {
     "fixture": {
       "id": "liatir-molecular-docking-1iep-poses",
-      "provenanceSha256": "c52ab5944f35cf7caa4cd17d1a35d46b2fa32ec445a3e722c7f08b2a0ceba05f",
+      "sha256": "c52ab5944f35cf7caa4cd17d1a35d46b2fa32ec445a3e722c7f08b2a0ceba05f",
       "receptorPdbqtSha256": "f13cf3b36f61d87c3b58983e0b8ecf1c3456a685eb86dfe9ccfb139c7bdc2586"
     },
     "framework": {
@@ -574,10 +586,24 @@
       "gpuMemoryBytes": 8585740288,
       "computeCapability": "8.9",
       "driverVersion": "610.88",
-      "vramMeasurementMethod": "device-wide-delta"
+      "vramMeasurementMethod": "device-wide-delta",
+      "reportedCudaCompatibility": "12.8"
+    },
+    "tolerances": {
+      "absolute": 0.0015,
+      "relative": 0
+    },
+    "parity": {
+      "reference": "GNINA 1.3.3 --no_gpu: test_cnn.py 184l docking and the 1IEP rescorings",
+      "passed": true,
+      "cpuBaselinePassed": true,
+      "acceleratorPassed": true,
+      "maximumAbsoluteDifference": 0.001000000000000334,
+      "meanAbsoluteDifference": null,
+      "minimumCosineSimilarity": null
     },
     "finiteValues": true,
-    "peakRamBytes": 998859776,
+    "peakRamBytes": 1174411264,
     "peakVramBytes": 231735296,
     "outputContract": "passed",
     "provenanceContract": "passed"

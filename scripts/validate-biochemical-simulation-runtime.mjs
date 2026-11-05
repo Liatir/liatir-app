@@ -317,7 +317,8 @@ try {
     provenance: { recipeId: authoringId, recipeVersion: authoringVersion, pythonVersion: recipe.runtime.version,
       ...builderVersionFields(recipe), dependencyLockSha256 },
     evidence: {
-      fixture: { id: 'pysb-1.17.0-examples-and-bionetgen-2.9.3-models', egfrNetSha256: sha256(await readFile(join(models, 'egfr_net.bngl'))) },
+      // The BioNetGen model the CVODE comparison reads; PySB's examples ship inside the locked wheel.
+      fixture: { id: 'pysb-1.17.0-examples-and-bionetgen-2.9.3-models', sha256: sha256(await readFile(join(models, 'egfr_net.bngl'))) },
       framework: { name: 'pysb-bionetgen', version: '1.17.0+2.9.3', backend: 'cpu' },
       accelerator: { kind: 'cpu' },
       finiteValues: true,
