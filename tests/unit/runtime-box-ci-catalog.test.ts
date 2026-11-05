@@ -457,8 +457,8 @@ describe('Runtime Box CI catalog', () => {
     expect(release).toContain('id-token: write');
     expect(releaseJob).toContain('LIATIR_RUNTIME_BOX_SIGNER_ID_TOKEN');
     expect(releaseJob).not.toContain('keygen');
-    expect(launcher).toContain('RUNNER_VERSION="2.336.0"');
-    expect(launcher).toContain('8e8839c49b7060b6b2154f4931f815df330c27f167d53ef2239ee3dfce28b079');
+    expect(launcher).toContain('RUNNER_VERSION="2.338.2"');
+    expect(launcher).toContain('25a065af409ffa317ab4d5a3b614dd15fc9c40f2172bc1b35a1b1258e919a388');
     expect(launcher).toContain('--ephemeral');
     expect(launcher).toContain('--no-default-labels');
     expect(launcher).toContain('RUNNER_ONLINE_TIMEOUT_SECONDS=11400');
@@ -515,10 +515,10 @@ describe('Runtime Box CI catalog', () => {
     const windows = readFileSync(new URL('../../scripts/run-runtime-box-selfhosted-runner.ps1', import.meta.url), 'utf8');
 
     // Same pinned runner release on every OS, each with its own reviewed archive digest.
-    expect(posix).toContain('RUNNER_VERSION="2.336.0"');
-    expect(windows).toContain("$RunnerVersion = '2.336.0'");
-    expect(posix).toContain('04cf0be1aff4c3ec3554466c39124ca250e3effd8873bb7e8d68535aa9505d5d');
-    expect(windows).toContain('d59123a43003e357b0805b5d0f611d0bd2f65ab67d51bd070dd4e7a0f685c162');
+    expect(posix).toContain('RUNNER_VERSION="2.338.2"');
+    expect(windows).toContain("$RunnerVersion = '2.338.2'");
+    expect(posix).toContain('baebf204307bac6193480852732f0aba2ae97b6c5597c244f4d5558390147c40');
+    expect(windows).toContain('a1f17aa987fc8158bc7521d284912267a0d01b7c2c4684b33c86783b5e8221cc');
 
     // The ephemeral, single-job, no-default-label contract holds on both.
     for (const launcher of [posix, windows]) {

@@ -8,10 +8,12 @@ set -euo pipefail
 # launcher and CI can never disagree.
 REPOSITORY_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 REPOSITORY="Liatir/liatir-app"
-RUNNER_VERSION="2.336.0"
-# Pinned per OS/arch from https://github.com/actions/runner/releases/tag/v2.336.0
-RUNNER_ARCHIVE_SHA256_OSX_ARM64="8e8839c49b7060b6b2154f4931f815df330c27f167d53ef2239ee3dfce28b079"
-RUNNER_ARCHIVE_SHA256_LINUX_X64="04cf0be1aff4c3ec3554466c39124ca250e3effd8873bb7e8d68535aa9505d5d"
+RUNNER_VERSION="2.338.2"
+# Pinned per OS/arch from https://github.com/actions/runner/releases/tag/v2.338.2. GitHub stops
+# delivering jobs to a deprecated runner version (2.336.0 was refused on 2026-11-05), so the pin moves
+# with GitHub's supported releases; each digest is the one the release publishes.
+RUNNER_ARCHIVE_SHA256_OSX_ARM64="25a065af409ffa317ab4d5a3b614dd15fc9c40f2172bc1b35a1b1258e919a388"
+RUNNER_ARCHIVE_SHA256_LINUX_X64="baebf204307bac6193480852732f0aba2ae97b6c5597c244f4d5558390147c40"
 RUNNER_ONLINE_TIMEOUT_SECONDS=11400
 MODEL_ID=""
 TARGET_ID=""

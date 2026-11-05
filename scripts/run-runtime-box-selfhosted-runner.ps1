@@ -26,9 +26,10 @@ Set-StrictMode -Version Latest
 
 $RepositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $Repository = 'Liatir/liatir-app'
-$RunnerVersion = '2.336.0'
-# Pinned from https://github.com/actions/runner/releases/tag/v2.336.0
-$RunnerArchiveSha256 = 'd59123a43003e357b0805b5d0f611d0bd2f65ab67d51bd070dd4e7a0f685c162'
+$RunnerVersion = '2.338.2'
+# Pinned from https://github.com/actions/runner/releases/tag/v2.338.2; see the POSIX launcher for why
+# the pin follows GitHub's supported runner releases.
+$RunnerArchiveSha256 = 'a1f17aa987fc8158bc7521d284912267a0d01b7c2c4684b33c86783b5e8221cc'
 $RunnerArchive = "actions-runner-win-x64-$RunnerVersion.zip"
 $RunnerArchiveUrl = "https://github.com/actions/runner/releases/download/v$RunnerVersion/$RunnerArchive"
 $RunnerOnlineTimeoutSeconds = 11400
