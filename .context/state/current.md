@@ -1,6 +1,6 @@
 # Current project status
 
-Last updated 2026-11-04. This page says where Liatir stands and what comes next. How each piece got
+Last updated 2026-11-05. This page says where Liatir stands and what comes next. How each piece got
 here is in the [status log, July to September 2026](../history/status-log-2026-07-to-2026-09.md)
 and in the plans under `history/`; the readiness of each product area, with its evidence, is in
 [Beta 1 readiness](./roadmap/beta-readiness.md).
@@ -36,7 +36,13 @@ PhysiCell executable Liatir compiles reproducibly for any Linux with glibc 2.17;
 settings PhysiCell runs itself (PhysiCell turns paths in its settings into shell commands), and the
 validator holds cell division, death and substrate decay to the models' own parameters exactly or
 within statistical bounds. It is integrated as Multicellular Simulation, which passed the real-app lifecycle on native Linux. Merging the branch requires a signer redeploy before any further Runtime Box release (the
-signer policy gains the new boxes). GNINA is blocked on a redistribution decision. Work happens
+signer policy gains the new boxes). Phase 3, GNINA: the owner decided on 2026-11-04 that Liatir
+never redistributes GNINA; the installer now downloads GNINA's own release asset beside the box and
+verifies it, and the signer signs only on-demand files its policy names. The `gnina` box carries
+the CUDA libraries the binary needs; GNINA passes its own regression tests on this GPU, agrees with
+itself on the CPU, and in Liatir's 1IEP screen ranks every pose near crystal imatinib above every
+wrong one, where Vina did not. It is integrated as Neural Pose Rescoring, which passed the real-app
+lifecycle on native Linux, and it needs NVIDIA driver 570.26 ([decision](../decisions/gnina-cuda-driver-floor.md)). Work happens
 on branch `simulation-suite` in the WSL2 checkout `/home/lorenzo/liatir-stack-gate8-mcp`. The owner
 told the agent on 2026-11-03 to proceed autonomously without asking for permissions.
 

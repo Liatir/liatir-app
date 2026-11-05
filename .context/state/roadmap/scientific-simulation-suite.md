@@ -4,10 +4,11 @@ The canonical, persistent execution plan for adding molecular docking, virtual s
 analysis, biochemical networks, metabolic modeling and multicellular simulation to Liatir. **Read this
 page before continuing any of that work**, and update it in the same change as any progress.
 
-**Status (2026-11-03): Phase 2 in progress — the molecular docking box is built, scientifically
-validated on a development-signed build, and integrated in the product; the real-app lifecycle is
-next.** GNINA is **BLOCKED** on a redistribution decision (B1). Nothing is published; no paid, remote
-or GPU CI action has been taken. All work is on branch `simulation-suite`, not pushed.
+**Status (2026-11-05): every capability is built, scientifically validated on development-signed
+builds and integrated in the product; all but Biochemical Simulation (B5) pass the real-app lifecycle
+on native Linux, GNINA on this machine's GPU.** GNINA is fetched from its own release at install (B1 resolved). Windows through
+WSL2 and publication are next. Nothing is published; no paid, remote or GPU CI action has been
+taken. All work is on branch `simulation-suite`, not pushed.
 
 ## Objective and scope
 
@@ -125,7 +126,7 @@ Decision record: [simulation suite Runtime Box boundaries](../../decisions/simul
 | Box | Components | Target | Why this boundary |
 | --- | --- | --- | --- |
 | `molecular-docking` | Vina, RDKit, Meeko, PDBFixer (+ OpenMM library), Ringtail | `linux-x86_64-cpu` | One chemistry stack: Ringtail requires Meeko and RDKit, Meeko writes what Vina reads and reads back what Ringtail stores, and chemicalite pins RDKit 2024.09.6 for all of them. PDBFixer completes heavy atoms Meeko's templates require, and must work without an NVIDIA GPU. |
-| `gnina` | GNINA | `linux-x86_64-cuda12.8` | A 2 GB CUDA binary with its own licence and failure boundary. Blocked (B1). |
+| `gnina` | GNINA's release binary (fetched at install), the CUDA 12.8 libraries and cuDNN it links | `linux-x86_64-cuda12.8` | A 2 GB CUDA binary with its own licence and failure boundary, which Liatir does not redistribute (B1). |
 | `molecular-analysis` | MDAnalysis, ProLIF, RDKit | `linux-x86_64-cpu` | Consumes OpenMM trajectories and docked poses; 188 packages that docking users do not need, and a newer RDKit than the docking box can hold. |
 | `biochemical-simulation` | PySB, BioNetGen, Perl | `linux-x86_64-cpu` | PySB cannot generate networks without BioNetGen: one capability. |
 | `metabolic-modeling` | COBRApy, optlang, HiGHS, GLPK | `linux-x86_64-cpu` | Independent domain, released independently. |
@@ -310,6 +311,43 @@ Each was checked, not inferred; the evidence is named.
 40. **PhysiCell 1.14.2 crashes when a simulation starts without cells** (segmentation fault, with or
     without substrates), though a population that dies out during a run carries on. The runner
     refuses settings that start no cell.
+42. **GNINA's "static" release binary links CUDA dynamically.** `readelf -d` on
+    `gnina.cuda12.8.static` lists `libcudnn.so.9`, `libcudart.so.12`, `libcublas.so.12`,
+    `libcublasLt.so.12`, `libcufft.so.11`, `libcusparse.so.12` and `libcusolver.so.11` beside
+    `libstdc++`, and its highest symbol is `GLIBC_2.35` (Ubuntu 22.04 or later). The box supplies
+    conda-forge's CUDA 12.8 libraries and cuDNN 9.10.2: 33 packages, a 2.26 GB archive, 3.48 GB
+    installed, almost all NVIDIA's (cuDNN alone about 1 GB). With GNINA's 2.06 GB the tool is a 4.3 GB
+    download. Nothing is pruned: which cuDNN engines a GPU uses is decided at run time.
+43. **Its RPATH searches the host before the box.** `/usr/local/lib:/usr/local/cuda/lib64:` ends in an
+    empty entry, which the loader reads as the working directory, and an RPATH is searched before
+    `LD_LIBRARY_PATH`. `ld.so --inhibit-rpath` did not remove it for the main program (`LD_DEBUG`
+    still showed the RPATH search). The runner and the self-test preload all nine libraries by
+    absolute path — `LD_DEBUG` then shows no search for any of them — and start GNINA from an empty
+    directory; only the NVIDIA driver (`libcuda.so.1`) comes from the host.
+44. **GNINA falls back to the CPU in silence.** With no GPU visible it prints `WARNING: No GPU detected`
+    and exits 0. The runner reads the GPU through the driver before starting GNINA (name, compute
+    capability, driver CUDA version, into provenance) and refuses a run in which GNINA printed the
+    warning.
+45. **The NVIDIA driver creates `~/.nv/ComputeCache` as soon as it starts** (`cuInit`, and every GNINA
+    process), although nothing is compiled; the validator's empty-home check caught it. The runner and
+    the self-test point `CUDA_CACHE_PATH` into the run's own scratch directory.
+46. **GNINA asks the driver to compile nothing.** SASS for sm_60 to sm_120, PTX only for sm_120
+    (`cuobjdump`); `libnvrtc` never loads; scores are identical with `CUDA_DISABLE_PTX_JIT=1`. cuDNN 9.10
+    documents driver 570.26 for CUDA 12.8, so that is the floor
+    ([decision](../../decisions/gnina-cuda-driver-floor.md)); sm_5x is refused by name.
+47. **The receptor's format moves CNN values slightly.** The same 1IEP poses scored against the PDBQT
+    Vina docked into and against the hydrogenated PDB differ by up to 0.019 in CNN pose score and 0.18
+    in CNN affinity, with the same order. The tool scores against the PDBQT, whose SHA-256 every
+    Liatir pose records, so Vina and GNINA score the same receptor atoms.
+48. **The signer checked only the archive's address.** `validateRelease` ignored a release's on-demand
+    assets, so a signed release could have named any download. It now signs only the exact on-demand
+    assets the policy approves for the box (for `gnina`: the GitHub release asset, by URL, path, size,
+    digest and mode).
+49. **GNINA's Vina term matches Vina on the top pose only.** 1IEP's rank-1 pose: Vina −13.219, GNINA
+    −13.223 kcal/mol (screen: −13.277 and −13.284); lower-ranked poses differ by up to 0.6 kcal/mol.
+    This is consistent with Vina 1.2 reporting every pose against the top pose's intramolecular energy
+    (not verified here). The tool shows both and never mixes them.
+
 41. **Scrollcase's self-test runs on the build directory, where a downloaded executable has no mode**,
     while the archive marks it executable from the scroll's declaration: finding 37 in reverse. The
     PhysiCell self-test runs a copy; the box was validated as unpacked from its signed archive. See B5.
@@ -324,7 +362,7 @@ process. Separate packaging alone does not discharge an obligation; each box's l
 | Box | Copyleft or restricted components | Obligation and how it is met |
 | --- | --- | --- |
 | `molecular-docking` | Meeko, Ringtail (LGPL-2.1-only); OpenMM GPU platforms (LGPL-3.0+); conda GPL-family runtime libraries | Unmodified, replaceable Python packages with their licence files; disclosed in the audit and legal record, as in the OpenMM box. |
-| `gnina` | The GNINA binary as a whole is GPL-2.0 (OpenBabel); it ships with NVIDIA libraries | Binary redistribution requires complete corresponding source. Whether the official static binary combines GPL-2.0 code with non-system proprietary libraries in one executable must be established by inspection before any redistribution. **B1.** |
+| `gnina` | The GNINA binary as a whole is GPL-2.0 (OpenBabel); NVIDIA's CUDA libraries and cuDNN | GNINA is not in the box: the installer fetches GNINA's own release asset ([decision](../../decisions/gnina-binary-fetched-at-install.md)). The NVIDIA libraries ship unmodified with their licence files, as in every Liatir CUDA box. |
 | `molecular-analysis` | MDAnalysis (LGPL-3.0+) | Unmodified Python package with licence text. |
 | `biochemical-simulation` | None in PySB (BSD-2) or BioNetGen (MIT); Perl (Artistic/GPL dual) | Licence texts; BioNetGen's bundled code listed in a `bundledLicenseDeclaration` (its binaries link SUNDIALS, BSD-3). |
 | `metabolic-modeling` | COBRApy (LGPL/GPL choice; LGPL elected), GLPK and swiglpk (GPL-3.0) | Unmodified packages, separate shared libraries, licence texts; GLPK is a dependency, HiGHS the default solver. |
@@ -449,16 +487,18 @@ Acceptance thresholds come from the cited reference, never from a convenient num
 | PySB/BioNetGen | Robertson stiff system (Hairer and Wanner reference values); an analytically solvable birth–death process for SSA | ODE within solver tolerance of the reference; SSA mean and variance within statistical bounds of the analytical values |
 | COBRApy | E. coli core (`textbook`) | FBA objective equal to COBRApy's documented 0.8739 h⁻¹ within solver tolerance; HiGHS and GLPK agree; FVA and single-gene deletions consistent across solvers |
 | PhysiCell | Reviewed sample models | Invariants from the model's own parameters (e.g. growth rate implied by the cycle model), seeded single-thread reproducibility, output files parse |
+| GNINA rescoring | GNINA's `test_gnina.py` and `test_cnn.py` at the v1.3.3 commit; Liatir's 1IEP redocking and screen | The upstream assertions as written; GPU and CPU agree to 3 decimals (`test_cnn.py`); the pose GNINA ranks first lies within 2.0 Å of crystal imatinib; reported scores equal GNINA's own output exactly |
 
 Resource use, malformed and unsupported inputs, cancellation and provenance are validated for every
 component.
 
 ## Blockers and risks
 
-- **B1 — GNINA redistribution. Decided 2026-11-04:** the box fetches GNINA's official binary at
+- **B1 — GNINA redistribution. Resolved 2026-11-05:** the box fetches GNINA's official binary at
   install, from its GitHub release, pinned by size and SHA-256; Liatir never redistributes it
-  ([decision](../../decisions/gnina-binary-fetched-at-install.md)). It needs Liatir's installer to
-  download on-demand assets, which it does not do yet. The original note follows. The official binary is GPL-2.0 as a
+  ([decision](../../decisions/gnina-binary-fetched-at-install.md)). The installer downloads on-demand
+  assets (`a606094f`) and the signer signs only the ones its policy approves (finding 48). The
+  original note follows. The official binary is GPL-2.0 as a
   whole and is distributed together with NVIDIA libraries. Before Liatir redistributes it, inspect
   what the binary links statically, establish whether the result can be distributed under GPL-2.0 at
   all, and choose a delivery mode from the workbench plan's list: a signed box with the binary and its
@@ -529,7 +569,7 @@ component.
 | Component | Status | Evidence |
 | --- | --- | --- |
 | Vina, RDKit, Meeko, PDBFixer, Ringtail | SCIENTIFICALLY VALIDATED and PRODUCT VALIDATED on native Linux (development build); Windows through WSL2 and publication pending | `runtime-boxes/measurements/molecular-docking-linux-x86_64-cpu-development-2026-11-03.json`, `runtime-boxes/measurements/molecular-docking-linux-x86_64-cpu-product-lifecycle-development-2026-11-03.json` |
-| GNINA | Decided (B1): official binary fetched at install; not started | finding 8, [decision](../../decisions/gnina-binary-fetched-at-install.md) |
+| GNINA | SCIENTIFICALLY VALIDATED and PRODUCT VALIDATED on native Linux on this host's GPU (development build, validated as unpacked from its signed archive with GNINA's release asset placed as the installer places it); Windows through WSL2 and publication pending | `runtime-boxes/measurements/gnina-linux-x86_64-cuda12.8-development-2026-11-05.json`, `runtime-boxes/measurements/gnina-linux-x86_64-cuda12.8-product-lifecycle-development-2026-11-05.json` |
 | MDAnalysis, ProLIF | SCIENTIFICALLY VALIDATED and PRODUCT VALIDATED on native Linux (development build); Windows through WSL2 and publication pending | `runtime-boxes/measurements/molecular-analysis-linux-x86_64-cpu-development-2026-11-04.json`, `runtime-boxes/measurements/molecular-analysis-linux-x86_64-cpu-product-lifecycle-development-2026-11-04.json` |
 | Docked Complex (docking box) | SCIENTIFICALLY VALIDATED and PRODUCT VALIDATED on native Linux (development build); Windows through WSL2 and publication pending | `runtime-boxes/measurements/molecular-docking-linux-x86_64-cpu-development-2026-11-04.json`, `runtime-boxes/measurements/docking-simulation-chain-development-2026-11-04.json` |
 | PySB, BioNetGen | SCIENTIFICALLY VALIDATED on the development build's directory; the installed box cannot start BioNetGen (B5) | `runtime-boxes/measurements/biochemical-simulation-linux-x86_64-cpu-development-2026-11-04.json` |
@@ -729,6 +769,41 @@ exactly on schedule at all 41 times checked, both inside the measured envelope; 
 provenance, the offline boundary and the interpretation notice held; removal kept every Result file.
 Record `runtime-boxes/measurements/physicell-linux-x86_64-cpu-product-lifecycle-development-2026-11-04.json`.
 
+## Phase 3 GNINA evidence (development build, 2026-11-05)
+
+Box `gnina` `1.3.3-beta.1` / `linux-x86_64-cuda12.8`, lock `edf8fc87…`, 33 packages: Python 3.11.18,
+CUDA 12.8 runtime libraries and cuDNN 9.10.2; GNINA's binary is an on-demand asset in the signed
+release. Signed with the WSL2 development key: archive `14ca0d35…`, 2.26 GB, installed 3.48 GB.
+`scripts/validate-gnina-runtime.mjs` placed GNINA's release asset in the payload unpacked from the
+signed archive and had Scrollcase verify it as the app does, then ran on the RTX 4060 Ti: **passed**,
+record `runtime-boxes/measurements/gnina-linux-x86_64-cuda12.8-development-2026-11-05.json`. The
+poses are Liatir Molecular Docking's own output, `runtime-boxes/fixtures/gnina/` with their
+provenance and each imatinib pose's RMSD to the crystal.
+
+| Check | Reference | Result |
+| --- | --- | --- |
+| The installed self-test | — | GNINA starts from the box as the runner starts it |
+| `noelem`, default and Vinardo scoring | `test_gnina.py` at the v1.3.3 commit: affinity < −8, CNN affinity > 5 | −8.086 / 5.618, both scorings |
+| `3rod` under three CNN models | same: Vina term equal, CNN affinity different but within 1 | holds for `fast` and `default1.0` |
+| `184l` docked with and without the GPU, seed 2 | `test_cnn.py`: modes sorted, GPU and CPU to 3 decimals | sorted; largest difference 0.001 (one unit of the printed value) |
+| 1IEP redocking, 6 Vina poses | redocking criterion ≤ 2.0 Å | GNINA's top pose is Vina's rank 2, 0.90 Å; Vina's rank 1 is 0.37 Å |
+| 1IEP screen, 38 poses of 6 molecules | same | both imatinib inputs: top pose 0.36 Å; every pose within 2 Å ranked above every pose beyond it, where Vina ranked two 12 Å poses above a 1.8 Å one |
+| Score extraction | GNINA's own SD output for the same command | equal exactly |
+| The same poses on the CPU | `test_cnn.py` tolerance | largest difference 5.8 × 10⁻⁴; Vina term identical |
+| The same input twice on the GPU; with PTX JIT disabled | — | identical scores both times |
+| Refusals | — | poses docked into another receptor, foreign poses, an unrecorded receptor, a repeated pose, a PDB as receptor, no GPU visible, no measured preflight |
+| Nothing written outside the run | — | the home directory stays empty (finding 45); the signed payload re-verifies |
+
+Peak memory about 1.0 GB (process tree), GPU memory 231 MB (device-wide delta), 3 s for 38 poses.
+
+**Real-app lifecycle, native Linux (WSL2, Xvfb, RTX 4060 Ti), 2026-11-05: 2 of 2 passed** on the first
+run — the installer took the box from the candidate registry and GNINA's 2.06 GB release asset from
+GitHub, verified it and marked it executable; a killed Job reached `killed`; the 1IEP redocking from
+the user's Data was rescored inside the measured envelope, GNINA's top pose 0.90 Å from crystal
+imatinib; Jobs, Results, provenance (with GNINA's SHA-256), the offline boundary and the
+interpretation notice held; removal kept every Result file. 160 s including the download. Record
+`runtime-boxes/measurements/gnina-linux-x86_64-cuda12.8-product-lifecycle-development-2026-11-05.json`.
+
 ## Progress log
 
 - 2026-11-03 — Phase 1. Context read; WSL2 host and toolchain measured; Linux checkout brought to
@@ -766,6 +841,12 @@ Record `runtime-boxes/measurements/physicell-linux-x86_64-cpu-product-lifecycle-
   build recipe, box, runner, contract, release candidate, Multicellular Simulation page and pipeline
   step, restart finalizer, unit tests, lifecycle spec, catalog and signer-policy entries, CI workflow,
   release option and source-mirror workflow; validated (above); findings 38–41.
+- 2026-11-05 — GNINA: on-demand assets in the installer and the WSL2 consumer (`a606094f`); the
+  release binary inspected and run on the GPU (findings 42–47, 49); its driver floor decided; box,
+  runner, contract, release candidate, Neural Pose Rescoring page and pipeline step, restart
+  finalizer, unit tests, lifecycle spec, catalog and signer-policy entries (with the signer's new
+  on-demand asset check, finding 48), CI workflow and release option; validated and the real-app
+  lifecycle passed on native Linux (above).
 
 ## For the owner
 
@@ -776,15 +857,13 @@ Record `runtime-boxes/measurements/physicell-linux-x86_64-cpu-product-lifecycle-
 
 ## Next concrete actions
 
-0. GNINA (B1, decided): on-demand assets in Liatir's installer, then the GNINA box and its
-   rescoring tool, validated on this machine's GPU.
-
 1. The Windows-through-WSL2 lifecycle with a Windows test app built with the same candidate (the
    only build outside WSL2 the plan allows: the product shell, not a scientific component).
 2. Production release (B3, B4): merge, signer redeploy, `runtime-box-release.yml` with
    `model_id=autodock-vina-molecular-docking`, `target_id=linux-x86_64-cpu`, `channel=beta`; then the
    publication commit (catalog, product catalog, docs, measurement from the production build).
 3. Real-app lifecycle of every tool through WSL2 with item 1 (all pass on native Linux except
-   Biochemical Simulation, B5).
+   Biochemical Simulation, B5). The Windows test app must carry the rebuilt WSL2 consumer, which
+   now places on-demand assets (GNINA).
 4. Real-app lifecycle of Biochemical Simulation, once B5 is resolved.
 5. The PhysiCell source mirror and its Registry deploy, with the production release (B2, B4).

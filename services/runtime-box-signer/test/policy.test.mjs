@@ -301,6 +301,34 @@ test('rejects an archive hosted outside the controlled origin', () => {
   }), /origin is not approved/);
 });
 
+// A file the installer fetches beside the archive is trusted as far as the signature goes, so only the
+// exact one the policy approves for that box may be named.
+test('signs only the on-demand assets the policy approves for the box', () => {
+  const gnina = policy.boxes.find((box) => box.boxId === 'gnina');
+  const [binary] = gnina.onDemandAssets;
+  const gninaRelease = {
+    ...release,
+    boxId: 'gnina',
+    labels: { model: gnina.modelId, runtime: gnina.runtimeId },
+    version: '1.3.3-beta.1',
+    target: { platform: 'linux', arch: 'x86_64', accelerator: 'cuda', cudaVersion: '12.8' },
+    archive: {
+      ...release.archive,
+      url: `https://assets.models.liatir.com/ai-runtime-boxes/boxes/gnina/1.3.3-beta.1/linux-x86_64-cuda12.8/${'a'.repeat(64)}.zip`,
+    },
+    assets: [{ ...binary }],
+  };
+  assert.doesNotThrow(() => validateSigningPayload(policy, gninaRelease));
+  assert.throws(() => validateSigningPayload(policy, { ...gninaRelease, assets: [{ ...binary, sha256: 'f'.repeat(64) }] }),
+    /on-demand asset is not approved/);
+  assert.throws(() => validateSigningPayload(policy, {
+    ...gninaRelease, assets: [{ ...binary, url: binary.url.replace('github.com', 'attacker.example') }],
+  }), /on-demand asset is not approved/);
+  assert.throws(() => validateSigningPayload(policy, { ...gninaRelease, assets: [{ ...binary }, { ...binary }] }),
+    /paths must be unique/);
+  assert.throws(() => validateSigningPayload(policy, { ...release, assets: [{ ...binary }] }), /on-demand asset is not approved/);
+});
+
 // The allowlist means the signer cannot be used to bless an arbitrary new box, only the ones that
 // were explicitly approved for release.
 test('rejects a box outside the versioned allowlist', () => {

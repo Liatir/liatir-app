@@ -23,6 +23,7 @@
     MOLECULAR_DOCKING_RUNTIME_COMPONENT_ID,
     OPENMM_RUNTIME_COMPONENT_ID,
     PHYSICELL_RUNTIME_COMPONENT_ID,
+    GNINA_RUNTIME_COMPONENT_ID,
     PVACTOOLS_RUNTIME_COMPONENT_ID,
     isLiatirStructureModelId,
   } from '@liatir/core';
@@ -59,6 +60,10 @@
   );
   const biochemicalPublished = LIATIR_TOOL_RUNTIME_CATALOG.some(
     (runtime) => runtime.id === BIOCHEMICAL_SIMULATION_RUNTIME_COMPONENT_ID
+      && runtime.install.runtimeBox.publishedTargets.length > 0,
+  );
+  const gninaPublished = LIATIR_TOOL_RUNTIME_CATALOG.some(
+    (runtime) => runtime.id === GNINA_RUNTIME_COMPONENT_ID
       && runtime.install.runtimeBox.publishedTargets.length > 0,
   );
   const physicellPublished = LIATIR_TOOL_RUNTIME_CATALOG.some(
@@ -289,6 +294,15 @@
       status: biochemicalPublished ? 'available' : 'soon',
       tags: ['BNGL', 'ODE', 'Stochastic', 'Rule-based', 'PySB'],
       category: 'Systems Biology',
+    },
+    {
+      id: 'neural-pose-rescoring',
+      label: 'Neural Pose Rescoring',
+      description: 'Rescore docked poses with GNINA’s neural networks and compare them with their Vina scores.',
+      ...(gninaPublished ? { href: '/tools/neural-pose-rescoring' } : {}),
+      status: gninaPublished ? 'available' : 'soon',
+      tags: ['GNINA', 'CNN', 'Docking', 'Rescoring'],
+      category: 'Molecular Docking',
     },
     {
       id: 'multicellular-simulation',

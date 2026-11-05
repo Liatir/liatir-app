@@ -44,6 +44,12 @@ import {
   PHYSICELL_VERSION,
 } from "./physicell.js";
 import {
+  GNINA_BOX_ID,
+  GNINA_RUNTIME_COMPONENT_ID,
+  GNINA_RUNTIME_ID,
+  GNINA_VERSION,
+} from "./gnina.js";
+import {
   OPENMM_BOX_ID,
   OPENMM_RUNTIME_COMPONENT_ID,
   OPENMM_RUNTIME_ID,
@@ -527,6 +533,61 @@ export const PHYSICELL_RELEASE_CANDIDATE_METADATA: LiatirToolRuntimeMetadata = {
     officialUrl: "http://physicell.org/",
   },
   tags: ["runtime-box", "multicellular-simulation", "agent-based-model", "physicell"],
+};
+
+/**
+ * GNINA, kept out of the product catalog until a signed target is published; the installer requires
+ * every requirement here to equal the signed release's exactly. The box does not contain GNINA: the
+ * installer downloads GNINA's own release asset and verifies it before the box is activated.
+ */
+export const GNINA_RELEASE_CANDIDATE_METADATA: LiatirToolRuntimeMetadata = {
+  id: GNINA_RUNTIME_COMPONENT_ID,
+  name: "GNINA 1.3.3",
+  description: "Local rescoring of docked poses with GNINA's convolutional neural networks, beside their Vina scores.",
+  category: "Molecular Docking",
+  version: GNINA_VERSION,
+  runtime: { kind: "python-venv", name: "Neural Pose Rescoring Runtime", version: "Python 3.11" },
+  localOnly: true,
+  install: {
+    method: "runtime-box",
+    runtimeId: GNINA_RUNTIME_ID,
+    runtimeBox: {
+      boxId: GNINA_BOX_ID,
+      channel: "beta",
+      registryBaseUrl: "https://models.liatir.com/v1",
+      publishedTargets: [{
+        target: { platform: "linux", arch: "x86_64", accelerator: "cuda", cudaVersion: "12.8" },
+        hostEnvironments: ["native", "windows-wsl2"],
+        minRamGb: 4,
+        minNvidiaDriverVersion: "570.26",
+      }],
+    },
+    hostRequirements: {
+      os: ["linux", "windows"],
+      arch: ["x86_64"],
+      reason: "GNINA runs on an NVIDIA GPU: on Linux x86_64 natively (glibc 2.35 or newer, such as Ubuntu 22.04), or on Windows through WSL2. It is not available on macOS or without an NVIDIA GPU.",
+    },
+  },
+  license: {
+    name: "GNINA GPL-2.0 (with OpenBabel), downloaded from GNINA's own release at install",
+    spdxId: "GPL-2.0-only",
+    url: "https://github.com/gnina/gnina/blob/v1.3.3/LICENSE.GNU",
+    verifiedAt: "2026-11-05",
+    components: [
+      { scope: "runtime", name: "GNINA 1.3.3 release binary, fetched from GNINA's GitHub release and never redistributed by Liatir", spdxId: "GPL-2.0-only", sourceUrl: "https://github.com/gnina/gnina/releases/tag/v1.3.3" },
+    ],
+  },
+  hardware: {
+    cpu: false,
+    gpu: true,
+    minRamGb: 4,
+    notes: "Needs an NVIDIA GPU of compute capability 6.0 (Pascal) or newer with driver 570.26 or newer; on Windows, 570.65 or newer with the GPU visible inside WSL2. Installing downloads the box and GNINA's own 2.1 GB program from GNINA's GitHub release.",
+  },
+  documentation: {
+    liatirPath: "/tools/neural-pose-rescoring",
+    officialUrl: "https://github.com/gnina/gnina",
+  },
+  tags: ["runtime-box", "gnina", "molecular-docking", "pose-rescoring", "cnn"],
 };
 
 /**

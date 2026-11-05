@@ -1,0 +1,319 @@
+{
+  "schemaVersion": 1,
+  "producedBy": "Liatir Molecular Docking runner on the molecular-docking 1.2.7-beta.1 linux-x86_64-cpu development build",
+  "productRunnerSha256": "24677c0ef144339215dfbeeaad8257e22a91ebb85583eeed1241fba22c793868",
+  "receptorPdbqtSha256": "f13cf3b36f61d87c3b58983e0b8ecf1c3456a685eb86dfe9ccfb139c7bdc2586",
+  "crystalLigandSha256": "051b8742c32adc05c07fb486a4e7c9327f84e131cee33ac4e6a568d07553eb38",
+  "site": {
+    "mode": "box",
+    "center": [
+      15.19,
+      53.903,
+      16.917
+    ],
+    "size": [
+      20,
+      20,
+      20
+    ]
+  },
+  "fixtures": {
+    "1iep-redocking-poses.sdf": {
+      "sha256": "2bc32bcba4856a3cafb0a8682b4c6d90c5e3779510846e194b22e5220a0c14ae",
+      "sizeBytes": 38075,
+      "poses": 6,
+      "dockedLigands": 1,
+      "ligandsSdf": "1iep_ligand.sdf (crystal imatinib)",
+      "docking": {
+        "exhaustiveness": 32,
+        "numPoses": 9,
+        "seed": 42,
+        "cpu": 4
+      },
+      "topScoreKcalPerMol": -13.219,
+      "poseRows": [
+        {
+          "ligand": "STI",
+          "poseRank": 1,
+          "vinaScoreKcalPerMol": -13.219,
+          "rmsdToCrystalAngstrom": 0.368
+        },
+        {
+          "ligand": "STI",
+          "poseRank": 2,
+          "vinaScoreKcalPerMol": -12.373,
+          "rmsdToCrystalAngstrom": 0.898
+        },
+        {
+          "ligand": "STI",
+          "poseRank": 3,
+          "vinaScoreKcalPerMol": -11.333,
+          "rmsdToCrystalAngstrom": 1.6
+        },
+        {
+          "ligand": "STI",
+          "poseRank": 4,
+          "vinaScoreKcalPerMol": -11.242,
+          "rmsdToCrystalAngstrom": 12.287
+        },
+        {
+          "ligand": "STI",
+          "poseRank": 5,
+          "vinaScoreKcalPerMol": -10.977,
+          "rmsdToCrystalAngstrom": 12.229
+        },
+        {
+          "ligand": "STI",
+          "poseRank": 6,
+          "vinaScoreKcalPerMol": -10.57,
+          "rmsdToCrystalAngstrom": 12.468
+        }
+      ]
+    },
+    "1iep-screen-poses.sdf": {
+      "sha256": "80ffba1fa0bdb61f37f7152fa7339af43b8746d7f2fb472e5aa2bc8fc2517945",
+      "sizeBytes": 162119,
+      "poses": 38,
+      "dockedLigands": 6,
+      "ligandsSdf": "the Molecular Docking validator's nine-molecule library",
+      "docking": {
+        "exhaustiveness": 8,
+        "numPoses": 9,
+        "seed": 42,
+        "cpu": 4
+      },
+      "topScoreKcalPerMol": -13.506,
+      "poseRows": [
+        {
+          "ligand": "imatinib-crystal",
+          "poseRank": 1,
+          "vinaScoreKcalPerMol": -13.277,
+          "rmsdToCrystalAngstrom": 0.356
+        },
+        {
+          "ligand": "imatinib-crystal",
+          "poseRank": 2,
+          "vinaScoreKcalPerMol": -11.336,
+          "rmsdToCrystalAngstrom": 1.407
+        },
+        {
+          "ligand": "imatinib-crystal",
+          "poseRank": 3,
+          "vinaScoreKcalPerMol": -11.237,
+          "rmsdToCrystalAngstrom": 12.322
+        },
+        {
+          "ligand": "imatinib-crystal",
+          "poseRank": 4,
+          "vinaScoreKcalPerMol": -11.031,
+          "rmsdToCrystalAngstrom": 12.229
+        },
+        {
+          "ligand": "imatinib-crystal",
+          "poseRank": 5,
+          "vinaScoreKcalPerMol": -10.752,
+          "rmsdToCrystalAngstrom": 1.805
+        },
+        {
+          "ligand": "imatinib-without-hydrogens",
+          "poseRank": 1,
+          "vinaScoreKcalPerMol": -13.277,
+          "rmsdToCrystalAngstrom": 0.356
+        },
+        {
+          "ligand": "imatinib-without-hydrogens",
+          "poseRank": 2,
+          "vinaScoreKcalPerMol": -11.336,
+          "rmsdToCrystalAngstrom": 1.407
+        },
+        {
+          "ligand": "imatinib-without-hydrogens",
+          "poseRank": 3,
+          "vinaScoreKcalPerMol": -11.237,
+          "rmsdToCrystalAngstrom": 12.322
+        },
+        {
+          "ligand": "imatinib-without-hydrogens",
+          "poseRank": 4,
+          "vinaScoreKcalPerMol": -11.031,
+          "rmsdToCrystalAngstrom": 12.229
+        },
+        {
+          "ligand": "imatinib-without-hydrogens",
+          "poseRank": 5,
+          "vinaScoreKcalPerMol": -10.752,
+          "rmsdToCrystalAngstrom": 1.805
+        },
+        {
+          "ligand": "nilotinib",
+          "poseRank": 1,
+          "vinaScoreKcalPerMol": -13.506,
+          "rmsdToCrystalAngstrom": null
+        },
+        {
+          "ligand": "dasatinib",
+          "poseRank": 1,
+          "vinaScoreKcalPerMol": -9.07,
+          "rmsdToCrystalAngstrom": null
+        },
+        {
+          "ligand": "dasatinib",
+          "poseRank": 2,
+          "vinaScoreKcalPerMol": -8.983,
+          "rmsdToCrystalAngstrom": null
+        },
+        {
+          "ligand": "dasatinib",
+          "poseRank": 3,
+          "vinaScoreKcalPerMol": -8.439,
+          "rmsdToCrystalAngstrom": null
+        },
+        {
+          "ligand": "dasatinib",
+          "poseRank": 4,
+          "vinaScoreKcalPerMol": -7.814,
+          "rmsdToCrystalAngstrom": null
+        },
+        {
+          "ligand": "dasatinib",
+          "poseRank": 5,
+          "vinaScoreKcalPerMol": -7.773,
+          "rmsdToCrystalAngstrom": null
+        },
+        {
+          "ligand": "dasatinib",
+          "poseRank": 6,
+          "vinaScoreKcalPerMol": -7.698,
+          "rmsdToCrystalAngstrom": null
+        },
+        {
+          "ligand": "dasatinib",
+          "poseRank": 7,
+          "vinaScoreKcalPerMol": -7.664,
+          "rmsdToCrystalAngstrom": null
+        },
+        {
+          "ligand": "dasatinib",
+          "poseRank": 8,
+          "vinaScoreKcalPerMol": -7.617,
+          "rmsdToCrystalAngstrom": null
+        },
+        {
+          "ligand": "dasatinib",
+          "poseRank": 9,
+          "vinaScoreKcalPerMol": -7.513,
+          "rmsdToCrystalAngstrom": null
+        },
+        {
+          "ligand": "decoy",
+          "poseRank": 1,
+          "vinaScoreKcalPerMol": -5.869,
+          "rmsdToCrystalAngstrom": null
+        },
+        {
+          "ligand": "decoy",
+          "poseRank": 2,
+          "vinaScoreKcalPerMol": -5.819,
+          "rmsdToCrystalAngstrom": null
+        },
+        {
+          "ligand": "decoy",
+          "poseRank": 3,
+          "vinaScoreKcalPerMol": -5.623,
+          "rmsdToCrystalAngstrom": null
+        },
+        {
+          "ligand": "decoy",
+          "poseRank": 4,
+          "vinaScoreKcalPerMol": -5.421,
+          "rmsdToCrystalAngstrom": null
+        },
+        {
+          "ligand": "decoy",
+          "poseRank": 5,
+          "vinaScoreKcalPerMol": -5.386,
+          "rmsdToCrystalAngstrom": null
+        },
+        {
+          "ligand": "decoy",
+          "poseRank": 6,
+          "vinaScoreKcalPerMol": -5.266,
+          "rmsdToCrystalAngstrom": null
+        },
+        {
+          "ligand": "decoy",
+          "poseRank": 7,
+          "vinaScoreKcalPerMol": -5.182,
+          "rmsdToCrystalAngstrom": null
+        },
+        {
+          "ligand": "decoy",
+          "poseRank": 8,
+          "vinaScoreKcalPerMol": -5.176,
+          "rmsdToCrystalAngstrom": null
+        },
+        {
+          "ligand": "decoy",
+          "poseRank": 9,
+          "vinaScoreKcalPerMol": -5.133,
+          "rmsdToCrystalAngstrom": null
+        },
+        {
+          "ligand": "decoy_6",
+          "poseRank": 1,
+          "vinaScoreKcalPerMol": -7.152,
+          "rmsdToCrystalAngstrom": null
+        },
+        {
+          "ligand": "decoy_6",
+          "poseRank": 2,
+          "vinaScoreKcalPerMol": -7.068,
+          "rmsdToCrystalAngstrom": null
+        },
+        {
+          "ligand": "decoy_6",
+          "poseRank": 3,
+          "vinaScoreKcalPerMol": -6.788,
+          "rmsdToCrystalAngstrom": null
+        },
+        {
+          "ligand": "decoy_6",
+          "poseRank": 4,
+          "vinaScoreKcalPerMol": -6.591,
+          "rmsdToCrystalAngstrom": null
+        },
+        {
+          "ligand": "decoy_6",
+          "poseRank": 5,
+          "vinaScoreKcalPerMol": -6.486,
+          "rmsdToCrystalAngstrom": null
+        },
+        {
+          "ligand": "decoy_6",
+          "poseRank": 6,
+          "vinaScoreKcalPerMol": -6.427,
+          "rmsdToCrystalAngstrom": null
+        },
+        {
+          "ligand": "decoy_6",
+          "poseRank": 7,
+          "vinaScoreKcalPerMol": -6.327,
+          "rmsdToCrystalAngstrom": null
+        },
+        {
+          "ligand": "decoy_6",
+          "poseRank": 8,
+          "vinaScoreKcalPerMol": -6.27,
+          "rmsdToCrystalAngstrom": null
+        },
+        {
+          "ligand": "decoy_6",
+          "poseRank": 9,
+          "vinaScoreKcalPerMol": -6.237,
+          "rmsdToCrystalAngstrom": null
+        }
+      ]
+    }
+  },
+  "rmsdMethod": "Heavy-atom RMSD to crystal imatinib (1iep_ligand.sdf), symmetry-aware and without alignment: RDKit CalcRMS, from the Molecular Docking box"
+}

@@ -85,6 +85,25 @@ function validateHostEnvironments(payload) {
   );
 }
 
+/**
+ * A release may name files the installer downloads beside its archive (Scrollcase `embed: false`).
+ * Installations trust them as far as the signature goes, so the signer signs only the exact files the
+ * policy approves for the box — address, path, size, digest and mode — and no others.
+ */
+function validateOnDemandAssets(box, assets) {
+  if (assets === undefined) return;
+  requireValue(Array.isArray(assets) && assets.length > 0, 'on-demand assets must be a non-empty array');
+  const paths = new Set();
+  for (const asset of assets) {
+    const approved = (box.onDemandAssets ?? []).some((candidate) => candidate.url === asset?.url
+      && candidate.relativePath === asset.relativePath && candidate.sizeBytes === asset.sizeBytes
+      && candidate.sha256 === asset.sha256 && Boolean(candidate.executable) === Boolean(asset.executable));
+    requireValue(approved, `on-demand asset is not approved for this box: ${asset?.url}`);
+    requireValue(!paths.has(asset.relativePath), 'on-demand asset paths must be unique');
+    paths.add(asset.relativePath);
+  }
+}
+
 function validateRelease(policy, payload) {
   const box = allowedBox(policy, payload.boxId);
   // Scrollcase v3 carries a publisher's own identities as labels; Liatir signs both of its own.
@@ -103,6 +122,7 @@ function validateRelease(policy, payload) {
     );
   }
   validateHostEnvironments(payload);
+  validateOnDemandAssets(box, payload.assets);
   exactAssetUrl(policy, payload.archive.url, `boxes/${payload.boxId}/${payload.version}/${target}/${payload.archive.sha256}.zip`);
   requireValue(payload.provenance?.sourceTreeDirty === false, 'dirty source trees cannot be signed for production');
   for (const field of ['scrollId', 'scrollVersion', 'builderRevision', 'sourceRevision', 'runtimeVersion', 'pixiVersion', 'dependencyLockSha256', 'builtAt']) {

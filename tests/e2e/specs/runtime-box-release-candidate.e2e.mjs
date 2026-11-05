@@ -25,6 +25,8 @@ export const tests = [{
           ? '/tools/biochemical-simulation'
         : candidateId === 'physicell-multicellular-simulation'
           ? '/tools/multicellular-simulation'
+        : candidateId === 'gnina-pose-rescoring'
+          ? '/tools/neural-pose-rescoring'
         : ['jwohlwend-boltz-2', 'bytedance-protenix-base-v1-0-0', 'bytedance-protenix-v2', 'bytedance-protenix-mini-default-v0-5-0'].includes(candidateId)
           ? '/tools/structure/prediction'
         : null;

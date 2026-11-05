@@ -66,7 +66,7 @@ const structureRequirement = {
   validation: 'valid-or-partial' as const,
 };
 
-const structureArtifact = (format: 'pdb' | 'sdf') => ({
+export const structureArtifact = (format: 'pdb' | 'sdf') => ({
   profile: { ...LIATIR_STRUCTURE_PROFILE_V1 }, format, scientificType: 'molecular-structure',
 });
 

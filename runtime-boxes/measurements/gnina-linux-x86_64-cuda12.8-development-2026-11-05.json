@@ -1,0 +1,585 @@
+{
+  "schemaVersion": 1,
+  "kind": "liatir.gnina-scientific-validation",
+  "createdAt": "2026-11-05T10:24:46.973Z",
+  "status": "passed",
+  "modelId": "gnina-pose-rescoring",
+  "sourceRevision": "gnina-1.3.3+6fe1ce2bb9c3+binary-3340c1f49cd3",
+  "targetId": "linux-x86_64-cuda12.8",
+  "productRunnerSha256": "4a49e600d957287099109c30b685ce5db30c6c67cf43c171c9a74a5199dbfc02",
+  "cases": [
+    {
+      "id": "installed-self-test",
+      "output": "GNINA self-test passed: gnina v1.3.3 master:6fe1ce2, 9 CUDA libraries from the box"
+    },
+    {
+      "id": "upstream-test-gnina",
+      "noelem": {
+        "affinity": -8.08648,
+        "cnnAffinity": 5.6179
+      },
+      "vinardo": {
+        "affinity": -8.20845,
+        "cnnAffinity": 5.6179
+      },
+      "rodDefault": {
+        "affinity": -8.59729,
+        "cnnAffinity": 7.2456
+      },
+      "rodModels": {
+        "fast": {
+          "affinity": -8.59729,
+          "cnnAffinity": 7.73428
+        },
+        "default1.0": {
+          "affinity": -8.59729,
+          "cnnAffinity": 7.18455
+        }
+      }
+    },
+    {
+      "id": "upstream-test-cnn-gpu-cpu",
+      "modes": 10,
+      "maxAbsoluteDifference": 0.001000000000000334,
+      "gpuModes": [
+        [
+          -6.83,
+          0.9098,
+          4.705
+        ],
+        [
+          -6.84,
+          0.9084,
+          4.722
+        ],
+        [
+          -5.81,
+          0.8904,
+          4.457
+        ],
+        [
+          -6.79,
+          0.8751,
+          4.728
+        ],
+        [
+          -6.7,
+          0.8698,
+          4.659
+        ],
+        [
+          -6.85,
+          0.8687,
+          4.589
+        ],
+        [
+          -5.68,
+          0.7708,
+          4.393
+        ],
+        [
+          -5.79,
+          0.5882,
+          4.599
+        ],
+        [
+          -5.93,
+          0.5867,
+          4.502
+        ],
+        [
+          -5.64,
+          0.5327,
+          4.607
+        ]
+      ],
+      "cpuModes": [
+        [
+          -6.83,
+          0.9096,
+          4.705
+        ],
+        [
+          -6.84,
+          0.9083,
+          4.722
+        ],
+        [
+          -5.81,
+          0.8904,
+          4.457
+        ],
+        [
+          -6.79,
+          0.8749,
+          4.728
+        ],
+        [
+          -6.7,
+          0.8697,
+          4.659
+        ],
+        [
+          -6.85,
+          0.8686,
+          4.59
+        ],
+        [
+          -5.68,
+          0.7707,
+          4.393
+        ],
+        [
+          -5.79,
+          0.588,
+          4.599
+        ],
+        [
+          -5.93,
+          0.5865,
+          4.503
+        ],
+        [
+          -5.64,
+          0.5328,
+          4.608
+        ]
+      ]
+    },
+    {
+      "id": "1iep-redocking",
+      "metrics": {
+        "workloadId": "gnina:rescore",
+        "tokenCount": 6,
+        "atomCount": 2702,
+        "stepCount": 1,
+        "outputItemCount": 6
+      },
+      "measurement": {
+        "elapsedMs": 2816,
+        "peakRamBytes": 998859776,
+        "peakVramBytes": 230686720,
+        "vramMeasurementMethod": "device-wide-delta",
+        "vramDeviceBaselineBytes": 1070596096,
+        "gpuName": "NVIDIA GeForce RTX 4060 Ti",
+        "gpuDriverVersion": "610.88",
+        "gpuMemoryBytes": 8585740288,
+        "gpuComputeCapability": "8.9",
+        "vramSamplingIntervalMs": 50,
+        "vramMeasurementErrors": [],
+        "peakProcessTreePssBytes": 998859776,
+        "processTreeMeasurementErrors": []
+      },
+      "outputBytes": 44617,
+      "device": {
+        "index": 0,
+        "name": "NVIDIA GeForce RTX 4060 Ti",
+        "computeCapability": "8.9",
+        "driverCudaVersion": "13.3"
+      },
+      "ligands": [
+        {
+          "ligand": "STI",
+          "poses": 6,
+          "bestVinaPoseRank": 1,
+          "bestCnnPoseRank": 2,
+          "bestCnnPoseScore": 0.9658210874,
+          "bestCnnAffinityPk": 8.3958435059,
+          "agree": false
+        }
+      ]
+    },
+    {
+      "id": "1iep-screen",
+      "metrics": {
+        "workloadId": "gnina:rescore",
+        "tokenCount": 38,
+        "atomCount": 2702,
+        "stepCount": 1,
+        "outputItemCount": 38
+      },
+      "measurement": {
+        "elapsedMs": 3134,
+        "peakRamBytes": 944718848,
+        "peakVramBytes": 230686720,
+        "vramMeasurementMethod": "device-wide-delta",
+        "vramDeviceBaselineBytes": 1070596096,
+        "gpuName": "NVIDIA GeForce RTX 4060 Ti",
+        "gpuDriverVersion": "610.88",
+        "gpuMemoryBytes": 8585740288,
+        "gpuComputeCapability": "8.9",
+        "vramSamplingIntervalMs": 50,
+        "vramMeasurementErrors": [],
+        "peakProcessTreePssBytes": 944718848,
+        "processTreeMeasurementErrors": []
+      },
+      "outputBytes": 188713,
+      "device": {
+        "index": 0,
+        "name": "NVIDIA GeForce RTX 4060 Ti",
+        "computeCapability": "8.9",
+        "driverCudaVersion": "13.3"
+      },
+      "ligands": [
+        {
+          "ligand": "imatinib-crystal",
+          "poses": 5,
+          "bestVinaPoseRank": 1,
+          "bestCnnPoseRank": 1,
+          "bestCnnPoseScore": 0.967009604,
+          "bestCnnAffinityPk": 8.4519205093,
+          "agree": true
+        },
+        {
+          "ligand": "imatinib-without-hydrogens",
+          "poses": 5,
+          "bestVinaPoseRank": 1,
+          "bestCnnPoseRank": 1,
+          "bestCnnPoseScore": 0.967009604,
+          "bestCnnAffinityPk": 8.4519090652,
+          "agree": true
+        },
+        {
+          "ligand": "nilotinib",
+          "poses": 1,
+          "bestVinaPoseRank": 1,
+          "bestCnnPoseRank": 1,
+          "bestCnnPoseScore": 0.9655933976,
+          "bestCnnAffinityPk": 8.6612930298,
+          "agree": true
+        },
+        {
+          "ligand": "dasatinib",
+          "poses": 9,
+          "bestVinaPoseRank": 1,
+          "bestCnnPoseRank": 2,
+          "bestCnnPoseScore": 0.2257154137,
+          "bestCnnAffinityPk": 6.5549697876,
+          "agree": false
+        },
+        {
+          "ligand": "decoy",
+          "poses": 9,
+          "bestVinaPoseRank": 1,
+          "bestCnnPoseRank": 4,
+          "bestCnnPoseScore": 0.7472680807,
+          "bestCnnAffinityPk": 3.8119289875,
+          "agree": false
+        },
+        {
+          "ligand": "decoy_6",
+          "poses": 9,
+          "bestVinaPoseRank": 1,
+          "bestCnnPoseRank": 1,
+          "bestCnnPoseScore": 0.3619365096,
+          "bestCnnAffinityPk": 3.959695816,
+          "agree": true
+        }
+      ]
+    },
+    {
+      "id": "1iep-screen-repeat",
+      "metrics": {
+        "workloadId": "gnina:rescore",
+        "tokenCount": 38,
+        "atomCount": 2702,
+        "stepCount": 1,
+        "outputItemCount": 38
+      },
+      "measurement": {
+        "elapsedMs": 3019,
+        "peakRamBytes": 989062144,
+        "peakVramBytes": 231735296,
+        "vramMeasurementMethod": "device-wide-delta",
+        "vramDeviceBaselineBytes": 1070596096,
+        "gpuName": "NVIDIA GeForce RTX 4060 Ti",
+        "gpuDriverVersion": "610.88",
+        "gpuMemoryBytes": 8585740288,
+        "gpuComputeCapability": "8.9",
+        "vramSamplingIntervalMs": 50,
+        "vramMeasurementErrors": [],
+        "peakProcessTreePssBytes": 989062144,
+        "processTreeMeasurementErrors": []
+      },
+      "outputBytes": 188720,
+      "device": {
+        "index": 0,
+        "name": "NVIDIA GeForce RTX 4060 Ti",
+        "computeCapability": "8.9",
+        "driverCudaVersion": "13.3"
+      },
+      "ligands": [
+        {
+          "ligand": "imatinib-crystal",
+          "poses": 5,
+          "bestVinaPoseRank": 1,
+          "bestCnnPoseRank": 1,
+          "bestCnnPoseScore": 0.967009604,
+          "bestCnnAffinityPk": 8.4519205093,
+          "agree": true
+        },
+        {
+          "ligand": "imatinib-without-hydrogens",
+          "poses": 5,
+          "bestVinaPoseRank": 1,
+          "bestCnnPoseRank": 1,
+          "bestCnnPoseScore": 0.967009604,
+          "bestCnnAffinityPk": 8.4519090652,
+          "agree": true
+        },
+        {
+          "ligand": "nilotinib",
+          "poses": 1,
+          "bestVinaPoseRank": 1,
+          "bestCnnPoseRank": 1,
+          "bestCnnPoseScore": 0.9655933976,
+          "bestCnnAffinityPk": 8.6612930298,
+          "agree": true
+        },
+        {
+          "ligand": "dasatinib",
+          "poses": 9,
+          "bestVinaPoseRank": 1,
+          "bestCnnPoseRank": 2,
+          "bestCnnPoseScore": 0.2257154137,
+          "bestCnnAffinityPk": 6.5549697876,
+          "agree": false
+        },
+        {
+          "ligand": "decoy",
+          "poses": 9,
+          "bestVinaPoseRank": 1,
+          "bestCnnPoseRank": 4,
+          "bestCnnPoseScore": 0.7472680807,
+          "bestCnnAffinityPk": 3.8119289875,
+          "agree": false
+        },
+        {
+          "ligand": "decoy_6",
+          "poses": 9,
+          "bestVinaPoseRank": 1,
+          "bestCnnPoseRank": 1,
+          "bestCnnPoseScore": 0.3619365096,
+          "bestCnnAffinityPk": 3.959695816,
+          "agree": true
+        }
+      ]
+    },
+    {
+      "id": "no-ptx-jit",
+      "poses": 38,
+      "maxAbsoluteDifference": 0
+    },
+    {
+      "id": "other-receptor",
+      "rejected": true,
+      "message": "were not docked into this receptor PDBQT"
+    },
+    {
+      "id": "not-liatir-poses",
+      "rejected": true,
+      "message": "does not come from Liatir's Molecular Docking"
+    },
+    {
+      "id": "receptor-not-recorded",
+      "rejected": true,
+      "message": "do not record the receptor"
+    },
+    {
+      "id": "pose-twice",
+      "rejected": true,
+      "message": "twice"
+    },
+    {
+      "id": "receptor-not-pdbqt",
+      "rejected": true,
+      "message": "must use one of these formats"
+    },
+    {
+      "id": "no-gpu-visible",
+      "rejected": true,
+      "message": "reports no usable GPU"
+    },
+    {
+      "id": "no-measured-preflight",
+      "rejected": true
+    },
+    {
+      "id": "nothing-written-outside-the-run",
+      "homeEmpty": true,
+      "signedPayloadReverified": true
+    }
+  ],
+  "hardwareSamples": [
+    {
+      "fixtureId": "1iep-redocking",
+      "workloadId": "gnina:rescore",
+      "maxTokenCount": 6,
+      "maxAtomCount": 2702,
+      "maxStepCount": 1,
+      "maxOutputItemCount": 6,
+      "peakRamBytes": 998859776,
+      "peakVramBytes": 230686720,
+      "elapsedMs": 2816,
+      "outputBytes": 44617
+    },
+    {
+      "fixtureId": "1iep-screen",
+      "workloadId": "gnina:rescore",
+      "maxTokenCount": 38,
+      "maxAtomCount": 2702,
+      "maxStepCount": 1,
+      "maxOutputItemCount": 38,
+      "peakRamBytes": 944718848,
+      "peakVramBytes": 230686720,
+      "elapsedMs": 3134,
+      "outputBytes": 188713
+    },
+    {
+      "fixtureId": "1iep-screen-repeat",
+      "workloadId": "gnina:rescore",
+      "maxTokenCount": 38,
+      "maxAtomCount": 2702,
+      "maxStepCount": 1,
+      "maxOutputItemCount": 38,
+      "peakRamBytes": 989062144,
+      "peakVramBytes": 231735296,
+      "elapsedMs": 3019,
+      "outputBytes": 188720
+    }
+  ],
+  "runtimeEvidence": {
+    "kind": "signed-payload",
+    "signedPayloadVerified": true,
+    "releaseManifestSha256": "fa9ccef04821f379d90f754d5ae5f7a15f745260a4e6d5539206433e606e09bb",
+    "archiveSha256": "14ca0d359346c177923ea6c55934695843362a94e80e1fdc5e91240261c66d10",
+    "payloadDigestSha256": "87e9899c39f1c4693598002aeb8116c807fb996fbf63ac46c219089098da989e",
+    "provenance": {
+      "scrollId": "gnina-linux-x86_64-cuda12.8",
+      "scrollVersion": "1.0.0",
+      "builderRevision": "a606094f753a6cd088a24e46c824cb185f11032c",
+      "sourceTreeDirty": true,
+      "sourceRevision": "gnina-1.3.3+6fe1ce2bb9c3+binary-3340c1f49cd3",
+      "runtimeVersion": "3.11.18",
+      "pixiVersion": "0.73.0",
+      "dependencyLockSha256": "edf8fc870aeb21d354541eefb15535015248a7ecd9b6419a16bbd3295973f9a6",
+      "builtAt": "2026-11-04T23:28:37+01:00"
+    },
+    "onDemandAssets": [
+      {
+        "url": "https://github.com/gnina/gnina/releases/download/v1.3.3/gnina.cuda12.8.static",
+        "relativePath": "gnina/bin/gnina",
+        "sizeBytes": 2056131000,
+        "sha256": "3340c1f49cd3c7c84d8699182a1c6af13c7fa2a22448d1204640446106f72172",
+        "executable": true
+      }
+    ]
+  },
+  "reference": {
+    "upstreamTests": "test/gnina/test_gnina.py and test_cnn.py at gnina 6fe1ce2bb9c35c8067de9f49bb9169857dfbad70",
+    "gpuCpuTolerance": 0.0015,
+    "redockingRmsdAngstrom": 2,
+    "dockingGpuCpuMaxAbsoluteDifference": 0.001000000000000334,
+    "redocking": {
+      "1iep-redocking": {
+        "perLigand": [
+          {
+            "ligand": "STI",
+            "gninaTopPoseRank": 2,
+            "gninaTopPoseRmsdAngstrom": 0.898,
+            "vinaTopPoseRmsdAngstrom": 0.368,
+            "correctPosesRankedBelowIncorrect": false
+          }
+        ],
+        "gpuCpuMaxAbsoluteDifference": 0.00037860870000017144,
+        "vinaTermOnVinaTopPose": {
+          "vina": -13.219,
+          "gnina": -13.22322
+        },
+        "agreeing": 0,
+        "ligands": 1
+      },
+      "1iep-screen": {
+        "perLigand": [
+          {
+            "ligand": "imatinib-crystal",
+            "gninaTopPoseRank": 1,
+            "gninaTopPoseRmsdAngstrom": 0.356,
+            "vinaTopPoseRmsdAngstrom": 0.356,
+            "correctPosesRankedBelowIncorrect": false
+          },
+          {
+            "ligand": "imatinib-without-hydrogens",
+            "gninaTopPoseRank": 1,
+            "gninaTopPoseRmsdAngstrom": 0.356,
+            "vinaTopPoseRmsdAngstrom": 0.356,
+            "correctPosesRankedBelowIncorrect": false
+          }
+        ],
+        "gpuCpuMaxAbsoluteDifference": 0.0005781650999998611,
+        "vinaTermOnVinaTopPose": {
+          "vina": -13.277,
+          "gnina": -13.2842
+        },
+        "agreeing": 4,
+        "ligands": 6
+      }
+    },
+    "repeat": {
+      "identical": true,
+      "maxAbsoluteDifference": 0
+    },
+    "noPtxJit": {
+      "maxAbsoluteDifference": 0
+    }
+  },
+  "measurementHost": {
+    "platform": "linux",
+    "arch": "x64",
+    "osRelease": "6.18.33.2-microsoft-standard-WSL2",
+    "cpuModel": "Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz",
+    "logicalCpuCount": 6,
+    "totalMemoryBytes": 12543180800
+  },
+  "validatorSource": {
+    "gitCommit": "a606094f753a6cd088a24e46c824cb185f11032c",
+    "sourceTreeDirty": true,
+    "scriptSha256": "1de11e34a2f772b74bf62a67f2f730b7ccf099c4a8f9b07bfa7a685c1e30e557",
+    "measurementScriptSha256": "69b3d3ea2b3d8ea402477442b3b45fd64df884e5e1397b9f916a13fe8fa9832e",
+    "recipeSha256": "0eee4b77eaf2ab9b5b0f8eb138840bdd47e897ea2358d4646b35d4a2c70d0c0d"
+  },
+  "provenance": {
+    "recipeId": "gnina-linux-x86_64-cuda12.8",
+    "recipeVersion": "1.0.0",
+    "pythonVersion": "3.11.18",
+    "pixiVersion": "0.73.0",
+    "dependencyLockSha256": "edf8fc870aeb21d354541eefb15535015248a7ecd9b6419a16bbd3295973f9a6"
+  },
+  "evidence": {
+    "fixture": {
+      "id": "liatir-molecular-docking-1iep-poses",
+      "provenanceSha256": "c52ab5944f35cf7caa4cd17d1a35d46b2fa32ec445a3e722c7f08b2a0ceba05f",
+      "receptorPdbqtSha256": "f13cf3b36f61d87c3b58983e0b8ecf1c3456a685eb86dfe9ccfb139c7bdc2586"
+    },
+    "framework": {
+      "name": "gnina",
+      "version": "1.3.3",
+      "build": "gnina v1.3.3 master:6fe1ce2",
+      "backend": "cuda",
+      "binarySha256": "3340c1f49cd3c7c84d8699182a1c6af13c7fa2a22448d1204640446106f72172"
+    },
+    "accelerator": {
+      "kind": "cuda",
+      "gpuModel": "NVIDIA GeForce RTX 4060 Ti",
+      "gpuMemoryBytes": 8585740288,
+      "computeCapability": "8.9",
+      "driverVersion": "610.88",
+      "vramMeasurementMethod": "device-wide-delta"
+    },
+    "finiteValues": true,
+    "peakRamBytes": 998859776,
+    "peakVramBytes": 231735296,
+    "outputContract": "passed",
+    "provenanceContract": "passed"
+  }
+}

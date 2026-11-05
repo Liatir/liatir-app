@@ -37,6 +37,7 @@ import {
 import { metabolicModelingDefinition, runMetabolicModelingStep } from './metabolic-modeling/metabolic';
 import { biochemicalSimulationDefinition, runBiochemicalSimulationStep } from './biochemical-simulation/biochemical';
 import { multicellularSimulationDefinition, runMulticellularSimulationStep } from './physicell/physicell';
+import { neuralPoseRescoringDefinition, runNeuralPoseRescoringStep } from './gnina/gnina';
 import {
   runSimpleafIndexStep,
   runSimpleafQuantStep,
@@ -68,6 +69,7 @@ import {
   METABOLIC_MODELING_RUNTIME_COMPONENT_ID,
   BIOCHEMICAL_SIMULATION_RUNTIME_COMPONENT_ID,
   PHYSICELL_RUNTIME_COMPONENT_ID,
+  GNINA_RUNTIME_COMPONENT_ID,
   MHCFLURRY_CLASS1_PRESENTATION_MODEL_ID,
   MOLECULAR_ANALYSIS_RUNTIME_COMPONENT_ID,
   MOLECULAR_DOCKING_RUNTIME_COMPONENT_ID,
@@ -604,6 +606,7 @@ export const PIPELINE_REGISTRY: Record<string, PipelineRegistryEntry> = {
   'metabolic-modeling': { definition: metabolicModelingDefinition, run: runMetabolicModelingStep },
   'biochemical-simulation': { definition: biochemicalSimulationDefinition, run: runBiochemicalSimulationStep },
   'multicellular-simulation': { definition: multicellularSimulationDefinition, run: runMulticellularSimulationStep },
+  'neural-pose-rescoring': { definition: neuralPoseRescoringDefinition, run: runNeuralPoseRescoringStep },
   'viewer-structure-3d': { definition: structureViewerDefinition, run: runStructureViewerStep },
   'viewer-genome-track': { definition: genomeViewerDefinition, run: runGenomeViewerStep },
   'viewer-single-cell': { definition: singleCellViewerDefinition, run: runSingleCellViewerStep },
@@ -700,6 +703,9 @@ export function allStepDefinitions(): PipelineStepDefinition[] {
     }
     if (runtime.id === PHYSICELL_RUNTIME_COMPONENT_ID) {
       publishedToolRuntimeSteps.add(multicellularSimulationDefinition.id);
+    }
+    if (runtime.id === GNINA_RUNTIME_COMPONENT_ID) {
+      publishedToolRuntimeSteps.add(neuralPoseRescoringDefinition.id);
     }
   }
   return [

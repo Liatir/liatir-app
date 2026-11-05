@@ -19,6 +19,7 @@ on:
           - cobrapy-metabolic-modeling
           - pysb-biochemical-simulation
           - physicell-multicellular-simulation
+          - gnina-pose-rescoring
           - jwohlwend-boltz-2
           - bytedance-protenix-base-v1-0-0
       target_id:

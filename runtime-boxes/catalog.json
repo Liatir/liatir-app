@@ -1079,6 +1079,54 @@
       ]
     },
     {
+      "componentKind": "tool-runtime",
+      "componentId": "gnina-pose-rescoring",
+      "modelId": "gnina-pose-rescoring",
+      "boxId": "gnina",
+      "runtimeId": "gnina-1-3-3",
+      "legalRecord": "runtime-boxes/legal/gnina.md",
+      "legalStatus": "approved",
+      "validatorScript": "runtime-box:validate:gnina",
+      "validatorPath": "scripts/validate-gnina-runtime.mjs",
+      "productScriptPath": "frontend/src/lib/tools/gnina/python-scripts/gnina.ts",
+      "productLifecycleSpec": "tests/e2e/specs/runtime-box-gnina-native.e2e.mjs",
+      "callerWorkflow": ".github/workflows/runtime-box-gnina.yml",
+      "targets": [
+        {
+          "targetId": "linux-x86_64-cuda12.8",
+          "target": {
+            "platform": "linux",
+            "arch": "x86_64",
+            "accelerator": "cuda",
+            "cudaVersion": "12.8"
+          },
+          "hostEnvironments": [
+            "native",
+            "windows-wsl2"
+          ],
+          "recipeId": "gnina-linux-x86_64-cuda12.8",
+          "runnerProfileId": "linux-x64-cuda-selfhosted",
+          "status": "native-lifecycle-validated",
+          "validationModes": [
+            "build",
+            "scientific",
+            "native-lifecycle"
+          ],
+          "timeoutMinutes": 120,
+          "requiredBuildDiskBytes": 17179869184,
+          "dependencyLockSha256": "edf8fc870aeb21d354541eefb15535015248a7ecd9b6419a16bbd3295973f9a6",
+          "condaDependencyLicenseAudit": "runtime-boxes/legal/audits/gnina-linux-x86_64-cuda12.8.json",
+          "diskPlan": {
+            "estimatedInstalledSizeBytes": 6442450944,
+            "estimatedArchiveSizeBytes": 2684354560,
+            "safetyMarginBytes": 4294967296
+          },
+          "gpuRequired": true,
+          "nativeCiEnabled": true
+        }
+      ]
+    },
+    {
       "componentKind": "ai-model",
       "componentId": "jwohlwend-boltz-2",
       "modelId": "jwohlwend-boltz-2",

@@ -37,3 +37,15 @@ user obtains GNINA from its authors.
   libraries, whose redistribution is unsettled.
 - **A binary the user supplies, checked by digest.** Legally the safest, but it asks a non-technical
   user to find, download and select a 2 GB file.
+
+## Corrected 2026-11-05
+
+The context above says the static binary carries NVIDIA's CUDA libraries. Inspection showed
+otherwise: despite its name, `gnina.cuda12.8.static` links cuDNN 9, the CUDA runtime, cuBLAS, cuFFT,
+cuSPARSE and cuSOLVER dynamically (`readelf -d`), and needs glibc 2.35. The box supplies those
+libraries as unmodified conda-forge packages, as every Liatir CUDA box does, so the box is a 2.3 GB
+download beside GNINA's 2.1 GB, not nothing beside it. GNINA itself is still fetched from its
+release, unchanged. Its RPATH puts `/usr/local/lib`, `/usr/local/cuda/lib64` and the working
+directory ahead of the box's libraries, so the runner preloads every one by absolute path and starts
+GNINA from an empty directory. The driver it needs is decided in
+[GNINA's CUDA 12.8 box needs NVIDIA driver 570.26](gnina-cuda-driver-floor.md).

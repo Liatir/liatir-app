@@ -59,6 +59,7 @@ describe('Runtime Box CI catalog', () => {
       'cobrapy-metabolic-modeling/linux-x86_64-cpu',
       'pysb-biochemical-simulation/linux-x86_64-cpu',
       'physicell-multicellular-simulation/linux-x86_64-cpu',
+      'gnina-pose-rescoring/linux-x86_64-cuda12.8',
       'jwohlwend-boltz-2/linux-x86_64-cuda12.9',
       'bytedance-protenix-base-v1-0-0/linux-x86_64-cuda12.6',
     ]);
