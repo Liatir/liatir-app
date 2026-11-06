@@ -20,10 +20,13 @@ The current product catalog contains:
 | [UCE 4-layer](/ai/models/snap-stanford-uce-4layer) | macOS arm64 Metal | multi-species single-cell embeddings |
 | [Boltz-2](/ai/models/jwohlwend-boltz-2) | Linux CUDA 12.9; Windows through WSL2 | structure prediction and protein–ligand affinity |
 | [Protenix base v1.0.0](/ai/models/bytedance-protenix-base-v1-0-0) | Linux CUDA 12.6; Windows through WSL2 | structure prediction |
+| [MHCflurry Class I Presentation](/ai/models/openvax-mhcflurry-class1-presentation) | macOS arm64 Metal; Linux CPU; Windows through WSL2 | which protein fragments the immune system displays |
 
-The AI Tools are [Single-cell Embedding](/ai/tools/single-cell-embedding), and
-Structure Prediction and Protein–Ligand Affinity under Tools: the first runs
-Boltz-2 or Protenix, the second Boltz-2.
+The AI Tools are [Single-cell Embedding](/ai/tools/single-cell-embedding),
+[Structure Prediction](/ai/tools/structure-prediction),
+[Protein–Ligand Affinity](/ai/tools/protein-ligand-affinity) and
+[MHC-I Epitope Prediction](/ai/tools/mhc-epitope-prediction) — see
+[AI Tools](/ai/tools/overview) for which models each one accepts.
 No other AI Model or AI Tool is available until it has its own reviewed,
 published Runtime Box path.
 
@@ -41,8 +44,10 @@ Removing a model removes its activated Runtime Box and reclaims its disk space.
 
 ## Input requirements
 
-All three models accept AnnData `.h5ad` files with raw scRNA-seq counts in
-`.X`, but gene identifiers differ:
+Each model's own page states what it accepts, and so does each
+[AI Tool](/ai/tools/overview). The three single-cell models accept AnnData
+`.h5ad` files with raw scRNA-seq counts in `.X`, but their gene identifiers
+differ:
 
 - Geneformer is human-only and expects Ensembl IDs in `var["ensembl_id"]` or
   `var_names`.
@@ -53,7 +58,8 @@ All three models accept AnnData `.h5ad` files with raw scRNA-seq counts in
 
 ## Outputs
 
-A successful run creates:
+Every run, whichever model it used, creates Jobs, Results, durable output files
+and Runtime Box provenance. A successful single-cell embedding run creates:
 
 - an embedded AnnData file;
 - a lightweight CSV preview;

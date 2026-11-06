@@ -92,6 +92,21 @@ including contract validation. Bridge calls remain Native-only; WASM stays
 isolated. Keep author prerequisites clear: Rust uses Cargo, C++ uses CMake,
 Native C++ needs libcurl development files, and C++ WASM needs WASI SDK.
 
+**Every AI Model and every AI Tool has its own public page, and that page lives
+under `docs/ai/`** — one file per model in the `ai/models` directory, named so
+that its path matches the model's `documentation.liatirPath` in
+`packages/liatir-core`, and one file per tool in `ai/tools`. A unit test already
+enforces that `liatirPath` shape; the page it points at has to exist.
+What makes something an AI Tool is its definition
+(`type: 'ai-tool'`), not whether it uses a neural network: GNINA's Neural Pose
+Rescoring is a Tool Runtime and belongs in `docs/tools/`. Where the app happens
+to place a screen does not move its page: Structure Prediction and
+Protein–Ligand Affinity sit under Tools in the app and under AI Tools in the
+docs, and each page names the app location in prose. Shipping a model or tool
+without its page is an incomplete change — on 2026-11-06 MHCflurry, three AI
+Tools and pVACseq were all installable in the product with nothing written about
+them.
+
 Scientific Showcases are the public scientific-study exception to the usage-guide
 surface: `docs/showcases/` presents measured methods, results and limitations;
 `showcases/` holds the canonical technical packages. Large matrices, embeddings

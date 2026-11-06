@@ -102,6 +102,7 @@ separate from everything else and runs offline. They are not AI Models.
 | [Metabolic Modeling](/tools/metabolic-modeling) | COBRApy 0.32.1 | Linux, or Windows through WSL2 |
 | [Biochemical Simulation](/tools/biochemical-simulation) | PySB 1.17.0 and BioNetGen 2.9.3 | Linux, or Windows through WSL2 |
 | [Multicellular Simulation](/tools/multicellular-simulation) | PhysiCell 1.14.2 | Linux, or Windows through WSL2 |
+| [Neoantigen Prioritization](/tools/neoantigen-prioritization) | pVACtools 7.1.2 | Mac, Linux, or Windows through WSL2 |
 
 ## AI Tools
 
@@ -111,6 +112,9 @@ model-specific context.
 | AI Tool | Description |
 | --- | --- |
 | [Single-cell Embedding](/ai/tools/single-cell-embedding) | Foundation-model cell embeddings from `.h5ad` inputs |
+| [Structure Prediction](/ai/tools/structure-prediction) | The 3D shape of proteins and complexes, from sequence |
+| [Protein–Ligand Affinity](/ai/tools/protein-ligand-affinity) | Whether a small molecule binds a protein, and how strongly |
+| [MHC-I Epitope Prediction](/ai/tools/mhc-epitope-prediction) | Which protein fragments the immune system is likely to display |
 
 Start with [Local AI for bioinformatics](/ai/guide) if you are new to these
 outputs.

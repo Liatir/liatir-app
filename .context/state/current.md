@@ -50,6 +50,16 @@ The WSL2 checkout is `/home/lorenzo/liatir-stack-gate8-mcp`. The owner told the 
 to proceed autonomously without asking for permissions, and authorized every publication step on
 2026-11-05.
 
+**The AI section of the public docs was incomplete and is now complete (2026-11-06).** Reviewing it
+after the 0.4.0 release found that four published surfaces had no page at all: the MHCflurry Class I
+Presentation AI Model, and the MHC-I Epitope Prediction, Structure Prediction and Protein–Ligand
+Affinity AI Tools — the last two described only inside Boltz-2's and Protenix's pages. pVACseq's
+Neoantigen Prioritization Tool Runtime was undocumented too. All five pages are written, every
+overview, the AI guide and the sidebar list them, and
+[conventions](../truth/conventions.md#documentation-surfaces) now require a page per AI Model and AI
+Tool and say which surface each belongs to. This gap predates 0.4.0 — the structure models shipped
+in September — so the release itself is unaffected; the fix is docs-only and needs no new version.
+
 The public docs now explicitly use the owner's supplied cover for link previews on every page,
 through global Open Graph and Twitter card metadata; see
 [documentation conventions](../truth/conventions.md#public-markdown-and-page-actions).

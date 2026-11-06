@@ -6,10 +6,12 @@ runs it entirely on your computer.
 
 ## What it does
 
-- **Structure Prediction**: from one or more protein, DNA or RNA sequences and
+- **[Structure Prediction](/ai/tools/structure-prediction)**: from one or more
+  protein, DNA or RNA sequences and
   optional small molecules, Boltz-2 predicts where every atom sits, with a
   confidence score for each part of the structure.
-- **Protein–Ligand Affinity**: for one protein and one small molecule written as
+- **[Protein–Ligand Affinity](/ai/tools/protein-ligand-affinity)**: for one
+  protein and one small molecule written as
   SMILES, it predicts the probability that the molecule binds, and an estimate
   of binding strength as log10(IC50) in micromolar. Lower values mean stronger
   binding.

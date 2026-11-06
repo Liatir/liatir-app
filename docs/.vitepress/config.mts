@@ -145,6 +145,7 @@ export default defineConfig({
           { text: 'Metabolic Modeling', link: '/tools/metabolic-modeling' },
           { text: 'Biochemical Simulation', link: '/tools/biochemical-simulation' },
           { text: 'Multicellular Simulation', link: '/tools/multicellular-simulation' },
+          { text: 'Neoantigen Prioritization', link: '/tools/neoantigen-prioritization' },
         ],
       },
       {
@@ -158,6 +159,9 @@ export default defineConfig({
             items: [
               { text: 'Overview', link: '/ai/tools/overview' },
               { text: 'Single-cell Embedding', link: '/ai/tools/single-cell-embedding' },
+              { text: 'Structure Prediction', link: '/ai/tools/structure-prediction' },
+              { text: 'Protein–Ligand Affinity', link: '/ai/tools/protein-ligand-affinity' },
+              { text: 'MHC-I Epitope Prediction', link: '/ai/tools/mhc-epitope-prediction' },
             ],
           },
           {
@@ -170,6 +174,7 @@ export default defineConfig({
               { text: 'UCE 4-layer', link: '/ai/models/snap-stanford-uce-4layer' },
               { text: 'Boltz-2', link: '/ai/models/jwohlwend-boltz-2' },
               { text: 'Protenix base v1.0.0', link: '/ai/models/bytedance-protenix-base-v1-0-0' },
+              { text: 'MHCflurry Class I Presentation', link: '/ai/models/openvax-mhcflurry-class1-presentation' },
             ],
           },
         ],

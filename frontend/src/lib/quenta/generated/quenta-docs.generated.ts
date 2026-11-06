@@ -3,7 +3,7 @@
 
 import type { LiatirQuentaContextDocument } from '@liatir/core';
 
-export const QUENTA_DOCS_SEED_HASH = "62dccbc55a4aafecedc81a39b0a898ecd95c69a8d3a5dc4984563367f4cd3aee";
+export const QUENTA_DOCS_SEED_HASH = "0f27f59e79bb63dcaa7f2d0072f3c07cad54c1f9752393b33f97d408ab5ca118";
 
 export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
   {
@@ -20,7 +20,7 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "title": "Local AI for bioinformatics — AI Models and AI Tools",
     "locator": "Docs / Ai / Guide / AI Models and AI Tools",
     "excerpt": "AI Models and AI Tools An **AI Model** is the packaged scientific model. An **AI Tool** is the task that sends an input to a compatible installed model and turns its output into Jobs, Results, files, and provenance. The current product catalog contains: | AI…",
-    "content": "AI Models and AI Tools\nAn **AI Model** is the packaged scientific model. An **AI Tool** is the task\nthat sends an input to a compatible installed model and turns its output into\nJobs, Results, files, and provenance.\n\nThe current product catalog contains:\n\n| AI Model | Current published targets | Main use |\n| --- | --- | --- |\n| [Geneformer V1 10M](/ai/models/ctheodoris-geneformer-v1-10m) | macOS arm64 Metal; Linux CUDA 12.9; Windows through WSL2 | human single-cell embeddings |\n| [scGPT Whole-human](/ai/models/bowang-scgpt-whole-human) | macOS arm64 Metal; Linux CPU; Linux CUDA 12.9; Windows through WSL2 | human single-cell embeddings |\n| [UCE 4-layer](/ai/models/snap-stanford-uce-4layer) | macOS arm64 Metal | multi-species single-cell embeddings |\n| [Boltz-2](/ai/models/jwohlwend-boltz-2) | Linux CUDA 12.9; Windows through WSL2 | structure prediction and protein–ligand affinity |\n| [Protenix base v1.0.0](/ai/models/bytedance-protenix-base-v1-0-0) | Linux CUDA 12.6; Windows through WSL2 | structure prediction |\n\nThe AI Tools are [Single-cell Embedding](/ai/tools/single-cell-embedding), and\nStructure Prediction and Protein–Ligand Affinity under Tools: the first runs\nBoltz-2 or Protenix, the second Boltz-2.\nNo other AI Model or AI Tool is available until it has its own reviewed,\npublished Runtime Box path."
+    "content": "AI Models and AI Tools\nAn **AI Model** is the packaged scientific model. An **AI Tool** is the task\nthat sends an input to a compatible installed model and turns its output into\nJobs, Results, files, and provenance.\n\nThe current product catalog contains:\n\n| AI Model | Current published targets | Main use |\n| --- | --- | --- |\n| [Geneformer V1 10M](/ai/models/ctheodoris-geneformer-v1-10m) | macOS arm64 Metal; Linux CUDA 12.9; Windows through WSL2 | human single-cell embeddings |\n| [scGPT Whole-human](/ai/models/bowang-scgpt-whole-human) | macOS arm64 Metal; Linux CPU; Linux CUDA 12.9; Windows through WSL2 | human single-cell embeddings |\n| [UCE 4-layer](/ai/models/snap-stanford-uce-4layer) | macOS arm64 Metal | multi-species single-cell embeddings |\n| [Boltz-2](/ai/models/jwohlwend-boltz-2) | Linux CUDA 12.9; Windows through WSL2 | structure prediction and protein–ligand affinity |\n| [Protenix base v1.0.0](/ai/models/bytedance-protenix-base-v1-0-0) | Linux CUDA 12.6; Windows through WSL2 | structure prediction |\n| [MHCflurry Class I Presentation](/ai/models/openvax-mhcflurry-class1-presentation) | macOS arm64 Metal; Linux CPU; Windows through WSL2 | which protein fragments the immune system displays |\n\nThe AI Tools are [Single-cell Embedding](/ai/tools/single-cell-embedding),\n[Structure Prediction](/ai/tools/structure-prediction),\n[Protein–Ligand Affinity](/ai/tools/protein-ligand-affinity) and\n[MHC-I Epitope Prediction](/ai/tools/mhc-epitope-prediction) — see\n[AI Tools](/ai/tools/overview) for which models each one accepts.\nNo other AI Model or AI Tool is available until it has its own reviewed,\npublished Runtime Box path."
   },
   {
     "id": "docs:ai/guide#installation",
@@ -35,16 +35,16 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "Local AI for bioinformatics — Input requirements",
     "locator": "Docs / Ai / Guide / Input requirements",
-    "excerpt": "Input requirements All three models accept AnnData `.h5ad` files with raw scRNA-seq counts in `.X`, but gene identifiers differ: - Geneformer is human-only and expects Ensembl IDs in `var[\"ensembl_id\"]` or `var_names`. - scGPT is human-only and expects gene s…",
-    "content": "Input requirements\nAll three models accept AnnData `.h5ad` files with raw scRNA-seq counts in\n`.X`, but gene identifiers differ:\n\n- Geneformer is human-only and expects Ensembl IDs in `var[\"ensembl_id\"]` or\n  `var_names`.\n- scGPT is human-only and expects gene symbols in `var[\"gene_name\"]`,\n  `var[\"feature_name\"]`, or `var_names`.\n- UCE supports the species listed in its run form and expects gene symbols in\n  `var_names`."
+    "excerpt": "Input requirements Each model's own page states what it accepts, and so does each [AI Tool](/ai/tools/overview). The three single-cell models accept AnnData `.h5ad` files with raw scRNA-seq counts in `.X`, but their gene identifiers differ: - Geneformer is hu…",
+    "content": "Input requirements\nEach model's own page states what it accepts, and so does each\n[AI Tool](/ai/tools/overview). The three single-cell models accept AnnData\n`.h5ad` files with raw scRNA-seq counts in `.X`, but their gene identifiers\ndiffer:\n\n- Geneformer is human-only and expects Ensembl IDs in `var[\"ensembl_id\"]` or\n  `var_names`.\n- scGPT is human-only and expects gene symbols in `var[\"gene_name\"]`,\n  `var[\"feature_name\"]`, or `var_names`.\n- UCE supports the species listed in its run form and expects gene symbols in\n  `var_names`."
   },
   {
     "id": "docs:ai/guide#outputs",
     "sourceKind": "documentation",
     "title": "Local AI for bioinformatics — Outputs",
     "locator": "Docs / Ai / Guide / Outputs",
-    "excerpt": "Outputs A successful run creates: - an embedded AnnData file; - a lightweight CSV preview; - a JSON summary; - model-specific intermediate artifacts when required; - Runtime Box provenance identifying the exact box release and native target. The embedded AnnD…",
-    "content": "Outputs\nA successful run creates:\n\n- an embedded AnnData file;\n- a lightweight CSV preview;\n- a JSON summary;\n- model-specific intermediate artifacts when required;\n- Runtime Box provenance identifying the exact box release and native target.\n\nThe embedded AnnData file is the main scientific artifact. An embedding is a\nnumeric representation for comparison, clustering, visualization, or later\nanalysis; it is not a final biological conclusion."
+    "excerpt": "Outputs Every run, whichever model it used, creates Jobs, Results, durable output files and Runtime Box provenance. A successful single-cell embedding run creates: - an embedded AnnData file; - a lightweight CSV preview; - a JSON summary; - model-specific int…",
+    "content": "Outputs\nEvery run, whichever model it used, creates Jobs, Results, durable output files\nand Runtime Box provenance. A successful single-cell embedding run creates:\n\n- an embedded AnnData file;\n- a lightweight CSV preview;\n- a JSON summary;\n- model-specific intermediate artifacts when required;\n- Runtime Box provenance identifying the exact box release and native target.\n\nThe embedded AnnData file is the main scientific artifact. An embedding is a\nnumeric representation for comparison, clustering, visualization, or later\nanalysis; it is not a final biological conclusion."
   },
   {
     "id": "docs:ai/guide#hardware-support",
@@ -131,8 +131,8 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "Protenix base v1.0.0 — What it does",
     "locator": "Docs / Ai / Models / Bytedance Protenix Base V1 0 0 / What it does",
-    "excerpt": "What it does From one or more protein, DNA or RNA sequences and optional small molecules, Protenix predicts where every atom sits, with a confidence score for each part of the structure. Liatir runs it from five different random seeds, draws five structures f…",
-    "content": "What it does\nFrom one or more protein, DNA or RNA sequences and optional small molecules,\nProtenix predicts where every atom sits, with a confidence score for each part\nof the structure.\n\nLiatir runs it from five different random seeds, draws five structures from\neach, and returns the one Protenix itself ranks highest. On ubiquitin, a single\nseed produced the wrong fold in 6 of 11 tries; competing seeds recovered the\nright one each time."
+    "excerpt": "What it does From one or more protein, DNA or RNA sequences and optional small molecules, Protenix predicts where every atom sits, with a confidence score for each part of the structure. It runs through the [Structure Prediction](/ai/tools/structure-predictio…",
+    "content": "What it does\nFrom one or more protein, DNA or RNA sequences and optional small molecules,\nProtenix predicts where every atom sits, with a confidence score for each part\nof the structure. It runs through the\n[Structure Prediction](/ai/tools/structure-prediction) AI Tool.\n\nLiatir runs it from five different random seeds, draws five structures from\neach, and returns the one Protenix itself ranks highest. On ubiquitin, a single\nseed produced the wrong fold in 6 of 11 tries; competing seeds recovered the\nright one each time."
   },
   {
     "id": "docs:ai/models/bytedance-protenix-base-v1-0-0#current-status-in-liatir",
@@ -251,8 +251,8 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "Boltz-2 — What it does",
     "locator": "Docs / Ai / Models / Jwohlwend Boltz 2 / What it does",
-    "excerpt": "What it does - **Structure Prediction**: from one or more protein, DNA or RNA sequences and optional small molecules, Boltz-2 predicts where every atom sits, with a confidence score for each part of the structure. - **Protein–Ligand Affinity**: for one protei…",
-    "content": "What it does\n- **Structure Prediction**: from one or more protein, DNA or RNA sequences and\n  optional small molecules, Boltz-2 predicts where every atom sits, with a\n  confidence score for each part of the structure.\n- **Protein–Ligand Affinity**: for one protein and one small molecule written as\n  SMILES, it predicts the probability that the molecule binds, and an estimate\n  of binding strength as log10(IC50) in micromolar. Lower values mean stronger\n  binding."
+    "excerpt": "What it does - **[Structure Prediction](/ai/tools/structure-prediction)**: from one or more protein, DNA or RNA sequences and optional small molecules, Boltz-2 predicts where every atom sits, with a confidence score for each part of the structure. - **[Protei…",
+    "content": "What it does\n- **[Structure Prediction](/ai/tools/structure-prediction)**: from one or more\n  protein, DNA or RNA sequences and\n  optional small molecules, Boltz-2 predicts where every atom sits, with a\n  confidence score for each part of the structure.\n- **[Protein–Ligand Affinity](/ai/tools/protein-ligand-affinity)**: for one\n  protein and one small molecule written as\n  SMILES, it predicts the probability that the molecule binds, and an estimate\n  of binding strength as log10(IC50) in micromolar. Lower values mean stronger\n  binding."
   },
   {
     "id": "docs:ai/models/jwohlwend-boltz-2#current-status-in-liatir",
@@ -303,6 +303,78 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "content": "Official source\n- [Boltz on GitHub](https://github.com/jwohlwend/boltz/tree/v2.2.1), MIT\n  License, for both the code and the model weights."
   },
   {
+    "id": "docs:ai/models/openvax-mhcflurry-class1-presentation",
+    "sourceKind": "documentation",
+    "title": "MHCflurry Class I Presentation",
+    "locator": "Docs / Ai / Models / Openvax Mhcflurry Class1 Presentation",
+    "excerpt": "MHCflurry predicts which short pieces of a protein the immune system is likely to put on display, using [MHCflurry](https://github.com/openvax/mhcflurry) 2.2.1. Liatir runs it entirely on your computer.",
+    "content": "MHCflurry predicts which short pieces of a protein the immune system is likely\nto put on display, using [MHCflurry](https://github.com/openvax/mhcflurry)\n2.2.1. Liatir runs it entirely on your computer."
+  },
+  {
+    "id": "docs:ai/models/openvax-mhcflurry-class1-presentation#what-it-does",
+    "sourceKind": "documentation",
+    "title": "MHCflurry Class I Presentation — What it does",
+    "locator": "Docs / Ai / Models / Openvax Mhcflurry Class1 Presentation / What it does",
+    "excerpt": "What it does Your cells constantly cut proteins into short fragments, called **peptides**, and present some of them on their surface with a molecule called **MHC Class I** (in humans, **HLA**). Immune cells inspect what is on display: a peptide that comes fro…",
+    "content": "What it does\nYour cells constantly cut proteins into short fragments, called **peptides**,\nand present some of them on their surface with a molecule called **MHC Class I**\n(in humans, **HLA**). Immune cells inspect what is on display: a peptide that\ncomes from a tumour or a virus can be the signal that starts an immune response.\n\nWhich peptides get displayed depends on the person's HLA type, and there are\nthousands of HLA variants. MHCflurry predicts, for a given HLA variant:\n\n- how strongly a peptide **binds** that HLA molecule;\n- how likely the peptide is to be **presented** at all, which also accounts for\n  the cuts the cell makes on either side of the peptide.\n\nThis is how a long list of possible peptides gets narrowed down to a short list\nworth testing in the laboratory."
+  },
+  {
+    "id": "docs:ai/models/openvax-mhcflurry-class1-presentation#current-status-in-liatir",
+    "sourceKind": "documentation",
+    "title": "MHCflurry Class I Presentation — Current status in Liatir",
+    "locator": "Docs / Ai / Models / Openvax Mhcflurry Class1 Presentation / Current status in Liatir",
+    "excerpt": "Current status in Liatir MHCflurry 2.2.1 is published as a signed Runtime Box for **Apple silicon Macs** (Metal) and for **Linux x86_64** on the processor. Windows computers run the same Linux box through WSL2. A GPU is not required: this model is small and r…",
+    "content": "Current status in Liatir\nMHCflurry 2.2.1 is published as a signed Runtime Box for **Apple silicon Macs**\n(Metal) and for **Linux x86_64** on the processor. Windows computers run the same\nLinux box through WSL2. A GPU is not required: this model is small and runs on\nthe processor.\n\nBefore publication, the exact box you download was checked against known\nimmunology: all the test HLA variants were supported, known control peptides\nranked at the top for HLA-A\\*02:01 and HLA-A\\*11:01, and a mutated KRAS peptide\n(GADGVGKSA) ranked far above its normal counterpart (GAGGVGKSA) for\nHLA-C\\*08:02 — 0.18 against 4.5 percentile, where lower means more likely to be\npresented."
+  },
+  {
+    "id": "docs:ai/models/openvax-mhcflurry-class1-presentation#what-to-keep-in-mind",
+    "sourceKind": "documentation",
+    "title": "MHCflurry Class I Presentation — What to keep in mind",
+    "locator": "Docs / Ai / Models / Openvax Mhcflurry Class1 Presentation / What to keep in mind",
+    "excerpt": "What to keep in mind - **These are predictions, not results.** They prioritize candidates to test. They are not a validated vaccine, therapy, or diagnostic result, and Liatir shows this notice with every run. - **Class I only.** MHCflurry here covers MHC Clas…",
+    "content": "What to keep in mind\n- **These are predictions, not results.** They prioritize candidates to test.\n  They are not a validated vaccine, therapy, or diagnostic result, and Liatir\n  shows this notice with every run.\n- **Class I only.** MHCflurry here covers MHC Class I, the pathway that shows\n  peptides to killer T cells. Class II is not included.\n- **The HLA variant must be one the model knows.** If you enter a variant\n  MHCflurry was not trained on, the run stops and names it, rather than guessing."
+  },
+  {
+    "id": "docs:ai/models/openvax-mhcflurry-class1-presentation#expected-inputs",
+    "sourceKind": "documentation",
+    "title": "MHCflurry Class I Presentation — Expected inputs",
+    "locator": "Docs / Ai / Models / Openvax Mhcflurry Class1 Presentation / Expected inputs",
+    "excerpt": "Expected inputs Either a protein sequence file (FASTA), from which Liatir cuts every possible peptide of the lengths you choose, or a table of peptides you already have. Plus the HLA Class I variants you care about.",
+    "content": "Expected inputs\nEither a protein sequence file (FASTA), from which Liatir cuts every possible\npeptide of the lengths you choose, or a table of peptides you already have. Plus\nthe HLA Class I variants you care about."
+  },
+  {
+    "id": "docs:ai/models/openvax-mhcflurry-class1-presentation#expected-outputs",
+    "sourceKind": "documentation",
+    "title": "MHCflurry Class I Presentation — Expected outputs",
+    "locator": "Docs / Ai / Models / Openvax Mhcflurry Class1 Presentation / Expected outputs",
+    "excerpt": "Expected outputs A ranked table of every peptide–HLA combination, the best peptides as a FASTA file, a summary, and Runtime Box provenance, like every Liatir run.",
+    "content": "Expected outputs\nA ranked table of every peptide–HLA combination, the best peptides as a FASTA\nfile, a summary, and Runtime Box provenance, like every Liatir run."
+  },
+  {
+    "id": "docs:ai/models/openvax-mhcflurry-class1-presentation#hardware-and-installation",
+    "sourceKind": "documentation",
+    "title": "MHCflurry Class I Presentation — Hardware and installation",
+    "locator": "Docs / Ai / Models / Openvax Mhcflurry Class1 Presentation / Hardware and installation",
+    "excerpt": "Hardware and installation At least 8 GB of memory, 16 GB recommended. Install it from **AI Models**; everything MHCflurry needs lives inside the Runtime Box and is never added to your system. After installation it works offline.",
+    "content": "Hardware and installation\nAt least 8 GB of memory, 16 GB recommended. Install it from **AI Models**;\neverything MHCflurry needs lives inside the Runtime Box and is never added to\nyour system. After installation it works offline."
+  },
+  {
+    "id": "docs:ai/models/openvax-mhcflurry-class1-presentation#how-to-run-it",
+    "sourceKind": "documentation",
+    "title": "MHCflurry Class I Presentation — How to run it",
+    "locator": "Docs / Ai / Models / Openvax Mhcflurry Class1 Presentation / How to run it",
+    "excerpt": "How to run it Through the [MHC-I Epitope Prediction](/ai/tools/mhc-epitope-prediction) AI Tool, from this model's page in the app or as a step in a [pipeline](/pipeline/overview). If you are starting from a tumour's variant file rather than a protein sequence…",
+    "content": "How to run it\nThrough the [MHC-I Epitope Prediction](/ai/tools/mhc-epitope-prediction) AI\nTool, from this model's page in the app or as a step in a\n[pipeline](/pipeline/overview).\n\nIf you are starting from a tumour's variant file rather than a protein sequence,\n[Neoantigen Prioritization](/tools/neoantigen-prioritization) does the whole\nchain for you and uses MHCflurry internally."
+  },
+  {
+    "id": "docs:ai/models/openvax-mhcflurry-class1-presentation#official-source",
+    "sourceKind": "documentation",
+    "title": "MHCflurry Class I Presentation — Official source",
+    "locator": "Docs / Ai / Models / Openvax Mhcflurry Class1 Presentation / Official source",
+    "excerpt": "Official source - [MHCflurry on GitHub](https://github.com/openvax/mhcflurry), Apache License 2.0, for both the code and the model weights.",
+    "content": "Official source\n- [MHCflurry on GitHub](https://github.com/openvax/mhcflurry), Apache License\n  2.0, for both the code and the model weights."
+  },
+  {
     "id": "docs:ai/models/overview",
     "sourceKind": "documentation",
     "title": "AI Models",
@@ -316,7 +388,7 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "title": "AI Models — Available models",
     "locator": "Docs / Ai / Models / Overview / Available models",
     "excerpt": "Available models | AI Model | Input | Published support | | --- | --- | --- | | [Geneformer V1 10M](/ai/models/ctheodoris-geneformer-v1-10m) | human AnnData | macOS arm64 Metal; Linux CUDA 12.9; Windows through WSL2 | | [scGPT Whole-human](/ai/models/bowang-s…",
-    "content": "Available models\n| AI Model | Input | Published support |\n| --- | --- | --- |\n| [Geneformer V1 10M](/ai/models/ctheodoris-geneformer-v1-10m) | human AnnData | macOS arm64 Metal; Linux CUDA 12.9; Windows through WSL2 |\n| [scGPT Whole-human](/ai/models/bowang-scgpt-whole-human) | human AnnData | macOS arm64 Metal; Linux CPU; Linux CUDA 12.9; Windows through WSL2 |\n| [UCE 4-layer](/ai/models/snap-stanford-uce-4layer) | multi-species AnnData | macOS arm64 Metal |\n| [Boltz-2](/ai/models/jwohlwend-boltz-2) | protein, DNA and RNA sequences; small molecules | Linux CUDA 12.9; Windows through WSL2 |\n| [Protenix base v1.0.0](/ai/models/bytedance-protenix-base-v1-0-0) | protein, DNA and RNA sequences; small molecules | Linux CUDA 12.6; Windows through WSL2 |\n\nThese are the complete product catalog. Models without a published Runtime Box\nare not shown as previews and cannot be installed through a legacy path."
+    "content": "Available models\n| AI Model | Input | Published support |\n| --- | --- | --- |\n| [Geneformer V1 10M](/ai/models/ctheodoris-geneformer-v1-10m) | human AnnData | macOS arm64 Metal; Linux CUDA 12.9; Windows through WSL2 |\n| [scGPT Whole-human](/ai/models/bowang-scgpt-whole-human) | human AnnData | macOS arm64 Metal; Linux CPU; Linux CUDA 12.9; Windows through WSL2 |\n| [UCE 4-layer](/ai/models/snap-stanford-uce-4layer) | multi-species AnnData | macOS arm64 Metal |\n| [Boltz-2](/ai/models/jwohlwend-boltz-2) | protein, DNA and RNA sequences; small molecules | Linux CUDA 12.9; Windows through WSL2 |\n| [Protenix base v1.0.0](/ai/models/bytedance-protenix-base-v1-0-0) | protein, DNA and RNA sequences; small molecules | Linux CUDA 12.6; Windows through WSL2 |\n| [MHCflurry Class I Presentation](/ai/models/openvax-mhcflurry-class1-presentation) | protein sequences or peptide lists | macOS arm64 Metal; Linux CPU; Windows through WSL2 |\n\nThese are the complete product catalog. Models without a published Runtime Box\nare not shown as previews and cannot be installed through a legacy path."
   },
   {
     "id": "docs:ai/models/overview#installation-and-removal",
@@ -331,8 +403,8 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "AI Models — Running a model",
     "locator": "Docs / Ai / Models / Overview / Running a model",
-    "excerpt": "Running a model The single-cell models run through [Single-cell Embedding](/ai/tools/single-cell-embedding), either directly from the model page or as a pipeline step. Boltz-2 and Protenix run from the Structure Prediction page under Tools, and Boltz-2 also f…",
-    "content": "Running a model\nThe single-cell models run through\n[Single-cell Embedding](/ai/tools/single-cell-embedding), either directly from\nthe model page or as a pipeline step. Boltz-2 and Protenix run from the\nStructure Prediction page under Tools, and Boltz-2 also from Protein–Ligand\nAffinity. Runs produce Jobs, Results, durable output files, and Runtime Box\nprovenance."
+    "excerpt": "Running a model Each model runs through its [AI Tool](/ai/tools/overview): | AI Model | AI Tool | | --- | --- | | Geneformer V1 10M, scGPT Whole-human, UCE 4-layer | [Single-cell Embedding](/ai/tools/single-cell-embedding) | | Boltz-2, Protenix base v1.0.0 |…",
+    "content": "Running a model\nEach model runs through its [AI Tool](/ai/tools/overview):\n\n| AI Model | AI Tool |\n| --- | --- |\n| Geneformer V1 10M, scGPT Whole-human, UCE 4-layer | [Single-cell Embedding](/ai/tools/single-cell-embedding) |\n| Boltz-2, Protenix base v1.0.0 | [Structure Prediction](/ai/tools/structure-prediction) |\n| Boltz-2 | [Protein–Ligand Affinity](/ai/tools/protein-ligand-affinity) |\n| MHCflurry Class I Presentation | [MHC-I Epitope Prediction](/ai/tools/mhc-epitope-prediction) |\n\nEach can run directly from the model's page or as a pipeline step. Runs produce\nJobs, Results, durable output files, and Runtime Box provenance."
   },
   {
     "id": "docs:ai/models/snap-stanford-uce-4layer",
@@ -455,6 +527,54 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "content": "How to read Quenta answers\nTreat Quenta answers as scientific guidance. Check the cited sources and the\noriginal Result or Job before acting on conclusions.\n\nGood Quenta answers should:\n\n- cite local sources;\n- distinguish observed evidence from interpretation;\n- state limitations;\n- recommend validation steps;\n- avoid inventing missing metrics;\n- avoid clinical or diagnostic conclusions.\n\nIf a source is missing, Quenta should say what is missing instead of filling\nthe gap."
   },
   {
+    "id": "docs:ai/tools/mhc-epitope-prediction",
+    "sourceKind": "documentation",
+    "title": "MHC-I Epitope Prediction",
+    "locator": "Docs / Ai / Tools / Mhc Epitope Prediction",
+    "excerpt": "MHC-I Epitope Prediction is an AI Tool that ranks short protein fragments by how likely the immune system is to display them, so you can pick the few worth testing. It runs on [MHCflurry Class I Presentation](/ai/models/openvax-mhcflurry-class1-presentation),…",
+    "content": "MHC-I Epitope Prediction is an AI Tool that ranks short protein fragments by how\nlikely the immune system is to display them, so you can pick the few worth\ntesting.\n\nIt runs on\n[MHCflurry Class I Presentation](/ai/models/openvax-mhcflurry-class1-presentation),\nwhich must be installed from **AI Models**."
+  },
+  {
+    "id": "docs:ai/tools/mhc-epitope-prediction#what-it-does",
+    "sourceKind": "documentation",
+    "title": "MHC-I Epitope Prediction — What it does",
+    "locator": "Docs / Ai / Tools / Mhc Epitope Prediction / What it does",
+    "excerpt": "What it does An **epitope** is the short fragment — usually 8 to 11 amino acids long — that a cell shows on its surface for immune cells to inspect. Which fragments get shown depends on the person's HLA type. The tool takes a protein, cuts it into every fragm…",
+    "content": "What it does\nAn **epitope** is the short fragment — usually 8 to 11 amino acids long — that a\ncell shows on its surface for immune cells to inspect. Which fragments get shown\ndepends on the person's HLA type.\n\nThe tool takes a protein, cuts it into every fragment of the lengths you choose,\nand asks MHCflurry to score each fragment against each HLA variant you named.\nThe output is one ranked table: the fragments at the top are the candidates."
+  },
+  {
+    "id": "docs:ai/tools/mhc-epitope-prediction#inputs",
+    "sourceKind": "documentation",
+    "title": "MHC-I Epitope Prediction — Inputs",
+    "locator": "Docs / Ai / Tools / Mhc Epitope Prediction / Inputs",
+    "excerpt": "Inputs | Input | Meaning | | --- | --- | | AI Model | Installed MHCflurry Class I Presentation | | Input type | Protein FASTA, or a peptide table you already have | | Protein FASTA or peptide table | The file from Data (`.fasta`, `.fa`, `.faa`, `.csv`, `.tsv`…",
+    "content": "Inputs\n| Input | Meaning |\n| --- | --- |\n| AI Model | Installed MHCflurry Class I Presentation |\n| Input type | Protein FASTA, or a peptide table you already have |\n| Protein FASTA or peptide table | The file from Data (`.fasta`, `.fa`, `.faa`, `.csv`, `.tsv`) |\n| HLA Class I alleles | 1 to 12 variants, written as `HLA-A*02:01` |\n| Peptide lengths | Fragment lengths to test, from 8 to 15 (8, 9, 10, 11 by default) |\n| Prediction mode | Presentation or Binding |\n| Top peptides | How many of the best fragments to export, up to 5,000 |\n\n**Presentation or Binding.** Presentation is the default and usually what you\nwant: it asks how likely the fragment is to end up on the cell surface, taking\ninto account the cuts around it. Binding asks only how tightly the fragment\nsticks to the HLA molecule. Presentation ranks from high to low; binding ranks by\npredicted strength, where lower numbers mean tighter binding.\n\n**Allele names must be exact**, in the form `HLA-A*02:01` — gene letter, then\ntwo numbers, then two more. Liatir refuses a malformed name instead of guessing\nat it.\n\n**A peptide table** needs a column called `peptide`. It may also have `name`,\n`n_flank` and `c_flank` columns, the last two being the amino acids on either\nside of the fragment in the original protein, which the presentation model uses.\nEvery peptide must match one of the lengths you selected.\n\n**There is a size limit.** A run may produce at most 2,000,000 peptide–allele\ncombinations. A whole proteome against 12 alleles is beyond it; Liatir says so\nbefore running, rather than filling your disk."
+  },
+  {
+    "id": "docs:ai/tools/mhc-epitope-prediction#outputs",
+    "sourceKind": "documentation",
+    "title": "MHC-I Epitope Prediction — Outputs",
+    "locator": "Docs / Ai / Tools / Mhc Epitope Prediction / Outputs",
+    "excerpt": "Outputs | Output | Meaning | | --- | --- | | Ranked predictions | CSV with every peptide–allele combination, best first | | Top peptides | FASTA with the best fragments, ready for a downstream step | | Prediction summary | JSON with counts, settings, the acce…",
+    "content": "Outputs\n| Output | Meaning |\n| --- | --- |\n| Ranked predictions | CSV with every peptide–allele combination, best first |\n| Top peptides | FASTA with the best fragments, ready for a downstream step |\n| Prediction summary | JSON with counts, settings, the accelerator used, and warnings |"
+  },
+  {
+    "id": "docs:ai/tools/mhc-epitope-prediction#reading-the-result",
+    "sourceKind": "documentation",
+    "title": "MHC-I Epitope Prediction — Reading the result",
+    "locator": "Docs / Ai / Tools / Mhc Epitope Prediction / Reading the result",
+    "excerpt": "Reading the result Check the alleles, the lengths and the mode first: the same protein gives completely different rankings for a different HLA type. Then look at whether the top fragments cluster in one region of the protein, which is usually more convincing…",
+    "content": "Reading the result\nCheck the alleles, the lengths and the mode first: the same protein gives\ncompletely different rankings for a different HLA type. Then look at whether the\ntop fragments cluster in one region of the protein, which is usually more\nconvincing than scattered single hits.\n\nThese predictions prioritize experimental candidates. They are not a validated\nvaccine, therapy, or diagnostic result."
+  },
+  {
+    "id": "docs:ai/tools/mhc-epitope-prediction#in-pipelines",
+    "sourceKind": "documentation",
+    "title": "MHC-I Epitope Prediction — In pipelines",
+    "locator": "Docs / Ai / Tools / Mhc Epitope Prediction / In pipelines",
+    "excerpt": "In pipelines The tool is available as a pipeline step, so you can go from a protein sequence to a ranked candidate list repeatably. In the pipeline editor, the AI Model dropdown only shows compatible installed models. Nothing leaves your computer: the run ref…",
+    "content": "In pipelines\nThe tool is available as a pipeline step, so you can go from a protein sequence\nto a ranked candidate list repeatably. In the pipeline editor, the AI Model\ndropdown only shows compatible installed models.\n\nNothing leaves your computer: the run refuses network access outright, even if a\nfuture library version were to attempt it."
+  },
+  {
     "id": "docs:ai/tools/overview",
     "sourceKind": "documentation",
     "title": "AI Tools",
@@ -463,12 +583,12 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "content": "AI Tools are built-in scientific tasks that use compatible installed AI Models.\nThey are not `.lia` Plugins and they do not install their own model dependencies."
   },
   {
-    "id": "docs:ai/tools/overview#available-ai-tool",
+    "id": "docs:ai/tools/overview#available-ai-tools",
     "sourceKind": "documentation",
-    "title": "AI Tools — Available AI Tool",
-    "locator": "Docs / Ai / Tools / Overview / Available AI Tool",
-    "excerpt": "Available AI Tool | AI Tool | Compatible AI Models | Main output | | --- | --- | --- | | [Single-cell Embedding](/ai/tools/single-cell-embedding) | Geneformer V1 10M, scGPT Whole-human, UCE 4-layer | embedded AnnData, CSV preview, JSON summary, provenance | T…",
-    "content": "Available AI Tool\n| AI Tool | Compatible AI Models | Main output |\n| --- | --- | --- |\n| [Single-cell Embedding](/ai/tools/single-cell-embedding) | Geneformer V1 10M, scGPT Whole-human, UCE 4-layer | embedded AnnData, CSV preview, JSON summary, provenance |\n\nThe model selector shows only installed models allowed by the tool contract.\nThe same tool can run directly from an AI Model page or as a repeatable pipeline\nstep."
+    "title": "AI Tools — Available AI Tools",
+    "locator": "Docs / Ai / Tools / Overview / Available AI Tools",
+    "excerpt": "Available AI Tools | AI Tool | Compatible AI Models | Main output | | --- | --- | --- | | [Single-cell Embedding](/ai/tools/single-cell-embedding) | Geneformer V1 10M, scGPT Whole-human, UCE 4-layer | embedded AnnData, CSV preview, JSON summary, provenance |…",
+    "content": "Available AI Tools\n| AI Tool | Compatible AI Models | Main output |\n| --- | --- | --- |\n| [Single-cell Embedding](/ai/tools/single-cell-embedding) | Geneformer V1 10M, scGPT Whole-human, UCE 4-layer | embedded AnnData, CSV preview, JSON summary, provenance |\n| [Structure Prediction](/ai/tools/structure-prediction) | Boltz-2, Protenix base v1.0.0 | predicted structure as mmCIF, confidence scores |\n| [Protein–Ligand Affinity](/ai/tools/protein-ligand-affinity) | Boltz-2 | binding probability, predicted strength, predicted complex |\n| [MHC-I Epitope Prediction](/ai/tools/mhc-epitope-prediction) | MHCflurry Class I Presentation | ranked peptide–allele table, top peptides as FASTA |\n\nIn the app, Single-cell Embedding and MHC-I Epitope Prediction run from their AI\nModel's page, and Structure Prediction and Protein–Ligand Affinity under\n**Tools → Structure Prediction**. All four are also pipeline steps.\n\nThe model selector shows only installed models allowed by the tool contract.\nThe same tool can run directly from an AI Model page or as a repeatable pipeline\nstep."
   },
   {
     "id": "docs:ai/tools/overview#reading-results",
@@ -477,6 +597,54 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "locator": "Docs / Ai / Tools / Overview / Reading results",
     "excerpt": "Reading results Check the input gene identifiers, species, warnings, embedding dimensions, and Runtime Box provenance before using an embedding downstream. Model output is a scientific artifact to validate, not an automatic biological conclusion.",
     "content": "Reading results\nCheck the input gene identifiers, species, warnings, embedding dimensions, and\nRuntime Box provenance before using an embedding downstream. Model output is a\nscientific artifact to validate, not an automatic biological conclusion."
+  },
+  {
+    "id": "docs:ai/tools/protein-ligand-affinity",
+    "sourceKind": "documentation",
+    "title": "Protein–Ligand Affinity",
+    "locator": "Docs / Ai / Tools / Protein Ligand Affinity",
+    "excerpt": "Protein–Ligand Affinity is an AI Tool that estimates whether a small molecule binds a protein, and how strongly. It runs on [Boltz-2](/ai/models/jwohlwend-boltz-2) only, installed from **AI Models**. You find it in the app under **Tools → Structure Prediction…",
+    "content": "Protein–Ligand Affinity is an AI Tool that estimates whether a small molecule\nbinds a protein, and how strongly.\n\nIt runs on [Boltz-2](/ai/models/jwohlwend-boltz-2) only, installed from **AI\nModels**. You find it in the app under **Tools → Structure Prediction**, and it\nis available as a step in a [pipeline](/pipeline/overview)."
+  },
+  {
+    "id": "docs:ai/tools/protein-ligand-affinity#what-it-does",
+    "sourceKind": "documentation",
+    "title": "Protein–Ligand Affinity — What it does",
+    "locator": "Docs / Ai / Tools / Protein Ligand Affinity / What it does",
+    "excerpt": "What it does A **ligand** is a small molecule that attaches to a protein — a drug, for instance. How tightly it attaches decides whether it works at a sensible dose. Measuring that in a laboratory is slow, so being able to rank candidate molecules beforehand…",
+    "content": "What it does\nA **ligand** is a small molecule that attaches to a protein — a drug, for\ninstance. How tightly it attaches decides whether it works at a sensible dose.\nMeasuring that in a laboratory is slow, so being able to rank candidate molecules\nbeforehand is useful.\n\nThe tool predicts the structure of the protein with the molecule in place, and on\ntop of that gives two numbers:\n\n- **Binding probability**, from 0 to 1: how likely it is that the molecule binds\n  this protein at all.\n- **Log10(IC50) in micromolar**: an estimate of binding strength. **Lower means\n  stronger.** A value of 0 means roughly 1 micromolar, −1 roughly 0.1\n  micromolar and so ten times tighter, 1 roughly 10 micromolar and so ten times\n  weaker."
+  },
+  {
+    "id": "docs:ai/tools/protein-ligand-affinity#inputs",
+    "sourceKind": "documentation",
+    "title": "Protein–Ligand Affinity — Inputs",
+    "locator": "Docs / Ai / Tools / Protein Ligand Affinity / Inputs",
+    "excerpt": "Inputs Exactly **one protein and one small molecule**, one copy each. The protein is given as its sequence, the molecule as a SMILES string, a text description of its atoms and bonds. This is the scope Boltz-2's affinity prediction was built for, so Liatir en…",
+    "content": "Inputs\nExactly **one protein and one small molecule**, one copy each. The protein is\ngiven as its sequence, the molecule as a SMILES string, a text description of its\natoms and bonds. This is the scope Boltz-2's affinity prediction was built for,\nso Liatir enforces it rather than returning a meaningless number for a complex\nit was not designed to judge.\n\nMolecule size follows Boltz-2's own limits. Liatir counts the molecule's atoms\nexactly as the model does: above 56 it warns that you are outside the range the\nmodel was trained on, and above 128 it refuses.\n\nThe alignment choice, the seed and the measured-hardware check work exactly as\nin [Structure Prediction](/ai/tools/structure-prediction)."
+  },
+  {
+    "id": "docs:ai/tools/protein-ligand-affinity#outputs",
+    "sourceKind": "documentation",
+    "title": "Protein–Ligand Affinity — Outputs",
+    "locator": "Docs / Ai / Tools / Protein Ligand Affinity / Outputs",
+    "excerpt": "Outputs | Output | Meaning | | --- | --- | | Binding probability | 0 to 1, how likely binding is | | Log10(IC50), micromolar | Predicted strength; lower is stronger | | Predicted structure | mmCIF of the complex, for the [3D Structure Viewer](/visualization/s…",
+    "content": "Outputs\n| Output | Meaning |\n| --- | --- |\n| Binding probability | 0 to 1, how likely binding is |\n| Log10(IC50), micromolar | Predicted strength; lower is stronger |\n| Predicted structure | mmCIF of the complex, for the [3D Structure Viewer](/visualization/structure-viewer) |\n| Confidence | pLDDT and pTM for the predicted structure |"
+  },
+  {
+    "id": "docs:ai/tools/protein-ligand-affinity#reading-the-result",
+    "sourceKind": "documentation",
+    "title": "Protein–Ligand Affinity — Reading the result",
+    "locator": "Docs / Ai / Tools / Protein Ligand Affinity / Reading the result",
+    "excerpt": "Reading the result **Use these numbers to rank, not to quote.** They are predictions, not measurements, and the quantity Boltz-2 predicts (IC50) is not the same as the quantity laboratories often report (Ki). On the case Liatir measured — human carbonic anhyd…",
+    "content": "Reading the result\n**Use these numbers to rank, not to quote.** They are predictions, not\nmeasurements, and the quantity Boltz-2 predicts (IC50) is not the same as the\nquantity laboratories often report (Ki). On the case Liatir measured — human\ncarbonic anhydrase II — the model correctly called acetazolamide a binder with\nprobability 0.99 and correctly ranked it above sulfanilamide, matching laboratory\nmeasurements, but its absolute strength values were weaker than the laboratory\nones.\n\nTwo further limits are worth knowing. Telling a real binder apart from a molecule\nthat does not bind at all was not part of what Liatir verified. And a low binding\nprobability is not proof that a molecule is inactive.\n\nSo the honest use of this tool is comparative: run several candidate molecules\nagainst the same protein, and let the ranking tell you which ones to test first."
+  },
+  {
+    "id": "docs:ai/tools/protein-ligand-affinity#related",
+    "sourceKind": "documentation",
+    "title": "Protein–Ligand Affinity — Related",
+    "locator": "Docs / Ai / Tools / Protein Ligand Affinity / Related",
+    "excerpt": "Related - [Molecular Docking](/tools/molecular-docking) takes the opposite approach, physically placing a molecule in a binding site and scoring the fit, and it handles whole libraries of molecules. - [Neural Pose Rescoring](/tools/neural-pose-rescoring) re-s…",
+    "content": "Related\n- [Molecular Docking](/tools/molecular-docking) takes the opposite approach,\n  physically placing a molecule in a binding site and scoring the fit, and it\n  handles whole libraries of molecules.\n- [Neural Pose Rescoring](/tools/neural-pose-rescoring) re-scores docked poses\n  with a neural network."
   },
   {
     "id": "docs:ai/tools/single-cell-embedding",
@@ -525,6 +693,46 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "locator": "Docs / Ai / Tools / Single Cell Embedding / Reading the result",
     "excerpt": "Reading the result Check: - cell count and gene count; - embedding dimensions; - warnings about input format; - provenance; - whether the species matches the dataset. Embeddings are not a final biological conclusion. They are a representation to inspect, comp…",
     "content": "Reading the result\nCheck:\n\n- cell count and gene count;\n- embedding dimensions;\n- warnings about input format;\n- provenance;\n- whether the species matches the dataset.\n\nEmbeddings are not a final biological conclusion. They are a representation to\ninspect, compare, and validate."
+  },
+  {
+    "id": "docs:ai/tools/structure-prediction",
+    "sourceKind": "documentation",
+    "title": "Structure Prediction",
+    "locator": "Docs / Ai / Tools / Structure Prediction",
+    "excerpt": "Structure Prediction is an AI Tool that works out the three-dimensional shape of proteins and molecular complexes from their sequences. It runs on [Boltz-2](/ai/models/jwohlwend-boltz-2) or [Protenix base v1.0.0](/ai/models/bytedance-protenix-base-v1-0-0), in…",
+    "content": "Structure Prediction is an AI Tool that works out the three-dimensional shape of\nproteins and molecular complexes from their sequences.\n\nIt runs on [Boltz-2](/ai/models/jwohlwend-boltz-2) or\n[Protenix base v1.0.0](/ai/models/bytedance-protenix-base-v1-0-0), installed from\n**AI Models**. You find it in the app under **Tools → Structure Prediction**, and\nit is available as a step in a [pipeline](/pipeline/overview)."
+  },
+  {
+    "id": "docs:ai/tools/structure-prediction#what-it-does",
+    "sourceKind": "documentation",
+    "title": "Structure Prediction — What it does",
+    "locator": "Docs / Ai / Tools / Structure Prediction / What it does",
+    "excerpt": "What it does A protein is made as a long chain of amino acids, and then folds into a specific shape. The shape is what determines what the protein does and what can bind to it, but measuring it in a laboratory takes months. These models predict the shape — th…",
+    "content": "What it does\nA protein is made as a long chain of amino acids, and then folds into a specific\nshape. The shape is what determines what the protein does and what can bind to\nit, but measuring it in a laboratory takes months. These models predict the\nshape — the position of every atom — from the sequence alone, in minutes.\n\nYou can predict a single protein, or several molecules together to see how they\nfit: two proteins, a protein with DNA or RNA, or a protein with a small\nmolecule."
+  },
+  {
+    "id": "docs:ai/tools/structure-prediction#inputs",
+    "sourceKind": "documentation",
+    "title": "Structure Prediction — Inputs",
+    "locator": "Docs / Ai / Tools / Structure Prediction / Inputs",
+    "excerpt": "Inputs You describe the molecules you want to study together: | For each molecule | What you give | | --- | --- | | Protein, DNA or RNA | Its sequence, an identifier, and how many copies are in the complex | | Small molecule | A SMILES string (a text descript…",
+    "content": "Inputs\nYou describe the molecules you want to study together:\n\n| For each molecule | What you give |\n| --- | --- |\n| Protein, DNA or RNA | Its sequence, an identifier, and how many copies are in the complex |\n| Small molecule | A SMILES string (a text description of its atoms and bonds), or a chemical dictionary code |\n\nPlus two settings: a **seed**, a number that lets you repeat exactly the same\nprediction, and the **number of predicted structures** to draw.\n\n### Alignments, and why they matter here\n\nNormally these models work better when they are also given a **multiple sequence\nalignment**: a comparison of your protein with similar proteins from other\nspecies, which reveals which parts matter. Building one usually means sending\nyour sequence to a server to search a database.\n\nLiatir works offline and never does that. So you have two choices for each\nprotein:\n\n- **Single-sequence mode**: predict from the sequence alone. You have to tick a\n  box acknowledging that this is less accurate — markedly so for some proteins.\n- **Provide your own alignment**: if you have an A3M alignment file, add it in\n  Data and select it here. Only Boltz-2 can use one; Protenix in Liatir always\n  predicts from the sequence alone.\n\nYou may also add a known structure as a **template** to guide the prediction.\n\n### Before it runs\n\nLiatir estimates how much memory, GPU memory and time the prediction needs, and\ncompares that with the largest prediction the model was actually measured on. If\nyours is bigger, it tells you that you are past measured ground and asks you to\nconfirm. If another prediction is already using the GPU, this one waits for it\ninstead of competing."
+  },
+  {
+    "id": "docs:ai/tools/structure-prediction#outputs",
+    "sourceKind": "documentation",
+    "title": "Structure Prediction — Outputs",
+    "locator": "Docs / Ai / Tools / Structure Prediction / Outputs",
+    "excerpt": "Outputs | Output | Meaning | | --- | --- | | Predicted structure | mmCIF file, which opens in the [3D Structure Viewer](/visualization/structure-viewer) | | Confidence | pLDDT and pTM scores, per part of the structure and overall | **pLDDT** says how confiden…",
+    "content": "Outputs\n| Output | Meaning |\n| --- | --- |\n| Predicted structure | mmCIF file, which opens in the [3D Structure Viewer](/visualization/structure-viewer) |\n| Confidence | pLDDT and pTM scores, per part of the structure and overall |\n\n**pLDDT** says how confident the model is about each region: high values mean the\nlocal shape is probably right, low values often mean a floppy region with no\nfixed shape. **pTM** says how confident it is about the overall arrangement,\nwhich matters most when you predicted several molecules together."
+  },
+  {
+    "id": "docs:ai/tools/structure-prediction#reading-the-result",
+    "sourceKind": "documentation",
+    "title": "Structure Prediction — Reading the result",
+    "locator": "Docs / Ai / Tools / Structure Prediction / Reading the result",
+    "excerpt": "Reading the result Look at confidence before shape. A low-confidence region is a guess, and alignment-free predictions carry an explicit warning saying so in every result. A useful habit is to predict the same complex with both models: they were built by diff…",
+    "content": "Reading the result\nLook at confidence before shape. A low-confidence region is a guess, and\nalignment-free predictions carry an explicit warning saying so in every result.\n\nA useful habit is to predict the same complex with both models: they were built\nby different teams from different code, so when Boltz-2 and Protenix agree the\nstructure is more trustworthy. On the test case Liatir measured, Protenix was\nslightly less accurate and about four times slower, which is why its value is as\na second opinion.\n\nA predicted structure is a hypothesis to test, not a measurement."
   },
   {
     "id": "docs:data/overview",
@@ -2751,6 +2959,70 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "content": "Licences and official source\n- [PhysiCell 1.14.2](https://github.com/MathCancer/PhysiCell), with BioFVM:\n  BSD-3-Clause; pugixml: MIT. Liatir compiles PhysiCell's template project from\n  the official release, reproducibly, and ships the licences and PhysiCell's\n  citation with it."
   },
   {
+    "id": "docs:tools/neoantigen-prioritization",
+    "sourceKind": "documentation",
+    "title": "Neoantigen Prioritization",
+    "locator": "Docs / Tools / Neoantigen Prioritization",
+    "excerpt": "Find which mutations in a tumour could be visible to the immune system, using [pVACtools](https://pvactools.readthedocs.io/en/7.1.2/pvacseq/run.html) 7.1.2 (pVACseq). Liatir runs it entirely on your computer. You find it under **Tools → Oncology**, and it is…",
+    "content": "Find which mutations in a tumour could be visible to the immune system, using\n[pVACtools](https://pvactools.readthedocs.io/en/7.1.2/pvacseq/run.html) 7.1.2\n(pVACseq). Liatir runs it entirely on your computer.\n\nYou find it under **Tools → Oncology**, and it is available as a step in a\n[pipeline](/pipeline/overview)."
+  },
+  {
+    "id": "docs:tools/neoantigen-prioritization#what-it-does",
+    "sourceKind": "documentation",
+    "title": "Neoantigen Prioritization — What it does",
+    "locator": "Docs / Tools / Neoantigen Prioritization / What it does",
+    "excerpt": "What it does A tumour carries mutations its healthy cells do not. When a mutated protein is cut up and displayed on the cell surface, the fragment looks foreign to the immune system: that fragment is a **neoantigen**, and it is what personalised cancer vaccin…",
+    "content": "What it does\nA tumour carries mutations its healthy cells do not. When a mutated protein is\ncut up and displayed on the cell surface, the fragment looks foreign to the\nimmune system: that fragment is a **neoantigen**, and it is what personalised\ncancer vaccines and T-cell therapies aim at.\n\nStarting from a list of the tumour's mutations, this tool does the whole chain:\n\n1. works out the mutated protein sequence each mutation produces;\n2. cuts out every fragment of the lengths you choose, mutated and normal;\n3. predicts which fragments the patient's HLA type would display, using\n   [MHCflurry](/ai/models/openvax-mhcflurry-class1-presentation);\n4. compares each mutated fragment with its normal counterpart, and ranks the\n   candidates.\n\nStep 4 is the point. A fragment is only interesting if the mutated version is\ndisplayed clearly better than the normal one — otherwise the immune system has\nalready learned to ignore it."
+  },
+  {
+    "id": "docs:tools/neoantigen-prioritization#what-you-need",
+    "sourceKind": "documentation",
+    "title": "Neoantigen Prioritization — What you need",
+    "locator": "Docs / Tools / Neoantigen Prioritization / What you need",
+    "excerpt": "What you need | Your computer | Can it run this tool? | | --- | --- | | Mac with Apple silicon | Yes | | Linux x86_64 | Yes | | Windows 11, through WSL2 | Yes | - **No graphics card is needed.** - **Memory.** At least 4 GB free, 16 GB recommended for large va…",
+    "content": "What you need\n| Your computer | Can it run this tool? |\n| --- | --- |\n| Mac with Apple silicon | Yes |\n| Linux x86_64 | Yes |\n| Windows 11, through WSL2 | Yes |\n\n- **No graphics card is needed.**\n- **Memory.** At least 4 GB free, 16 GB recommended for large variant files.\n- Install it once from **Dependencies → Tool Runtimes**. Everything it needs\n  lives inside the signed package, and after installation it works offline."
+  },
+  {
+    "id": "docs:tools/neoantigen-prioritization#inputs",
+    "sourceKind": "documentation",
+    "title": "Neoantigen Prioritization — Inputs",
+    "locator": "Docs / Tools / Neoantigen Prioritization / Inputs",
+    "excerpt": "Inputs | Input | Meaning | | --- | --- | | VEP-annotated tumour VCF | The tumour's variants, annotated with their protein consequences | | Tumour sample | Which sample in the file is the tumour | | Normal sample | The matched healthy sample, if the file has o…",
+    "content": "Inputs\n| Input | Meaning |\n| --- | --- |\n| VEP-annotated tumour VCF | The tumour's variants, annotated with their protein consequences |\n| Tumour sample | Which sample in the file is the tumour |\n| Normal sample | The matched healthy sample, if the file has one |\n| HLA Class I alleles | The patient's variants, written as `HLA-A*02:01` |\n| Phased proximal variants VCF | Optional; nearby variants on the same chromosome copy |\n| Peptide lengths | Fragment lengths to test (8, 9, 10, 11 by default) |\n| Use PASS variants only | Skip variants the caller flagged as unreliable |\n| Candidate peptides | How many top candidates to export |\n| Worker threads | How many processor cores to use |\n\n**The VCF must be annotated by VEP** (Ensembl's Variant Effect Predictor) first.\nA plain variant file says where the DNA changed; the annotation says what that\ndoes to the protein, which is what this tool needs. Liatir checks for the\nannotation and refuses a file without it, rather than silently finding nothing.\n\n**Phased proximal variants** matter when two mutations sit close together on the\nsame copy of a chromosome: the real protein carries both, so the fragment\nsequence is different from what either mutation alone would give."
+  },
+  {
+    "id": "docs:tools/neoantigen-prioritization#outputs",
+    "sourceKind": "documentation",
+    "title": "Neoantigen Prioritization — Outputs",
+    "locator": "Docs / Tools / Neoantigen Prioritization / Outputs",
+    "excerpt": "Outputs | Output | Meaning | | --- | --- | | Aggregated candidates | The main result: one ranked row per candidate | | Filtered epitopes | Fragments that passed the binding and expression filters | | All epitopes | Every fragment considered, before filtering…",
+    "content": "Outputs\n| Output | Meaning |\n| --- | --- |\n| Aggregated candidates | The main result: one ranked row per candidate |\n| Filtered epitopes | Fragments that passed the binding and expression filters |\n| All epitopes | Every fragment considered, before filtering |\n| Candidate peptides | The best candidates as a FASTA file |\n| Aggregated metrics, Run summary | Counts, settings and provenance |\n\nStart from the aggregated candidates: the other files are there when you need to\nsee why something was kept or dropped."
+  },
+  {
+    "id": "docs:tools/neoantigen-prioritization#how-it-was-checked",
+    "sourceKind": "documentation",
+    "title": "Neoantigen Prioritization — How it was checked",
+    "locator": "Docs / Tools / Neoantigen Prioritization / How it was checked",
+    "excerpt": "How it was checked Before publication, the exact package ran on a real annotated tumour VCF: 40 variants produced 16,872 fragments, of which 16 passed the filters and 40 were aggregated into candidates, 20 of them marked Pass, in 6 minutes 20 seconds on a sin…",
+    "content": "How it was checked\nBefore publication, the exact package ran on a real annotated tumour VCF: 40\nvariants produced 16,872 fragments, of which 16 passed the filters and 40 were\naggregated into candidates, 20 of them marked Pass, in 6 minutes 20 seconds on a\nsingle thread."
+  },
+  {
+    "id": "docs:tools/neoantigen-prioritization#what-the-results-mean",
+    "sourceKind": "documentation",
+    "title": "Neoantigen Prioritization — What the results mean",
+    "locator": "Docs / Tools / Neoantigen Prioritization / What the results mean",
+    "excerpt": "What the results mean This tool prioritizes experimental candidates. It is not a validated vaccine, therapy, or diagnostic result, and Liatir shows that notice with every result. A ranked candidate is a starting point for laboratory work. Liatir's pVACseq sur…",
+    "content": "What the results mean\nThis tool prioritizes experimental candidates. It is not a validated vaccine,\ntherapy, or diagnostic result, and Liatir shows that notice with every result.\nA ranked candidate is a starting point for laboratory work.\n\nLiatir's pVACseq surface deliberately uses only the local MHCflurry predictors,\nso nothing is sent to a prediction server. pVACtools upstream can call online\npredictors; that path is not available here, by design."
+  },
+  {
+    "id": "docs:tools/neoantigen-prioritization#licence-and-official-source",
+    "sourceKind": "documentation",
+    "title": "Neoantigen Prioritization — Licence and official source",
+    "locator": "Docs / Tools / Neoantigen Prioritization / Licence and official source",
+    "excerpt": "Licence and official source - [pVACtools 7.1.2](https://github.com/griffithlab/pVACtools/blob/v7.1.2/LICENSE), BSD 3-Clause Clear. - [MHCflurry](https://github.com/openvax/mhcflurry), Apache License 2.0, used as the predictor.",
+    "content": "Licence and official source\n- [pVACtools 7.1.2](https://github.com/griffithlab/pVACtools/blob/v7.1.2/LICENSE),\n  BSD 3-Clause Clear.\n- [MHCflurry](https://github.com/openvax/mhcflurry), Apache License 2.0, used as\n  the predictor."
+  },
+  {
     "id": "docs:tools/neural-pose-rescoring",
     "sourceKind": "documentation",
     "title": "Neural Pose Rescoring",
@@ -2828,7 +3100,7 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "title": "Tools — Tool Runtimes",
     "locator": "Docs / Tools / Overview / Tool Runtimes",
     "excerpt": "Tool Runtimes Some scientific programs are too large to ship inside Liatir and only make sense on suitable hardware. Liatir installs them once, when you ask, from **Dependencies → Tool Runtimes**: a signed package that Liatir verifies, keeps separate from eve…",
-    "content": "Tool Runtimes\nSome scientific programs are too large to ship inside Liatir and only make sense\non suitable hardware. Liatir installs them once, when you ask, from\n**Dependencies → Tool Runtimes**: a signed package that Liatir verifies, keeps\nseparate from everything else and runs offline. They are not AI Models.\n\n| Tool | Tool Runtime | Runs on |\n| --- | --- | --- |\n| [Molecular Relaxation](/tools/molecular-simulation) | OpenMM 8.5.1 | Linux, or Windows through WSL2, with an NVIDIA GPU |\n| [Molecular Dynamics](/tools/molecular-simulation) | OpenMM 8.5.1 | Linux, or Windows through WSL2, with an NVIDIA GPU |\n| [Receptor Preparation](/tools/molecular-docking) | AutoDock Vina 1.2.7 | Linux, or Windows through WSL2 |\n| [Molecular Docking](/tools/molecular-docking) | AutoDock Vina 1.2.7 | Linux, or Windows through WSL2 |\n| [Docked Complex](/tools/molecular-docking) | AutoDock Vina 1.2.7 | Linux, or Windows through WSL2 |\n| [Neural Pose Rescoring](/tools/neural-pose-rescoring) | GNINA 1.3.3 | Linux, or Windows through WSL2, with an NVIDIA GPU |\n| [Trajectory Analysis](/tools/molecular-analysis) | MDAnalysis 2.11 and ProLIF 2.2.3 | Linux, or Windows through WSL2 |\n| [Interaction Fingerprint](/tools/molecular-analysis) | MDAnalysis 2.11 and ProLIF 2.2.3 | Linux, or Windows through WSL2 |\n| [Metabolic Modeling](/tools/metabolic-modeling) | COBRApy 0.32.1 | Linux, or Windows through WSL2 |\n| [Biochemical Simulation](/tools/biochemical-simulation) | PySB 1.17.0 and BioNetGen 2.9.3 | Linux, or Windows through WSL2 |\n| [Multicellular Simulation](/tools/multicellular-simulation) | PhysiCell 1.14.2 | Linux, or Windows through WSL2 |"
+    "content": "Tool Runtimes\nSome scientific programs are too large to ship inside Liatir and only make sense\non suitable hardware. Liatir installs them once, when you ask, from\n**Dependencies → Tool Runtimes**: a signed package that Liatir verifies, keeps\nseparate from everything else and runs offline. They are not AI Models.\n\n| Tool | Tool Runtime | Runs on |\n| --- | --- | --- |\n| [Molecular Relaxation](/tools/molecular-simulation) | OpenMM 8.5.1 | Linux, or Windows through WSL2, with an NVIDIA GPU |\n| [Molecular Dynamics](/tools/molecular-simulation) | OpenMM 8.5.1 | Linux, or Windows through WSL2, with an NVIDIA GPU |\n| [Receptor Preparation](/tools/molecular-docking) | AutoDock Vina 1.2.7 | Linux, or Windows through WSL2 |\n| [Molecular Docking](/tools/molecular-docking) | AutoDock Vina 1.2.7 | Linux, or Windows through WSL2 |\n| [Docked Complex](/tools/molecular-docking) | AutoDock Vina 1.2.7 | Linux, or Windows through WSL2 |\n| [Neural Pose Rescoring](/tools/neural-pose-rescoring) | GNINA 1.3.3 | Linux, or Windows through WSL2, with an NVIDIA GPU |\n| [Trajectory Analysis](/tools/molecular-analysis) | MDAnalysis 2.11 and ProLIF 2.2.3 | Linux, or Windows through WSL2 |\n| [Interaction Fingerprint](/tools/molecular-analysis) | MDAnalysis 2.11 and ProLIF 2.2.3 | Linux, or Windows through WSL2 |\n| [Metabolic Modeling](/tools/metabolic-modeling) | COBRApy 0.32.1 | Linux, or Windows through WSL2 |\n| [Biochemical Simulation](/tools/biochemical-simulation) | PySB 1.17.0 and BioNetGen 2.9.3 | Linux, or Windows through WSL2 |\n| [Multicellular Simulation](/tools/multicellular-simulation) | PhysiCell 1.14.2 | Linux, or Windows through WSL2 |\n| [Neoantigen Prioritization](/tools/neoantigen-prioritization) | pVACtools 7.1.2 | Mac, Linux, or Windows through WSL2 |"
   },
   {
     "id": "docs:tools/overview#ai-tools",
@@ -2836,7 +3108,7 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "title": "Tools — AI Tools",
     "locator": "Docs / Tools / Overview / AI Tools",
     "excerpt": "AI Tools AI Tools are documented separately because interpreting their results requires model-specific context. | AI Tool | Description | | --- | --- | | [Single-cell Embedding](/ai/tools/single-cell-embedding) | Foundation-model cell embeddings from `.h5ad`…",
-    "content": "AI Tools\nAI Tools are documented separately because interpreting their results requires\nmodel-specific context.\n\n| AI Tool | Description |\n| --- | --- |\n| [Single-cell Embedding](/ai/tools/single-cell-embedding) | Foundation-model cell embeddings from `.h5ad` inputs |\n\nStart with [Local AI for bioinformatics](/ai/guide) if you are new to these\noutputs."
+    "content": "AI Tools\nAI Tools are documented separately because interpreting their results requires\nmodel-specific context.\n\n| AI Tool | Description |\n| --- | --- |\n| [Single-cell Embedding](/ai/tools/single-cell-embedding) | Foundation-model cell embeddings from `.h5ad` inputs |\n| [Structure Prediction](/ai/tools/structure-prediction) | The 3D shape of proteins and complexes, from sequence |\n| [Protein–Ligand Affinity](/ai/tools/protein-ligand-affinity) | Whether a small molecule binds a protein, and how strongly |\n| [MHC-I Epitope Prediction](/ai/tools/mhc-epitope-prediction) | Which protein fragments the immune system is likely to display |\n\nStart with [Local AI for bioinformatics](/ai/guide) if you are new to these\noutputs."
   },
   {
     "id": "docs:tools/overview#external-workflows",

@@ -9,7 +9,8 @@ your computer.
 
 From one or more protein, DNA or RNA sequences and optional small molecules,
 Protenix predicts where every atom sits, with a confidence score for each part
-of the structure.
+of the structure. It runs through the
+[Structure Prediction](/ai/tools/structure-prediction) AI Tool.
 
 Liatir runs it from five different random seeds, draws five structures from
 each, and returns the one Protenix itself ranks highest. On ubiquitin, a single
