@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Read(///wsl.localhost/**)",
+      "Read(///wsl.localhost/Ubuntu/home/lorenzo/liatir-stack-gate8-mcp/runtime-boxes/legal/audits/**)"
+    ]
+  }
+}
