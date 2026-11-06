@@ -35,6 +35,10 @@ group them. The last three answer questions about single proteins.
 
 ## Four workflows
 
+In each table, **Tool to open** is what you click in Liatir, and **Powered by**
+is the scientific program or AI Model doing the work underneath — useful when you
+write up a method, and it is the name you will find in the literature.
+
 ### Docking, then a real simulation
 
 **What docking means.** Most drugs work by sticking into a pocket on the surface
@@ -47,14 +51,14 @@ surviving position a score for how well it sits. Each position is called a
 The catch is that the score is a rough estimate, and it is often wrong about
 which pose is best. That is why this workflow does not stop at docking.
 
-| Step | Use | What comes out |
-| --- | --- | --- |
-| 1 | [Receptor Preparation](/tools/molecular-docking) | The protein, repaired and ready |
-| 2 | [Molecular Docking](/tools/molecular-docking) | Candidate poses, ranked by score |
-| 3 | [Neural Pose Rescoring](/tools/neural-pose-rescoring) | The same poses, re-judged by a neural network |
-| 4 | [Docked Complex](/tools/molecular-docking) | The chosen pose, packaged with its protein |
-| 5 | [Molecular Dynamics](/tools/molecular-simulation) | A film of the two moving together in water |
-| 6 | [Trajectory and Interaction Analysis](/tools/molecular-analysis) | Whether the contacts held, and how much things moved |
+| Step | What happens | Tool to open | Powered by |
+| --- | --- | --- | --- |
+| 1 | The protein is repaired and made ready | [Receptor Preparation](/tools/molecular-docking) | AutoDock Vina |
+| 2 | The molecule is tried in the pocket, and the poses ranked | [Molecular Docking](/tools/molecular-docking) | AutoDock Vina |
+| 3 | Those poses are re-judged by a neural network | [Neural Pose Rescoring](/tools/neural-pose-rescoring) | GNINA |
+| 4 | The pose you chose is packaged with its protein | [Docked Complex](/tools/molecular-docking) | AutoDock Vina |
+| 5 | The two move together in water, as a film | [Molecular Dynamics](/tools/molecular-simulation) | OpenMM |
+| 6 | You measure whether the contacts held | [Trajectory Analysis, Interaction Fingerprint](/tools/molecular-analysis) | MDAnalysis, ProLIF |
 
 **Why the last two steps matter.** Docking gives you a still picture. A
 simulation lets the molecule actually move, surrounded by water, the way it would
@@ -70,11 +74,11 @@ broke.
 
 ### From raw sequencing to groups of cells
 
-| Step | Use |
-| --- | --- |
-| 1 | [Single-cell Quantification](/tools/single-cell-quant) — Turn reads into a table of genes per cell |
-| 2 | [Single-cell Embedding](/ai/tools/single-cell-embedding) — Have an AI Model summarise each cell |
-| 3 | [Single-cell Viewer](/visualization/single-cell-viewer) — See which cells group together |
+| Step | What happens | Tool to open | Powered by |
+| --- | --- | --- | --- |
+| 1 | Reads become a table of genes per cell | [Single-cell Quantification](/tools/single-cell-quant) | simpleaf, included with Liatir |
+| 2 | Each cell is summarised as a list of numbers | [Single-cell Embedding](/ai/tools/single-cell-embedding) | scGPT, Geneformer or UCE — your choice |
+| 3 | You see which cells group together | [Single-cell Viewer](/visualization/single-cell-viewer) | Built into Liatir |
 
 There is a ready-made pipeline for steps 2 and 3: open **Pipelines** and choose
 **Single-cell embedding and preview**. If you already have a dataset file, start
@@ -84,24 +88,24 @@ at step 2.
 
 For a protein whose shape nobody has measured yet.
 
-| Step | Use |
-| --- | --- |
-| 1 | [Structure Prediction](/ai/tools/structure-prediction) with Boltz-2 — Get its shape |
-| 2 | The same, with Protenix — Check that an independent model agrees |
-| 3 | [3D Structure Viewer](/visualization/structure-viewer) — Look at it, and at the confidence scores |
-| 4 | [Protein–Ligand Affinity](/ai/tools/protein-ligand-affinity) — Rank your candidate molecules |
-| 5 | The docking workflow above — Test the best ones properly |
+| Step | What happens | Tool to open | Powered by |
+| --- | --- | --- | --- |
+| 1 | The protein's shape is predicted | [Structure Prediction](/ai/tools/structure-prediction) | Boltz-2 |
+| 2 | An independent model is asked the same thing | [Structure Prediction](/ai/tools/structure-prediction) | Protenix |
+| 3 | You look at the shape and its confidence scores | [3D Structure Viewer](/visualization/structure-viewer) | Built into Liatir |
+| 4 | Your candidate molecules are ranked | [Protein–Ligand Affinity](/ai/tools/protein-ligand-affinity) | Boltz-2 |
+| 5 | The best candidates are tested properly | The docking workflow above | AutoDock Vina, GNINA, OpenMM |
 
 Step 2 is the cheap insurance: when two models built by different teams agree,
 the shape is far more likely to be right.
 
 ### From a tumour's mutations to immune targets
 
-| Step | Use |
-| --- | --- |
-| 1 | [BCFtools](/tools/bcftools) — Inspect and filter the tumour's variants |
-| 2 | Annotate them with **VEP**, outside Liatir |
-| 3 | [Neoantigen Prioritization](/tools/neoantigen-prioritization) — Rank the mutations the immune system could see |
+| Step | What happens | Tool to open | Powered by |
+| --- | --- | --- | --- |
+| 1 | The tumour's variants are inspected and filtered | [BCFtools](/tools/bcftools) | Included with Liatir |
+| 2 | Each mutation is annotated with its effect on the protein | Not a Liatir tool — see below | VEP, from Ensembl |
+| 3 | The mutations the immune system could see are ranked | [Neoantigen Prioritization](/tools/neoantigen-prioritization) | pVACtools, with MHCflurry |
 
 **Step 2 is not a Liatir tool.** Neoantigen Prioritization needs a variant file
 annotated by VEP, Ensembl's annotator, and Liatir does not ship it: run it
