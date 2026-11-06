@@ -10,8 +10,7 @@ They all share the same layout, run history, and results view, and they can be
 mixed freely in a pipeline whenever their inputs and outputs match.
 
 If you are looking for which tool answers your question, and how they chain
-together, start from
-[What to use, and in what order](/introduction/what-to-use).
+together, start from [How to use it](/introduction/how-to-use).
 
 ## Built-in tools
 
