@@ -230,6 +230,9 @@ function requireArtifacts(platform, version, buildStartedAt) {
     }
     run('codesign', ['--verify', '--deep', '--strict', '--verbose=2', appBundle]);
     run('spctl', ['--assess', '--type', 'execute', '--verbose=2', appBundle]);
+    // Tauri ignores the exit status of its own `stapler staple`, and spctl passes without a ticket
+    // while it can reach Apple, so only this catches an app packaged without one.
+    run('xcrun', ['stapler', 'validate', appBundle]);
     run('spctl', ['--assess', '--type', 'open', '--context', 'context:primary-signature', '--verbose=2', dmg]);
     run('xcrun', ['stapler', 'validate', dmg]);
     run('hdiutil', ['verify', dmg]);

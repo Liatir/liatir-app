@@ -7,7 +7,7 @@ page before continuing any of that work**, and update it in the same change as a
 **Status (2026-11-05): PUBLISHED.** All six boxes are released to production on the `beta`
 channel from `main`, verified from their public URLs against the production trust root, and in the
 product catalog ([production releases](#production-releases-2026-11-05)). Users receive the tools
-with the next desktop release (next actions). GNINA is fetched from its own release at install (B1).
+with desktop 0.4.0, published 2026-11-06 (next actions). GNINA is fetched from its own release at install (B1).
 Every release ran on this machine's ephemeral self-hosted runner; no paid GPU CI was used.
 
 ## Objective and scope
@@ -963,8 +963,7 @@ one page figure was corrected against them (BioNetGen's EGFR agreement is 2.02 Ã
 
 ## Next concrete actions
 
-1. The desktop release that carries these tools: its Windows package must take the WSL2 consumer
-   from a Native Tools artifact built from this code (the normal CI path), because older consumers
-   cannot place on-demand assets.
-2. Then, in that released app, install each box from the production Registry and run one tool, on
-   Linux and on Windows through WSL2, to confirm what users receive.
+1. **Done 2026-11-06:** desktop 0.4.0 carries these tools, and its MSIX holds the WSL2 consumer that
+   run built, byte for byte ([release ledger](./release-signed-distribution.md)).
+2. In the released app, install each box from the production Registry and run one tool, on Linux
+   and on Windows through WSL2, to confirm what users receive.

@@ -1,6 +1,6 @@
 # Current project status
 
-Last updated 2026-11-05. This page says where Liatir stands and what comes next. How each piece got
+Last updated 2026-11-06. This page says where Liatir stands and what comes next. How each piece got
 here is in the [status log, July to September 2026](../history/status-log-2026-07-to-2026-09.md)
 and in the plans under `history/`; the readiness of each product area, with its evidence, is in
 [Beta 1 readiness](./roadmap/beta-readiness.md).
@@ -44,7 +44,7 @@ wrong one, where Vina did not. It is integrated as Neural Pose Rescoring, which 
 lifecycle on native Linux, and it needs NVIDIA driver 570.26 ([decision](../decisions/gnina-cuda-driver-floor.md)). On 2026-11-05 every suite tool also passed its
 real-app lifecycle in the Windows app through WSL2, GNINA on the GPU. **Published 2026-11-05:**
 all six boxes are released to production on the `beta` channel from `main`, verified from their
-public URLs, and in the product catalog; users receive them with the next desktop release. Runs and
+public URLs, and in the product catalog; users receive them with desktop 0.4.0 (below). Runs and
 digests are in the plan's [production releases](./roadmap/scientific-simulation-suite.md#production-releases-2026-11-05).
 The WSL2 checkout is `/home/lorenzo/liatir-stack-gate8-mcp`. The owner told the agent on 2026-11-03
 to proceed autonomously without asking for permissions, and authorized every publication step on
@@ -108,6 +108,21 @@ passed, including a C++ Native -> WASM file pipeline. Native host signoff here
 is macOS arm64; the plan records the remaining platform/release boundaries.
 On 2026-10-26 the owner authorized pushing all current `main` commits to
 `origin/main`. Desktop and npm releases remain separate actions.
+
+## Desktop release 0.4.0
+
+**0.4.0 is published for macOS and Linux** since 2026-11-06, explicitly authorized by the owner:
+[public release](https://github.com/Liatir/liatir-releases/releases/tag/v0.4.0), built by
+[run 42138532598](https://github.com/Liatir/liatir-app/actions/runs/42138532598) at
+`e7b089f86f73d090c535030ef8842127ce82072d`. It ships the Scientific Simulation Suite. Local verify
+passed all seven suites (104 files / 798 tests); both updater signatures, macOS notarization and
+tickets, all seven public digests and the live feed bytes were verified. The macOS job needed three
+attempts: stapling failed on a dropped connection to Apple, and Tauri ignores a failed staple of the
+app, so one green build had no ticket. The release script now checks it. The MSIX
+`Liatir_0.4.0_x64.msix` (version `0.4.0.0`, SHA-256 `c6a990da…`) carries the WSL2 consumer built by
+that run, which GNINA's install needs; the owner uploads it to Partner Center. Neither the MSIX on
+Windows nor a suite box from the released app was tested. Details in the
+[release ledger](./roadmap/release-signed-distribution.md).
 
 ## Desktop release 0.3.1
 

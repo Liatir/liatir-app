@@ -1,7 +1,7 @@
 # Release gate — signed public distribution
 
-Status: **Open — 0.3.1 published for macOS/Linux on 2026-10-28; its MSIX, which carries the
-corrected WSL2 consumer, is handed to the owner for Partner Center.** The 0.3.0 MSIX must not be
+Status: **Open — 0.4.0 published for macOS/Linux on 2026-11-06; its MSIX is handed to the owner for
+Partner Center.** The 0.3.0 MSIX must not be
 submitted (its WSL2 consumer fails the status check of every installed Runtime Box, fixed in
 `3eb5963c` — see [the OpenMM record](../../history/openmm-cuda-publication.md)). Store
 submission/certification pending. The distribution channel is
@@ -67,7 +67,7 @@ to make it look like one.
 | Apple notarization credentials | The Developer ID Application identity is in the maintainer's keychain; three copies are installed, all valid to 2031, so builds name the newest by its SHA-1, `CF1EC4A38CD20857E8C2A15DA87D06307EE4DCF2`, since the common name is ambiguous. Notarization is already configured through Apple ID credentials in GitHub; a separate App Store Connect API key is not required by the existing workflow. |
 | Developer ID signatures inside the Native Tools box | **Resolved 2026-09-28:** Scrollcase 1.3.0 added `--codesign` and 1.4.0 `--codesign-entitlements`; the signed box (562 Mach-O files) passed its self-test and Apple accepted it on its own (submission `6123de1c-5b9d-484e-bdcd-1c34851fc502`, 0 issues). Original finding: the first notarization of `0.1.0` (submission `3779c3f5-7d35-40bd-b419-b6af768154db`, 2026-09-28, from `c60c7fd`) was rejected: the app itself passed, but Apple unpacks the embedded `native-tools-macos-aarch64-cpu.zip` and found 562 Mach-O files (`venv/lib`, `bin`, `libexec`, `sbin`) without a Developer ID signature, a secure timestamp or, for 104 executables, the hardened runtime. Scrollcase never runs `conda-unpack` and never rewrites a binary on extraction, so signatures applied before archiving stay valid; Scrollcase has no signing step yet. |
 | Updater key pair | Generated 2026-09-28 on the maintainer's Mac: private key `~/.tauri/liatir-updater.key`, its password in the login Keychain item `liatir-updater-key`, public key in `~/.tauri/liatir-updater.key.pub`. In GitHub since 2026-09-28 (`TAURI_SIGNING_PRIVATE_KEY`, `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`, variable `TAURI_SIGNING_PUBLIC_KEY`); backing it up outside that Mac is the maintainer's. Losing the private key means installed copies can never be updated again. |
-| The `updates.liatir.com` feed | R2 bucket `liatir-updates` with custom domain `updates.liatir.com` created 2026-09-28; `scripts/desktop-update-manifest.mjs` writes `desktop/latest.json`. The live feed and public downloads serve 0.3.1 since 2026-10-28; public and R2 feed bytes were read back and matched. The previous 0.3.0 feed was preserved before publication. Downloads use the public `Liatir/liatir-releases` repository. |
+| The `updates.liatir.com` feed | R2 bucket `liatir-updates` with custom domain `updates.liatir.com` created 2026-09-28; `scripts/desktop-update-manifest.mjs` writes `desktop/latest.json`. The live feed and public downloads serve 0.4.0 since 2026-11-06; public and R2 feed bytes were read back and matched. The previous 0.3.1 feed was preserved before publication. Downloads use the public `Liatir/liatir-releases` repository. |
 | Microsoft Store identity in GitHub | Reserved 2026-09-28 (Store ID `9NDBJVZJVV1Z`, Package Family Name `Desktopr.Liatir_2a6896ac5t66t`): `MSIX_IDENTITY_NAME=Desktopr.Liatir`, `MSIX_IDENTITY_PUBLISHER=CN=B27DF8BD-5700-47C4-9719-CA85B3F0938A`, `MSIX_PUBLISHER_DISPLAY_NAME=Lorenzo Suffritti` (changed from `Desktopr` in Partner Center on 2026-09-29, before the first submission), shown to users as the publisher. Not secret; set as repository variables 2026-09-28. |
 | A clean macOS arm64 machine or user for the install proof | Access, not code. |
 | MSIX containment of Runtime Boxes, Python environments and WSL2 | See consequence 3 below; unproven until the package runs on a real Windows machine. |
@@ -126,6 +126,74 @@ than `package.json`, and `tests/unit/desktop-release-contract.test.ts` fails whe
 the version (`Cargo.toml`, `tauri.conf.json`, the bridge constants, the `liatir` SDK, the browser
 API bundle) differs from it. The SDK version script and the SDK type generator now read
 `package.json` directly.
+
+## 0.4.0 release checkpoint (2026-11-06)
+
+0.4.0 ships the Scientific Simulation Suite: six Tool Runtimes, nine tools. The owner authorized on
+2026-11-06 every step below and uploads the MSIX to Partner Center personally. No Store action,
+Runtime Box or GPU workflow, or force-push was performed.
+
+- [x] Clean `main` at `22e8f06b`, equal to remote; signing, updater and Store configuration names
+  exist, the configured updater key equals `~/.tauri/liatir-updater.key.pub`, no v0.4.0 existed, and
+  the live 0.3.1 feed (`ed56b381…`) was saved first.
+- [x] Set 0.4.0 in the root `package.json`, propagated as for 0.3.1: the same ten files, version
+  strings only. All seven `test:verify` suites passed on macOS arm64 (104 files / 798 tests, 7
+  skipped, report `2026-11-06T00-39-18-559Z`), and Syngraphe.
+- [x] Commit/push `e7b089f86f73d090c535030ef8842127ce82072d` (read back through git and the API);
+  `targets=all` dispatched as [run 42138532598](https://github.com/Liatir/liatir-app/actions/runs/42138532598),
+  identity verified. The first macOS build with Scrollcase 1.5.0 built, signed and self-tested the
+  Native Tools box without error.
+- **Defect: the macOS job took three attempts, and the second was green but unpublishable.** Both
+  failures happened while stapling, the step that fetches Apple's ticket after an accepted
+  notarization.
+  - Attempt 1 failed visibly: the DMG was accepted, then `stapler staple` exited 68 when the
+    connection to `api.apple-cloudkit.com` dropped (`NSURLErrorDomain -1005`).
+  - Attempt 2 passed every job, but the app in both the DMG and the updater archive had **no ticket**
+    (`stapler validate` refused it, while the published 0.3.1 app passes). Tauri's `staple_app`
+    (`tauri-macos-sign`, CLI 2.11.4) runs `stapler` with `.output()` and never reads its status or
+    prints its output, so the failure was silent and its reason is inferred: the same dropped
+    connection, on a newer runner image (`20261021.618`, 0.3.1 used `20260828.587`). `spctl` still
+    said Notarized Developer ID because it could ask Apple online, and the release script only
+    checked the DMG's ticket. Stapling a local copy worked, so Apple held the ticket. Without it, the
+    first launch depends on reaching Apple, which an offline app must not. Stapling and re-signing
+    by hand was rejected: it would mean a DMG that CI never built and using the signing keys off the
+    release path.
+  - Attempt 3 (macOS job only, same revision, Linux and Store kept) carried the ticket in both.
+  - `requireArtifacts` now runs `stapler validate` on the app (it was observed refusing attempt 2's
+    app). This only makes the failure visible: Tauri packages right after its own staple, so a
+    retry in the script cannot reach the archive and the DMG. Until that changes, a build that fails
+    here is simply re-run with `gh run rerun <run> --job <macOS job>`.
+  - **A re-run leaves two artifacts with one name in the run.** `liatir-0.4.0-macos` exists twice:
+    `13493368898` is attempt 3, `13467948919` is attempt 2 and must never be used. Download by ID
+    and check the digest, not with `gh run download -n`.
+- [x] Native Tools job ran "Test the WSL2 Scrollcase consumer" at that SHA: 3 passed, 0 failed. Store
+  job `127633745559` (attempt 1, kept by the re-runs) downloaded that run's artifact
+  `native-tools-linux-x86_64-cpu` (ID `13466614523`, digest `fe1fad55…` checked by the action). In the
+  downloaded MSIX all four `native-tools/` files are byte-identical to that artifact; the consumer
+  is 1,135,312 bytes, SHA-256 `f7d8f23293ab6948ee59143a9492dfdf957e1030cc4b341bebe3b5c1bbcefa75`,
+  contains the on-demand asset code GNINA's install needs (`a606094f` is an ancestor of the release
+  SHA) and no `pythonEntryPoint`.
+- [x] Both updater signatures verified against `TAURI_SIGNING_PUBLIC_KEY` (file and trusted comment,
+  key ID `d21d16a461aaa7d9`, with Node's crypto), one-byte corruption rejected. App in the updater
+  archive and in the DMG: `stapler validate`, `codesign --verify --deep --strict`; `spctl` Notarized
+  Developer ID, team `UC22LVU6ZY`, version 0.4.0. DMG: `spctl`, `stapler validate`, `hdiutil verify`.
+- [x] Published [v0.4.0](https://github.com/Liatir/liatir-releases/releases/tag/v0.4.0), release ID
+  `436345854`, `2026-11-06T10:15:25Z`, latest, target `4aa8693d` as before. All seven GitHub digests
+  match the verified files (draft compared before publishing); all seven public URLs answer
+  anonymously with the right length; the anonymous API names v0.4.0 latest; the homepage shows
+  0.4.0.
+- [x] Replaced `liatir-updates/desktop/latest.json` after those URLs answered. Public response
+  (`application/json`, `no-cache`) and R2 readback are byte-identical to the generated file, SHA-256
+  `c3540347e0913448423cbe87c0ff8740351b41c50e94fa0ed03a28e808f9b78c`. The previous 0.3.1 feed is
+  kept in the ignored `tests/.artifacts/release-0.4.0/`.
+- **Store handoff:** artifact `liatir-0.4.0-microsoft-store` (ID `13468136210`) in run 42138532598,
+  kept until 2026-11-20, and in the ignored `tests/.artifacts/release-0.4.0/` on the maintainer's
+  Mac. File `Liatir_0.4.0_x64.msix`, 272,592,718 bytes, SHA-256
+  `c6a990dad2a2e80fad80be4371fb23ab704b58f746ccf0e47feb60c6dc2710a9`, identity `Desktopr.Liatir`,
+  publisher `CN=B27DF8BD-5700-47C4-9719-CA85B3F0938A`, version `0.4.0.0`, x64, unsigned, no updater.
+- **Not done:** the session ran on the Mac, so the MSIX was not sideloaded on Windows, and no suite
+  box was installed from the released app (next action in the
+  [suite plan](./scientific-simulation-suite.md)).
 
 ## 0.3.1 release checkpoint (2026-10-28)
 
