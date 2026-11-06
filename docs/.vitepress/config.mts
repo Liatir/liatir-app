@@ -102,6 +102,7 @@ export default defineConfig({
         text: 'Introduction',
         items: [
           { text: 'What is Liatir', link: '/introduction/overview' },
+          { text: 'What to use, and in what order', link: '/introduction/what-to-use' },
           { text: 'How Liatir Works', link: '/introduction/architecture' },
         ],
       },

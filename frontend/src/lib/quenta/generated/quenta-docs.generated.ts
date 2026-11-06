@@ -3,7 +3,7 @@
 
 import type { LiatirQuentaContextDocument } from '@liatir/core';
 
-export const QUENTA_DOCS_SEED_HASH = "0f27f59e79bb63dcaa7f2d0072f3c07cad54c1f9752393b33f97d408ab5ca118";
+export const QUENTA_DOCS_SEED_HASH = "73d8be9f2e5a16ac3911a3dfd664ac3412c05bae93f5c7ddd1ccde93470f5e8f";
 
 export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
   {
@@ -11,8 +11,8 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "Local AI for bioinformatics",
     "locator": "Docs / Ai / Guide",
-    "excerpt": "Liatir runs supported scientific AI Models locally through signed Runtime Boxes. A Runtime Box contains the model weights, Python interpreter, packages, and Liatir runner that were tested together. Liatir does not install model packages into your system Pytho…",
-    "content": "Liatir runs supported scientific AI Models locally through signed Runtime Boxes.\nA Runtime Box contains the model weights, Python interpreter, packages, and\nLiatir runner that were tested together. Liatir does not install model packages\ninto your system Python."
+    "excerpt": "New here? [What to use, and in what order](/introduction/what-to-use) is the short version, with example workflows. This page is the detail. Liatir runs supported scientific AI Models locally through signed Runtime Boxes. A Runtime Box contains the model weig…",
+    "content": "New here? [What to use, and in what order](/introduction/what-to-use) is the\nshort version, with example workflows. This page is the detail.\n\nLiatir runs supported scientific AI Models locally through signed Runtime Boxes.\nA Runtime Box contains the model weights, Python interpreter, packages, and\nLiatir runner that were tested together. Liatir does not install model packages\ninto your system Python."
   },
   {
     "id": "docs:ai/guide#ai-models-and-ai-tools",
@@ -1117,6 +1117,54 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "locator": "Docs / Introduction / What Is Tauri",
     "excerpt": "Liatir is a native desktop app built on [Tauri](https://tauri.app), an open-source framework for lightweight, secure desktop applications. You don't need to know anything about Tauri to use Liatir — but it's the reason Liatir feels the way it does: - **Small…",
     "content": "Liatir is a native desktop app built on [Tauri](https://tauri.app), an open-source framework for lightweight, secure desktop applications.\n\nYou don't need to know anything about Tauri to use Liatir — but it's the reason Liatir feels the way it does:\n\n- **Small and fast.** A lightweight download that stays responsive even with large genomic files.\n- **Native, not a browser tab.** Liatir runs as a real desktop app, with direct access to your files and your machine's hardware.\n- **Secure by default.** Your data stays on your machine; nothing is uploaded to run an analysis.\n- **Cross-platform.** The same app runs on macOS, Linux, and Windows.\n\nIf you want to dig into the technical foundation, the [Tauri documentation](https://tauri.app) covers it in full."
+  },
+  {
+    "id": "docs:introduction/what-to-use",
+    "sourceKind": "documentation",
+    "title": "What to use, and in what order",
+    "locator": "Docs / Introduction / What To Use",
+    "excerpt": "Liatir has a lot of pieces. This page is the map: one line each on what they are for, and the usual ways they are chained together. Every name links to its own page when you want the detail.",
+    "content": "Liatir has a lot of pieces. This page is the map: one line each on what they are\nfor, and the usual ways they are chained together. Every name links to its own\npage when you want the detail."
+  },
+  {
+    "id": "docs:introduction/what-to-use#the-ai-models-in-one-line-each",
+    "sourceKind": "documentation",
+    "title": "What to use, and in what order — The AI Models, in one line each",
+    "locator": "Docs / Introduction / What To Use / The AI Models, in one line each",
+    "excerpt": "The AI Models, in one line each | AI Model | What it tells you | You start from | | --- | --- | --- | | [scGPT](/ai/models/bowang-scgpt-whole-human), [Geneformer](/ai/models/ctheodoris-geneformer-v1-10m) | which of your cells resemble each other (human) | a s…",
+    "content": "The AI Models, in one line each\n| AI Model | What it tells you | You start from |\n| --- | --- | --- |\n| [scGPT](/ai/models/bowang-scgpt-whole-human), [Geneformer](/ai/models/ctheodoris-geneformer-v1-10m) | which of your cells resemble each other (human) | a single-cell dataset |\n| [UCE 4-layer](/ai/models/snap-stanford-uce-4layer) | the same, for many species | a single-cell dataset |\n| [Boltz-2](/ai/models/jwohlwend-boltz-2) | the 3D shape of a protein, and whether a molecule binds it | sequences, written out |\n| [Protenix](/ai/models/bytedance-protenix-base-v1-0-0) | a second opinion on that shape, from an independent model | sequences, written out |\n| [MHCflurry](/ai/models/openvax-mhcflurry-class1-presentation) | which fragments of a protein the immune system would display | a protein sequence |\n\nThe first three do the same job: they turn each cell into a list of numbers, so\nthat cells behaving alike end up with similar numbers. That is what lets you\ngroup them. The last three answer questions about single proteins."
+  },
+  {
+    "id": "docs:introduction/what-to-use#the-tools-grouped-by-what-you-do-with-them",
+    "sourceKind": "documentation",
+    "title": "What to use, and in what order — The tools, grouped by what you do with them",
+    "locator": "Docs / Introduction / What To Use / The tools, grouped by what you do with them",
+    "excerpt": "The tools, grouped by what you do with them | If you want to… | Use | | --- | --- | | check and clean sequencing files | [FastQC](/tools/fastqc), [fastp](/tools/fastp), [seqkit](/tools/seqkit) | | line reads up against a genome | [BWA-MEM](/tools/bwa-mem), [M…",
+    "content": "The tools, grouped by what you do with them\n| If you want to… | Use |\n| --- | --- |\n| check and clean sequencing files | [FastQC](/tools/fastqc), [fastp](/tools/fastp), [seqkit](/tools/seqkit) |\n| line reads up against a genome | [BWA-MEM](/tools/bwa-mem), [Minimap2](/tools/minimap2), [Samtools](/tools/samtools) |\n| work with genetic variants | [BCFtools](/tools/bcftools), [SnpEff](/tools/snpeff) |\n| count genes cell by cell | [Single-cell Quantification](/tools/single-cell-quant) |\n| fit a molecule into a protein | [Molecular Docking](/tools/molecular-docking), [Neural Pose Rescoring](/tools/neural-pose-rescoring) |\n| watch molecules move | [Molecular Simulation](/tools/molecular-simulation) |\n| measure what happened in a simulation | [Trajectory and Interaction Analysis](/tools/molecular-analysis) |\n| model a cell's chemistry or a tissue | [Metabolic Modeling](/tools/metabolic-modeling), [Biochemical Simulation](/tools/biochemical-simulation), [Multicellular Simulation](/tools/multicellular-simulation) |\n| find immune targets in a tumour | [Neoantigen Prioritization](/tools/neoantigen-prioritization) |\n| look at a result | [the viewers](/visualization/overview) |"
+  },
+  {
+    "id": "docs:introduction/what-to-use#four-workflows",
+    "sourceKind": "documentation",
+    "title": "What to use, and in what order — Four workflows",
+    "locator": "Docs / Introduction / What To Use / Four workflows",
+    "excerpt": "Four workflows ### Docking, then a real simulation The fullest chain in Liatir, and the one it was tested on end to end. You want to know whether a drug molecule really sits in a protein the way docking suggests. | Step | Use | What comes out | | --- | --- |…",
+    "content": "Four workflows\n### Docking, then a real simulation\n\nThe fullest chain in Liatir, and the one it was tested on end to end. You want to\nknow whether a drug molecule really sits in a protein the way docking suggests.\n\n| Step | Use | What comes out |\n| --- | --- | --- |\n| 1 | [Receptor Preparation](/tools/molecular-docking) | the protein, repaired and ready |\n| 2 | [Molecular Docking](/tools/molecular-docking) | candidate positions of the molecule, ranked |\n| 3 | [Neural Pose Rescoring](/tools/neural-pose-rescoring) | the same positions, re-judged by a neural network |\n| 4 | [Docked Complex](/tools/molecular-docking) | the chosen position, packaged with its protein |\n| 5 | [Molecular Dynamics](/tools/molecular-simulation) | a film of the two moving together in water |\n| 6 | [Trajectory and Interaction Analysis](/tools/molecular-analysis) | whether the contacts held, and how much things moved |\n\n**Why the last two steps matter.** Docking gives you a still picture and a score.\nA simulation lets the molecule actually move: a position that falls apart in the\nfirst nanosecond was never real. Steps 3 and 6 exist because the ranking from\nstep 2 is often wrong — in Liatir's own test, docking put two badly wrong\npositions above a correct one, and the neural network fixed the order.\n\n**A worked example.** Liatir ran exactly this chain on imatinib, a leukaemia drug,\nand its target protein: the predicted position landed 0.37 Å from the one\nmeasured by crystallography, and through the whole simulation the key contact\nseen in the laboratory never broke.\n\n### From raw sequencing to groups of cells\n\n| Step | Use |\n| --- | --- |\n| 1 | [Single-cell Quantification](/tools/single-cell-quant) — turn reads into a table of genes per cell |\n| 2 | [Single-cell Embedding](/ai/tools/single-cell-embedding) — have an AI Model summarise each cell |\n| 3 | [Single-cell Viewer](/visualization/single-cell-viewer) — see which cells group together |\n\nThere is a ready-made pipeline for steps 2 and 3: open **Pipelines** and choose\n**Single-cell embedding and preview**. If you already have a dataset file, start\nat step 2.\n\n### From a sequence to a candidate molecule\n\nFor a protein whose structure nobody has measured.\n\n| Step | Use |\n| --- | --- |\n| 1 | [Structure Prediction](/ai/tools/structure-prediction) with Boltz-2 — get its shape |\n| 2 | the same, with Protenix — check that an independent model agrees |\n| 3 | [3D Structure Viewer](/visualization/structure-viewer) — look at it, and at the confidence scores |\n| 4 | [Protein–Ligand Affinity](/ai/tools/protein-ligand-affinity) — rank your candidate molecules |\n| 5 | the docking workflow above — test the best ones properly |\n\nStep 2 is the cheap insurance: when two models built by different teams agree,\nthe shape is far more likely to be right.\n\n### From a tumour's mutations to immune targets\n\n| Step | Use |\n| --- | --- |\n| 1 | [BCFtools](/tools/bcftools) — inspect and filter the tumour's variants |\n| 2 | annotate them with **VEP**, outside Liatir |\n| 3 | [Neoantigen Prioritization](/tools/neoantigen-prioritization) — rank the mutations the immune system could see |\n\n**Step 2 is not a Liatir tool.** Neoantigen Prioritization needs a variant file\nannotated by VEP, Ensembl's annotator, and Liatir does not ship it: run it\nyourself, or as a [Nextflow workflow](/tools/external-workflows) from inside\nLiatir. [SnpEff](/tools/snpeff) is Liatir's own annotator and is excellent for\nreading variants, but it writes a different format and this tool will not accept\nit.\n\nIf you already have a protein sequence rather than a variant file, skip all of\nthis and use [MHC-I Epitope Prediction](/ai/tools/mhc-epitope-prediction), which\ndoes the prediction step on its own."
+  },
+  {
+    "id": "docs:introduction/what-to-use#what-your-computer-can-run",
+    "sourceKind": "documentation",
+    "title": "What to use, and in what order — What your computer can run",
+    "locator": "Docs / Introduction / What To Use / What your computer can run",
+    "excerpt": "What your computer can run The everyday tools — quality checks, alignment, variants, single-cell counting — run everywhere. The heavy science is more selective. | | Mac | Linux | Windows | | --- | --- | --- | --- | | everyday tools | yes | yes | yes, through…",
+    "content": "What your computer can run\nThe everyday tools — quality checks, alignment, variants, single-cell counting —\nrun everywhere. The heavy science is more selective.\n\n| | Mac | Linux | Windows |\n| --- | --- | --- | --- |\n| everyday tools | yes | yes | yes, through WSL2 |\n| single-cell AI Models | yes | yes | yes, through WSL2 |\n| immune prediction (MHCflurry, pVACseq) | yes | yes | yes, through WSL2 |\n| docking, metabolism, cell and tissue simulation | no | yes | yes, through WSL2 |\n| structure prediction, molecular dynamics, pose rescoring | no | yes, NVIDIA GPU | yes, NVIDIA GPU through WSL2 |\n\nThe single-cell row is the one with exceptions: UCE runs on Mac only, and\nGeneformer on Linux needs an NVIDIA GPU. [AI Models](/ai/models/overview) lists\nexactly where each one runs.\n\n**WSL2** is a Linux environment built into Windows; Liatir sets it up and you\nkeep working in the normal Liatir window. See\n[Tools](/tools/overview#windows-and-wsl2).\n\nLiatir never lets you install something your computer cannot run: it checks\nfirst and says what is missing."
+  },
+  {
+    "id": "docs:introduction/what-to-use#two-things-that-are-true-of-everything-here",
+    "sourceKind": "documentation",
+    "title": "What to use, and in what order — Two things that are true of everything here",
+    "locator": "Docs / Introduction / What To Use / Two things that are true of everything here",
+    "excerpt": "Two things that are true of everything here **It all runs on your machine.** Nothing is uploaded, and after installation everything works offline. **Every result is a hypothesis, not a measurement.** Predicted shapes, predicted binding, predicted immune targe…",
+    "content": "Two things that are true of everything here\n**It all runs on your machine.** Nothing is uploaded, and after installation\neverything works offline.\n\n**Every result is a hypothesis, not a measurement.** Predicted shapes, predicted\nbinding, predicted immune targets, grouped cells: they tell you what to test\nnext. Each result says so, and each page explains what was and was not checked."
   },
   {
     "id": "docs:mcp/overview",
@@ -2979,8 +3027,8 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "Neoantigen Prioritization — What you need",
     "locator": "Docs / Tools / Neoantigen Prioritization / What you need",
-    "excerpt": "What you need | Your computer | Can it run this tool? | | --- | --- | | Mac with Apple silicon | Yes | | Linux x86_64 | Yes | | Windows 11, through WSL2 | Yes | - **No graphics card is needed.** - **Memory.** At least 4 GB free, 16 GB recommended for large va…",
-    "content": "What you need\n| Your computer | Can it run this tool? |\n| --- | --- |\n| Mac with Apple silicon | Yes |\n| Linux x86_64 | Yes |\n| Windows 11, through WSL2 | Yes |\n\n- **No graphics card is needed.**\n- **Memory.** At least 4 GB free, 16 GB recommended for large variant files.\n- Install it once from **Dependencies → Tool Runtimes**. Everything it needs\n  lives inside the signed package, and after installation it works offline."
+    "excerpt": "What you need | Your computer | Can it run this tool? | | --- | --- | | Mac with Apple silicon | Yes | | Linux x86_64 | Yes | | Windows 11, through WSL2 | Yes | - **No graphics card is needed.** - **Memory.** At least 8 GB, 16 GB recommended for large variant…",
+    "content": "What you need\n| Your computer | Can it run this tool? |\n| --- | --- |\n| Mac with Apple silicon | Yes |\n| Linux x86_64 | Yes |\n| Windows 11, through WSL2 | Yes |\n\n- **No graphics card is needed.**\n- **Memory.** At least 8 GB, 16 GB recommended for large variant files.\n- Install it once from **Dependencies → Tool Runtimes**. Everything it needs\n  lives inside the signed package, and after installation it works offline."
   },
   {
     "id": "docs:tools/neoantigen-prioritization#inputs",
@@ -3076,7 +3124,7 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "title": "Tools",
     "locator": "Docs / Tools / Overview",
     "excerpt": "Liatir offers five kinds of analysis step: **built-in tools** that work out of the box, **native tools** — real bioinformatics programs, shipped with Liatir — tools that run on a **Tool Runtime** Liatir installs when you ask, **AI Tools** that use local AI Mo…",
-    "content": "Liatir offers five kinds of analysis step: **built-in tools** that work out of\nthe box, **native tools** — real bioinformatics programs, shipped with Liatir —\ntools that run on a **Tool Runtime** Liatir installs when you ask, **AI Tools**\nthat use local AI Models, and **External Workflows** that run saved engine\nprojects such as Nextflow.\n\nThey all share the same layout, run history, and results view, and they can be\nmixed freely in a pipeline whenever their inputs and outputs match."
+    "content": "Liatir offers five kinds of analysis step: **built-in tools** that work out of\nthe box, **native tools** — real bioinformatics programs, shipped with Liatir —\ntools that run on a **Tool Runtime** Liatir installs when you ask, **AI Tools**\nthat use local AI Models, and **External Workflows** that run saved engine\nprojects such as Nextflow.\n\nThey all share the same layout, run history, and results view, and they can be\nmixed freely in a pipeline whenever their inputs and outputs match.\n\nIf you are looking for which tool answers your question, and how they chain\ntogether, start from\n[What to use, and in what order](/introduction/what-to-use)."
   },
   {
     "id": "docs:tools/overview#built-in-tools",

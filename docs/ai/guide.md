@@ -1,5 +1,8 @@
 # Local AI for bioinformatics
 
+New here? [What to use, and in what order](/introduction/what-to-use) is the
+short version, with example workflows. This page is the detail.
+
 Liatir runs supported scientific AI Models locally through signed Runtime Boxes.
 A Runtime Box contains the model weights, Python interpreter, packages, and
 Liatir runner that were tested together. Liatir does not install model packages
