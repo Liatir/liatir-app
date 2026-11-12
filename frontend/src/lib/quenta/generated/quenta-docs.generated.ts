@@ -3,7 +3,7 @@
 
 import type { LiatirQuentaContextDocument } from '@liatir/core';
 
-export const QUENTA_DOCS_SEED_HASH = "8c3b69f5df6bd6e3c1d71d1251804a88f061765b6f01a8a14a0dbb27eb55e3db";
+export const QUENTA_DOCS_SEED_HASH = "ccad7c893247303fe8b0cab0a10bc9051e03933bcc9661ff36fadb51b2a25612";
 
 export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
   {
@@ -475,8 +475,8 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "Quenta",
     "locator": "Docs / Ai / Quenta",
-    "excerpt": "Quenta is a local, read-only AI inside Liatir. It helps explain app state, bioinformatics workflows, Results, Jobs, pipeline structure, and failure logs using local context. It is designed for guidance and reports, not automation.",
-    "content": "Quenta is a local, read-only AI inside Liatir. It helps explain app\nstate, bioinformatics workflows, Results, Jobs, pipeline structure, and failure\nlogs using local context.\n\nIt is designed for guidance and reports, not automation."
+    "excerpt": "Quenta is a local, read-only AI inside Liatir. It helps explain app state, bioinformatics workflows, Results, Jobs, pipeline structure, and failure logs using local context. Chat provides guidance. A separate Presentations mode builds an offline HTML page fro…",
+    "content": "Quenta is a local, read-only AI inside Liatir. It helps explain app\nstate, bioinformatics workflows, Results, Jobs, pipeline structure, and failure\nlogs using local context.\n\nChat provides guidance. A separate Presentations mode builds an offline HTML page from Results you select. It does not run scientific analyses."
   },
   {
     "id": "docs:ai/quenta#what-it-can-do",
@@ -491,16 +491,16 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "Quenta — What it cannot do",
     "locator": "Docs / Ai / Quenta / What it cannot do",
-    "excerpt": "What it cannot do Quenta cannot: - run pipelines; - run tools; - run Plugins; - run AI Models or AI Tools; - send API Connector requests; - edit files; - change workspace state; - execute shell commands. The model receives text context only. Liatir does not s…",
-    "content": "What it cannot do\nQuenta cannot:\n\n- run pipelines;\n- run tools;\n- run Plugins;\n- run AI Models or AI Tools;\n- send API Connector requests;\n- edit files;\n- change workspace state;\n- execute shell commands.\n\nThe model receives text context only. Liatir does not send tool callbacks to the\nmodel."
+    "excerpt": "What it cannot do Quenta cannot: - run pipelines; - run tools; - run Plugins; - run AI Models or AI Tools; - send API Connector requests; - edit source data or arbitrary files; - change scientific configuration; - execute shell commands. The model receives te…",
+    "content": "What it cannot do\nQuenta cannot:\n\n- run pipelines;\n- run tools;\n- run Plugins;\n- run AI Models or AI Tools;\n- send API Connector requests;\n- edit source data or arbitrary files;\n- change scientific configuration;\n- execute shell commands.\n\nThe model receives text context only. Liatir does not send tool callbacks to the\nmodel."
   },
   {
     "id": "docs:ai/quenta#requirements",
     "sourceKind": "documentation",
     "title": "Quenta — Requirements",
     "locator": "Docs / Ai / Quenta / Requirements",
-    "excerpt": "Requirements The first Quenta runtime uses Ollama running locally. 1. Install and start Ollama. 2. Pull a local chat model in Ollama. 3. Open **Quenta** in Liatir. 4. Set the Ollama base URL, usually `http://127.0.0.1:11434`. 5. Refresh models and select the…",
-    "content": "Requirements\nThe first Quenta runtime uses Ollama running locally.\n\n1. Install and start Ollama.\n2. Pull a local chat model in Ollama.\n3. Open **Quenta** in Liatir.\n4. Set the Ollama base URL, usually `http://127.0.0.1:11434`.\n5. Refresh models and select the model you want to use.\n6. Save settings.\n\nLiatir accepts only local loopback Ollama endpoints for this feature."
+    "excerpt": "Requirements Quenta runs its language model on your computer through Ollama, a local program that runs such models. The first time you open Quenta, choose the profile that matches your computer's memory: - **Standard, for 16 GB of memory:** Qwen 3.5 9B, a 6.6…",
+    "content": "Requirements\nQuenta runs its language model on your computer through Ollama, a local\nprogram that runs such models. The first time you open Quenta, choose the\nprofile that matches your computer's memory:\n\n- **Standard, for 16 GB of memory:** Qwen 3.5 9B, a 6.6 GB download. On a\n  16 GB Mac it uses about 6.2 GB of memory while loaded.\n- **Extended, for 32 GB of memory:** Qwen 3.8 27B, a 17.7 GB download.\n\nChoosing a profile downloads its model once; opening Quenta never starts a\ndownload. You can change profile at any time in Quenta's settings. If you\nalready use another model, Quenta keeps it, and the **Model** list in the\nsettings lets you choose any other model already installed in Ollama. Both profiles read up to 16,384 tokens\n(pieces of words) per request, the amount Quenta has always used. On macOS\nLiatir can prepare Ollama itself; on other systems install and start Ollama\nfirst. Everything works offline after the download.\n\nOther analyses running at the same time also need memory, and answers are\nslower on smaller computers: on a 16 GB Mac the Standard model writes about 9\ntokens per second.\n\nLiatir accepts only local loopback Ollama endpoints for this feature."
   },
   {
     "id": "docs:ai/quenta#explaining-a-result",
@@ -525,6 +525,14 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "locator": "Docs / Ai / Quenta / How to read Quenta answers",
     "excerpt": "How to read Quenta answers Treat Quenta answers as scientific guidance. Check the cited sources and the original Result or Job before acting on conclusions. Good Quenta answers should: - cite local sources; - distinguish observed evidence from interpretation;…",
     "content": "How to read Quenta answers\nTreat Quenta answers as scientific guidance. Check the cited sources and the\noriginal Result or Job before acting on conclusions.\n\nGood Quenta answers should:\n\n- cite local sources;\n- distinguish observed evidence from interpretation;\n- state limitations;\n- recommend validation steps;\n- avoid inventing missing metrics;\n- avoid clinical or diagnostic conclusions.\n\nIf a source is missing, Quenta should say what is missing instead of filling\nthe gap."
+  },
+  {
+    "id": "docs:ai/quenta#interactive-presentations",
+    "sourceKind": "documentation",
+    "title": "Quenta — Interactive presentations",
+    "locator": "Docs / Ai / Quenta / Interactive presentations",
+    "excerpt": "Interactive presentations Quenta has two modes, switched at the top right of its pages: **Chat** and **Presentations**. Open **Presentations**, or choose **Create presentation** on a Result. Tick one or more completed Results and describe how the page should…",
+    "content": "Interactive presentations\nQuenta has two modes, switched at the top right of its pages: **Chat** and\n**Presentations**. Open **Presentations**, or choose **Create presentation** on a\nResult.\nTick one or more completed Results and describe how the page should show them,\nor tick none and describe any topic, for example *how molecular docking works,\nexplained simply with a diagram*. Quenta creates an interactive HTML page using\nPreact, a small page-building library that ships inside Liatir. A page about\nResults receives a saved copy of their structured outputs. A page about a topic\nis written from the model's general knowledge: it says so, and any numbers or\ncharts on it are marked as illustrative examples, not measurements. Either way the\npage cannot reach the internet, external resources, your files or Liatir commands.\n\nLiatir checks that the page renders and allows one correction attempt on failure.\nA successful presentation is saved as its own Result with a standalone offline\nHTML file and the source snapshots/code. Reopen it from Results or export its\nHTML file. Original scientific Results are unchanged. Generation can be cancelled;\nfailed or cancelled attempts retain their diagnostic Result.\n\nThe presentation's interpretation is AI-generated. Check its figures, units and\nconclusions against the cited source Results. The ordinary chat mode remains\nread-only; this dedicated mode saves only the presentation requested by you."
   },
   {
     "id": "docs:ai/tools/mhc-epitope-prediction",
@@ -1227,8 +1235,8 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "sourceKind": "documentation",
     "title": "Pipelines — What a pipeline contains",
     "locator": "Docs / Pipeline / Overview / What a pipeline contains",
-    "excerpt": "What a pipeline contains A pipeline is made of nodes and connections: - **Input nodes** provide starting files or values. - **Tool nodes** run built-in tools, `.lia` plugins, AI Tools, or saved External Workflows. - **Logic nodes** help control simple branchi…",
-    "content": "What a pipeline contains\nA pipeline is made of nodes and connections:\n\n- **Input nodes** provide starting files or values.\n- **Tool nodes** run built-in tools, `.lia` plugins, AI Tools, or saved External\n  Workflows.\n- **Logic nodes** help control simple branching or conditional behavior.\n- **Connections** pass compatible outputs into later inputs.\n\nEach node exposes only the inputs that make sense for that tool. File pickers\nare filtered by compatible format whenever possible."
+    "excerpt": "What a pipeline contains A pipeline is made of nodes and connections: - **Input nodes** provide starting files or values. - **Tool nodes** run built-in tools, `.lia` plugins, AI Tools, or saved External Workflows or workspace Python Scripts. - **Logic nodes**…",
+    "content": "What a pipeline contains\nA pipeline is made of nodes and connections:\n\n- **Input nodes** provide starting files or values.\n- **Tool nodes** run built-in tools, `.lia` plugins, AI Tools, or saved External\n  Workflows or workspace Python Scripts.\n- **Logic nodes** help control simple branching or conditional behavior.\n- **Connections** pass compatible outputs into later inputs.\n\nEach node exposes only the inputs that make sense for that tool. File pickers\nare filtered by compatible format whenever possible."
   },
   {
     "id": "docs:pipeline/overview#running-a-pipeline",
@@ -1236,15 +1244,15 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "title": "Pipelines — Running a pipeline",
     "locator": "Docs / Pipeline / Overview / Running a pipeline",
     "excerpt": "Running a pipeline 1. Open **Pipeline** from the sidebar. 2. Add the tools or plugins you want to use. 3. Connect outputs to compatible inputs. 4. Fill in required fields. 5. Click **Run pipeline**. While a pipeline is running, it is locked to prevent acciden…",
-    "content": "Running a pipeline\n1. Open **Pipeline** from the sidebar.\n2. Add the tools or plugins you want to use.\n3. Connect outputs to compatible inputs.\n4. Fill in required fields.\n5. Click **Run pipeline**.\n\nWhile a pipeline is running, it is locked to prevent accidental edits. You can\nstill work in other pipelines and elsewhere in the app."
+    "content": "Running a pipeline\n1. Open **Pipeline** from the sidebar.\n2. Add the tools or plugins you want to use.\n3. Connect outputs to compatible inputs.\n4. Fill in required fields.\n5. Click **Run pipeline**.\n\nWhile a pipeline is running, it is locked to prevent accidental edits. You can\nstill work in other pipelines and elsewhere in the app.\n\nLeaving the workspace stops the pipelines running in it, so Liatir asks first.\nTools, Plugins and Scripts started on their own keep running after you switch\nworkspace, and their Results are saved in the workspace where they started."
   },
   {
     "id": "docs:pipeline/overview#starting-from-a-preset",
     "sourceKind": "documentation",
     "title": "Pipelines — Starting from a preset",
     "locator": "Docs / Pipeline / Overview / Starting from a preset",
-    "excerpt": "Starting from a preset The Pipelines page includes small, editable workflows with their artifact handoffs already connected. **Single-cell embedding and preview** asks only for an AnnData file and an installed AI Model, then validates the input, creates an im…",
-    "content": "Starting from a preset\nThe Pipelines page includes small, editable workflows with their artifact\nhandoffs already connected. **Single-cell embedding and preview** asks only for\nan AnnData file and an installed AI Model, then validates the input, creates an\nimmutable embedded AnnData result, opens its bounded preview, and leaves the\nartifact in Data for later nodes."
+    "excerpt": "Starting from a preset Choose **Presets** at the top of the Pipelines page to browse small, editable workflows with their artifact handoffs already connected; **Use preset** creates your own copy and opens it. **Single-cell embedding and preview** asks only f…",
+    "content": "Starting from a preset\nChoose **Presets** at the top of the Pipelines page to browse small, editable\nworkflows with their artifact handoffs already connected; **Use preset** creates\nyour own copy and opens it. **Single-cell embedding and preview** asks only for\nan AnnData file and an installed AI Model, then validates the input, creates an\nimmutable embedded AnnData result, opens its bounded preview, and leaves the\nartifact in Data for later nodes."
   },
   {
     "id": "docs:pipeline/overview#jobs-and-results",
@@ -1269,6 +1277,46 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "locator": "Docs / Pipeline / Overview / Saving and reusing workflows",
     "excerpt": "Saving and reusing workflows Pipelines are meant to be reusable. A saved workflow keeps its structure and settings so you can return to it later, adjust inputs, and run it again. An MCP-compatible client can also request an exact saved revision through [Local…",
     "content": "Saving and reusing workflows\nPipelines are meant to be reusable. A saved workflow keeps its structure and\nsettings so you can return to it later, adjust inputs, and run it again.\n\nAn MCP-compatible client can also request an exact saved revision through\n[Local MCP](/mcp/overview). This is off by default: you allow each saved\nrevision in Settings, choose which Data files and Results it may read, and\napprove every individual run with its supplied inputs in Liatir.\nDeclared inputs include Native Tools, AI Tools and their compatible installed\nAI Model choice, `.lia` Plugins, saved External Workflows, viewers, API\nConnectors, utility nodes and nested sub-pipelines. MCP cannot install models or\nedit pipeline and External Workflow definitions.\n\nFor custom steps, use [.lia plugins](/plugins/overview). A plugin can wrap a\nscript or command-line tool through the Liatir API bridge and still behave like a\nnormal node in the pipeline."
+  },
+  {
+    "id": "docs:pipeline/overview#simulation-presets",
+    "sourceKind": "documentation",
+    "title": "Pipelines — Simulation presets",
+    "locator": "Docs / Pipeline / Overview / Simulation presets",
+    "excerpt": "Simulation presets The preset cards include required inputs and runtime/platform requirements before you create a pipeline. Seven additional starting points cover docking with a 3D preview, screening with GNINA rescoring, docking through molecular dynamics an…",
+    "content": "Simulation presets\nThe preset cards include required inputs and runtime/platform requirements before\nyou create a pipeline. Seven additional starting points cover docking with a 3D\npreview, screening with GNINA rescoring, docking through molecular dynamics and\nanalysis, trajectory/interactions, metabolic fluxes and feasible ranges, biochemical\nreaction networks, and multicellular populations.\n\nThese simulation runtimes currently target Linux and Windows through WSL2. GNINA\nand the published OpenMM runtime need compatible NVIDIA hardware. A preset does\nnot install dependencies automatically. Choose the receptor, ligands, binding site,\nmodel and simulation parameters appropriate to your study before running it.\nConnected files are passed between existing tools; an editable template is not\nscientific validation of a new study.\n\n[Python Scripts](/pipeline/scripts) appear in the pipeline step menu after saving\nthem in the current workspace. Their declared numeric and file outputs connect\nto compatible downstream inputs just like Plugin outputs."
+  },
+  {
+    "id": "docs:pipeline/scripts",
+    "sourceKind": "documentation",
+    "title": "Python Scripts",
+    "locator": "Docs / Pipeline / Scripts",
+    "excerpt": "Scripts are small pieces of Python code saved in a workspace. Use them to transform values or files without building a `.lia` Plugin. They can run on their own or as pipeline steps.",
+    "content": "Scripts are small pieces of Python code saved in a workspace. Use them to\ntransform values or files without building a `.lia` Plugin. They can run on\ntheir own or as pipeline steps."
+  },
+  {
+    "id": "docs:pipeline/scripts#create-and-run",
+    "sourceKind": "documentation",
+    "title": "Python Scripts — Create and run",
+    "locator": "Docs / Pipeline / Scripts / Create and run",
+    "excerpt": "Create and run 1. Open **Scripts** in the sidebar and choose **New script**. 2. Under **Inputs** and **Outputs**, add the fields your script needs. A new script starts with none. Give each field a short name used in the code (for example `my_variable`), a kin…",
+    "content": "Create and run\n1. Open **Scripts** in the sidebar and choose **New script**.\n2. Under **Inputs** and **Outputs**, add the fields your script needs. A new\n   script starts with none. Give each field a short name used in the code (for\n   example `my_variable`), a kind (text, number, yes/no, file, and for outputs\n   also structured data or summary numbers), an optional label and a required\n   flag.\n3. Write your code inside `main(ctx)`, where the starting code says\n   *Write your code here...*. Read an input with `ctx.input[\"my_variable\"]` and\n   end by returning your outputs by name, for example `return {\"my_result\": 42}`.\n4. Type a value for each input under **Test values**, then choose **Save and\n   run**. Test values are used only for this try; in a pipeline the inputs come\n   from the pipeline. Progress and logs appear on the page and in Jobs;\n   completed, failed and cancelled runs are recorded in Results.\n\nFor a numeric input named `value` and a numeric output named `doubled`:\n\n```python\ndef main(ctx):\n    return {\"doubled\": ctx.input[\"value\"] * 2}\n```\n\nLiatir wraps this function with the same Python SDK used by Plugins. The input\nand output contracts are mandatory, including when explicitly empty. Missing\nrequired values, incorrect types and undeclared outputs fail visibly rather\nthan passing invalid data to the next pipeline step. Python syntax is checked\nbefore the source module is imported."
+  },
+  {
+    "id": "docs:pipeline/scripts#python-packages-and-files",
+    "sourceKind": "documentation",
+    "title": "Python Scripts — Python packages and files",
+    "locator": "Docs / Pipeline / Scripts / Python packages and files",
+    "excerpt": "Python packages and files List any extra packages the script imports under **Python packages**, one per line, for example `pandas` or `numpy>=1.26`. Liatir installs them once, on demand, in a managed Python environment shared with Plugins that need the same p…",
+    "content": "Python packages and files\nList any extra packages the script imports under **Python packages**, one per\nline, for example `pandas` or `numpy>=1.26`. Liatir installs them once, on\ndemand, in a managed Python environment shared with Plugins that need the same\npackages. A script that uses only Python itself needs nothing. Only package names\nare accepted: installer options such as an alternative package index are refused.\n\nFile inputs are local paths. Each execution has its own durable working directory;\nrelative output paths are resolved there, so separate runs do not overwrite one\nanother. A file output can return a path to an existing file,\nor an object such as `{\"content\": \"value\\n7\\n\", \"fileName\": \"values.csv\"}`.\n\nScripts execute ordinary local Python, with the same operating-system access as\nPython Plugins. They are not isolated like Quenta presentations: run code you trust."
+  },
+  {
+    "id": "docs:pipeline/scripts#reuse-and-history",
+    "sourceKind": "documentation",
+    "title": "Python Scripts — Reuse and history",
+    "locator": "Docs / Pipeline / Scripts / Reuse and history",
+    "excerpt": "Reuse and history **Export .py** in the editor saves the script's Python code as a `.py` file, for example to share it or keep a copy. The file holds the code only: inputs, outputs and packages are part of the script in Liatir. Saved scripts appear under **Sc…",
+    "content": "Reuse and history\n**Export .py** in the editor saves the script's Python code as a `.py` file, for\nexample to share it or keep a copy. The file holds the code only: inputs,\noutputs and packages are part of the script in Liatir.\n\nSaved scripts appear under **Scripts** in the pipeline's step menu. Connect their\ndeclared outputs to compatible inputs. Each execution keeps a copy of its code,\ncontracts and package list in its own run folder, and the Job records the exact\ninstalled package versions. Editing a saved script does not change an execution\nalready begun. The copy lives with the run's other files.\n\nScripts belong to one workspace. **Copy to workspace** creates a new independent\nscript in another workspace, without copying execution history or Results. Later\nedits do not propagate between copies.\n\nEarlier JavaScript scripts remain under **Older JavaScript scripts** on the\nScripts page, for reading and export. They are not run or automatically\ntranslated to Python."
   },
   {
     "id": "docs:plugins/api/deps/check-many",
@@ -2175,6 +2223,14 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "content": "Shared lifecycle\nAll five runtimes use `liatir build` and the app-backed `liatir dev`. Inputs and\noutputs connect across runtimes in the same pipeline. Jobs display each run's\nlogs and progress; file outputs are saved in Results with their run association.\n\nFor R and Native, the working directory is removed when the Job ends. Return\nfile content inline or use a path in bridge-managed storage; see\n[file output values](./field#file-output-values).\n\n- [Getting started](./getting-started)\n- [Complete entry points](./define-plugin)\n- [Runtime packaging and preparation](./format)\n- [Plugin bridge reference](./api-bridge)"
   },
   {
+    "id": "docs:plugins/overview#availability-across-workspaces",
+    "sourceKind": "documentation",
+    "title": "Plugins (.lia) — Availability across workspaces",
+    "locator": "Docs / Plugins / Overview / Availability across workspaces",
+    "excerpt": "Availability across workspaces Import a `.lia` Plugin once to make it available in every workspace on this Liatir installation. Existing workspace imports are collected automatically, while saved pipeline references keep their identities. Executions, Jobs, lo…",
+    "content": "Availability across workspaces\nImport a `.lia` Plugin once to make it available in every workspace on this\nLiatir installation. Existing workspace imports are collected automatically,\nwhile saved pipeline references keep their identities. Executions, Jobs, logs\nand Results belong to the workspace where the run started. Removing a Plugin\nfrom the shared catalog removes it from the available choices in every workspace;\nexisting Results remain. Keep the imported `.lia` file at its original location.\n\nFor a small Python task that does not need a distributable Plugin, use\n[Scripts](/pipeline/scripts)."
+  },
+  {
     "id": "docs:plugins/plugin-context",
     "sourceKind": "documentation",
     "title": "Plugin context",
@@ -2221,6 +2277,46 @@ export const QUENTA_DOCS_SEED: LiatirQuentaContextDocument[] = [
     "locator": "Docs / Plugins / Plugin Context / Runtime validation",
     "excerpt": "Runtime validation In **Python, R, Rust and C++**, the supplied SDK validates the input before the handler runs (defaults applied, required and typed fields checked) and the output after it returns (JSON, and no key outside the declared outputs). In **Node**,…",
     "content": "Runtime validation\nIn **Python, R, Rust and C++**, the supplied SDK validates the input before the handler runs\n(defaults applied, required and typed fields checked) and the output after it\nreturns (JSON, and no key outside the declared outputs). In **Node**, validation\nhappens at build time — `liatir build` and `liatir dev` inspect the exported\nplugin shape after bundling — not on each run.\n\n\nAll runtimes use the existing `.lia` contract; see\n[runtime preparation](./getting-started#runtime-preparation) for preparation and executable permissions."
+  },
+  {
+    "id": "docs:release-notes-v1#plugins-shared-across-workspaces",
+    "sourceKind": "documentation",
+    "title": "Liatir 1.0.0 release notes — Plugins shared across workspaces",
+    "locator": "Docs / Release Notes V1 / Plugins shared across workspaces",
+    "excerpt": "Plugins shared across workspaces A `.lia` Plugin imported once is available in every workspace. Plugins imported in earlier versions are collected automatically, and saved pipelines keep working. Runs, Jobs, logs and Results still belong to the workspace wher…",
+    "content": "Plugins shared across workspaces\nA `.lia` Plugin imported once is available in every workspace. Plugins imported\nin earlier versions are collected automatically, and saved pipelines keep\nworking. Runs, Jobs, logs and Results still belong to the workspace where they\nstarted, even if you switch workspace while they run.\n\nLeaving a workspace no longer stops tools, Plugins or Scripts that are running:\nthey finish and save their Results where they started. Pipelines still stop when\nyou leave their workspace, so Liatir now asks before switching."
+  },
+  {
+    "id": "docs:release-notes-v1#python-scripts",
+    "sourceKind": "documentation",
+    "title": "Liatir 1.0.0 release notes — Python Scripts",
+    "locator": "Docs / Release Notes V1 / Python Scripts",
+    "excerpt": "Python Scripts **Scripts** in the sidebar holds small Python programs for the current workspace. Each script declares its inputs and outputs; Liatir checks them on every run, so a pipeline only passes on values of the declared kind. Scripts run on their own o…",
+    "content": "Python Scripts\n**Scripts** in the sidebar holds small Python programs for the current\nworkspace. Each script declares its inputs and outputs; Liatir checks them on\nevery run, so a pipeline only passes on values of the declared kind. Scripts run\non their own or as pipeline steps, and every run keeps a copy of the exact code\nand packages it used. **Copy to workspace** makes an independent copy for\nanother project. Earlier JavaScript scripts stay readable and exportable under\n**Older JavaScript scripts**; they are not converted."
+  },
+  {
+    "id": "docs:release-notes-v1#seven-new-pipeline-presets",
+    "sourceKind": "documentation",
+    "title": "Liatir 1.0.0 release notes — Seven new pipeline presets",
+    "locator": "Docs / Release Notes V1 / Seven new pipeline presets",
+    "excerpt": "Seven new pipeline presets Docking with a 3D view of the complex, screening with GNINA rescoring, docking to molecular dynamics and analysis, trajectory motion and interactions, metabolic fluxes and feasible ranges, biochemical reaction networks, and multicel…",
+    "content": "Seven new pipeline presets\nDocking with a 3D view of the complex, screening with GNINA rescoring, docking\nto molecular dynamics and analysis, trajectory motion and interactions,\nmetabolic fluxes and feasible ranges, biochemical reaction networks, and\nmulticellular populations. Each card says what it produces, what you choose and\nwhat it requires (platform, components, NVIDIA GPU) before you start. Scientific\nsettings are left to you; a preset is not a validated study."
+  },
+  {
+    "id": "docs:release-notes-v1#quenta",
+    "sourceKind": "documentation",
+    "title": "Liatir 1.0.0 release notes — Quenta",
+    "locator": "Docs / Release Notes V1 / Quenta",
+    "excerpt": "Quenta - **Two local model profiles.** Standard for 16 GB of memory (Qwen 3.5 9B, a 6.6 GB download) and Extended for 32 GB (Qwen 3.8 27B, 17.7 GB). Nothing is downloaded until you choose a profile; a model you already use is kept, and you can switch profile…",
+    "content": "Quenta\n- **Two local model profiles.** Standard for 16 GB of memory (Qwen 3.5 9B, a\n  6.6 GB download) and Extended for 32 GB (Qwen 3.8 27B, 17.7 GB). Nothing is\n  downloaded until you choose a profile; a model you already use is kept, and\n  you can switch profile or pick another installed model in Quenta's settings.\n- **No unnecessary engine downloads.** When Quenta is set to an Ollama address\n  other than the standard one and it does not answer, Liatir now reports it\n  instead of downloading and starting its own engine there.\n- **Presentations.** Quenta writes an interactive page about the Results you\n  select, or about any topic you describe (numbers on a topic page are marked as\n  illustrative examples). The page runs without internet, external resources or access\n  to your files and app commands, and is saved as a new Result with its sources\n  and a standalone HTML file.\n\n### Why the Standard profile uses Qwen 3.5 9B\n\nGemma 4 12B was compared with Qwen 3.5 9B on a 16 GB Mac, with four\nQuenta-style questions (a docking result in Italian, a failed job, a question\nwhose answer was not in the data, a greeting):\n\n| | Qwen 3.5 9B (Standard) | Gemma 4 12B |\n| --- | --- | --- |\n| Memory while loaded | about 6.2 GB | about 9.6 GB |\n| Writing speed | about 9 tokens/s | about 5 tokens/s |\n| Answered in the user's language | yes | yes |\n| Said when data was missing | yes | yes |\n| Unsupported suggestions | a \"Repair\" setting Liatir does not have; file formats absent from the log | two analysis tools Liatir does not include |\n\nThe answers were of similar quality, so the lighter and faster model stays the\nStandard profile and leaves more memory to scientific tools. Bonsai 2 27B, a\ncompressed version of Qwen 3.8 27B, was also tried: its answers were slightly\nmore careful, but it wrote about 4 tokens per second (Qwen 3.5 9B about 10, on\nthe same Ollama version) and it needs a newer Ollama than earlier Liatir\ninstallations have. Four questions are\nnot a benchmark. The Extended profile was not measured: its model does not fit\nin 16 GB of memory."
+  },
+  {
+    "id": "docs:release-notes-v1#not-yet-done",
+    "sourceKind": "documentation",
+    "title": "Liatir 1.0.0 release notes — Not yet done",
+    "locator": "Docs / Release Notes V1 / Not yet done",
+    "excerpt": "Not yet done An extended run of long scientific workflows was not part of this release check. Publication is a separate step.",
+    "content": "Not yet done\nAn extended run of long scientific workflows was not part of this release\ncheck. Publication is a separate step."
   },
   {
     "id": "docs:showcases/overview",

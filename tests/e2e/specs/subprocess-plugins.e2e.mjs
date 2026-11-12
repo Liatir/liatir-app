@@ -153,7 +153,7 @@ def main(ctx):
       const edges = nodes.slice(1).map((node,index) => ({id:'edge-'+index,source:'step-'+index,target:node.id,sourceHandle:'file',targetHandle:'file'}));
       const pipeline = { id:'mixed-runtime',name:'Mixed runtime files',nodes,edges,updatedAt:Date.now() };
       for (const [rel,value] of [['liatir-plugins.json',plugins],['pipeline-workspace.json',{current:pipeline,saved:[pipeline],runtime:[]}]]) {
-        await window.Liatir.invoke('lia_app_write_text',{rel:'workspaces/__test__/'+rel,content:JSON.stringify(value),createDirs:true});
+        await window.Liatir.invoke('lia_app_write_text',{rel:rel==='liatir-plugins.json'?'plugins/catalog-v1.json':'workspaces/__test__/'+rel,content:JSON.stringify(rel==='liatir-plugins.json'?{plugins:value,migratedSources:[]}:value),createDirs:true});
       }
     }, paths);
     await reloadLiatirApp(browser); await openSandboxWorkspace(browser); await navigateSidebar(browser, '/pipelines');

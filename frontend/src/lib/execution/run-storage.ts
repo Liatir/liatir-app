@@ -22,7 +22,7 @@ import {
   type ListedFsEntry,
   type RunOutputEntry,
 } from '$lib/execution/run-output-entries';
-import { getDataPrefix } from '$lib/stores/workspace.svelte';
+import { runWorkspacePrefix } from './run-ownership';
 import type {
   LiatirExecutionLogEntry,
   LiatirRunMetadata,
@@ -31,12 +31,12 @@ import type {
 
 const RUNS_DIR = 'runs';
 
-function runsRoot(): string {
-  return `${getDataPrefix()}${RUNS_DIR}`;
+function runsRoot(runId: string): string {
+  return `${runWorkspacePrefix(runId)}${RUNS_DIR}`;
 }
 
 export function runDirRel(runId: string): string {
-  return `${runsRoot()}/${runId}`;
+  return `${runsRoot(runId)}/${runId}`;
 }
 
 function runOutputRel(runId: string): string {
@@ -108,7 +108,7 @@ export function revealFailureMessage(outcome: RevealOutcome): string | null {
 export async function ensureRunOutputDir(runId: string): Promise<string> {
   const api = liatir();
   if (!api) throw new Error('Liatir API not available');
-  await api.invoke('lia_fs_mkdir', { rel: runsRoot(), permanent: true });
+  await api.invoke('lia_fs_mkdir', { rel: runsRoot(runId), permanent: true });
   await api.invoke('lia_fs_mkdir', { rel: runDirRel(runId), permanent: true });
   await api.invoke('lia_fs_mkdir', { rel: runOutputRel(runId), permanent: true });
   return `${await dataRoot()}/${runOutputRel(runId)}`;

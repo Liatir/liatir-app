@@ -46,7 +46,7 @@
   }
 
   async function openWorkspace(id: string) {
-    await workspaceStore.switchTo(id);
+    if (!await workspaceStore.switchTo(id)) return;
     jobsStore.refresh();
     pipelineStore.init();
     const toRoute = (page.url.searchParams.get('fromRoute')?.trim()) ?? "";
@@ -60,7 +60,7 @@
     creating = true;
     try {
       const w = await workspaceStore.create(newName.trim());
-      await workspaceStore.switchTo(w.id);
+      if (!await workspaceStore.switchTo(w.id)) return;
       jobsStore.refresh();
       pipelineStore.init();
       goto('/');

@@ -1,9 +1,10 @@
 import type { Node, Edge } from '@xyflow/svelte';
 import { liatir } from '$lib/api';
 import { appStorage } from './app-storage';
-import { getDataPrefix, workspaceStore } from './workspace.svelte';
+import { workspaceStore } from './workspace.svelte';
 import { dataFiles } from './dataFiles.svelte';
 import { aiModelsStore } from './aiModels.svelte';
+import { pythonScripts } from './python-scripts.svelte';
 import { liaPluginsStore } from './lia-plugins.svelte';
 import { apiConnections, flattenApiOutputSchema, sendApiRequest } from './apiConnections.svelte';
 import { analysisRuns } from './analysisRuns.svelte';
@@ -25,7 +26,7 @@ import type { ToolOutput } from '$lib/types/tool-output';
 import type {
   ToolNodeData, VariableNodeData, MathNodeData, ConditionNodeData,
   SubPipelineNodeData, ApiRequestNodeData, NodeRunState, RunOutputFile,
-  PipelineStepDefinition,
+  PipelineStepDefinition, PipelineRegistryEntry,
 } from '$lib/types/pipeline';
 import { isExecutablePipelineNode } from '$lib/types/pipeline';
 import type { AIPipelineRunContext } from '$lib/ai/direct-run-context';
@@ -94,7 +95,6 @@ function buildPipelineOutput(steps: PipelineStepRecord[]): ToolOutput {
   return { sections };
 }
 
-function getFile() { return `${getDataPrefix()}pipeline-workspace.json`; }
 
 export interface SavedPipeline {
   id: string;
@@ -261,6 +261,7 @@ function errorMessage(error: unknown): string {
 }
 
 function executionKindForStep(type: PipelineStepDefinition['type']): LiatirExecutionRunKind {
+  if (type === 'python-script') return 'python-script';
   if (type === 'native-tool') return 'native-tool';
   if (type === 'tool-runtime') return 'tool-runtime';
   if (type === 'ai-tool') return 'ai-tool';
@@ -463,9 +464,14 @@ function wouldCreateCycle(
 
 // ── Store ─────────────────────────────────────────────────────────────────────
 
-function createPipelineStore() {
+function createPipelineStore(owner: string | null) {
+  // A settling run retains its own graph/runtime and persistence destination.
+  // Switching the visible workspace must never redirect these closures.
+  const prefix = owner ? `workspaces/${owner}/` : '';
+  const getFile = () => `${prefix}pipeline-workspace.json`;
   let runtimeByPipeline = $state(new Map<string, PipelineRuntimeState>());
   const activeExecutions = new Map<string, ActivePipelineExecution>();
+  const runRegistries = new Map<string, Map<string, PipelineRegistryEntry>>();
   const pendingCancellations = new Set<string>();
 
   let savedPipelines = $state<SavedPipeline[]>([]);
@@ -582,7 +588,7 @@ function createPipelineStore() {
    * a standalone run goes through: results only. Existence is checked here first, because a step
    * that reports a file it did not write must fail rather than register a path to nothing.
    */
-  async function registerSettledFiles(files: RunOutputFile[], toolLabel: string): Promise<void> {
+  async function registerSettledFiles(files: RunOutputFile[], toolLabel: string, runId: string): Promise<void> {
     if (files.length === 0) return;
     const api = liatir();
     if (!api) throw new Error('Liatir API not available');
@@ -590,7 +596,7 @@ function createPipelineStore() {
     for (const file of files) {
       await api.invoke('lia_file_size', { path: file.path });
     }
-    await registerResultsInDataLibrary(files, toolLabel);
+    await registerResultsInDataLibrary(files, toolLabel, runId);
   }
 
   async function executeApiRequestNode(
@@ -680,7 +686,7 @@ function createPipelineStore() {
         nodeId: runIdentity.nodeId,
       },
     });
-    await registerSettledFiles(outputFiles, req.name || d.requestId);
+    await registerSettledFiles(outputFiles, req.name || d.requestId, runIdentity.runId);
     throwIfRunCancelled(signal);
 
     return { label, outputFiles, outputValues };
@@ -716,7 +722,7 @@ function createPipelineStore() {
       };
 
       if (node.type === 'tool') {
-        const entry = resolveStepEntry(node.data?.stepId as string ?? '');
+        const entry = runRegistries.get(parentContext.execution.rootRunId)?.get(node.data?.stepId as string ?? '');
         if (!entry) {
           const error = new Error(`Unknown tool: ${node.data?.stepId}`);
           const identity = await beginPipelineChild(parentContext.execution, {
@@ -795,7 +801,7 @@ function createPipelineStore() {
               nodeId: nestedNodeId,
             },
           });
-          await registerSettledFiles(outputFiles, entry.definition.label);
+          await registerSettledFiles(outputFiles, entry.definition.label, childIdentity.runId);
           throwIfRunCancelled(parentContext.signal);
           if (result.executionEvidence) {
             await executionRuns.setPayload(childIdentity.runId, {
@@ -1050,6 +1056,7 @@ function createPipelineStore() {
         await Promise.all([
           externalWorkflowsStore.init(),
           liaPluginsStore.init(),
+        pythonScripts.init(),
           apiConnections.init(),
           aiModelsStore.init(),
         ]);
@@ -1123,6 +1130,13 @@ function createPipelineStore() {
           }
         } catch { /* start fresh */ }
       });
+    },
+
+    deactivate() {
+      // Preserve the existing cancellation-on-workspace-switch behavior, while
+      // allowing its asynchronous settlement to finish in the original workspace.
+      for (const execution of activeExecutions.values()) execution.controller.abort();
+      void flushPersist().catch(error => console.error('[pipeline] failed to save departing workspace', error));
     },
 
     reset() {
@@ -1296,18 +1310,27 @@ function createPipelineStore() {
       const { nodes: graphNodes, edges: graphEdges } = executableGraph(nodes, edges);
       if (existingRuntime.running || graphNodes.length === 0) return null;
       const api = liatir();
-      const workspaceId = workspaceStore.activeId;
+      const workspaceId = owner;
       if (!api || !workspaceId) return null;
       await Promise.all([
         dataFiles.init(),
         apiConnections.init(),
         liaPluginsStore.init(),
+        pythonScripts.init(),
         externalWorkflowsStore.init(),
       ]);
 
       const fresh = new Map<string, NodeRunState>();
       for (const n of graphNodes) fresh.set(n.id, initNodeState());
       const pipelineRunId = options.runId ?? crypto.randomUUID();
+      const registrySnapshot = new Map<string, PipelineRegistryEntry>();
+      for (const node of [...graphNodes, ...savedPipelines.flatMap(saved => saved.nodes)]) {
+        if (node.type !== 'tool') continue;
+        const stepId = String(node.data?.stepId ?? '');
+        const entry = resolveStepEntry(stepId);
+        if (entry) registrySnapshot.set(stepId, entry);
+      }
+      runRegistries.set(pipelineRunId, registrySnapshot);
       const rootIdentity = createLiatirRootExecutionIdentity({
         runId: pipelineRunId,
         runKind: 'pipeline',
@@ -1387,7 +1410,7 @@ function createPipelineStore() {
           const node = graphNodes.find(n => n.id === nodeId);
           if (!node || node.type === 'start') continue;
           const stepEntry = node.type === 'tool'
-            ? resolveStepEntry(node.data?.stepId as string ?? '')
+            ? registrySnapshot.get(node.data?.stepId as string ?? '')
             : null;
           const childIdentity = await beginPipelineChild(rootIdentity, {
             runKind: node.type === 'tool' && stepEntry
@@ -1460,7 +1483,7 @@ function createPipelineStore() {
                 nodeId,
               },
             });
-            await registerSettledFiles(outputFiles, entry.definition.label);
+            await registerSettledFiles(outputFiles, entry.definition.label, childIdentity.runId);
             throwIfRunCancelled(controller.signal);
             if (result.executionEvidence) {
               await executionRuns.setPayload(childIdentity.runId, {
@@ -1717,7 +1740,7 @@ function createPipelineStore() {
         // A setup failure can happen after a child identity is allocated but
         // before the node-specific try/catch begins. Close every still-active
         // descendant before publishing the parent Result.
-        const activeDescendants = executionRuns.records.filter((record) =>
+        const activeDescendants = executionRuns.forWorkspace(workspaceId).filter((record) =>
           record.identity.rootRunId === pipelineRunId &&
           record.identity.runId !== pipelineRunId &&
           !isLiatirExecutionTerminalStatus(record.status)
@@ -1794,6 +1817,7 @@ function createPipelineStore() {
             console.error('[pipeline] failed to finalize execution result', error);
           }
         }
+        runRegistries.delete(pipelineRunId);
         pendingCancellations.delete(cancellationKey);
         const active = activeExecutions.get(runKey);
         if (active?.runId === pipelineRunId) activeExecutions.delete(runKey);
@@ -1903,4 +1927,14 @@ function computeMath(
   }
 }
 
-export const pipelineStore = createPipelineStore();
+type PipelineStore = ReturnType<typeof createPipelineStore>;
+const workspacePipelines = new Map<string | null, PipelineStore>();
+export const pipelineStore: PipelineStore = new Proxy({} as PipelineStore, {
+  get(_target, key) {
+    const owner = workspaceStore.activeId || null;
+    let store = workspacePipelines.get(owner);
+    if (!store) { store = createPipelineStore(owner); workspacePipelines.set(owner, store); }
+    const value = Reflect.get(store, key, store);
+    return typeof value === 'function' ? value.bind(store) : value;
+  },
+});

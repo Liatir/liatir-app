@@ -4,7 +4,7 @@ Quenta is a local, read-only AI inside Liatir. It helps explain app
 state, bioinformatics workflows, Results, Jobs, pipeline structure, and failure
 logs using local context.
 
-It is designed for guidance and reports, not automation.
+Chat provides guidance. A separate Presentations mode builds an offline HTML page from Results you select. It does not run scientific analyses.
 
 ## What it can do
 
@@ -25,8 +25,8 @@ Quenta cannot:
 - run Plugins;
 - run AI Models or AI Tools;
 - send API Connector requests;
-- edit files;
-- change workspace state;
+- edit source data or arbitrary files;
+- change scientific configuration;
 - execute shell commands.
 
 The model receives text context only. Liatir does not send tool callbacks to the
@@ -34,14 +34,25 @@ model.
 
 ## Requirements
 
-The first Quenta runtime uses Ollama running locally.
+Quenta runs its language model on your computer through Ollama, a local
+program that runs such models. The first time you open Quenta, choose the
+profile that matches your computer's memory:
 
-1. Install and start Ollama.
-2. Pull a local chat model in Ollama.
-3. Open **Quenta** in Liatir.
-4. Set the Ollama base URL, usually `http://127.0.0.1:11434`.
-5. Refresh models and select the model you want to use.
-6. Save settings.
+- **Standard, for 16 GB of memory:** Qwen 3.5 9B, a 6.6 GB download. On a
+  16 GB Mac it uses about 6.2 GB of memory while loaded.
+- **Extended, for 32 GB of memory:** Qwen 3.8 27B, a 17.7 GB download.
+
+Choosing a profile downloads its model once; opening Quenta never starts a
+download. You can change profile at any time in Quenta's settings. If you
+already use another model, Quenta keeps it, and the **Model** list in the
+settings lets you choose any other model already installed in Ollama. Both profiles read up to 16,384 tokens
+(pieces of words) per request, the amount Quenta has always used. On macOS
+Liatir can prepare Ollama itself; on other systems install and start Ollama
+first. Everything works offline after the download.
+
+Other analyses running at the same time also need memory, and answers are
+slower on smaller computers: on a 16 GB Mac the Standard model writes about 9
+tokens per second.
 
 Liatir accepts only local loopback Ollama endpoints for this feature.
 
@@ -79,3 +90,27 @@ Good Quenta answers should:
 
 If a source is missing, Quenta should say what is missing instead of filling
 the gap.
+
+## Interactive presentations
+
+Quenta has two modes, switched at the top right of its pages: **Chat** and
+**Presentations**. Open **Presentations**, or choose **Create presentation** on a
+Result.
+Tick one or more completed Results and describe how the page should show them,
+or tick none and describe any topic, for example *how molecular docking works,
+explained simply with a diagram*. Quenta creates an interactive HTML page using
+Preact, a small page-building library that ships inside Liatir. A page about
+Results receives a saved copy of their structured outputs. A page about a topic
+is written from the model's general knowledge: it says so, and any numbers or
+charts on it are marked as illustrative examples, not measurements. Either way the
+page cannot reach the internet, external resources, your files or Liatir commands.
+
+Liatir checks that the page renders and allows one correction attempt on failure.
+A successful presentation is saved as its own Result with a standalone offline
+HTML file and the source snapshots/code. Reopen it from Results or export its
+HTML file. Original scientific Results are unchanged. Generation can be cancelled;
+failed or cancelled attempts retain their diagnostic Result.
+
+The presentation's interpretation is AI-generated. Check its figures, units and
+conclusions against the cited source Results. The ordinary chat mode remains
+read-only; this dedicated mode saves only the presentation requested by you.

@@ -66,6 +66,7 @@ function createDataFilesStore() {
   let folders = $state<string[]>([]);
   let loading = $state(false);
   let initialized = false;
+  const outputWrites = new Map<string, Promise<void>>();
 
   async function persist() {
     const data: StoredData = { files, folders };
@@ -172,6 +173,25 @@ function createDataFilesStore() {
 
         if (changed) await persist();
       } catch { /* demo files init is best-effort */ }
+    },
+
+    async registerOutputs(entries: { path: string; scientific?: LiatirScientificArtifactMetadata }[], folder: string, prefix = getDataPrefix()): Promise<void> {
+      const task = (outputWrites.get(prefix) ?? Promise.resolve()).then(async () => {
+        const index = `${prefix}data-files.json`;
+        const stored = await appStorage.exists(index) ? parseSaved(await appStorage.readText(index)) : { files: [], folders: [] };
+        for (const entry of entries) {
+          if (!stored.files.some(file => file.path === entry.path)) stored.files.unshift({
+            id: crypto.randomUUID(), name: entry.path.split(/[\\/]/).pop() ?? entry.path,
+            ext: detectExt(entry.path), path: entry.path, folder, addedAt: Date.now(),
+            ...(entry.scientific ? { scientific: entry.scientific } : {}),
+          });
+        }
+        stored.folders = [...new Set([...stored.folders, 'Results', folder])].sort();
+        await appStorage.writeText(index, JSON.stringify(stored));
+        if (prefix === getDataPrefix()) { files = stored.files; folders = stored.folders; }
+      });
+      outputWrites.set(prefix, task.catch(() => {}));
+      await task;
     },
 
     async add(path: string, folder = '', scientific?: LiatirScientificArtifactMetadata) {

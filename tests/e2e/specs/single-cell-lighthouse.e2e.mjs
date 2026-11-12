@@ -242,6 +242,7 @@ export const tests = [{
     );
 
     await navigateInApp(browser, '/pipelines');
+    await (await browser.$('[data-testid="pipeline-presets-open"]')).click();
     const presetSelector = `[data-testid="pipeline-preset-card"][data-preset-id="${PRESET_ID}"]`;
     await (await browser.$(presetSelector)).waitForDisplayed({ timeout: 20_000 });
     await (await browser.$(`${presetSelector} button`)).click();

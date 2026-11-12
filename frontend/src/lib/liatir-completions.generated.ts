@@ -1,6 +1,6 @@
 // This file is generated automatically — do not edit.
 // Run:  npm run gen:sdk-types
-// Source: src-ts/liatir/_types.ts → LiatirBrowserAPI  (liatir@0.4.0)
+// Source: src-ts/liatir/_types.ts → LiatirBrowserAPI  (liatir@1.0.0)
 
 import type { ApiNode } from './liatir-editor';
 
@@ -248,6 +248,7 @@ export const LIATIR_API: Record<string, ApiNode> = {
       cancelDownload: { type: "method", detail: "(downloadId: string): Promise<boolean>" },
   } },
   pluginRuntimes: { type: "property", detail: "LiatirPluginRuntimesAPI" },
+  scripts: { type: "property", detail: "LiatirScriptsAPI" },
   qc: { type: "property", detail: "QcInterface", children: {
       fastqc: { type: "property", detail: "FastqcInterface", children: {
           run: { type: "method", detail: "(args: FastqcArgs, execution?: FastqcExecutionOptions): Promise<LiatirToolOutput>" },

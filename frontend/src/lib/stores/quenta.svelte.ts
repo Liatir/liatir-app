@@ -44,7 +44,6 @@ const MAX_CONVERSATION_TAG_LENGTH = 28;
 const MAX_CONVERSATION_TITLE_LENGTH = 96;
 const MAX_ACTIVE_REASONING_CHARS = 32_000;
 const ACTIVE_REQUESTS_SESSION_STORAGE_KEY = 'quenta-active-requests';
-export const QUENTA_DEFAULT_MODEL = 'qwen3.5:9b';
 type QuentaSetupPhase = 'idle' | 'preparing' | 'downloading' | 'ready' | 'failed';
 
 export type QuentaGenerationPhase =
@@ -1208,7 +1207,6 @@ function createQuentaStore() {
     get providerRefreshing() { return providerRefreshing; },
     get setupPhase() { return setupPhase; },
     get setupError() { return setupError; },
-    get defaultModel() { return QUENTA_DEFAULT_MODEL; },
 
     isSending(conversationId: string | null | undefined) {
       return conversationId ? Boolean(sendingByConversation[conversationId]) : false;
@@ -1305,37 +1303,33 @@ function createQuentaStore() {
       }
     },
 
+    /**
+     * Starts the local engine and prepares the chosen model, downloading it if needed. Without a
+     * chosen model it only checks status: downloads happen solely for a model the user picked.
+     */
     async bootstrapProvider() {
       if (bootstrapPromise) return bootstrapPromise;
       bootstrapPromise = (async () => {
         await quentaStore.init();
-        setupPhase = 'preparing';
+        const targetModel = settings.config.model.trim();
         setupError = null;
+        if (!targetModel) {
+          setupPhase = 'idle';
+          await quentaStore.refreshProvider();
+          return;
+        }
+        setupPhase = 'downloading';
         providerRefreshing = true;
         try {
           const runtime = createQuentaRuntime(settings.config);
-          const targetModel = settings.config.model.trim() || QUENTA_DEFAULT_MODEL;
-          setupPhase = 'downloading';
-          const bootstrap = runtime.bootstrap
-            ? await runtime.bootstrap(targetModel)
-            : null;
-
+          const bootstrap = runtime.bootstrap ? await runtime.bootstrap(targetModel) : null;
           if (bootstrap) {
             providerStatus = bootstrap.status;
             providerModels = bootstrap.models;
-            if (!settings.config.model.trim()) {
-              settings = normalizeSettings({ ...settings, config: { ...settings.config, model: bootstrap.model } });
-              await persistSettings();
-            }
           } else {
             await quentaStore.refreshProvider();
-            if (!settings.config.model.trim()) {
-              settings = normalizeSettings({ ...settings, config: { ...settings.config, model: QUENTA_DEFAULT_MODEL } });
-              await persistSettings();
-            }
           }
-
-          setupPhase = providerStatus?.available && settings.config.model.trim() ? 'ready' : 'failed';
+          setupPhase = providerStatus?.available ? 'ready' : 'failed';
           if (setupPhase === 'failed') {
             setupError = quentaSetupErrorMessage(providerStatus?.error ?? 'Quenta is not available yet.');
           }
@@ -1349,9 +1343,8 @@ function createQuentaStore() {
           providerModels = [];
         } finally {
           providerRefreshing = false;
-          bootstrapPromise = null;
         }
-      })();
+      })().finally(() => { bootstrapPromise = null; });
       return bootstrapPromise;
     },
 

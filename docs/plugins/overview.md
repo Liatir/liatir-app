@@ -255,3 +255,15 @@ file content inline or use a path in bridge-managed storage; see
 - [Complete entry points](./define-plugin)
 - [Runtime packaging and preparation](./format)
 - [Plugin bridge reference](./api-bridge)
+
+## Availability across workspaces
+
+Import a `.lia` Plugin once to make it available in every workspace on this
+Liatir installation. Existing workspace imports are collected automatically,
+while saved pipeline references keep their identities. Executions, Jobs, logs
+and Results belong to the workspace where the run started. Removing a Plugin
+from the shared catalog removes it from the available choices in every workspace;
+existing Results remain. Keep the imported `.lia` file at its original location.
+
+For a small Python task that does not need a distributable Plugin, use
+[Scripts](/pipeline/scripts).

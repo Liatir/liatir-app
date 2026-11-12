@@ -16,6 +16,8 @@
   import { openQuentaWindow } from '$lib/quenta/window';
   import { quentaPromptForFocus, quentaStore } from '$lib/stores/quenta.svelte';
   import { toast } from '$lib/stores/toast.svelte';
+  import QuentaProfilePicker from '$lib/components/quenta/QuentaProfilePicker.svelte';
+  import QuentaModeSwitch from '$lib/components/quenta/QuentaModeSwitch.svelte';
   import type {
     LiatirQuentaConversation,
     LiatirQuentaIntent,
@@ -79,12 +81,16 @@
     && quentaStore.config.model
     && quentaStore.setupPhase !== 'failed',
   ));
+  // A new user has no model yet: that is a choice to make, not a failure.
+  const needsModel = $derived(!quentaStore.config.model && !preparingQuenta);
   const quentaStatusLabel = $derived(
     localAIReady
       ? 'Ready'
       : preparingQuenta
         ? 'Preparing'
-        : 'Needs attention',
+        : needsModel
+          ? 'Choose a local model'
+          : 'Needs attention',
   );
   const quentaStatusClass = $derived(
     localAIReady
@@ -99,8 +105,10 @@
         ? 'Ask about a result, job log, pipeline, AI model, API Connector request, or bioinformatics concept. Press Enter to send, Shift+Enter for a new line.'
         : 'Ask about a result, job log, pipeline, AI model, API Connector request, or bioinformatics concept. Press Cmd/Ctrl+Enter to send; Enter adds a new line.'
       : preparingQuenta
-        ? `Quenta is preparing the recommended local model (${quentaStore.defaultModel}). You can chat when it is ready.`
-        : 'Quenta could not prepare local AI yet. Check the setup message and refresh.',
+        ? `Quenta is preparing its local model (${quentaStore.config.model}). You can chat when it is ready.`
+        : needsModel
+          ? 'Choose a local model in Quenta settings to start chatting.'
+          : 'Quenta could not prepare local AI yet. Check the setup message and refresh.',
   );
   // Model options: the configured model first, then provider models, deduped.
   const modelOptions = $derived([...new Map([
@@ -851,6 +859,7 @@
       {/snippet}
       {#snippet actions()}
         <div class="flex items-center gap-3">
+          <QuentaModeSwitch active="chat" />
           <span
             class="rounded-full px-2 py-1 text-[10px] font-medium {quentaStatusClass}"
             data-testid="quenta-provider-status"
@@ -888,7 +897,7 @@
                   <div>
                     <p class="text-sm font-semibold text-text">Quenta settings</p>
                     <p class="mt-1 text-[11px] leading-relaxed text-text-muted">
-                      Quenta prepares a default local model automatically. Advanced users can change it here.
+                      Choose a local profile to download and use. Existing custom models are retained.
                     </p>
                   </div>
                   <button
@@ -903,6 +912,13 @@
 
                 <div class="max-h-[min(70vh,38rem)] overflow-y-auto p-4">
                   <div class="space-y-3">
+                    <div>
+                      <LabelWithInfo
+                        text="Local model profile"
+                        info="Quenta's language model runs on this computer. Choosing a profile downloads its model once; nothing is downloaded until you choose."
+                      />
+                      <QuentaProfilePicker onchosen={syncSettingsDrafts} />
+                    </div>
                     <div class="rounded-xl border border-border bg-surface p-3">
                       <div class="flex items-start gap-3">
                         <div class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full {localAIReady ? 'bg-emerald-50 text-emerald-600' : preparingQuenta ? 'bg-brand/10 text-brand' : 'bg-amber-50 text-amber-600'}">
@@ -917,7 +933,7 @@
                         <div>
                           <p class="text-xs font-semibold text-text">{quentaStatusLabel}</p>
                           <p class="mt-1 text-[11px] leading-relaxed text-text-muted">
-                            Default model: {quentaStore.defaultModel}. Quenta keeps workspace context local.
+                            {quentaStore.config.model ? `Model: ${quentaStore.config.model}.` : 'No model chosen yet.'} Quenta keeps workspace context local.
                           </p>
                           {#if quentaStore.setupError}
                             <p class="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] leading-relaxed text-amber-700">
@@ -931,7 +947,7 @@
                     <div>
                       <LabelWithInfo
                         text="Model"
-                        info="The local language model Quenta uses to write its explanations. Liatir prepares the recommended default automatically; advanced users can choose another installed model."
+                        info="The local language model Quenta uses to write its explanations. Choose a profile above, or another model already installed on this computer."
                       />
                       <Select
                         value={modelDraft}
@@ -1116,10 +1132,15 @@
                         ? 'Select a saved chat from the sidebar, or start a new one.'
                         : 'Ask Quenta about Results, Jobs, pipelines, or bioinformatics context.'
                       : preparingQuenta
-                        ? `Quenta is preparing the recommended local model (${quentaStore.defaultModel}).`
-                        : 'Quenta could not prepare local AI yet. Check the setup message and refresh.'}
+                        ? `Quenta is preparing its local model (${quentaStore.config.model}).`
+                        : needsModel
+                          ? 'Quenta runs on this computer. Choose the profile that matches its memory; its model is downloaded once.'
+                          : 'Quenta could not prepare local AI yet. Check the setup message and refresh.'}
                   </p>
                 </div>
+                {#if needsModel}
+                  <QuentaProfilePicker onchosen={syncSettingsDrafts} />
+                {/if}
                 {#if localAIReady}
                   <Button
                     variant="primary"
@@ -1129,7 +1150,7 @@
                   >
                     New chat
                   </Button>
-                {:else if !preparingQuenta}
+                {:else if !preparingQuenta && !needsModel}
                   <Button variant="ghost" size="sm" onclick={() => settingsOpen = true}>
                     Open settings
                   </Button>

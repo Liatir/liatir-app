@@ -81,6 +81,52 @@ describe.sequential('durable execution store', () => {
     analysisRuns.reset();
   });
 
+  it('keeps a live Plugin in its original workspace across navigation and completion', async () => {
+    const runId = 'plugin-cross-workspace';
+    await executionRuns.begin({ identity: identity(runId), label: 'Plugin', resultPolicy: 'own', resultId: runId });
+    const signal = executionRuns.signal(runId);
+    executionRuns.deactivate(); analysisRuns.reset();
+    harness.workspace.activeId = 'workspace-b';
+    await executionRuns.init();
+    expect(signal?.aborted).toBe(false);
+    expect(executionRuns.records).toHaveLength(0);
+    await executionRuns.appendLog(runId, 'Finished in the original workspace');
+    const { status: _, ...finished } = result(runId);
+    await finalizeExecutionResult(runId, 'done', finished);
+    expect(analysisRuns.runs).toHaveLength(0);
+    expect(JSON.parse(harness.files.get('workspaces/workspace-a/analysis-runs/index.json')!)[0].id).toBe(runId);
+    expect(harness.files.has('workspaces/workspace-b/analysis-runs/index.json')).toBe(false);
+    expect(harness.invocations.some(call => call.command === 'lia_fs_write_text' &&
+      (call.payload as { rel: string }).rel === `workspaces/workspace-a/runs/${runId}/metadata.json`)).toBe(true);
+    executionRuns.deactivate(); harness.workspace.activeId = 'workspace-a'; await executionRuns.init();
+    expect(executionRuns.byId(runId)?.status).toBe('done');
+  });
+
+  it('clears only the active workspace on reset, leaving another workspace live run running', async () => {
+    const runId = 'live-in-workspace-a';
+    await executionRuns.begin({ identity: identity(runId), label: 'A', resultPolicy: 'own', resultId: runId });
+    const signal = executionRuns.signal(runId);
+    executionRuns.deactivate();
+    harness.workspace.activeId = 'workspace-b';
+    await executionRuns.init();
+    executionRuns.reset();
+    expect(signal?.aborted).toBe(false);
+    expect(executionRuns.byId(runId)).not.toBeNull();
+    harness.workspace.activeId = 'workspace-a';
+    executionRuns.reset();
+    expect(signal?.aborted).toBe(true);
+    expect(executionRuns.byId(runId)).toBeNull();
+  });
+
+  it('records a Python Script as the producer of its file artifacts', async () => {
+    const runId = 'script-provenance';
+    await executionRuns.begin({ identity: createLiatirRootExecutionIdentity({ runId, runKind: 'python-script',
+      workspaceId: harness.workspace.activeId!, entityId: 'script-a' }), label: 'Script', resultPolicy: 'own' });
+    const { status: _, ...finished } = result(runId);
+    await finalizeExecutionResult(runId, 'done', { ...finished, outputFiles: [{ path: '/script.csv', label: 'Output', ext: 'csv' }] });
+    expect((await analysisRuns.committed(runId))?.outputFiles?.[0].producer?.kind).toBe('python-script');
+  });
+
   it('commits one Result when concurrent terminal observers race', async () => {
     const runId = 'run-race';
     await executionRuns.begin({

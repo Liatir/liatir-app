@@ -1,3 +1,4 @@
+import { runWorkspacePrefix } from './run-ownership';
 import type {
   JsonValue,
   LiatirExecutionIdentity,
@@ -188,15 +189,12 @@ export interface FinalizedRunResult extends Omit<AnalysisRun, 'execution' | 'sta
 export async function registerResultsInDataLibrary(
   files: RunOutputFile[],
   toolLabel: string,
+  runId?: string,
 ): Promise<void> {
   const results = files.filter((file) => (file.role ?? 'final') === 'final');
   if (results.length === 0) return;
   const folder = `Results/${safeResultName(toolLabel)}`;
-  await dataFiles.createFolder('Results');
-  await dataFiles.createFolder(folder);
-  for (const file of results) {
-    await dataFiles.add(file.path, folder, file.scientific);
-  }
+  await dataFiles.registerOutputs(results, folder, runId ? runWorkspacePrefix(runId) : undefined);
 }
 
 /**
@@ -256,9 +254,9 @@ export async function finalizeExecutionResult(
     outputFiles,
     log: runTranscript(execution.logs, run.log),
   });
-  await registerResultsInDataLibrary(outputFiles, run.label);
+  await registerResultsInDataLibrary(outputFiles, run.label, runId);
 
-  const committed = analysisRuns.runs.find((item) => item.id === result.id);
+  const committed = await analysisRuns.committed(result.id);
   if (!committed) throw new Error(`Result ${result.id} was not committed.`);
   await executionRuns.finish(runId, committed.status, committed.error, committed.endedAt);
   await executionRuns.markResultFinalized(runId, committed.id, committed.endedAt);

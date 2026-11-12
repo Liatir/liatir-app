@@ -1,11 +1,23 @@
 # Current project status
 
-Last updated 2026-11-06. This page says where Liatir stands and what comes next. How each piece got
+Last updated 2026-11-11. This page says where Liatir stands and what comes next. How each piece got
 here is in the [status log, July to September 2026](../history/status-log-2026-07-to-2026-09.md)
 and in the plans under `history/`; the readiness of each product area, with its evidence, is in
 [Beta 1 readiness](./roadmap/beta-readiness.md).
 
 ## Active implementation
+
+**Liatir 1.0.0 workbench** — authorized 2026-11-11, implemented and verified locally,
+not committed or published. Plugins are shared across workspaces (existing IDs kept);
+Python Scripts stay workspace-owned with mandatory SDK I/O validation, direct and
+pipeline execution and independent copies; seven simulation presets; Quenta's
+16 GB/32 GB profiles (download only on choice) and offline Preact presentations.
+Direct runs survive a workspace switch; leaving with a running pipeline asks first.
+Root version 1.0.0, release notes in `docs/release-notes-v1.md`. Verify, Rust and
+UI gates pass (one cold-start test flake, passing on rerun). After a measured
+comparison the owner kept `qwen3.5:9b` for the 16 GB profile instead of
+`gemma4:12b`; the 32 GB profile is `qwen3.8:27b`. Excluded: long-workflow
+validation, publication. Evidence: [implementation ledger](./roadmap/liatir-1.0.md).
 
 **Scientific Simulation Suite** — the owner asked on 2026-11-03 for a local, validated suite of
 molecular docking and virtual screening (AutoDock Vina, RDKit, Meeko, PDBFixer, Ringtail), neural

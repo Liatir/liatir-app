@@ -1,7 +1,7 @@
 import { liatirPluginRuntime } from '@liatir/core';
 import { liatir } from '$lib/api';
 import { appStorage } from './app-storage';
-import { getDataPrefix } from './workspace.svelte';
+import { workspaceStore } from './workspace.svelte';
 import type {
   LiatirInputFieldSchema,
   LiatirPluginManifest,
@@ -70,8 +70,8 @@ interface PythonEnvPrepareResponse {
 
 const pendingRuntimeTasks = new Map<string, Promise<PythonPluginRuntimeState | null>>();
 
-function getFile() { return `${getDataPrefix()}liatir-plugins.json`; }
-function getLegacyFile() { return `${getDataPrefix()}liatir-modules.json`; }
+const CATALOG = 'plugins/catalog-v1.json';
+interface PluginCatalog { plugins: LiatirPlugin[]; migratedSources: string[]; }
 
 function normalizeTags(tags: unknown): string[] {
   if (!Array.isArray(tags)) return [];
@@ -157,10 +157,12 @@ function createLiaPluginsStore() {
   const subprocessTasks = new Map<string, Promise<void>>();
   let loadError = $state<string | null>(null);
   let initialized = false;
+  let initialization: Promise<void> | null = null;
+  let migratedSources: string[] = [];
   let generation = 0;
 
   async function persist() {
-    await appStorage.writeText(getFile(), JSON.stringify(plugins));
+    await appStorage.writeText(CATALOG, JSON.stringify({ plugins, migratedSources }));
   }
 
   return {
@@ -191,25 +193,49 @@ function createLiaPluginsStore() {
     get pythonRuntimeStates() { return pythonRuntimeStates; },
 
     async init() {
-      if (initialized) return;
-      initialized = true;
-      const api = liatir();
-      if (!api) return;
-      try {
-        const exists = await appStorage.exists(getFile());
-        if (exists) {
-          const parsed = JSON.parse(await appStorage.readText(getFile())) as LiatirPlugin[];
-          plugins = parsed.map(normalizePersistedPlugin);
-          return;
+      if (initialization) return initialization;
+      if (initialized || !liatir()) return;
+      initialization = (async () => {
+        try {
+          await workspaceStore.init();
+          const catalog: PluginCatalog = await appStorage.exists(CATALOG)
+            ? JSON.parse(await appStorage.readText(CATALOG)) : { plugins: [], migratedSources: [] };
+          if (!Array.isArray(catalog.plugins) || !Array.isArray(catalog.migratedSources)) {
+            throw new Error('The shared Plugin catalog is invalid.');
+          }
+          const entries = new Map(catalog.plugins.map(plugin => [plugin.id, normalizePersistedPlugin(plugin)]));
+          const migrated = new Set(catalog.migratedSources);
+          // Keep imported UUIDs: saved pipeline steps refer to them, even when two
+          // workspaces imported the same file. Originals remain as recovery copies.
+          const prefixes = ['', ...workspaceStore.workspaces.map(workspace => `workspaces/${workspace.id}/`)];
+          for (const prefix of prefixes) {
+            for (const name of ['liatir-plugins.json', 'liatir-modules.json']) {
+              const source = `${prefix}${name}`;
+              if (migrated.has(source)) continue;
+              if (await appStorage.exists(source)) {
+                const legacy = JSON.parse(await appStorage.readText(source)) as LiatirPlugin[];
+                if (!Array.isArray(legacy)) throw new Error('A legacy Plugin catalog is invalid.');
+                for (const plugin of legacy) {
+                  const existing = entries.get(plugin.id);
+                  if (existing && existing.path !== plugin.path) throw new Error('Plugin identity collision during migration. Original catalogs were retained.');
+                  if (!existing) entries.set(plugin.id, normalizePersistedPlugin(plugin));
+                }
+              }
+              migrated.add(source);
+            }
+          }
+          const next = { plugins: [...entries.values()], migratedSources: [...migrated] };
+          await appStorage.writeText(CATALOG, JSON.stringify(next));
+          plugins = next.plugins;
+          migratedSources = next.migratedSources;
+          initialized = true;
+          loadError = null;
+        } catch (error) {
+          loadError = String(error);
+          throw error;
         }
-
-        const legacyExists = await appStorage.exists(getLegacyFile());
-        if (legacyExists) {
-          const parsed = JSON.parse(await appStorage.readText(getLegacyFile())) as LiatirPlugin[];
-          plugins = parsed.map(normalizePersistedPlugin);
-          await persist();
-        }
-      } catch (error) { plugins = []; loadError = String(error); }
+      })().finally(() => { initialization = null; });
+      return initialization;
     },
 
     reset() {
@@ -224,6 +250,7 @@ function createLiaPluginsStore() {
     },
 
     async importFromPicker(): Promise<LiatirPlugin | null> {
+      await this.init();
       const api = liatir();
       if (!api) return null;
       const result = await api.desktop.files.open({

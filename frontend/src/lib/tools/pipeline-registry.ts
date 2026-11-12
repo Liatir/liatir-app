@@ -1,3 +1,6 @@
+import { LIATIR_SCRIPT_STEP_PREFIX } from '@liatir/core';
+import { pythonScripts } from '$lib/stores/python-scripts.svelte';
+import { scriptDefinition, scriptRegistryEntry } from './script-step';
 import { liatir } from '$lib/api';
 import { runNativeTool } from '$lib/utils/native-tool';
 import { fastpDefinition, parseFastpJson, fastpToToolOutput } from './qc/fastp';
@@ -619,6 +622,10 @@ export const PIPELINE_REGISTRY: Record<string, PipelineRegistryEntry> = {
 
 /** Resolve a step entry by id: a native tool OR an imported .lia plugin. */
 export function resolveStepEntry(stepId: string): PipelineRegistryEntry | undefined {
+  if (stepId.startsWith(LIATIR_SCRIPT_STEP_PREFIX)) {
+    const script = pythonScripts.byId(stepId.slice(LIATIR_SCRIPT_STEP_PREFIX.length));
+    return script ? scriptRegistryEntry(script) : undefined;
+  }
   if (stepId.startsWith(LIATIR_EXTERNAL_WORKFLOW_STEP_PREFIX)) {
     const definition = externalWorkflowsStore.byId(
       stepId.slice(LIATIR_EXTERNAL_WORKFLOW_STEP_PREFIX.length),
@@ -718,6 +725,7 @@ export function allStepDefinitions(): PipelineStepDefinition[] {
         return definition.type !== 'tool-runtime' || publishedToolRuntimeSteps.has(definition.id);
       }),
     ...pluginStepDefinitions(),
+    ...pythonScripts.scripts.map(scriptDefinition),
     ...externalWorkflowsStore.definitions.map(externalWorkflowToStepDefinition),
   ];
 }

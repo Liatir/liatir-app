@@ -82,7 +82,7 @@ export const tests = [
         const pipeline = { id: 'cpp-sdk-pipeline', name: 'C++ Native and WASM', nodes,
           edges: [{ id: 'cpp-edge', source: 'cpp-step-0', target: 'cpp-step-1', sourceHandle: 'file', targetHandle: 'file' }], updatedAt: Date.now() };
         for (const [rel, value] of [['liatir-plugins.json', plugins], ['pipeline-workspace.json', { current: pipeline, saved: [pipeline], runtime: [] }]])
-          await window.Liatir.invoke('lia_app_write_text', { rel: 'workspaces/__test__/' + rel, content: JSON.stringify(value), createDirs: true });
+          await window.Liatir.invoke('lia_app_write_text', { rel: rel === 'liatir-plugins.json' ? 'plugins/catalog-v1.json' : 'workspaces/__test__/' + rel, content: JSON.stringify(rel === 'liatir-plugins.json' ? { plugins: value, migratedSources: [] } : value), createDirs: true });
       }, paths, input);
       await reloadLiatirApp(browser); await openSandboxWorkspace(browser); await navigateSidebar(browser, '/pipelines');
       await (await browser.$('[data-testid="pipeline-card"][data-pipeline-id="cpp-sdk-pipeline"] [data-testid="pipeline-card-open"]')).click();

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import { page } from '$app/state';
   import PageHeader from '$lib/components/layout/PageHeader.svelte';
@@ -23,7 +24,7 @@
    * Measured on the row itself rather than the window: what changes width here is the detail panel,
    * which also depends on the run list beside it.
    */
-  const ACTIONS_INLINE_MIN_WIDTH = 560;
+  const ACTIONS_INLINE_MIN_WIDTH = 720;
   import { fmtDuration, fmtBytes, sanitizeLocalPathsForDisplay } from '$lib/utils';
   import { liatir } from '$lib/api';
   import { exportToHtml } from '$lib/utils/export-result';
@@ -55,6 +56,8 @@
   };
 
   function toolLabel(tool: string) {
+    if (tool.startsWith('script:')) return 'Python Script';
+    if (tool === 'quenta-presentation') return 'Quenta presentation';
     if (tool.startsWith('external-workflow:')) {
       return externalWorkflowsStore.byId(tool.slice('external-workflow:'.length))?.name ?? 'External Workflow';
     }
@@ -93,12 +96,20 @@
   $effect(() => {
     const id = selectedId;
     actionsOpen = false;
-    if (!id) { loadedOutput = null; return; }
+    let current = true;
+    loadedOutput = null;
+    if (!id) { loadingOutput = false; return; }
     loadingOutput = true;
     analysisRuns.loadOutput(id).then(out => {
+      if (!current || selectedId !== id) return;
       loadedOutput = out;
       loadingOutput = false;
+    }).catch(() => {
+      if (!current || selectedId !== id) return;
+      loadingOutput = false;
+      toast.error('Could not open this Result.');
     });
+    return () => { current = false; };
   });
 
   let storesReady = $state(false);
@@ -237,6 +248,20 @@
     <Icon icon="lucide:sparkles" class="h-3.5 w-3.5 shrink-0" />
     {failed ? 'Explain failure' : 'Explain result'}
   </Button>
+
+  {#if !failed && run.tool !== 'quenta-presentation'}
+    <Button
+      variant="secondary"
+      size="sm"
+      class="whitespace-nowrap {itemClass}"
+      style={itemStyle}
+      testId="result-present"
+      onclick={() => goto(`/quenta/presentations?result=${encodeURIComponent(run.id)}`)}
+    >
+      <Icon icon="lucide:presentation" class="h-3.5 w-3.5 shrink-0" />
+      Create presentation
+    </Button>
+  {/if}
 
   {#if !failed && loadedOutput}
     <Button

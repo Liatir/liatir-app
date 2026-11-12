@@ -139,7 +139,7 @@
 <div class="flex flex-col h-full">
   <PageHeader
     title="Plugins"
-    description="Imported .lia plugins for Node, Python, R, Native and WASM runtimes"
+    description="Plugins shared across workspaces; executions and Results belong to the workspace where they start"
     info=".lia plugins are local extensions packaged with a manifest that declares runtime, inputs, and outputs. Node plugins can use the desktop bridge, Python plugins run in managed Python environments, and WASM plugins run as portable sandboxed tools. Import a .lia file here to inspect, organize, and run it with your parameters."
   >
     {#snippet actions()}

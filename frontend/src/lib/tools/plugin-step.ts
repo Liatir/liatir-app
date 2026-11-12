@@ -10,7 +10,6 @@ import type { ToolOutput } from '$lib/types/tool-output';
 import { runLiatirPlugin } from '$lib/utils/plugin-run';
 import { savePluginResultFiles } from '$lib/utils/plugin-files';
 import type { JsonValue } from '@liatir/core';
-import { workspaceStore } from '$lib/stores/workspace.svelte';
 import { aiRunMetadata } from '$lib/ai/direct-run-context';
 
 export const LIA_PLUGIN_STEP_PREFIX = 'plugin:';
@@ -78,7 +77,7 @@ export function pluginToRegistryEntry(plugin: LiatirPlugin): PipelineRegistryEnt
         (_stream, line) => onLog(line),
         context?.runKind === 'pipeline-step'
           ? {
-              workspaceId: workspaceStore.activeId,
+              workspaceId: context.execution.workspaceId,
               label: context.label,
               kind: 'pipeline-step',
               metadata: aiRunMetadata(context),
@@ -94,7 +93,7 @@ export function pluginToRegistryEntry(plugin: LiatirPlugin): PipelineRegistryEnt
       const result = out.result;
       const metrics: Record<string, number> = {};
       const values: Record<string, JsonValue> = {};
-      const outputFiles = await savePluginResultFiles(plugin.name, plugin.outputSchema, result, crypto.randomUUID());
+      const outputFiles = await savePluginResultFiles(plugin.name, plugin.outputSchema, result, context?.execution.runId ?? crypto.randomUUID());
 
       if (result && typeof result === 'object') {
         const obj = result as Record<string, unknown>;

@@ -98,6 +98,9 @@ for demo cases.
 
 ## Adjacent surfaces
 
+The [Workbench v1 decision](../decisions/workbench-v1.md) records shared Plugin
+availability, workspace Python Scripts and Quenta's isolated presentation mode.
+
 - [`window.Liatir`](./api/liatir-api.md) and the
   [Rust commands](./api/rust-commands.md) — the bridge surface.
 - [AI](./ai/predictive-genomics.md) — the model-family boundaries.

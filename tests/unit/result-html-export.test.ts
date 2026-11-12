@@ -6,6 +6,16 @@ const run = { tool: 'example', label: 'Saved result', inputs: [], startedAt: 100
 describe('standalone result HTML', () => {
   afterEach(() => vi.unstubAllGlobals());
 
+  it('exports the actual isolated presentation from the ordinary Results export action', async () => {
+    const html = await exportToHtml(run as Parameters<typeof exportToHtml>[0], { sections: [{ type: 'html-presentation', label: 'Presentation', presentation: {
+      id: 'report', schemaVersion: 1, workspaceId: 'a', title: 'Presentation', createdAt: 1, model: 'fixture', sources: [],
+      runtimeSource: 'window.Preact={};', javascript: 'document.getElementById("root").textContent="saved visual";', css: '',
+    } }] });
+    expect(html).toContain('sandbox="allow-scripts"');
+    expect(html).toContain("frame-src blob:");
+    expect(html).toContain('saved visual');
+  });
+
   it('keeps a chart-free report independent of the chart asset', async () => {
     const request = vi.fn();
     vi.stubGlobal('fetch', request);

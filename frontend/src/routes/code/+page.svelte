@@ -1,310 +1,238 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { page } from '$app/state';
+  import { goto, replaceState } from '$app/navigation';
+  import Icon from '@iconify/svelte';
+  import { validateLiatirScript, type LiatirPythonScript } from '@liatir/core';
   import PageHeader from '$lib/components/layout/PageHeader.svelte';
+  import ScriptContractEditor from '$lib/components/pipeline/ScriptContractEditor.svelte';
+  import Badge from '$lib/components/ui/Badge.svelte';
   import Button from '$lib/components/ui/Button.svelte';
-  import Select from '$lib/components/ui/Select.svelte';
+  import Card from '$lib/components/ui/Card.svelte';
   import CodeEditor from '$lib/components/ui/CodeEditor.svelte';
-  import { codeIfEmpty } from '$lib/stores/codeEditor.svelte';
-  import { savedScripts, type SavedScript } from '$lib/stores/savedScripts.svelte';
-  import { confirm } from '$lib/stores/confirm.svelte';
-  import { sanitizeLocalPathsForDisplay } from '$lib/utils';
-	import { goto } from '$app/navigation';
+  import LabelWithInfo from '$lib/components/ui/LabelWithInfo.svelte';
+  import { FIELD_INPUT_CLASS, FIELD_LABEL_CLASS } from '$lib/components/ui/field-styles';
+  import { liatir } from '$lib/api';
+  import { executionRuns } from '$lib/stores/executionRuns.svelte';
+  import { pythonScripts } from '$lib/stores/python-scripts.svelte';
+  import { workspaceStore } from '$lib/stores/workspace.svelte';
+  import { toast } from '$lib/stores/toast.svelte';
+  import { runScriptDirect } from '$lib/tools/script-step';
+  import { contractRows, contractSchema, type ScriptContractRow } from '$lib/tools/script-contract';
 
-  // ── editor state ───────────────────────────────────────────────
-  let code = $state(codeIfEmpty);
-  let running = $state(false);
-  let output = $state<unknown>(null);
-  let outputError = $state<string | null>(null);
-  let outputType = $state<'result' | 'error' | null>(null);
+  let script = $state<LiatirPythonScript>(pythonScripts.draft());
+  let packages = $state('');
+  let inputRows = $state<ScriptContractRow[]>([]);
+  let outputRows = $state<ScriptContractRow[]>([]);
+  // Test values are keyed by input name, so they follow a field as long as its name is unchanged.
+  let values = $state<Record<string, string>>({});
+  let ready = $state(false);
+  // The workspace a Run click started in: a run keeps its owner even if the user switches away.
+  let launchingWorkspace = $state<string | null>(null);
 
-  // ── save dialog state ──────────────────────────────────────────
-  let showSavePanel = $state(false);
-  let saveNameInput = $state('');
-  let saveFolderInput = $state('');
+  const isScriptRun = (kind: string, entityId: string | undefined) => kind === 'python-script' && entityId === script.id;
+  const ownedRun = $derived(executionRuns.active.find((run) => isScriptRun(run.identity.runKind, run.identity.entityId)));
+  const running = $derived(!!ownedRun || (launchingWorkspace !== null && launchingWorkspace === workspaceStore.activeId));
+  const latest = $derived(executionRuns.records.find((run) => isScriptRun(run.identity.runKind, run.identity.entityId)));
 
-  let lastLoadedId: string | null = null;
+  const namedInputs = $derived(inputRows.filter((row) => row.name.trim()));
 
-  $effect(() => {
-    const id = savedScripts.activeScriptId;
-    const script = savedScripts.activeScript;
-    if (id !== lastLoadedId) {
-      lastLoadedId = id;
-      if (script) {
-        code = script.code;
-        saveNameInput = script.name;
-        saveFolderInput = script.folder;
-      } else {
-        code = codeIfEmpty;
-        saveNameInput = '';
-        saveFolderInput = '';
-      }
-      output = null;
-      outputError = null;
-      outputType = null;
+  function load(saved: LiatirPythonScript) {
+    script = JSON.parse(JSON.stringify(saved));
+    packages = (script.python.requirements ?? []).join('\n');
+    inputRows = contractRows(script.inputSchema);
+    outputRows = contractRows(script.outputSchema);
+    values = Object.fromEntries(Object.entries(script.inputSchema)
+      .map(([key, field]) => [key, field.default === undefined ? '' : String(field.default)]));
+  }
+
+  onMount(async () => {
+    try {
+      await Promise.all([pythonScripts.init(), executionRuns.init()]);
+      const saved = pythonScripts.byId(page.url.searchParams.get('script') ?? '');
+      if (saved) load(saved);
+      ready = true;
+    } catch (error) {
+      toast.error(`Could not open the script: ${String(error)}`);
     }
   });
 
-  onMount(() => savedScripts.init());
+  /** The complete definition as it will be saved: editor state, contracts and the package list. */
+  function definition(): LiatirPythonScript {
+    const requirements = packages.split('\n').map((line) => line.trim()).filter(Boolean);
+    const { requirements: _previous, ...python } = script.python;
+    const next: LiatirPythonScript = {
+      ...script,
+      inputSchema: contractSchema(inputRows, 'input') as LiatirPythonScript['inputSchema'],
+      outputSchema: contractSchema(outputRows, 'output') as LiatirPythonScript['outputSchema'],
+      python: requirements.length ? { ...python, requirements } : python,
+    };
+    validateLiatirScript(next);
+    return next;
+  }
 
-  // ── script grouping ────────────────────────────────────────────
-  type ScriptGroup = { folder: string; scripts: SavedScript[] };
-
-  const scriptGroups = $derived.by(() => {
-    const root: SavedScript[] = [];
-    const folderMap = new Map<string, SavedScript[]>();
-    for (const s of savedScripts.scripts) {
-      if (!s.folder) {
-        root.push(s);
-      } else {
-        if (!folderMap.has(s.folder)) folderMap.set(s.folder, []);
-        folderMap.get(s.folder)!.push(s);
-      }
+  async function persist(): Promise<LiatirPythonScript> {
+    const next = definition();
+    await pythonScripts.save(next);
+    script = next;
+    if (page.url.searchParams.get('script') !== next.id) {
+      replaceState(`/code?script=${next.id}`, page.state);
     }
-    const folders: ScriptGroup[] = [...folderMap.entries()]
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([folder, scripts]) => ({ folder, scripts }));
-    return { root, folders };
-  });
+    return next;
+  }
 
-  const folderOptions = $derived([
-    { value: '', label: 'No folder' },
-    ...savedScripts.allFolderPaths().map(p => ({ value: p, label: p })),
-  ]);
-
-  // ── execution ──────────────────────────────────────────────────
-  const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+  async function save() {
+    try {
+      await persist();
+      toast.success('Script saved.');
+    } catch (error) {
+      toast.error(String(error));
+    }
+  }
 
   async function run() {
-    running = true;
-    output = null;
-    outputError = null;
-    outputType = null;
+    if (running) return;
+    const workspace = workspaceStore.activeId;
+    launchingWorkspace = workspace;
     try {
-      const fn = new AsyncFunction('Liatir', code);
-      const result = await fn(window.Liatir);
-      output = result;
-      outputType = 'result';
-    } catch (e) {
-      outputError = String(e);
-      outputType = 'error';
+      const saved = await persist();
+      const inputs = Object.fromEntries(Object.entries(values).filter(([key, value]) => key in saved.inputSchema && value !== ''));
+      await runScriptDirect(saved, inputs, workspace);
+      toast.success('The script finished. Its Result is saved.');
+    } catch (error) {
+      toast.error(String(error));
     } finally {
-      running = false;
+      if (launchingWorkspace === workspace) launchingWorkspace = null;
     }
   }
 
-  // ── save ───────────────────────────────────────────────────────
-  async function saveScript() {
-    const name = saveNameInput.trim() || `Script ${savedScripts.scripts.length + 1}`;
-    const id = savedScripts.activeScriptId;
-    if (id) {
-      await savedScripts.update(id, name, code);
-    } else {
-      await savedScripts.create(name, code, saveFolderInput);
-    }
-    showSavePanel = false;
-    saveNameInput = savedScripts.activeScript?.name ?? '';
+  async function chooseFile(key: string, accept?: string[]) {
+    const selection = await liatir()?.desktop.files.open({ multi: false, allowed: accept });
+    if (selection?.paths[0]) values[key] = selection.paths[0];
   }
 
-  function openSavePanel() {
-    saveNameInput = savedScripts.activeScript?.name ?? '';
-    saveFolderInput = savedScripts.activeScript?.folder ?? '';
-    showSavePanel = true;
-  }
-
-  // ── script list actions ────────────────────────────────────────
-  function loadScript(id: string) {
-    savedScripts.setActive(id);
-  }
-
-  function newScript() {
-    savedScripts.setActive(null);
-  }
-
-  async function deleteScript(id: string, name: string) {
-    const ok = await confirm({ title: 'Delete script', message: `Delete "${name}"?`, confirmLabel: 'Delete' });
-    if (ok) savedScripts.remove(id);
-  }
-
-  function fmtDate(ms: number) {
-    return new Date(ms).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-  }
-
-  function formatOutput(v: unknown): string {
-    if (v === undefined) return 'undefined';
-    if (v === null) return 'null';
-    try { return JSON.stringify(v, null, 2); } catch { return String(v); }
+  async function exportSource() {
+    const api = liatir();
+    if (!api) return;
+    const path = await api.desktop.files.save(`${script.name}.py`);
+    if (path) await api.invoke('lia_write_file_path', { path, content: script.code });
   }
 </script>
 
-<div class="flex h-full overflow-hidden">
-
-  <!-- Scripts sidebar -->
-  <span class="hidden">
-    <div class="w-56 shrink-0 border-r border-border bg-surface flex flex-col">
-      <div class="flex items-center justify-between px-3 py-3 border-b border-border">
-        <span class="text-xs font-medium text-text-secondary">Scripts</span>
-        <!-- <button
-          onclick={newScript}
-          class="text-text-muted hover:text-text transition-colors p-0.5 rounded"
-          title="New script"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-        </button> -->
-      </div>
-
-      <div class="flex-1 overflow-y-auto py-1">
-        {#if savedScripts.scripts.length === 0}
-          <p class="text-xs text-text-subtle text-center py-6 px-3">No saved scripts yet.<br/>Run and save to keep them.</p>
-        {:else}
-          <!-- Root scripts -->
-          {#each scriptGroups.root as s (s.id)}
-            {@const active = savedScripts.activeScriptId === s.id}
-            <div
-              role="button"
-              tabindex="0"
-              onclick={() => loadScript(s.id)}
-              onkeydown={(e) => e.key === 'Enter' && loadScript(s.id)}
-              class="w-full text-left px-3 py-2 group transition-colors cursor-pointer
-                {active ? 'bg-brand/15 text-brand-soft' : 'text-text-secondary hover:bg-surface-2 hover:text-text'}"
-            >
-              <div class="flex items-center justify-between mt-0.5">
-                <p class="text-xs font-medium truncate">{s.name}</p>
-                <button
-                  onclick={(e) => { e.stopPropagation(); deleteScript(s.id, s.name); }}
-                  aria-label="Delete script"
-                  class="opacity-0 group-hover:opacity-100 text-text-subtle hover:text-red-500 transition-all"
-                >
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                </button>
-              </div>
-                <p class="text-[10px] text-text-subtle">
-                  {fmtDate(s.savedAt)}
-                </p>
-            </div>
-          {/each}
-
-          <!-- Folder groups -->
-          {#each scriptGroups.folders as group}
-            <!-- Folder header -->
-            <div class="flex items-center gap-1.5 px-3 pt-2.5 pb-1 {scriptGroups.root.length > 0 || scriptGroups.folders.indexOf(group) > 0 ? 'mt-0.5' : ''}">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 text-text-subtle">
-                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-              </svg>
-              <span class="text-[10px] font-semibold text-text-subtle truncate uppercase tracking-wide">{group.folder}</span>
-            </div>
-            <!-- Scripts in this folder -->
-            {#each group.scripts as s (s.id)}
-              {@const active = savedScripts.activeScriptId === s.id}
-              <div
-                role="button"
-                tabindex="0"
-                onclick={() => loadScript(s.id)}
-                onkeydown={(e) => e.key === 'Enter' && loadScript(s.id)}
-                class="w-full text-left pl-6 pr-3 py-2 group transition-colors cursor-pointer
-                  {active ? 'bg-brand/15 text-brand-soft' : 'text-text-secondary hover:bg-surface-2 hover:text-text'}"
-              >
-                <div class="flex items-center justify-between mt-0.5">
-                <p class="text-xs font-medium truncate">{s.name}</p>
-                  <button
-                    onclick={(e) => { e.stopPropagation(); deleteScript(s.id, s.name); }}
-                    aria-label="Delete script"
-                    class="opacity-0 group-hover:opacity-100 text-text-subtle hover:text-red-500 transition-all"
-                  >
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                  </button>
-                </div>
-                  <p class="text-[10px] text-text-subtle">{fmtDate(s.savedAt)}</p>
-              </div>
-            {/each}
-          {/each}
-        {/if}
-      </div>
-    </div>
-  </span>
-
-  <!-- Editor + output -->
-  <div class="flex-1 flex flex-col overflow-hidden">
-    <PageHeader title="Code Editor" description="Write JS/TS and test the Liatir API directly">
-      {#snippet actions()}
-        {#if showSavePanel}
-          <input
-            data-selectable
-            bind:value={saveNameInput}
-            placeholder="Script name…"
-            onkeydown={(e) => e.key === 'Enter' && saveScript()}
-            class="rounded-lg border border-border bg-surface-2 px-3 py-1.5
-                   text-sm text-text placeholder:text-text-subtle outline-none focus:border-brand
-                   transition-colors w-36"
-          />
-          {#if folderOptions.length > 1}
-            <Select
-              value={saveFolderInput}
-              options={folderOptions}
-              onchange={(v) => (saveFolderInput = v)}
-              class="self-center"
-            />
-          {/if}
-          <Button variant="primary" size="sm" onclick={saveScript}>Save</Button>
-          <Button variant="ghost" size="sm" onclick={() => (showSavePanel = false)}>Cancel</Button>
-        {:else}
-          <Button variant="ghost" size="sm" onclick={openSavePanel}>Save</Button>
-          <Button variant="primary" size="sm" disabled={running} loading={running} onclick={run}>
-            Run  <span class="text-[10px] ml-1">⌘↵</span>
-          </Button>
-          <div class="w-px bg-border self-stretch"></div>
-          <Button variant="secondary" size="sm" onclick={()=>goto("/scripts")}>Saved Scrpits</Button>
-        {/if}
-      {/snippet}
-    </PageHeader>
-
-    <div class="flex-1 flex flex-col overflow-hidden gap-3">
-
-      <!-- Code editor -->
-      <div class="flex-1 min-h-0">
-        <CodeEditor
-          value={code}
-          onchange={(v) => { code = v; }}
-          onrun={run}
-          class="border-none rounded-none"
-        />
-      </div>
-
-      <!-- Output -->
-      {#if outputType !== null}
-        <div class="shrink-0 max-h-64 rounded-xl border overflow-hidden
-          {outputType === 'error'
-            ? 'border-red-200 bg-red-50'
-            : 'border-border bg-surface'}">
-          <div class="flex items-center justify-between px-4 py-2 border-b border-inherit">
-            <span class="text-xs font-medium {outputType === 'error' ? 'text-red-600' : 'text-text-secondary'}">
-              {outputType === 'error' ? 'Error' : 'Output'}
-            </span>
-            <button
-              aria-label="Clear output"
-              onclick={() => { output = null; outputError = null; outputType = null; }}
-              class="text-text-subtle hover:text-text-secondary transition-colors"
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
-          </div>
-          <div class="overflow-y-auto max-h-48 px-4 py-3">
-            <pre class="text-sm font-mono whitespace-pre-wrap break-all leading-relaxed
-              {outputType === 'error' ? 'text-red-700' : 'text-emerald-700'}"
-              data-selectable
-            >{sanitizeLocalPathsForDisplay(outputType === 'error' ? (outputError ?? '') : formatOutput(output), 2)}</pre>
-          </div>
-        </div>
+<div class="flex h-full flex-col">
+  <PageHeader
+    title="Python script"
+    info="A script is a small Python program you write here. On the right you choose what information it receives (inputs) and what results it gives back (outputs). You can try it on this page, then use it as a step in any pipeline of this workspace."
+  >
+    {#snippet titleActions()}
+      <Button variant="ghost" size="sm" onclick={() => goto('/scripts')}>
+        <Icon icon="lucide:arrow-left" width="14" height="14" /> Scripts
+      </Button>
+    {/snippet}
+    {#snippet actions()}
+      <Button variant="ghost" size="sm" disabled={!ready} onclick={exportSource}>Export .py</Button>
+      <Button variant="secondary" size="sm" disabled={!ready || running} onclick={save}>Save</Button>
+      {#if running}
+        <Button variant="secondary" size="sm" disabled={!ownedRun} onclick={() => ownedRun && executionRuns.cancel(ownedRun.identity.runId)}>Cancel run</Button>
+      {:else}
+        <Button variant="primary" size="sm" testId="script-run" disabled={!ready} onclick={run}>Save and run</Button>
       {/if}
+    {/snippet}
+  </PageHeader>
 
+  <div class="flex-1 overflow-y-auto p-6">
+    <div class="grid gap-5 xl:grid-cols-[minmax(0,3fr)_minmax(22rem,2fr)]">
+      <div class="min-w-0 space-y-4">
+        <Card class="grid gap-3 p-4 sm:grid-cols-[2fr_1fr]">
+          <label>
+            <span class={FIELD_LABEL_CLASS}>Name</span>
+            <input class={FIELD_INPUT_CLASS} bind:value={script.name} disabled={running} />
+          </label>
+          <label>
+            <span class={FIELD_LABEL_CLASS}>Folder (optional)</span>
+            <input class={FIELD_INPUT_CLASS} placeholder="e.g. Quality control" bind:value={script.folder} disabled={running} />
+          </label>
+        </Card>
+
+        <Card class="overflow-hidden">
+          <div class="h-[28rem]">
+            <CodeEditor
+              language="python"
+              readonly={running}
+              value={script.code}
+              onchange={(code) => script.code = code}
+              onrun={() => { if (!running) void run(); }}
+            />
+          </div>
+        </Card>
+
+        <Card class="space-y-2 p-4">
+          <LabelWithInfo
+            text="Python packages"
+            info="Extra Python libraries your code uses, one per line, for example pandas or numpy. Liatir downloads and installs them the first time the script runs; later runs reuse them. Leave this empty if your code uses only plain Python."
+          />
+          <textarea
+            aria-label="Python packages"
+            class="{FIELD_INPUT_CLASS} h-24 font-mono text-xs"
+            placeholder={'pandas\nnumpy>=1.26'}
+            bind:value={packages}
+            disabled={running}
+          ></textarea>
+        </Card>
+      </div>
+
+      <div class="min-w-0 space-y-4">
+        <ScriptContractEditor rows={inputRows} disabled={running} onchange={(rows) => inputRows = rows} />
+        <ScriptContractEditor rows={outputRows} output disabled={running} onchange={(rows) => outputRows = rows} />
+
+        <Card class="space-y-3 p-4">
+          <LabelWithInfo
+            text="Test values"
+            info="To try the script here, type a value for each input below, then press Save and run. These values are used only for this test and are not part of the script. When the script runs as a step in a pipeline, it gets its inputs from the pipeline instead."
+          />
+          {#each namedInputs as row (row.id)}
+            {@const key = row.name.trim()}
+            {@const field = row.field}
+            <div>
+              <span class={FIELD_LABEL_CLASS}>{field.label || key}{field.required ? '' : ' (optional)'}</span>
+              {#if field.type === 'boolean'}
+                <label class="flex items-center gap-2 text-sm text-text-secondary">
+                  <input type="checkbox" checked={values[key] === 'true'} disabled={running}
+                    onchange={(event) => values[key] = String(event.currentTarget.checked)} />
+                  Yes
+                </label>
+              {:else if field.type === 'file'}
+                <div class="flex gap-2">
+                  <input class={FIELD_INPUT_CLASS} placeholder="Choose a file" bind:value={values[key]} disabled={running} />
+                  <Button variant="secondary" size="sm" disabled={running} onclick={() => chooseFile(key, field.accept)}>Choose…</Button>
+                </div>
+              {:else}
+                <input class={FIELD_INPUT_CLASS} type={field.type === 'number' ? 'number' : 'text'} placeholder={field.type === 'number' ? 'e.g. 3' : 'Type a value to test with'} bind:value={values[key]} disabled={running} />
+              {/if}
+            </div>
+          {:else}
+            <p class="text-xs text-text-muted">Add inputs above and name them; a field to fill in for the test appears here for each one.</p>
+          {/each}
+        </Card>
+
+        {#if latest}
+          <Card class="space-y-3 p-4">
+            <div class="flex items-center justify-between gap-3">
+              <p class="text-sm font-medium text-text">Latest run</p>
+              <Badge variant={latest.status === 'done' ? 'done' : latest.status === 'error' ? 'failed' : latest.status === 'running' ? 'running' : 'neutral'} size="xs">{latest.status}</Badge>
+            </div>
+            {#if latest.logs.length}
+              <pre class="max-h-56 overflow-auto rounded-lg bg-surface-2 p-3 font-mono text-xs whitespace-pre-wrap text-text-secondary">{latest.logs.map((entry) => entry.message).join('\n')}</pre>
+            {/if}
+            <div class="flex gap-2">
+              {#if latest.resultId && latest.finalizedAt}
+                <Button variant="secondary" size="sm" onclick={() => goto(`/results?run=${latest!.resultId}`)}>Open Result</Button>
+              {/if}
+              <Button variant="ghost" size="sm" onclick={() => goto('/jobs')}>Jobs</Button>
+            </div>
+          </Card>
+        {/if}
+      </div>
     </div>
   </div>
-
 </div>

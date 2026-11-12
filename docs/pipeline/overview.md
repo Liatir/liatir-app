@@ -13,7 +13,7 @@ A pipeline is made of nodes and connections:
 
 - **Input nodes** provide starting files or values.
 - **Tool nodes** run built-in tools, `.lia` plugins, AI Tools, or saved External
-  Workflows.
+  Workflows or workspace Python Scripts.
 - **Logic nodes** help control simple branching or conditional behavior.
 - **Connections** pass compatible outputs into later inputs.
 
@@ -31,10 +31,15 @@ are filtered by compatible format whenever possible.
 While a pipeline is running, it is locked to prevent accidental edits. You can
 still work in other pipelines and elsewhere in the app.
 
+Leaving the workspace stops the pipelines running in it, so Liatir asks first.
+Tools, Plugins and Scripts started on their own keep running after you switch
+workspace, and their Results are saved in the workspace where they started.
+
 ## Starting from a preset
 
-The Pipelines page includes small, editable workflows with their artifact
-handoffs already connected. **Single-cell embedding and preview** asks only for
+Choose **Presets** at the top of the Pipelines page to browse small, editable
+workflows with their artifact handoffs already connected; **Use preset** creates
+your own copy and opens it. **Single-cell embedding and preview** asks only for
 an AnnData file and an installed AI Model, then validates the input, creates an
 immutable embedded AnnData result, opens its bounded preview, and leaves the
 artifact in Data for later nodes.
@@ -108,3 +113,22 @@ edit pipeline and External Workflow definitions.
 For custom steps, use [.lia plugins](/plugins/overview). A plugin can wrap a
 script or command-line tool through the Liatir API bridge and still behave like a
 normal node in the pipeline.
+
+## Simulation presets
+
+The preset cards include required inputs and runtime/platform requirements before
+you create a pipeline. Seven additional starting points cover docking with a 3D
+preview, screening with GNINA rescoring, docking through molecular dynamics and
+analysis, trajectory/interactions, metabolic fluxes and feasible ranges, biochemical
+reaction networks, and multicellular populations.
+
+These simulation runtimes currently target Linux and Windows through WSL2. GNINA
+and the published OpenMM runtime need compatible NVIDIA hardware. A preset does
+not install dependencies automatically. Choose the receptor, ligands, binding site,
+model and simulation parameters appropriate to your study before running it.
+Connected files are passed between existing tools; an editable template is not
+scientific validation of a new study.
+
+[Python Scripts](/pipeline/scripts) appear in the pipeline step menu after saving
+them in the current workspace. Their declared numeric and file outputs connect
+to compatible downstream inputs just like Plugin outputs.

@@ -1,3 +1,4 @@
+import { runWorkspacePrefix } from '$lib/execution/run-ownership';
 import { liatir } from '$lib/api';
 import { appStorage } from './app-storage';
 import { getDataPrefix } from './workspace.svelte';
@@ -94,7 +95,7 @@ function artifactProducerKind(run: AnalysisRun): LiatirArtifactProducerKind {
   const kind = run.execution?.runKind;
   if (
     kind === 'native-tool' || kind === 'tool-runtime' || kind === 'ai-model' || kind === 'ai-tool' ||
-    kind === 'lia-plugin' || kind === 'api-request' || kind === 'dependency' ||
+    kind === 'python-script' || kind === 'utility' || kind === 'lia-plugin' || kind === 'api-request' || kind === 'dependency' ||
     kind === 'external-workflow' || kind === 'pipeline'
   ) return kind;
   return producerKindFor(run.tool);
@@ -152,6 +153,7 @@ function createAnalysisRunsStore() {
   const initializer = createAsyncStoreInitializer();
   const outputCache = new Map<string, ToolOutput | null>();
   const addLocks = new Map<string, Promise<boolean>>();
+  const workspaceWrites = new Map<string, Promise<unknown>>();
 
   async function persistIndex() {
     await appStorage.writeText(getIndex(), JSON.stringify(runs), { createDirs: true });
@@ -187,13 +189,18 @@ function createAnalysisRunsStore() {
         return false;
       }
 
-      const operation = (async () => {
-      await this.init();
+      const prefix = runWorkspacePrefix(run.id);
+      const index = `${prefix}analysis-runs/index.json`;
+      const previous = workspaceWrites.get(prefix) ?? Promise.resolve();
+      const operation = previous.then(async () => {
+      if (prefix === getDataPrefix()) await this.init();
       const api = liatir();
       if (!api) return false;
       // First writer wins. This check is made after init and under the per-ID
       // in-flight lock, so page and background observers cannot both commit.
-      if (runs.some((item) => item.id === run.id)) return false;
+      const persisted = await appStorage.exists(index)
+        ? JSON.parse(await appStorage.readText(index)) as AnalysisRunMeta[] : [];
+      if (persisted.some(item => item.id === run.id)) return false;
 
       const outputFiles = withArtifactsMetadata(run.outputFiles, {
         role: 'final',
@@ -214,12 +221,13 @@ function createAnalysisRunsStore() {
       await writeRunResult(normalizedRun.id, normalizedRun.output);
 
       // Cache it immediately so the first view is instant
-      outputCache.set(normalizedRun.id, normalizedRun.output);
+      if (prefix === getDataPrefix()) outputCache.set(normalizedRun.id, normalizedRun.output);
 
       // Update index (meta only, no output/log)
       const { output: _output, log: _log, ...meta } = normalizedRun;
-      runs = [meta, ...runs.filter(r => r.id !== normalizedRun.id)];
-      await persistIndex();
+      const next = [meta, ...persisted.filter(item => item.id !== normalizedRun.id)];
+      await appStorage.writeText(index, JSON.stringify(next), { createDirs: true });
+      if (prefix === getDataPrefix()) runs = next;
       const execution = executionRuns.byId(run.execution?.runId ?? run.id);
       if (execution) {
         await executionRuns.markResultFinalized(
@@ -229,7 +237,8 @@ function createAnalysisRunsStore() {
         ).catch(() => {});
       }
       return true;
-      })();
+      });
+      workspaceWrites.set(prefix, operation.catch(() => {}));
 
       addLocks.set(run.id, operation);
       try {
@@ -237,6 +246,12 @@ function createAnalysisRunsStore() {
       } finally {
         addLocks.delete(run.id);
       }
+    },
+
+    async committed(id: string): Promise<AnalysisRunMeta | undefined> {
+      const index = `${runWorkspacePrefix(id)}analysis-runs/index.json`;
+      if (!await appStorage.exists(index)) return undefined;
+      return (JSON.parse(await appStorage.readText(index)) as AnalysisRunMeta[]).find(run => run.id === id);
     },
 
     async remove(id: string) {

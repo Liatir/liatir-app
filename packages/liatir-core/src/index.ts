@@ -29,6 +29,7 @@ export type LiatirFieldType = LiatirInputFieldType | LiatirOutputFieldType;
 export type LiatirStepKind =
   | "native-tool"
   | "tool-runtime"
+  | "python-script"
   | "lia-plugin"
   | "wasm-plugin"
   | "api-request"
@@ -200,6 +201,7 @@ export interface LiatirArtifactProducer {
 }
 
 export type LiatirArtifactParentRunKind =
+  | "utility"
   | "tool"
   | "pipeline"
   | "pipeline-step"
@@ -208,6 +210,7 @@ export type LiatirArtifactParentRunKind =
   | "tool-runtime"
   | "ai-model"
   | "ai-tool"
+  | "python-script"
   | "lia-plugin"
   | "api-request"
   | "external-workflow"
@@ -414,6 +417,7 @@ export interface LiatirSingleCellViewerSection {
 }
 
 export type LiatirToolSection =
+  | { type: 'html-presentation'; label: string; presentation: import('./quenta.js').LiatirQuentaPresentation }
   | LiatirStatsSection
   | LiatirNumberSection
   | LiatirPlotlySection
@@ -828,3 +832,5 @@ export * from "./quenta.js";
 export * from "./single-cell-showcase.js";
 
 export { liatirPluginRuntime, liatirNativeTarget, liatirNativeTargetSupported, liatirPluginPipelineInputs } from "./plugin-runtime.js";
+
+export * from "./scripts.js";

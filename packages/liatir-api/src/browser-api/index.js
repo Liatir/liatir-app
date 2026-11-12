@@ -444,7 +444,7 @@ var Liatir = new Proxy({}, {
 // src-ts/bridge.constants.json
 var bridge_constants_default = {
   appUrl: "",
-  apiVersion: "0.4.0"
+  apiVersion: "1.0.0"
 };
 
 // src-ts/constants.ts
@@ -1631,6 +1631,7 @@ function buildPluginRuntimes(core) {
     snpEffSuite: buildSnpEffSuite(core),
     runtimeBoxes: buildRuntimeBoxes(core),
     pluginRuntimes: buildPluginRuntimes(core),
+    scripts: { run: (request) => core.invoke("lia_script_run", { request }) },
     qc: buildQc(core),
     tauri: windowTauriProxy,
     onReady: liaReadyEventListener,

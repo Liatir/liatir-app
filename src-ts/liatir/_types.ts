@@ -37,6 +37,7 @@ export type LiatirBrowserAPI = {
   /** Explicit install, update, rollback and removal for signed Runtime Components. */
   runtimeBoxes: RuntimeBoxesInterface;
   pluginRuntimes: LiatirPluginRuntimesAPI;
+  scripts: import("@liatir/core").LiatirScriptsAPI;
 
   // --- Bio analysis namespaces (scipy-style) ---
 

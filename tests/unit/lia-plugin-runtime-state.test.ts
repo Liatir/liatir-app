@@ -4,9 +4,9 @@ const { api, plugin } = vi.hoisted(() => ({
   plugin: { id: 'r-plugin', name: 'R test', version: '1', runtime: 'r', path: 'test.lia', inputSchema: {}, outputSchema: {}, addedAt: 1 },
 }));
 vi.mock('$lib/api', () => ({ liatir: () => api }));
-vi.mock('$lib/stores/workspace.svelte', () => ({ getDataPrefix: () => 'workspace/' }));
+vi.mock('$lib/stores/workspace.svelte', () => ({ workspaceStore: { init: async () => {}, workspaces: [] } }));
 vi.mock('$lib/stores/app-storage', () => ({ appStorage: {
-  exists: async () => true, readText: async () => JSON.stringify([plugin]), writeText: async () => {},
+  exists: async (path: string) => path === 'plugins/catalog-v1.json', readText: async () => JSON.stringify({ plugins: [plugin], migratedSources: [] }), writeText: async () => {},
 } }));
 let store: typeof import('../../frontend/src/lib/stores/lia-plugins.svelte').liaPluginsStore;
 beforeAll(async () => {
@@ -25,7 +25,7 @@ it('metadata edits do not strand an in-flight runtime check in its busy state', 
   expect(store.subprocessStates[plugin.id]).toEqual({ runtime: 'r', ready: true });
 });
 
-it('a workspace reset prevents a late result from overwriting the new check', async () => {
+it('an explicit catalog reload prevents a late result from overwriting the new check', async () => {
   const completions: Array<(value: unknown) => void> = [];
   api.pluginRuntimes.status.mockImplementation(() => new Promise(done => completions.push(done)));
   await store.init(); const old = store.refreshRuntime(plugin.id);

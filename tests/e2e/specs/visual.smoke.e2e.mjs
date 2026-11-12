@@ -13,6 +13,7 @@ import {
   expectNoVisibleRuntimeError,
   navigateSidebar,
   openSandboxWorkspace,
+  reloadLiatirApp,
 } from '../support/liatir-app.mjs';
 
 const VISUAL_PAGES = [
@@ -37,6 +38,19 @@ const VISUAL_PAGES = [
     readyText: 'Data',
   },
 ];
+
+/**
+ * The baselines are light. Without this the app follows the OS appearance of whichever machine runs
+ * the suite, and a dark-mode Mac would differ on every pixel.
+ */
+async function useLightTheme(browser) {
+  const isLight = () => browser.execute(() => document.documentElement.getAttribute('data-theme') === 'light');
+  if (await isLight()) return;
+  await browser.execute(() => localStorage.setItem('liatir-theme', 'light'));
+  await reloadLiatirApp(browser);
+  await openSandboxWorkspace(browser);
+  await browser.waitUntil(isLight, { timeout: 10_000, timeoutMsg: 'The light theme was not applied before visual capture' });
+}
 
 async function setSidebarCollapsed(browser, collapsed) {
   await browser.waitUntil(
@@ -84,6 +98,7 @@ export const tests = [
     name: 'captures core workspace pages with expanded sidebar',
     async run({ browser, compareScreenshot, expect }) {
       await openSandboxWorkspace(browser);
+      await useLightTheme(browser);
       await setSidebarCollapsed(browser, false);
 
       for (const page of VISUAL_PAGES) {
@@ -96,6 +111,7 @@ export const tests = [
     name: 'captures core workspace pages with collapsed sidebar',
     async run({ browser, compareScreenshot, expect }) {
       await openSandboxWorkspace(browser);
+      await useLightTheme(browser);
       await setSidebarCollapsed(browser, true);
 
       for (const page of VISUAL_PAGES) {

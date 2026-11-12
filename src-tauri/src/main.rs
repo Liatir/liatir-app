@@ -501,6 +501,7 @@ fn main() {
       lia_liatir_python_runtime_status,
       lia_liatir_python_runtime_prepare,
       lia_liatir_run,
+      lia_script_run,
       lia_plugin_dev_update_session,
       lia_plugin_dev_set_error,
       lia_plugin_dev_get_session,

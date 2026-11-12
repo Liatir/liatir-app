@@ -1,3 +1,4 @@
+import { simulationPresets } from './simulation-presets';
 import type { Edge, Node } from '@xyflow/svelte';
 import {
   LIATIR_TOOL_RUNTIME_CATALOG,
@@ -13,6 +14,8 @@ export interface PipelinePreset {
   name: string;
   description: string;
   outcome: string;
+  requiredInputs?: string;
+  requirements?: string;
   instantiate: (idFactory?: () => string) => { nodes: Node[]; edges: Edge[] };
 }
 
@@ -138,6 +141,7 @@ const pvactoolsPublished = LIATIR_TOOL_RUNTIME_CATALOG.some(
 );
 
 export const pipelinePresets: PipelinePreset[] = [
+  ...simulationPresets,
   singleCellLighthousePreset,
   ...(pvactoolsPublished ? [tumorNeoantigenPreset] : []),
 ];

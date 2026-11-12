@@ -27,6 +27,8 @@ Markdown and stays complete and meaningful without the tool.
 
 ## When relevant
 
+- [Liatir 1.0.0 implementation](./state/roadmap/liatir-1.0.md) — active workbench changes and verification evidence.
+
 - [R and Native Plugin runtime implementation](./state/r-and-native-plugin-runtime-support.md).
 
 - [Website download click counts](./truth/download-click-tracking.md) — minimal

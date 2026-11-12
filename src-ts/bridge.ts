@@ -91,6 +91,7 @@ import { isBrowser } from "./utils";
     snpEffSuite: buildSnpEffSuite(core),
     runtimeBoxes: buildRuntimeBoxes(core),
     pluginRuntimes: buildPluginRuntimes(core),
+    scripts: { run: request => core.invoke('lia_script_run', { request }) },
 
     qc:       buildQc(core),
 

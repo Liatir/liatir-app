@@ -16,6 +16,8 @@ export type LiatirExecutionRunKind =
   | "tool-runtime"
   | "ai-model"
   | "ai-tool"
+  | "utility"
+  | "python-script"
   | "lia-plugin"
   | "api-request"
   | "dependency";

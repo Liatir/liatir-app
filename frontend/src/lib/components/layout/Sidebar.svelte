@@ -44,7 +44,7 @@
 			params.set('fromWorkspace', ((workspaceStore?.activeId?.trim())||""));
 			const queryParam: string = params.toString().trim();
 
-			await workspaceStore.switchTo(SANDBOX_WORKSPACE_ID);
+			if (!await workspaceStore.switchTo(SANDBOX_WORKSPACE_ID)) return;
 			jobsStore.refresh();
 			pipelineStore.init();
 
@@ -59,8 +59,8 @@
 			const pageHasToWorkspace:boolean = (toWorkspace?.trim())?true:false;
 			const hasPreviousActiveWorkspace:boolean = (workspaceStore?.previousActiveId?.trim())?true:false;
 			if(pageHasToWorkspace || hasPreviousActiveWorkspace) {
-				if(pageHasToWorkspace) await workspaceStore.switchTo(toWorkspace??"");
-				else if(hasPreviousActiveWorkspace) await workspaceStore.switchTo(workspaceStore.previousActiveId??"");
+				const target = pageHasToWorkspace ? toWorkspace : workspaceStore.previousActiveId;
+				if (!await workspaceStore.switchTo(target ?? "")) return;
 				jobsStore.refresh();
 				pipelineStore.init();
 				toast.info(`Back to: ${workspaceStore.active?.name}`);
@@ -69,7 +69,7 @@
 				if(sidebarHasRoute) await goto(routeId);
 				else await goto(`/`);
 			} else {
-				await workspaceStore.switchTo("");
+				if (!await workspaceStore.switchTo("")) return;
 				jobsStore.refresh();
 				pipelineStore.init();
 				await goto('/workspaces');

@@ -28,7 +28,9 @@
   let values = $state<Record<string, string | number | boolean>>({});
 
   // Run state
-  let running = $state(false);
+  let launchingWorkspace = $state<string | null>(null);
+  const ownedRun = $derived(executionRuns.active.find(run => run.identity.runKind === 'lia-plugin' && run.identity.entityId === id));
+  const running = $derived((launchingWorkspace !== null && launchingWorkspace === workspaceStore.activeId) || !!ownedRun);
   let jobId = $state<string | null>(null);
   let stdoutLines = $state<string[]>([]);
   let stderrLines = $state<string[]>([]);
@@ -50,7 +52,7 @@
   const pythonRuntimeReady = $derived(mod?.runtime !== 'python' || pythonRuntimeState?.phase === 'ready');
 
   function resetRunOutput() {
-    running = false;
+    launchingWorkspace = null;
     currentRunId = null;
     jobId = null;
     stdoutLines = [];
@@ -94,6 +96,7 @@
 
   $effect(() => {
     const pluginId = id;
+    workspaceStore.activeId;
     queueMicrotask(() => void loadPlugin(pluginId));
   });
 
@@ -147,7 +150,7 @@
     const api = liatir();
     if (!plugin || !workspaceId || !api) return;
     const runValues = { ...values };
-    running = true;
+    launchingWorkspace = workspaceId;
     jobId = null;
     stdoutLines = [];
     stderrLines = [];
@@ -159,7 +162,7 @@
     const runStderr: string[] = [];
     let runResult: unknown = null;
     let runSavedFiles: PluginSaveResult[] = [];
-    const isCurrentPageRun = () => currentRunId === runId && id === plugin.id;
+    const isCurrentPageRun = () => currentRunId === runId && id === plugin.id && workspaceStore.activeId === workspaceId;
     currentRunId = runId;
     const startedAt = Date.now();
     const execution = createLiatirRootExecutionIdentity({
@@ -282,15 +285,15 @@
       }
     } finally {
       if (isCurrentPageRun()) {
-        running = false;
+        launchingWorkspace = null;
         currentRunId = null;
       }
     }
   }
 
   async function cancelRun() {
-    if (!currentRunId) return;
-    await executionRuns.cancel(currentRunId);
+    const runId = ownedRun?.identity.runId ?? currentRunId;
+    if (runId) await executionRuns.cancel(runId);
   }
 
   const hasRun = $derived(exitCode !== undefined);

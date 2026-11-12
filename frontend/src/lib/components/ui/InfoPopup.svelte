@@ -46,14 +46,15 @@
 
   {#if open}
     <!--
-      A full-screen transparent backdrop: clicking anywhere outside the popup closes it. It is a
+      A full-screen backdrop: clicking anywhere outside the popup closes it. It dims the page like the
+      app's confirmation dialogs, so the explanation stands out from the form behind it. It is a
       `<button>` rather than a `<div>` so it is focusable and keyboard-dismissible, which a bare div
       with a click handler would not be.
     -->
     <button
       type="button"
       aria-label="Close information"
-      class="fixed inset-0 z-40 cursor-default bg-transparent"
+      class="fixed inset-0 z-40 cursor-default bg-black/40 backdrop-blur-[2px]"
       onclick={(e) => {
         e.preventDefault();
         e.stopPropagation();

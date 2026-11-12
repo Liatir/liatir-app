@@ -10,10 +10,12 @@
   import { confirm } from '$lib/stores/confirm.svelte';
   import { toast } from '$lib/stores/toast.svelte';
   import { liatir } from '$lib/api';
-	import { pipelinePresets, type PipelinePreset } from '$lib/pipeline/presets';
-	import PageContent from '$lib/components/layout/PageContent.svelte';
+  import type { PipelinePreset } from '$lib/pipeline/presets';
+  import PageContent from '$lib/components/layout/PageContent.svelte';
+  import PipelinePresetsDialog from '$lib/components/pipeline/PipelinePresetsDialog.svelte';
 
   let search = $state('');
+  let presetsOpen = $state(false);
   let openMenuId = $state<string | null>(null);
   let renamingId = $state<string | null>(null);
   let renameDraft = $state('');
@@ -52,6 +54,7 @@
   }
 
   async function usePreset(preset: PipelinePreset) {
+    presetsOpen = false;
     const graph = preset.instantiate();
     await pipelineStore.createPipeline(preset.name, graph.nodes, graph.edges);
     goto('/pipeline');
@@ -133,6 +136,10 @@
         <Icon icon="lucide:upload" width="13" height="13" />
         Import
       </Button>
+      <Button variant="secondary" size="sm" testId="pipeline-presets-open" onclick={() => presetsOpen = true}>
+        <Icon icon="lucide:layout-template" width="13" height="13" />
+        Presets
+      </Button>
       <Button variant="primary" size="sm" testId="pipeline-new-button" onclick={newPipeline}>
         <Icon icon="lucide:plus" width="13" height="13" />
         New pipeline
@@ -142,33 +149,6 @@
 
   <PageContent>
   <div class="flex-1 overflow-y-auto p-6">
-    <section class="mb-6 max-w-4xl" data-testid="pipeline-presets">
-      <div class="mb-3">
-        <p class="text-sm font-semibold text-text">Start from a preset</p>
-        <p class="mt-0.5 text-xs text-text-subtle">Useful workflows with the steps and artifact handoffs already connected.</p>
-      </div>
-      <div class="grid gap-3 grid-cols-1 sm:grid-cols-2">
-        {#each pipelinePresets as preset (preset.id)}
-          <div class="rounded-xl border border-brand/20 bg-brand/3 p-4" data-testid="pipeline-preset-card" data-preset-id={preset.id}>
-            <div class="flex items-start gap-3">
-              <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand/20 bg-surface text-brand">
-                <Icon icon="lucide:microscope" width="17" height="17" />
-              </div>
-              <div class="min-w-0 flex-1">
-                <p class="text-sm font-semibold text-text">{preset.name}</p>
-                <p class="mt-1 text-xs leading-relaxed text-text-muted">{preset.description}</p>
-                <p class="mt-2 text-[11px] leading-relaxed text-text-subtle"><span class="font-medium text-text-muted">Produces:</span> {preset.outcome}</p>
-              </div>
-            </div>
-            <Button class="mt-3" variant="secondary" size="sm" onclick={() => usePreset(preset)}>
-              <Icon icon="lucide:workflow" width="13" height="13" />
-              Use preset
-            </Button>
-          </div>
-        {/each}
-      </div>
-    </section>
-
     {#if pipelineStore.savedPipelines.length === 0}
       <div class="flex flex-col items-center justify-center gap-4 py-12 text-center max-w-4xl">
         <div class="h-16 w-16 rounded-2xl bg-surface border border-border shadow-sm flex items-center justify-center">
@@ -176,12 +156,18 @@
         </div>
         <div>
           <p class="text-sm font-medium text-text-secondary">No saved pipelines</p>
-          <p class="text-xs text-text-subtle mt-1">Create a pipeline in the editor and save it to see it here.</p>
+          <p class="text-xs text-text-subtle mt-1">Create a pipeline in the editor, or start from a ready-made preset.</p>
         </div>
-        <Button variant="secondary" onclick={newPipeline}>
-          <Icon icon="lucide:plus" width="13" height="13" />
-          Create pipeline
-        </Button>
+        <div class="flex gap-2">
+          <Button variant="secondary" onclick={newPipeline}>
+            <Icon icon="lucide:plus" width="13" height="13" />
+            Create pipeline
+          </Button>
+          <Button variant="secondary" onclick={() => presetsOpen = true}>
+            <Icon icon="lucide:layout-template" width="13" height="13" />
+            Browse presets
+          </Button>
+        </div>
       </div>
     {:else}
       <!-- Search -->
@@ -336,3 +322,5 @@
 {#if openMenuId}
   <div class="fixed inset-0 z-20" role="presentation" onclick={() => (openMenuId = null)} oncontextmenu={(e) => { e.preventDefault(); openMenuId = null; }}></div>
 {/if}
+
+<PipelinePresetsDialog open={presetsOpen} onclose={() => presetsOpen = false} onuse={usePreset} />

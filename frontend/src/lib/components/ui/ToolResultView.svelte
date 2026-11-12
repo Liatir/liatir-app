@@ -200,7 +200,13 @@
 
   {#each output.sections as section, sectionIdx}
 
-    {#if section.type === 'stats'}
+    {#if section.type === 'html-presentation'}
+      {#key section.presentation.id}
+        {#await import('$lib/components/quenta/QuentaPresentation.svelte') then module}
+          <module.default presentation={section.presentation} />
+        {/await}
+      {/key}
+    {:else if section.type === 'stats'}
       {@const s = section as StatsSection}
       <div
         class="grid gap-3"

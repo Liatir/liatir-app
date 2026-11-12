@@ -29,7 +29,7 @@
         "local",
         "local-dev"
       ],
-      "csp": null
+      "csp": "script-src 'self' blob:; frame-src 'self' blob: data:"
     },
     "windows": []
   },

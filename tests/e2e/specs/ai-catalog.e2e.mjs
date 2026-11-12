@@ -78,6 +78,7 @@ export const tests = [
       expect(toolText).not.toContain('Coming soon');
 
       await navigateInApp(browser, '/pipelines');
+      await (await browser.$('[data-testid="pipeline-presets-open"]')).click();
       const preset = await browser.$('[data-testid="pipeline-preset-card"][data-preset-id="tumor-variants-neoantigen-candidates-v1"]');
       await preset.waitForDisplayed({ timeout: 10_000, timeoutMsg: 'Published neoantigen preset was not visible' });
       expect(await preset.getText()).toContain('Tumor variants to neoantigen candidates');

@@ -44,6 +44,7 @@ async function writeRunJson(browser, rel, value) {
 
 async function writeAppJson(browser, rel, value) {
   await browser.execute(async (file, content) => {
+    if (file.endsWith('/liatir-plugins.json')) { file = 'plugins/catalog-v1.json'; content = { plugins: content, migratedSources: [] }; }
     await window.Liatir.invoke('lia_app_write_text', {
       rel: file,
       content: JSON.stringify(content, null, 2),

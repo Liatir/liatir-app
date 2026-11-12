@@ -29,6 +29,7 @@
 	},
 	"dependencies": {
 		"@codemirror/lang-javascript": "^6.2.5",
+		"@codemirror/lang-python": "^6.2.1",
 		"@iconify-json/lucide": "^1.2.114",
 		"@iconify/svelte": "^5.2.2",
 		"@sveltejs/adapter-static": "^3.0.10",
@@ -37,6 +38,7 @@
 		"@xyflow/svelte": "^1.6.0",
 		"codemirror": "^6.0.2",
 		"plotly.js-dist-min": "^2.35.2",
+		"preact": "^11.2.0",
 		"tailwindcss": "^4.1.17"
 	}
 }

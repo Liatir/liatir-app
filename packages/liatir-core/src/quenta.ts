@@ -140,3 +140,41 @@ export interface LiatirQuentaStreamEvent {
   delta: string;
 }
 
+/**
+ * Explicit local download choices, independent of scientific AI Model assets. Standard stays on
+ * qwen3.5:9b: measured on a 16 GB Mac against gemma4:12b, answers were of similar quality while it
+ * took 6.2 GB instead of 9.6 GB and wrote about 9 rather than 5 tokens per second. Both profiles use
+ * Quenta's single context window (`LIATIR_QUENTA_CONTEXT_TOKENS`).
+ */
+export const LIATIR_QUENTA_LOCAL_PROFILES = [
+  { id: '16gb', label: 'Standard', memoryGb: 16, name: 'Qwen 3.5 9B', model: 'qwen3.5:9b', downloadGb: 6.6 },
+  { id: '32gb', label: 'Extended', memoryGb: 32, name: 'Qwen 3.8 27B', model: 'qwen3.8:27b', downloadGb: 17.7 },
+] as const;
+
+/**
+ * The context window (tokens) every Quenta request asks Ollama for, as the native bridge sends it.
+ * A full request — system prompt, retrieved sources, recent history and the answer — is sized for it.
+ */
+export const LIATIR_QUENTA_CONTEXT_TOKENS = 16384;
+
+export interface LiatirQuentaPresentationSource {
+  resultId: string;
+  label: string;
+  tool: string;
+  endedAt: number;
+  output: JsonValue;
+}
+
+/** Frozen evidence and generated code; rendering has no authority over the app. */
+export interface LiatirQuentaPresentation {
+  schemaVersion: 1;
+  id: string;
+  workspaceId: string;
+  title: string;
+  createdAt: number;
+  model: string;
+  sources: LiatirQuentaPresentationSource[];
+  javascript: string;
+  css: string;
+  runtimeSource: string;
+}

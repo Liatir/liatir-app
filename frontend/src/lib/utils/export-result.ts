@@ -118,7 +118,11 @@ function renderSection(s: ToolSection, chartIdx: { n: number }): string {
 }
 
 export async function exportToHtml(run: AnalysisRunMeta, output: ToolOutput): Promise<string> {
-  const toolLabel = TOOL_LABELS[run.tool] ?? run.tool;
+  if (output.sections.length === 1 && output.sections[0].type === 'html-presentation') {
+    const { presentationHtml } = await import('$lib/quenta/presentation-document');
+    return presentationHtml(output.sections[0].presentation);
+  }
+  const toolLabel = run.tool.startsWith('script:') ? 'Python Script' : (TOOL_LABELS[run.tool] ?? run.tool);
   const date = new Date(run.startedAt).toLocaleString();
   const day = new Date(run.startedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
   const duration = fmtDuration(run.startedAt, run.endedAt);

@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { EditorView, basicSetup } from 'codemirror';
+  import { python } from '@codemirror/lang-python';
+  import { Compartment, EditorState } from '@codemirror/state';
   import { javascript } from '@codemirror/lang-javascript';
   import { keymap } from '@codemirror/view';
   import { indentWithTab } from '@codemirror/commands';
@@ -10,13 +12,16 @@
 
   interface Props {
     value: string;
+    language?: 'javascript' | 'python';
+    readonly?: boolean;
     onchange?: (v: string) => void;
     onrun?: () => void;
     class?: string;
   }
 
-  let { value, onchange, onrun, class: cls = '' }: Props = $props();
+  let { value, onchange, onrun, language = 'javascript', readonly = false, class: cls = '' }: Props = $props();
 
+  const editability = new Compartment();
   let container: HTMLDivElement;
   let view: EditorView | null = null;
 
@@ -25,10 +30,10 @@
       doc: value,
       extensions: [
         basicSetup,
-        javascript({ typescript: true }),
+        language === 'python' ? python() : javascript({ typescript: true }),
+        editability.of([EditorView.editable.of(!readonly), EditorState.readOnly.of(readonly)]),
         liatirTheme(settingsStore.resolvedTheme),
-        liatirCompletions,
-        liatirHover,
+        ...(language === 'python' ? [] : [liatirCompletions, liatirHover]),
         keymap.of([
           indentWithTab,
           { key: 'Mod-Enter', run: () => { onrun?.(); return true; } },
@@ -47,6 +52,10 @@
   onDestroy(() => {
     view?.destroy();
     view = null;
+  });
+
+  $effect(() => {
+    if (view) view.dispatch({ effects: editability.reconfigure([EditorView.editable.of(!readonly), EditorState.readOnly.of(readonly)]) });
   });
 
   // Sync external value changes into the editor (e.g. loading a saved script)

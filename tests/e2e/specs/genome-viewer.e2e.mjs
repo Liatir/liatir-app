@@ -73,7 +73,8 @@ async function runNativeTool(browser, cmd, args) {
 async function installJBrowse(browser) {
   await navigateInApp(browser, '/deps');
   const row = `[data-testid="viewer-runtime-row"][data-runtime-id="${RUNTIME_ID}"]`;
-  await (await browser.$(row)).waitForDisplayed({ timeout: 20_000 });
+  // A fresh isolated app probes installed dependencies before rendering the rows.
+  await (await browser.$(row)).waitForDisplayed({ timeout: 60_000 });
   const status = () => browser.execute((selector) => document.querySelector(selector)?.getAttribute('data-status') ?? null, row);
   if (await status() === 'installed') return;
   await browser.execute((selector) => {

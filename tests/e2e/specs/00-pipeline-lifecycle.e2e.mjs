@@ -557,8 +557,8 @@ async function seedSandbox(browser, apiUrl, pluginPath) {
   await waitForLiatirBridge(browser);
   await browser.execute(async (pipelineState, apiState, pluginBundlePath, pluginId) => {
     const write = (rel, value) => window.Liatir.invoke('lia_app_write_text', {
-      rel,
-      content: JSON.stringify(value, null, 2),
+      rel: rel.endsWith('/liatir-plugins.json') ? 'plugins/catalog-v1.json' : rel,
+      content: JSON.stringify(rel.endsWith('/liatir-plugins.json') ? { plugins: value, migratedSources: [] } : value, null, 2),
       createDirs: true,
     });
     const manifest = await window.Liatir.invoke('lia_liatir_read_manifest', {

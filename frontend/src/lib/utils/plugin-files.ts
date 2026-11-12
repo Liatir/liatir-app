@@ -1,3 +1,4 @@
+import { runWorkspacePrefix } from '$lib/execution/run-ownership';
 import { liatir } from '$lib/api';
 import { getDataPrefix } from '$lib/stores/workspace.svelte';
 import { dataFiles } from '$lib/stores/dataFiles.svelte';
@@ -28,7 +29,7 @@ export async function savePluginOutput(
   pluginName: string,
   fileName: string,
   content: string,
-  opts: { base64?: boolean; label?: string; fieldKey?: string } = {}
+  opts: { base64?: boolean; label?: string; fieldKey?: string; workspacePrefix?: string } = {}
 ): Promise<PluginSaveResult | null> {
   const api = liatir();
   if (!api) throw new Error('Liatir API not available');
@@ -38,14 +39,12 @@ export async function savePluginOutput(
     fileName,
     content,
     isBase64: opts.base64 ?? false,
-    workspacePrefix: getDataPrefix(),
+    workspacePrefix: opts.workspacePrefix ?? getDataPrefix(),
   }) as RawPluginSaveResult;
 
   // Mirror the tool-output flow: ensure the virtual Results folders exist,
   // then register the file by absolute path.
-  await dataFiles.createFolder('Results');
-  await dataFiles.createFolder(entry.virtualFolder);
-  await dataFiles.add(entry.path, entry.virtualFolder);
+  await dataFiles.registerOutputs([{ path: entry.path }], entry.virtualFolder, opts.workspacePrefix);
 
   return {
     ...entry,
@@ -74,7 +73,7 @@ export type PluginFileValue = LiatirFileOutputValue;
 async function registerExistingPluginOutput(
   pluginName: string,
   path: string,
-  opts: { label: string; fieldKey: string }
+  opts: { label: string; fieldKey: string; workspacePrefix: string }
 ): Promise<PluginSaveResult> {
   const api = liatir();
   if (!api) throw new Error('Liatir API not available');
@@ -82,9 +81,7 @@ async function registerExistingPluginOutput(
   await api.invoke('lia_file_size', { path });
 
   const virtualFolder = `Results/${safeResultName(pluginName)}`;
-  await dataFiles.createFolder('Results');
-  await dataFiles.createFolder(virtualFolder);
-  await dataFiles.add(path, virtualFolder);
+  await dataFiles.registerOutputs([{ path }], virtualFolder, opts.workspacePrefix);
 
   return {
     label: opts.label,
@@ -140,7 +137,7 @@ export async function savePluginResultFiles(
     const label = field.label ?? key;
     const path = getFilePath(raw);
     if (path) {
-      saved.push(await registerExistingPluginOutput(pluginName, path, { label, fieldKey: key }));
+      saved.push(await registerExistingPluginOutput(pluginName, path, { label, fieldKey: key, workspacePrefix: runWorkspacePrefix(runId) }));
       continue;
     }
 
@@ -152,6 +149,7 @@ export async function savePluginResultFiles(
     const defaultExt = getDefaultOutputExtension(field);
     const fileName = fileContent.fileName ?? `${key}-${runId}.${defaultExt}`;
     const entry = await savePluginOutput(pluginName, fileName, fileContent.content, {
+      workspacePrefix: runWorkspacePrefix(runId),
       base64: fileContent.base64 ?? false,
       label,
       fieldKey: key,

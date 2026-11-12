@@ -280,6 +280,13 @@ fn ollama_endpoint(base_url: &str, endpoint: &str) -> Result<Url, String> {
     Ok(url)
 }
 
+/// `ollama serve` listens on Ollama's default port, so starting Liatir's own engine can only help a
+/// configuration that points there. For any other address it would download and start an engine
+/// that can never answer, and leave it running.
+fn starting_ollama_can_serve(base_url: &str) -> bool {
+    ollama_endpoint(base_url, "version").is_ok_and(|url| url.port_or_known_default() == Some(11434))
+}
+
 fn client(timeout: Duration) -> Result<Client, String> {
     Client::builder()
         .connect_timeout(Duration::from_secs(5))
@@ -733,6 +740,7 @@ pub async fn lia_quenta_ollama_bootstrap(
 
     let status = match ollama_status_value(&base_url, Duration::from_secs(5)).await {
         Ok(value) => value,
+        Err(error) if !starting_ollama_can_serve(&base_url) => return Err(error),
         Err(_) => {
             let ollama = match ollama_candidates(Some(&app)).into_iter().next() {
                 Some(path) => path,
@@ -865,6 +873,7 @@ pub async fn lia_quenta_ollama_chat(
     // Keep the HTTP client slightly wider than Quenta's own response limit so
     // the product-level timeout remains the single authoritative boundary.
     let transport_timeout = response_timeout.saturating_add(Duration::from_secs(30));
+    // num_ctx is LIATIR_QUENTA_CONTEXT_TOKENS in @liatir/core, which sizes presentation sources.
     let mut body = json!({
         "model": model,
         "messages": messages,
@@ -1273,7 +1282,7 @@ mod tests {
         corpus_artifact_base, lia_quenta_ollama_forget_chat, normalized_quenta_conversations,
         ollama_endpoint, quenta_chat_cancellations, quenta_chat_requests,
         quenta_conversations_workspace, quenta_response_timeout, request_id_is_safe,
-        validate_sync_documents, QuentaChatRequestSnapshot, QuentaChatStreamAccumulator,
+        starting_ollama_can_serve, validate_sync_documents, QuentaChatRequestSnapshot, QuentaChatStreamAccumulator,
         QuentaSyncDoc,
     };
     use serde_json::json;
@@ -1293,6 +1302,10 @@ mod tests {
         assert!(ollama_endpoint("http://[::1]:11434", "embed").is_ok());
         assert!(ollama_endpoint("https://localhost:11434", "chat").is_err());
         assert!(ollama_endpoint("http://example.com:11434", "chat").is_err());
+        assert!(starting_ollama_can_serve("http://127.0.0.1:11434"));
+        assert!(starting_ollama_can_serve("http://localhost:11434/api"));
+        assert!(!starting_ollama_can_serve("http://127.0.0.1:64871"));
+        assert!(!starting_ollama_can_serve("http://127.0.0.1"));
         assert!(ollama_endpoint("http://127.0.0.1.evil.test", "chat").is_err());
     }
 

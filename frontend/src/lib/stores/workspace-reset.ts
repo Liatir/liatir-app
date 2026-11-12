@@ -9,13 +9,14 @@
  * The practical consequence: **a new workspace-scoped store must be registered here**, or its data
  * will leak across a workspace switch — one workspace showing another's contents.
  */
-import { setResetFn, setDemoInitFn, setActivateFn, workspaceStore } from './workspace.svelte';
+import { setResetFn, setDemoInitFn, setActivateFn, setLeaveGuard, workspaceStore } from './workspace.svelte';
+import { confirm } from './confirm.svelte';
 import { apiConnections } from './apiConnections.svelte';
 import { pipelineStore } from './pipeline.svelte';
+import { pythonScripts } from './python-scripts.svelte';
 import { savedScripts } from './savedScripts.svelte';
 import { dataFiles } from './dataFiles.svelte';
 import { analysisRuns } from './analysisRuns.svelte';
-import { liaPluginsStore } from './lia-plugins.svelte';
 import { executionRuns } from './executionRuns.svelte';
 import { externalWorkflowsStore } from './externalWorkflows.svelte';
 import { reconcileExecutionResults } from '$lib/execution/finalization';
@@ -35,15 +36,25 @@ setResetFn((scope) => {
   // Full reset, on a workspace switch: every workspace-scoped store is cleared, so nothing from the
   // previous workspace can be observed in the next one.
   apiConnections.reset();
-  executionRuns.reset();
-  pipelineStore.reset();
+  if (scope === 'workspace-switch') { executionRuns.deactivate(); pipelineStore.deactivate(); }
+  else { executionRuns.reset(); pipelineStore.reset(); }
   savedScripts.reset();
+  pythonScripts.reset();
   dataFiles.reset();
   analysisRuns.reset();
-  liaPluginsStore.reset();
   externalWorkflowsStore.reset();
   mcpController.reset();
 });
+
+// Leaving a workspace cancels its running pipelines (their steps read workspace-scoped stores such
+// as API connections, which the switch clears). Other runs keep going and settle in their own
+// workspace, so only pipelines need the user's consent.
+setLeaveGuard(async () => pipelineStore.runningCount === 0 || confirm({
+  title: 'Stop running pipelines?',
+  message: 'Leaving this workspace stops the pipelines running in it. Tools, Plugins and Scripts keep running and save their Results here.',
+  confirmLabel: 'Stop pipelines and leave',
+  cancelLabel: 'Stay',
+}));
 
 // Same injection pattern: a brand-new workspace is seeded with demo files, but the workspace store
 // must not depend on the data-files store to do it.

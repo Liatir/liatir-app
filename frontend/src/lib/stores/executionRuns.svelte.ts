@@ -12,6 +12,7 @@ import {
   finalizeLiatirExecutionRecord,
   isLiatirExecutionTerminalStatus,
 } from '@liatir/core';
+import { rememberRunWorkspace } from '$lib/execution/run-ownership';
 import { liatir } from '$lib/api';
 import { appStorage } from './app-storage';
 import { createAsyncStoreInitializer } from './async-store-initializer';
@@ -71,16 +72,16 @@ function createExecutionRunsStore() {
   const initializer = createAsyncStoreInitializer();
   let writeQueue = Promise.resolve();
 
-  function enqueuePersist(path = indexPath()): Promise<void> {
-    const snapshot = JSON.stringify(records.slice(0, MAX_EXECUTIONS));
+  function enqueuePersist(workspaceId: string | null = workspaceStore.activeId): Promise<void> {
+    const path = `${workspaceId ? `workspaces/${workspaceId}/` : ''}execution-runs/index.json`;
+    const snapshot = JSON.stringify(records.filter(record => record.identity.workspaceId === workspaceId).slice(0, MAX_EXECUTIONS));
     const write = writeQueue.then(() => appStorage.writeText(path, snapshot, { createDirs: true }));
     writeQueue = write.catch(() => {});
     return write;
   }
 
   function replace(record: LiatirExecutionRecord): void {
-    records = [record, ...records.filter((item) => item.identity.runId !== record.identity.runId)]
-      .slice(0, MAX_EXECUTIONS);
+    records = [record, ...records.filter((item) => item.identity.runId !== record.identity.runId)];
   }
 
   function requireRecord(runId: string): LiatirExecutionRecord {
@@ -90,9 +91,13 @@ function createExecutionRunsStore() {
   }
 
   return {
-    get records() { return records; },
+    get records() { return records.filter(record => record.identity.workspaceId === workspaceStore.activeId); },
     get active() {
-      return records.filter((record) => !isLiatirExecutionTerminalStatus(record.status));
+      return records.filter((record) => record.identity.workspaceId === workspaceStore.activeId && !isLiatirExecutionTerminalStatus(record.status));
+    },
+
+    forWorkspace(workspaceId: string | null): LiatirExecutionRecord[] {
+      return records.filter(record => record.identity.workspaceId === workspaceId);
     },
 
     byId(runId: string): LiatirExecutionRecord | null {
@@ -122,12 +127,16 @@ function createExecutionRunsStore() {
         const activeWorkspaceId = workspaceStore.activeId;
         const seen = new Set<string>();
         let recovered = false;
-        records = loaded.filter((record) => {
+        const retained = records.filter(record => record.identity.workspaceId !== activeWorkspaceId || controllers.has(record.identity.runId));
+        const liveIds = new Set(retained.map(record => record.identity.runId));
+        records = [...retained, ...loaded.filter((record) => {
+          if (liveIds.has(record.identity.runId)) return false;
           if (record.identity.workspaceId !== activeWorkspaceId) return false;
           if (seen.has(record.identity.runId)) return false;
           seen.add(record.identity.runId);
           return true;
         }).map((record) => {
+          rememberRunWorkspace(record.identity.runId, record.identity.workspaceId);
           if (isLiatirExecutionTerminalStatus(record.status)) return record;
           recovered = true;
           return finalizeLiatirExecutionRecord(
@@ -136,9 +145,9 @@ function createExecutionRunsStore() {
             now,
             interruptedMessage(record.identity),
           );
-        });
+        })];
 
-        if (recovered) await enqueuePersist(path);
+        if (recovered) await enqueuePersist(activeWorkspaceId);
       });
     },
 
@@ -183,9 +192,10 @@ function createExecutionRunsStore() {
         startedAt,
         updatedAt: startedAt,
       };
+      rememberRunWorkspace(record.identity.runId, record.identity.workspaceId);
       replace(record);
       controllers.set(record.identity.runId, new AbortController());
-      await enqueuePersist();
+      await enqueuePersist(record.identity.workspaceId);
       return record;
     },
 
@@ -197,7 +207,7 @@ function createExecutionRunsStore() {
       const record = requireRecord(runId);
       if (record.jobIds.includes(jobId)) return;
       replace({ ...record, jobIds: [...record.jobIds, jobId], updatedAt: Date.now() });
-      await enqueuePersist();
+      await enqueuePersist(record.identity.workspaceId);
     },
 
     async appendLog(
@@ -217,14 +227,14 @@ function createExecutionRunsStore() {
         logs: [...record.logs, entry].slice(-MAX_LOGS_PER_EXECUTION),
         updatedAt: entry.timestampMs,
       });
-      await enqueuePersist();
+      await enqueuePersist(record.identity.workspaceId);
     },
 
     async setProgress(runId: string, progress: LiatirExecutionProgress): Promise<void> {
       const record = requireRecord(runId);
       if (isLiatirExecutionTerminalStatus(record.status)) return;
       replace({ ...record, progress, updatedAt: Date.now() });
-      await enqueuePersist();
+      await enqueuePersist(record.identity.workspaceId);
     },
 
     /** Persist resolved inputs and run evidence after a child identity has been allocated. */
@@ -239,7 +249,7 @@ function createExecutionRunsStore() {
         ...(update.params !== undefined ? { params: update.params } : {}),
         updatedAt: Date.now(),
       });
-      await enqueuePersist();
+      await enqueuePersist(record.identity.workspaceId);
     },
 
     async finish(
@@ -253,7 +263,7 @@ function createExecutionRunsStore() {
       if (finalized !== record) {
         replace(finalized);
         controllers.delete(runId);
-        await enqueuePersist();
+        await enqueuePersist(record.identity.workspaceId);
       }
       return finalized;
     },
@@ -265,7 +275,7 @@ function createExecutionRunsStore() {
         throw new Error('A running execution cannot finalize a Result.');
       }
       replace({ ...record, resultId, finalizedAt, updatedAt: finalizedAt });
-      await enqueuePersist();
+      await enqueuePersist(record.identity.workspaceId);
     },
 
     /** Adopt an already durable Result after a crash between Result commit and lifecycle settlement. */
@@ -285,7 +295,7 @@ function createExecutionRunsStore() {
       };
       replace(reconciled);
       controllers.delete(runId);
-      await enqueuePersist();
+      await enqueuePersist(record.identity.workspaceId);
     },
 
     async cancel(runId: string): Promise<void> {
@@ -310,7 +320,7 @@ function createExecutionRunsStore() {
         }
         controllers.get(candidate.identity.runId)?.abort();
       }
-      await enqueuePersist();
+      await enqueuePersist(record.identity.workspaceId);
 
       const api = liatir();
       if (!api) return;
@@ -320,12 +330,21 @@ function createExecutionRunsStore() {
       ));
     },
 
-    reset(): void {
-      for (const controller of controllers.values()) controller.abort();
-      controllers.clear();
+    deactivate(): void {
+      // Navigation releases the view, not ownership of processes still running.
       initializer.reset();
-      records = [];
-      writeQueue = Promise.resolve();
+    },
+
+    /** Clear the active workspace's runs; runs still settling for other workspaces keep going. */
+    reset(): void {
+      const workspaceId = workspaceStore.activeId;
+      for (const record of records) {
+        if (record.identity.workspaceId !== workspaceId) continue;
+        controllers.get(record.identity.runId)?.abort();
+        controllers.delete(record.identity.runId);
+      }
+      initializer.reset();
+      records = records.filter((record) => record.identity.workspaceId !== workspaceId);
     },
   };
 }

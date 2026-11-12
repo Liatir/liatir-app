@@ -9,7 +9,7 @@ const ACTIVE_FILE = 'active-workspace.json';
 export const SANDBOX_WORKSPACE_ID = '__test__';
 const SANDBOX_WORKSPACE_NAME = 'Sandbox';
 export type SandboxResetLevel = 'demo-files' | 'runs' | 'full';
-export type WorkspaceResetScope = 'runs' | 'all';
+export type WorkspaceResetScope = 'runs' | 'all' | 'workspace-switch';
 
 function workspaceEnvPath(id: string) {
   return `workspaces/${id}/env.json`;
@@ -30,6 +30,13 @@ export function setDemoInitFn(fn: () => Promise<void>) {
 /** Inject workspace-scoped startup work without creating store dependency cycles. */
 export function setActivateFn(fn: () => Promise<void>) {
   activateFn = fn;
+}
+
+let leaveGuard: (() => Promise<boolean>) | null = null;
+
+/** Ask before leaving a workspace whose leaving would cancel work (same injection pattern). */
+export function setLeaveGuard(fn: () => Promise<boolean>) {
+  leaveGuard = fn;
 }
 
 function createWorkspaceStore() {
@@ -145,8 +152,10 @@ function createWorkspaceStore() {
       return w;
     },
 
-    async switchTo(id: string) {
-      resetFn?.('all');
+    /** Returns false when the user chose to stay in the current workspace. */
+    async switchTo(id: string): Promise<boolean> {
+      if (id !== activeId && leaveGuard && !(await leaveGuard())) return false;
+      resetFn?.('workspace-switch');
       previousActiveId = activeId;
       activeId = id;
       await persistActiveId();
@@ -160,6 +169,7 @@ function createWorkspaceStore() {
       }
       await activateFn?.();
       await tick();
+      return true;
     },
 
     async toggleFavorite(id: string) {

@@ -1,400 +1,162 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
+  import Icon from '@iconify/svelte';
+  import type { LiatirPythonScript } from '@liatir/core';
   import PageHeader from '$lib/components/layout/PageHeader.svelte';
-  import Card from '$lib/components/ui/Card.svelte';
+  import Badge from '$lib/components/ui/Badge.svelte';
   import Button from '$lib/components/ui/Button.svelte';
+  import Card from '$lib/components/ui/Card.svelte';
+  import EmptyState from '$lib/components/ui/EmptyState.svelte';
   import Select from '$lib/components/ui/Select.svelte';
-  import { savedScripts, type SavedScript } from '$lib/stores/savedScripts.svelte';
+  import { pythonScripts } from '$lib/stores/python-scripts.svelte';
+  import { savedScripts } from '$lib/stores/savedScripts.svelte';
+  import { workspaceStore } from '$lib/stores/workspace.svelte';
   import { confirm } from '$lib/stores/confirm.svelte';
-	import Icon from '@iconify/svelte';
+  import { toast } from '$lib/stores/toast.svelte';
 
-  onMount(() => savedScripts.init());
+  const ALL_FOLDERS = '\u0000all';
 
-  // ── folder tree ────────────────────────────────────────────────
-  let selectedFolder = $state<string | null>(null);
-  let showNewFolderInput = $state(false);
-  let newFolderPath = $state('');
-  let newFolderInputEl = $state<HTMLInputElement | null>(null);
+  let query = $state('');
+  let folder = $state(ALL_FOLDERS);
+  let archiveOpen = $state(false);
 
-  let renamingFolder = $state<string | null>(null);
-  let renameValue = $state('');
-  let renameInputEl = $state<HTMLInputElement | null>(null);
+  onMount(() => {
+    void Promise.all([pythonScripts.init(), savedScripts.init()])
+      .catch((error) => toast.error(`Could not load scripts: ${String(error)}`));
+  });
 
-  type FolderNode = { name: string; path: string; depth: number };
-
-  function buildFolderTree(paths: string[]): FolderNode[] {
-    type Node = { name: string; path: string; children: Map<string, Node> };
-    const root = new Map<string, Node>();
-    for (const p of [...paths].sort()) {
-      const parts = p.split('/');
-      let cur = root;
-      for (let i = 0; i < parts.length; i++) {
-        const key = parts[i];
-        if (!cur.has(key)) {
-          cur.set(key, { name: key, path: parts.slice(0, i + 1).join('/'), children: new Map() });
-        }
-        cur = cur.get(key)!.children;
-      }
-    }
-    const out: FolderNode[] = [];
-    function dfs(m: Map<string, Node>, d: number) {
-      for (const n of m.values()) { out.push({ name: n.name, path: n.path, depth: d }); dfs(n.children, d + 1); }
-    }
-    dfs(root, 0);
-    return out;
-  }
-
-  const flatFolders = $derived(buildFolderTree(savedScripts.allFolderPaths()));
-  const visibleScripts = $derived(
-    selectedFolder === null ? savedScripts.scripts : savedScripts.byFolder(selectedFolder)
-  );
+  const folders = $derived([...new Set(pythonScripts.scripts.map((script) => script.folder).filter(Boolean))].sort());
   const folderOptions = $derived([
-    { value: '', label: 'No folder' },
-    ...flatFolders.map(f => ({ value: f.path, label: f.path })),
+    { value: ALL_FOLDERS, label: 'All folders' },
+    ...folders.map((name) => ({ value: name, label: name })),
   ]);
+  const visible = $derived(pythonScripts.scripts.filter((script) =>
+    (folder === ALL_FOLDERS || script.folder === folder)
+    && script.name.toLowerCase().includes(query.trim().toLowerCase())));
+  const destinations = $derived(workspaceStore.workspaces
+    .filter((workspace) => workspace.id !== workspaceStore.activeId)
+    .map((workspace) => ({ value: workspace.id, label: workspace.name })));
 
-  $effect(() => {
-    if (showNewFolderInput && newFolderInputEl) newFolderInputEl.focus();
-  });
-  $effect(() => {
-    if (renamingFolder !== null && renameInputEl) {
-      renameInputEl.focus();
-      renameInputEl.select();
-    }
-  });
-
-  function startNewFolder() {
-    newFolderPath = selectedFolder !== null ? selectedFolder + '/' : '';
-    showNewFolderInput = true;
+  function fieldCount(schema: Record<string, unknown>): string {
+    const count = Object.keys(schema).length;
+    return `${count} ${count === 1 ? 'field' : 'fields'}`;
   }
 
-  async function confirmNewFolder(e: KeyboardEvent | FocusEvent) {
-    if (e instanceof KeyboardEvent && e.key !== 'Enter' && e.key !== 'Escape') return;
-    if (e instanceof KeyboardEvent && e.key === 'Escape') {
-      showNewFolderInput = false; newFolderPath = ''; return;
+  async function copy(script: LiatirPythonScript, workspaceId: string) {
+    const name = workspaceStore.workspaces.find((workspace) => workspace.id === workspaceId)?.name ?? 'the other workspace';
+    try {
+      await pythonScripts.copyTo(script.id, workspaceId);
+      toast.success(`"${script.name}" was copied to ${name}. The copy can be edited on its own.`);
+    } catch (error) {
+      toast.error(String(error));
     }
-    const path = newFolderPath.trim().replace(/^\/+|\/+$/g, '');
-    if (path) { await savedScripts.createFolder(path); selectedFolder = path; }
-    showNewFolderInput = false; newFolderPath = '';
   }
 
-  function startRename(folderPath: string) {
-    renamingFolder = folderPath;
-    renameValue = folderPath;
-  }
-
-  async function confirmRename(e: KeyboardEvent | FocusEvent) {
-    if (e instanceof KeyboardEvent && e.key !== 'Enter' && e.key !== 'Escape') return;
-    if (e instanceof KeyboardEvent && e.key === 'Escape') {
-      renamingFolder = null; renameValue = ''; return;
-    }
-    const oldPath = renamingFolder!;
-    const newPath = renameValue.trim().replace(/^\/+|\/+$/g, '');
-    if (newPath && newPath !== oldPath) {
-      await savedScripts.renameFolder(oldPath, newPath);
-      if (selectedFolder === oldPath) selectedFolder = newPath;
-      else if (selectedFolder?.startsWith(oldPath + '/')) {
-        selectedFolder = newPath + selectedFolder.slice(oldPath.length);
-      }
-    }
-    renamingFolder = null; renameValue = '';
-  }
-
-  async function deleteFolder(folderPath: string) {
+  async function remove(script: LiatirPythonScript) {
     const ok = await confirm({
-      title: 'Delete folder',
-      message: `Delete "${folderPath}"? Scripts inside will be moved to root.`,
+      title: 'Delete script',
+      message: `Delete "${script.name}"? Results it already produced are kept.`,
       confirmLabel: 'Delete',
     });
     if (!ok) return;
-    await savedScripts.removeFolder(folderPath);
-    if (selectedFolder === folderPath || selectedFolder?.startsWith(folderPath + '/')) {
-      selectedFolder = null;
-    }
-  }
-
-  // ── search ─────────────────────────────────────────────────────
-  let query = $state('');
-  const filteredScripts = $derived(
-    query.trim() === ''
-      ? visibleScripts
-      : visibleScripts.filter(s => s.name.toLowerCase().includes(query.toLowerCase()))
-  );
-
-  // ── script actions ─────────────────────────────────────────────
-  function fmtDate(ms: number) {
-    return new Date(ms).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-  }
-
-  function fmtBytes(b: number): string {
-    if (b < 1024) return `${b} B`;
-    if (b < 1024 ** 2) return `${(b / 1024).toFixed(1)} KB`;
-    return `${(b / 1024 ** 2).toFixed(1)} MB`;
-  }
-
-  function openScript(script: SavedScript) {
-    savedScripts.setActive(script.id);
-    goto('/code');
-  }
-
-  function newScript() {
-    savedScripts.setActive(null);
-    goto('/code');
+    try { await pythonScripts.remove(script.id); } catch (error) { toast.error(String(error)); }
   }
 </script>
 
-<div class="flex flex-col h-full">
-  <PageHeader title="Scripts" description="JS/TS scripts saved from code editor">
+<div class="flex h-full flex-col">
+  <PageHeader
+    title="Scripts"
+    description="Python scripts of this workspace, runnable on their own or as pipeline steps"
+    info="A script is a small Python program that you write. You decide what information it receives (inputs) and what results it gives back (outputs), and Liatir checks both every time it runs. Run a script on its own or add it as a step to a pipeline. Scripts belong to this workspace; Copy to workspace makes a separate copy for another project."
+  >
     {#snippet actions()}
-      <Button variant="secondary" size="sm" onclick={newScript}>
-        Code Editor
-      </Button>
+      <Button variant="primary" size="sm" testId="scripts-new" onclick={() => goto('/code')}>New script</Button>
     {/snippet}
   </PageHeader>
 
-  <div class="flex flex-1 overflow-hidden">
-
-    <!-- Folder sidebar -->
-    <div class="w-44 shrink-0 border-r border-border bg-surface flex flex-col">
-      <div class="px-3 py-2 border-b border-border">
-        <span class="text-[10px] font-semibold text-text-subtle uppercase tracking-wider">Folders</span>
-      </div>
-
-      <div class="flex-1 overflow-y-auto py-1">
-        <!-- All -->
-        <button
-          onclick={() => selectedFolder = null}
-          class="w-full flex items-center gap-2 px-3 py-1.5 text-xs transition-colors
-            {selectedFolder === null
-              ? 'bg-brand/8 text-brand font-medium'
-              : 'text-text-muted hover:bg-surface-2 hover:text-text-secondary'}"
+  <div class="flex-1 space-y-4 overflow-y-auto p-6">
+    {#if pythonScripts.scripts.length === 0}
+      <Card>
+        <EmptyState
+          title="No Python scripts yet"
+          description="Write a script with its inputs and outputs, run it here, then add it to any pipeline of this workspace."
         >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
-            <rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" />
-          </svg>
-          <span class="flex-1 text-left">All scripts</span>
-          <span class="text-[10px] text-text-subtle">{savedScripts.scripts.length}</span>
-        </button>
-
-        {#if flatFolders.length > 0}
-          <div class="my-1 mx-3 border-t border-border"></div>
-        {/if}
-
-        <!-- Folders -->
-        {#each flatFolders as f (f.path)}
-          {#if renamingFolder === f.path}
-            <div class="px-3 py-1.5">
-              <input
-                bind:this={renameInputEl}
-                bind:value={renameValue}
-                placeholder="folder/name"
-                onkeydown={confirmRename}
-                onblur={confirmRename}
-                class="w-full text-xs border border-brand/60 rounded px-2 py-1
-                       bg-surface text-text placeholder:text-text-subtle outline-none"
-              />
-            </div>
-          {:else}
-            <div
-              class="group relative flex items-center transition-colors
-                {selectedFolder === f.path ? 'bg-brand/8' : 'hover:bg-surface-2'}"
-            >
-              <button
-                onclick={() => selectedFolder = f.path}
-                style="padding-left: {f.depth * 10 + 12}px"
-                class="flex-1 flex items-center gap-2 py-1.5 text-xs min-w-0
-                  {selectedFolder === f.path
-                    ? 'text-brand font-medium'
-                    : 'text-text-muted group-hover:text-text-secondary'}"
-              >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="shrink-0">
-                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-                </svg>
-                <span class="flex-1 text-left truncate">{f.name}</span>
-              </button>
-              <!-- Count: hidden on hover -->
-              <span class="pr-3 text-[10px] text-text-subtle group-hover:hidden">{savedScripts.byFolder(f.path).length}</span>
-              <!-- Actions: shown on hover -->
-              <div class="pr-1.5 hidden group-hover:flex items-center gap-0">
-                <button
-                  onclick={() => startRename(f.path)}
-                  title="Rename"
-                  class="p-1 text-text-subtle hover:text-text-secondary transition-colors rounded"
-                >
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                  </svg>
-                </button>
-                <button
-                  onclick={() => deleteFolder(f.path)}
-                  title="Delete"
-                  class="p-1 text-text-subtle hover:text-red-500 transition-colors rounded"
-                >
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="3 6 5 6 21 6" />
-                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                    <path d="M10 11v6M14 11v6" />
-                    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          {/if}
-        {/each}
-
-        <!-- New folder input -->
-        {#if showNewFolderInput}
-          <div class="px-3 py-2">
-            <input
-              bind:this={newFolderInputEl}
-              bind:value={newFolderPath}
-              placeholder="folder/name"
-              onkeydown={confirmNewFolder}
-              onblur={confirmNewFolder}
-              class="w-full text-xs border border-brand/60 rounded px-2 py-1.5
-                     bg-surface text-text placeholder:text-text-subtle outline-none"
-            />
-          </div>
+          {#snippet icon()}<Icon icon="lucide:file-code" width="28" height="28" />{/snippet}
+          {#snippet action()}<Button variant="secondary" size="sm" onclick={() => goto('/code')}>Write a script</Button>{/snippet}
+        </EmptyState>
+      </Card>
+    {:else}
+      <div class="flex flex-wrap items-center gap-2">
+        <div class="flex min-w-60 flex-1 items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2">
+          <Icon icon="lucide:search" width="14" height="14" class="shrink-0 text-text-subtle" />
+          <input bind:value={query} placeholder="Search scripts…" class="flex-1 bg-transparent text-sm text-text outline-none placeholder:text-text-subtle" />
+        </div>
+        {#if folders.length > 0}
+          <Select value={folder} options={folderOptions} onchange={(value) => folder = value} />
         {/if}
       </div>
 
-      <!-- New folder button -->
-      {#if !showNewFolderInput}
-        <button
-          onclick={startNewFolder}
-          class="flex items-center gap-1.5 px-3 py-2.5 text-[11px] text-text-subtle
-                 hover:text-text-secondary transition-colors border-t border-border"
-        >
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-          New folder
-        </button>
-      {/if}
-    </div>
-
-    <!-- Main content -->
-    <div class="flex-1 overflow-y-auto p-6">
-
-      {#if savedScripts.scripts.length === 0}
-        <!-- Global empty state -->
-        <div class="flex flex-col items-center justify-center h-full text-center gap-3">
-          <div class="h-12 w-12 rounded-xl bg-surface-2 flex items-center justify-center">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color: var(--color-text-subtle)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" />
-            </svg>
-          </div>
-          <p class="text-sm font-medium text-text-secondary">No saved scripts</p>
-          <p class="text-xs text-text-subtle max-w-xs">
-            Write a script in the Code editor and save it to find it here.
-          </p>
-          <Button variant="secondary" size="sm" onclick={newScript}>Open editor</Button>
-        </div>
-
-      {:else if visibleScripts.length === 0}
-        <!-- Folder empty state -->
-        <div class="flex flex-col items-center justify-center h-64 text-center gap-3">
-          <div class="h-10 w-10 rounded-xl bg-surface-2 flex items-center justify-center">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color: var(--color-text-subtle)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-            </svg>
-          </div>
-          <p class="text-sm text-text-muted">No scripts in this folder</p>
-        </div>
-
+      {#if visible.length === 0}
+        <p class="py-10 text-center text-sm text-text-muted">No scripts match this search.</p>
       {:else}
-        <!-- Search bar -->
-        <div class="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2 mb-4">
-          <svg class="shrink-0 text-text-subtle" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-          <input
-            bind:value={query}
-            placeholder="Search scripts…"
-            class="flex-1 text-sm bg-transparent outline-none text-text placeholder:text-text-subtle"
-          />
-          {#if query}
-            <button onclick={() => query = ''} class="text-text-faint hover:text-text-muted transition-colors" aria-label="Clear script search">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
-          {/if}
-        </div>
-
-        {#if filteredScripts.length === 0}
-          <p class="text-sm text-text-subtle text-center py-8">No scripts match "{query}"</p>
-        {:else}
         <Card>
           <div class="divide-y divide-border">
-            {#each filteredScripts as script (script.id)}
-              <div class="flex items-center gap-3 px-4 py-3 group">
-                <div class="h-8 w-8 rounded-lg bg-surface-2 border border-border flex items-center justify-center shrink-0">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color: var(--color-text-muted)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" />
-                  </svg>
-                </div>
-
-                <div class="flex-1 min-w-0">
-                  <p class="text-sm font-medium text-text truncate">{script.name}</p>
-                  <p class="text-xs text-text-subtle">{fmtDate(script.savedAt)}{script.code ? ' · ' + fmtBytes(new TextEncoder().encode(script.code).length) : ''}</p>
-                </div>
-
-                <Select
-                  value={script.folder}
-                  options={folderOptions}
-                  onchange={(v) => savedScripts.move(script.id, v)}
-                />
-
-                <button
-                  onclick={() => openScript(script)}
-                  class="shrink-0 flex items-center gap-1.5 rounded-lg border border-border
-                         bg-surface px-2.5 py-1.5 text-xs font-medium text-text-secondary
-                         hover:border-brand hover:text-brand transition-colors"
-                >
-                  Open
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                    <polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
-                  </svg>
+            {#each visible as script (script.id)}
+              <div class="flex items-center gap-4 px-4 py-3" data-testid="script-row">
+                <button type="button" class="min-w-0 flex-1 text-left" onclick={() => goto(`/code?script=${script.id}`)}>
+                  <p class="truncate text-sm font-medium text-text">{script.name}</p>
+                  <div class="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-text-subtle">
+                    {#if script.folder}<Badge hideDot size="xs">{script.folder}</Badge>{/if}
+                    <span>Inputs: {fieldCount(script.inputSchema)}</span>
+                    <span>·</span>
+                    <span>Outputs: {fieldCount(script.outputSchema)}</span>
+                    <span>·</span>
+                    <span>Saved {new Date(script.savedAt).toLocaleString()}</span>
+                  </div>
                 </button>
-
+                <Button variant="secondary" size="sm" onclick={() => goto(`/code?script=${script.id}`)}>Open</Button>
+                {#if destinations.length > 0}
+                  <Select value="" options={destinations} placeholder="Copy to workspace…" onchange={(id) => copy(script, id)} />
+                {/if}
                 <button
-                  onclick={() => savedScripts.exportScript(script.id)}
-                  title="Export as .ts file"
-                  class="shrink-0 flex items-center gap-1.5 rounded-lg border border-border
-                         bg-surface px-2.5 py-1.5 text-xs font-medium text-text-secondary
-                         hover:border-zinc-400 hover:text-text transition-colors"
+                  type="button"
+                  class="text-text-faint transition-colors hover:text-red-500"
+                  aria-label="Delete {script.name}"
+                  onclick={() => remove(script)}
                 >
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                    <polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
-                  </svg>
-                  Export
-                </button>
-
-                <button
-                  onclick={async () => {
-                    const ok = await confirm({ title: 'Delete script', message: `Delete "${script.name}"?`, confirmLabel: 'Delete' });
-                    if (ok) savedScripts.remove(script.id);
-                  }}
-                  aria-label="Delete"
-                  class="shrink-0 text-text-faint hover:text-red-500 transition-colors"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
+                  <Icon icon="lucide:trash-2" width="15" height="15" />
                 </button>
               </div>
             {/each}
           </div>
         </Card>
-        {/if}
       {/if}
+    {/if}
 
-    </div>
+    {#if savedScripts.scripts.length > 0}
+      <Card>
+        <button type="button" class="flex w-full items-center justify-between gap-3 px-4 py-3 text-left" onclick={() => archiveOpen = !archiveOpen}>
+          <div>
+            <p class="text-sm font-medium text-text">Older JavaScript scripts ({savedScripts.scripts.length})</p>
+            <p class="mt-0.5 text-xs text-text-muted">Written for an earlier version of Liatir. They no longer run, but you can read and export them.</p>
+          </div>
+          <Icon icon={archiveOpen ? 'lucide:chevron-up' : 'lucide:chevron-down'} width="16" height="16" class="shrink-0 text-text-subtle" />
+        </button>
+        {#if archiveOpen}
+          <div class="divide-y divide-border border-t border-border">
+            {#each savedScripts.scripts as script (script.id)}
+              <details class="px-4 py-3">
+                <summary class="flex cursor-pointer items-center justify-between gap-3 text-sm text-text-secondary">
+                  <span class="truncate">{script.folder ? `${script.folder} / ` : ''}{script.name}</span>
+                  <Button variant="ghost" size="sm" onclick={(event) => { event.preventDefault(); void savedScripts.exportScript(script.id); }}>Export</Button>
+                </summary>
+                <pre class="mt-3 max-h-80 overflow-auto rounded-lg bg-surface-2 p-3 font-mono text-xs text-text-secondary">{script.code}</pre>
+              </details>
+            {/each}
+          </div>
+        {/if}
+      </Card>
+    {/if}
   </div>
 </div>

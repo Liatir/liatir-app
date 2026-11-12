@@ -470,6 +470,109 @@ except Exception:
     )
 }
 
+const SCRIPT_INPUT_TYPES: &[&str] = &["string", "number", "boolean", "file"];
+const SCRIPT_OUTPUT_TYPES: &[&str] = &["string", "number", "boolean", "file", "json", "stats"];
+const SCRIPT_MAX_SOURCE_BYTES: usize = 1_000_000;
+
+/// Checks the parts of a Script request the native side relies on. The frontend validates the same
+/// shared contract first; this is the boundary, so it never trusts that.
+fn validate_script_request(request: &Value) -> Result<(String, String), String> {
+    let workspace = request["workspaceId"].as_str().ok_or("Script workspace is required")?;
+    if workspace.is_empty() || !workspace.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_') {
+        return Err("Invalid Script workspace".into());
+    }
+    let run_id = request["runId"].as_str().ok_or("Script run ID is required")?;
+    uuid::Uuid::parse_str(run_id).map_err(|_| "Invalid Script run ID")?;
+    let script = &request["script"];
+    let code_ok = script["code"]
+        .as_str()
+        .is_some_and(|code| !code.trim().is_empty() && code.len() <= SCRIPT_MAX_SOURCE_BYTES);
+    if script["language"] != "python" || !code_ok {
+        return Err("A Python Script needs source code (at most 1 MB)".into());
+    }
+    for (name, allowed) in [("inputSchema", SCRIPT_INPUT_TYPES), ("outputSchema", SCRIPT_OUTPUT_TYPES)] {
+        let fields = script[name].as_object().ok_or("Declare both Script input and output contracts")?;
+        for (key, field) in fields {
+            if key.is_empty() || !field["type"].as_str().is_some_and(|kind| allowed.contains(&kind)) {
+                return Err(format!("Invalid Script contract field: {key}"));
+            }
+        }
+    }
+    if !request["inputs"].is_object() {
+        return Err("Script inputs must be an object".into());
+    }
+    Ok((workspace.to_string(), run_id.to_string()))
+}
+
+/// Runs an unpackaged workspace Script through the Python Plugin SDK and dependency environments.
+/// The run's own directory keeps an immutable copy of what ran, so later edits cannot alter it and
+/// deleting the run's Result removes it too.
+#[tauri::command]
+pub async fn lia_script_run(app: AppHandle, request: Value) -> Result<Value, String> {
+    let (workspace, run_id) = validate_script_request(&request)?;
+    let script = request["script"].clone();
+    let name = script["name"].as_str().ok_or("Script name is required")?.to_string();
+    let mut python = script["python"].as_object().ok_or("Declare Script Python dependencies")?.clone();
+    python.insert("entry".into(), Value::String("main.py".into()));
+    let context = python_runtime_context(serde_json::json!({ "name": script["id"], "runtime": "python", "python": python }))?;
+
+    let run_dir = super::fs::lia_fs_safe_join_data(&app, &format!("workspaces/{workspace}/runs/{run_id}"))?;
+    let source_dir = run_dir.join("script");
+    let output_dir = run_dir.join("output");
+    std::fs::create_dir_all(&run_dir).map_err(|e| e.to_string())?;
+    // create_dir (not _all) fails if the copy exists: one run ID never gets a second source.
+    std::fs::create_dir(&source_dir).map_err(|e| format!("Cannot create immutable Script snapshot: {e}"))?;
+    let code = script["code"].as_str().unwrap_or_default();
+    let snapshot = serde_json::to_vec(&script).map_err(|e| e.to_string())?;
+    for (file, contents) in [
+        ("main.py", code.as_bytes()),
+        ("snapshot.json", snapshot.as_slice()),
+        ("liatir.py", include_str!("../../../packages/liatir-cli/src/assets/liatir.py").as_bytes()),
+        ("runner.py", include_str!("script_runner.py").as_bytes()),
+    ] {
+        std::fs::write(source_dir.join(file), contents).map_err(|e| e.to_string())?;
+    }
+    std::fs::create_dir_all(&output_dir).map_err(|e| e.to_string())?;
+
+    let prepare_app = app.clone();
+    let env_id = context.env_id.clone();
+    let spec = context.spec.clone();
+    let runtime_lock = tauri::async_runtime::spawn_blocking(move || {
+        let status = status_python_plugin_env(prepare_app.clone(), env_id.clone(), &spec)?;
+        if status.installed {
+            Ok::<_, String>(status.lock)
+        } else {
+            Ok(prepare_python_plugin_env(prepare_app, env_id, &spec)?.lock)
+        }
+    })
+    .await
+    .map_err(|e| e.to_string())??;
+
+    let mut metadata = request["metadata"].as_object().cloned().unwrap_or_default();
+    metadata.insert("scriptSnapshot".into(), script);
+    metadata.insert("runtimeLock".into(), serde_json::to_value(runtime_lock).map_err(|e| e.to_string())?);
+    let mut env = HashMap::new();
+    env.insert("LIATIR_SCRIPT_OUTPUT_DIR".into(), output_dir.to_string_lossy().to_string());
+    if let Ok(root) = app.path().app_data_dir() {
+        env.insert("LIATIR_IPC_FILE".into(), root.join(".ipc").to_string_lossy().to_string());
+    }
+    let runner = serde_json::to_string(&source_dir.join("runner.py").to_string_lossy()).map_err(|e| e.to_string())?;
+    spawn_in_env(
+        app,
+        PYTHON_PLUGIN_ENV_ROOT.into(),
+        context.env_id,
+        format!("import runpy\nrunpy.run_path({runner}, run_name='__main__')\n"),
+        Vec::new(),
+        request["inputs"].clone(),
+        Some(workspace),
+        Some(env),
+        Some(format!("Script: {name}")),
+        "python-script".into(),
+        Some(Value::Object(metadata)),
+    )
+    .await
+}
+
 /// Read manifest.json from a .lia plugin, validating the signature first.
 #[tauri::command]
 pub async fn lia_liatir_read_manifest(path: String) -> Result<Value, String> {

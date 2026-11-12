@@ -55,7 +55,7 @@ describe('Runtime Box product E2E support', () => {
     // Static helpers that read as element state but are not: Array.isArray, Number.isFinite, and
     // the Node stat predicates. Everything else is expected on the element wrapper.
     const notElementState = new Set([
-      'isArray', 'isFinite', 'isInteger', 'isSafeInteger', 'isNaN', 'isDirectory', 'isFile',
+      'isArray', 'isFrozen', 'isFinite', 'isInteger', 'isSafeInteger', 'isNaN', 'isDirectory', 'isFile',
     ]);
     const called = new Set<string>();
     for (const entry of readdirSync(resolve('tests/e2e/specs'))) {

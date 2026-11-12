@@ -102,7 +102,7 @@ describe('an empty declaration is checked, not believed', () => {
     expect(runStorage).toContain("const RUNS_DIR = 'runs'");
     // Scoped to the workspace, like the index that points into it: deleting a workspace has to
     // reclaim the files its runs produced.
-    expect(runStorage).toContain('getDataPrefix()');
+    expect(runStorage).toContain('runWorkspacePrefix(runId)');
     expect(runStorage).toContain('`${runDirRel(runId)}/output`');
   });
 
@@ -282,6 +282,6 @@ describe('the results view', () => {
     expect(finalization).toContain("files.filter((file) => (file.role ?? 'final') === 'final')");
     // The pipeline goes through the same rule rather than keeping its own.
     const pipeline = read('frontend/src/lib/stores/pipeline.svelte.ts');
-    expect(pipeline).toContain('registerResultsInDataLibrary(files, toolLabel)');
+    expect(pipeline).toContain('registerResultsInDataLibrary(files, toolLabel, runId)');
   });
 });

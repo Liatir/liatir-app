@@ -40,9 +40,10 @@ const NAV_PAGES = [
     { href: '/pipelines', label: 'Pipelines', icon: 'lucide:workflow', match: '/pipelines', global: false },
     { divider: true, global: false },
     { href: '/tools', label: 'Tools', icon: 'lucide:dna', match: '/tools', global: true },
-    { href: '/plugins', label: 'Plugins', customIcon: '/icons/lia-file-icon/light.svg', customIconDark: '/icons/lia-file-icon/dark.svg', match: '/plugins', global: true },
-    { href: '/apis', label: 'API Connector', icon: 'lucide:plug', match: '/apis', global: false },
     { href: '/ai', label: 'AI Models', icon: 'ri:ai-generate-3d-line', match: '/ai', global: true },
+    { href: '/plugins', label: 'Plugins', customIcon: '/icons/lia-file-icon/light.svg', customIconDark: '/icons/lia-file-icon/dark.svg', match: '/plugins', global: true },
+    { href: '/scripts', label: 'Scripts', icon: 'lucide:file-code', match: '/scripts', global: false },
+    { href: '/apis', label: 'API Connector', icon: 'lucide:plug', match: '/apis', global: false },
     { divider: true, global: true },
     { href: '/data', label: 'Data', icon: 'lucide:database', match: '/data', global: false },
     { href: '/results', label: 'Results', icon: 'lucide:inbox', match: '/results', global: false },
@@ -107,7 +108,7 @@ export const routeIsInSidebar = (route: string, onlyTop?: boolean): boolean => {
 export async function sidebarNavigateToPage(sidebarItem: SidebarItem) {
 		if(sidebarItem?.workspacePage) {
 			// Empty ID = no active workspace.
-			await workspaceStore.switchTo("");
+			if (!await workspaceStore.switchTo("")) return;
 			jobsStore.refresh();
 			pipelineStore.init();
 			if(sidebarItem?.href) goto(sidebarItem.href);
