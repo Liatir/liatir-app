@@ -46,7 +46,8 @@ function numbersIn(table: SourceTable, name: string): (number | null)[] {
 
 const present = (value: number | null): value is number => value !== null
 const joined = (...notes: (string | false)[]) => notes.filter(Boolean).join("; ") || undefined
-const leftOut = (count: number) => count > 0 && `${count} ${count === 1 ? "row" : "rows"} without a number left out`
+const leftOut = (count: number, column?: string) =>
+  count > 0 && `${count} ${count === 1 ? "row" : "rows"} without a number${column ? ` in "${column}"` : ""} left out`
 
 /** Labels with one or more number series, for bars, lines, pies, heatmaps and funnels. */
 export function series(data: SeriesData, tables: Tables): { labels: string[]; series: NamedValues[]; origin: Origin; axis?: string } {
@@ -122,7 +123,8 @@ export function samples(data: SamplesData, tables: Tables): { series: NamedValue
   if (!("table" in data)) return { series: data.series, origin: {} }
   const table = tableOf(data.table, tables)
   if (data.group === undefined) {
-    return { series: data.y.map((name) => ({ name, values: numbersIn(table, name).filter(present) })), origin: { table } }
+    const series = data.y.map((name) => ({ name, values: numbersIn(table, name).filter(present) }))
+    return { series, origin: { table, note: joined(...series.map((item) => leftOut(table.rows.length - item.values.length, item.name))) } }
   }
   if (data.y.length !== 1) fail(`with "group", give exactly one y column (${data.y.length} were given)`)
   const values = numbersIn(table, data.y[0])
@@ -136,7 +138,11 @@ export function samples(data: SamplesData, tables: Tables): { series: NamedValue
     groups.get(name)!.push(value)
   })
   if (groups.size > MAX_GROUPS) fail(`column "${data.group}" has ${groups.size} different values; at most ${MAX_GROUPS} groups can be shown`)
-  return { series: [...groups].map(([name, items]) => ({ name, values: items })), origin: { table, note: `"${data.y[0]}" by "${data.group}"` }, axis: data.y[0] }
+  return {
+    series: [...groups].map(([name, items]) => ({ name, values: items })),
+    origin: { table, note: joined(`"${data.y[0]}" by "${data.group}"`, leftOut(values.filter((item) => item === null).length)) },
+    axis: data.y[0],
+  }
 }
 
 /** One list of numbers, optionally named one by one, for the threshold slider. */
@@ -199,12 +205,13 @@ const STATS: Record<"min" | "max" | "mean" | "median" | "sum", (values: number[]
 export function value(data: ValueData, tables: Tables): { text: string; origin: Origin } {
   if (typeof data === "string") return { text: data, origin: {} }
   const table = tableOf(data.table, tables)
-  const origin = { table, note: `${data.stat} of "${data.column}"` }
+  const described = `${data.stat} of "${data.column}"`
   if (data.stat === "count") {
     const index = columnOf(table, data.column)
-    return { text: String(table.rows.filter((row) => String(row[index] ?? "").trim()).length), origin }
+    return { text: String(table.rows.filter((row) => String(row[index] ?? "").trim()).length), origin: { table, note: described } }
   }
-  return { text: STATS[data.stat](numbersIn(table, data.column).filter(present)), origin }
+  const values = numbersIn(table, data.column).filter(present)
+  return { text: STATS[data.stat](values), origin: { table, note: joined(described, leftOut(table.rows.length - values.length)) } }
 }
 
 /** How each data element reads its data. An element not listed here has no data to resolve. */

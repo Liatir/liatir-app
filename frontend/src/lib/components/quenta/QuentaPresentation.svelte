@@ -11,7 +11,7 @@
   let frame: HTMLIFrameElement;
   let error = $state('');
   let ready = $state(false);
-  onMount(() => mountPresentation(frame, presentation, () => ready = true, (message) => error = message));
+  onMount(() => mountPresentation(frame, presentation, () => ready = true, (failure) => error = failure.message));
 </script>
 
 <div class={fill ? 'flex h-full flex-col gap-2' : 'space-y-2'} data-testid="quenta-presentation" data-state={error ? 'error' : ready ? 'ready' : 'opening'}>

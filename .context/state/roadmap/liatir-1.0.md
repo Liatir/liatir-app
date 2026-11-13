@@ -468,3 +468,9 @@ installs whose managed Ollama predates it. Test models were removed afterwards.
   by the problems only; rerun, the same request was fixed by the repair (8 sections).
   Verified after the change: `test:verify` (832 unit tests), the real-app workbench and
   Quenta specs (10 passed, 5 skipped as before), Stage gallery in headless Chrome.
+- Branch review fixes, 2026-11-13: the Results size check now reserves room for two
+  answers (the repair resends the first); a display timeout is re-checked once and never
+  sent to the model as a repair; histograms, box plots and computed key numbers now say
+  how many rows had no number. Verified: `test:verify` (833 unit tests). Not yet run: the
+  real-app e2e specs and the real-model script. Still open: open one downloaded Stage page
+  in Safari and Firefox (the export was only tried in Chrome).

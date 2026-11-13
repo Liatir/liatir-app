@@ -79,12 +79,18 @@ export interface PresentationOptions {
   onProgress?: (progress: PresentationProgress) => void;
 }
 
+/**
+ * The frame did not answer in time. A page is data drawn by the kit, so this is the frame being slowed
+ * or stalled (Liatir in the background), never something the model can repair.
+ */
+class DisplayTimeout extends Error {}
+
 /** The only frame protocol: provide a frozen snapshot and receive rendering status. */
 export function mountPresentation(
   frame: HTMLIFrameElement,
   presentation: LiatirQuentaPresentation,
   onReady: () => void,
-  onError: (message: string) => void,
+  onError: (error: Error) => void,
 ): () => void {
   // Result views use reactive proxies; structured-clone cannot transfer them.
   // Capture plain JSON once so navigation cannot mutate an in-flight render.
@@ -97,18 +103,18 @@ export function mountPresentation(
     clearTimeout(timer);
     outcome();
   };
-  const timer = setTimeout(() => settle(() => onError('The page did not display within 15 seconds.')), RENDER_TIMEOUT_MS);
+  const timer = setTimeout(() => settle(() => onError(new DisplayTimeout('The page did not display within 15 seconds.'))), RENDER_TIMEOUT_MS);
   const receive = (event: MessageEvent) => {
     if (event.source !== frame.contentWindow) return;
     const type = event.data?.type;
     if (type === 'presentation-host-ready') {
       runtime
         .then((source) => frame.contentWindow?.postMessage({ type: 'presentation-render', presentation: { ...snapshot, runtimeSource: source } }, '*'))
-        .catch((error) => settle(() => onError(String(error))));
+        .catch((error) => settle(() => onError(error instanceof Error ? error : new Error(String(error)))));
     } else if (type === 'presentation-ready') {
       settle(onReady);
     } else if (type === 'presentation-error') {
-      settle(() => onError(String(event.data.message ?? 'The page could not be displayed.')));
+      settle(() => onError(new Error(String(event.data.message ?? 'The page could not be displayed.'))));
     }
   };
   frame.setAttribute('sandbox', 'allow-scripts');
@@ -128,7 +134,7 @@ async function checkRendering(presentation: LiatirQuentaPresentation): Promise<v
   let cleanup: (() => void) | undefined;
   try {
     await new Promise<void>((resolve, reject) => {
-      cleanup = mountPresentation(frame, presentation, resolve, (message) => reject(new Error(message)));
+      cleanup = mountPresentation(frame, presentation, resolve, reject);
     });
   } finally {
     cleanup?.();
@@ -177,7 +183,9 @@ export async function generatePresentation(
   const tables = sourceTables(sources);
   const data = describeSources(sources, tables);
   const system = systemPrompt(tables);
-  const reservedTokens = OUTPUT_TOKENS + Math.ceil(system.length / 3) + 512;
+  // Two answers: the repair sends the first answer back and asks for a new one. Past the context,
+  // Ollama silently drops the oldest message, the one holding this data.
+  const reservedTokens = 2 * OUTPUT_TOKENS + Math.ceil(system.length / 3) + 512;
   const previousLength = previous?.page ? JSON.stringify(previous.page).length : 0;
   const dataBudget = Math.max(1000, (LIATIR_QUENTA_CONTEXT_TOKENS - reservedTokens) * CHARS_PER_TOKEN - instruction.length - previousLength);
   if (data.length > dataBudget) {
@@ -228,12 +236,17 @@ export async function generatePresentation(
         onProgress?.({ stage: 'checking' });
         const { page, problems } = checkPage(content, tables);
         if (!page) throw new PageRejected(problems);
-        presentation = { ...base, title: page.title, page: page as unknown as JsonValue };
-        await checkRendering(presentation);
+        const candidate: LiatirQuentaPresentation = { ...base, title: page.title, page: page as unknown as JsonValue };
+        // A timeout gets one more display check, never a repair: the page itself was accepted.
+        await checkRendering(candidate).catch((error) => {
+          if (error instanceof DisplayTimeout) return checkRendering(candidate);
+          throw error;
+        });
+        presentation = candidate;
         break;
       } catch (error) {
         presentation = undefined;
-        if (signal?.aborted || attempt === 1) throw error;
+        if (signal?.aborted || attempt === 1 || error instanceof DisplayTimeout) throw error;
         const problems = error instanceof PageRejected ? error.problems : [String(error)];
         messages.push(...repairMessages(problems, content));
         await executionRuns.appendLog(id, `Repairing the page once: ${problems.join(' ')}`);

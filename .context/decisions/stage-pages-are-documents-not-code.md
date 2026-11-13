@@ -29,6 +29,13 @@ entries (a one-line use and its fields). From that single definition come:
 - the **types** the renderers receive (`liatir/elements/*.tsx`; a missing renderer is a
   compile error).
 
+**Only what the model can fix goes to the repair**: the check's problems and errors the
+frame reports. A display check that times out is never sent to the model (a page is data, so
+a stall is the frame being slowed, e.g. Liatir in the background); it gets one more display
+check, then fails plainly. The size check for the selected Results reserves room for **two**
+answers, because the repair sends the first answer back; past the context, Ollama silently
+drops the oldest message, which is the one holding the data.
+
 **Measured values are read, never retyped.** The Results a page is about are turned into
 tables (`spec/tables.ts`: table sections, summary values, key numbers), described to the
 model with their columns and a few sample rows, and named `T1`, `T2`… A data element either
@@ -37,7 +44,9 @@ statistic). The schema of each request lists only that request's tables and colu
 the model cannot name one that does not exist; the frame reads every row from the frozen
 copy of the Results. Under each data element the kit writes its source, or an
 **AI-entered** (about Results) / **Illustrative** (about a topic) label when the model typed
-the values. This is enforced by the kit, not left to the prompt.
+the values. This is enforced by the kit, not left to the prompt. Wherever rows without a
+number are skipped (charts, histograms, box plots, a computed key number), the source line
+says how many.
 
 The format belongs to the runtime that draws it: a saved page names its runtime by SHA-256
 (`runtimeId`), so a later runtime never has to read an older page. Presentations made with

@@ -63,6 +63,16 @@ it('reads values from the saved tables instead of trusting retyped ones', () => 
   expect(readers['line-chart'](firstBlock(galleryPage, 'line-chart'), tables).origin.table).toBeUndefined();
 });
 
+it('says how many rows had no number wherever numbers are computed from a table', () => {
+  const qc = [{ id: 'T1', label: 'Cells', result: 'QC', source: 0, columns: ['Sample', 'Mito %'], rows: [['a', 1.5], ['b', 'NA'], ['a', 3], ['b', '']] }];
+  expect(readers['key-number']({ type: 'key-number', label: 'Mean', value: { table: 'T1', column: 'Mito %', stat: 'mean' } }, qc))
+    .toMatchObject({ text: '2.25', origin: { note: 'mean of "Mito %"; 2 rows without a number left out' } });
+  expect(readers.histogram({ type: 'histogram', data: { table: 'T1', y: ['Mito %'] } }, qc).origin.note)
+    .toBe('2 rows without a number in "Mito %" left out');
+  expect(readers['box-plot']({ type: 'box-plot', data: { table: 'T1', y: ['Mito %'], group: 'Sample' } }, qc).origin.note)
+    .toBe('"Mito %" by "Sample"; 2 rows without a number left out');
+});
+
 it('holds the model to the tables and columns that exist, and offers no table forms without tables', () => {
   const withTables = JSON.stringify(pageFormat(tables));
   expect(withTables).toContain('"enum":["T1","T2","T3","T4"]');
