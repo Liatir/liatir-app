@@ -127,6 +127,23 @@ the version (`Cargo.toml`, `tauri.conf.json`, the bridge constants, the `liatir`
 API bundle) differs from it. The SDK version script and the SDK type generator now read
 `package.json` directly.
 
+## 1.0.0 release checkpoint (2026-11-13)
+
+1.0.0 ships the [Liatir 1.0 workbench](./liatir-1.0.md) and Quenta's Stage. The owner authorized
+on 2026-11-13 the fast-forward of `main` to the reviewed `liatir-1.0` branch (which runs the public
+SDK mirror), `desktop-release-build.yml` with `targets=all`, and publication for macOS and Linux
+exactly as 0.4.0; the owner uploads the MSIX to Partner Center personally. No Store action,
+Runtime Box or GPU workflow, or force-push is authorized.
+
+- [x] Version 1.0.0 already in the root `package.json` and its tracked copies (the release
+  contract test passes). Review fixes committed as `97007d59`; `test:verify` 7/7 suites (833 unit
+  tests, report `2026-11-13T16-10-03-098Z`), real-app workbench and Quenta specs 10 passed, 0
+  failed, 5 skipped; Syngraphe clean.
+- [x] Signing, updater and Store configuration names exist; the configured updater key equals
+  `~/.tauri/liatir-updater.key.pub`; no v1.0.0 exists; the live 0.4.0 feed (`c3540347…`) was saved
+  to the ignored `tests/.artifacts/release-1.0.0/` first. `origin/main` (`cd914e6e`) is an ancestor
+  of the branch, so `main` moves by fast-forward.
+
 ## 0.4.0 release checkpoint (2026-11-06)
 
 0.4.0 ships the Scientific Simulation Suite: six Tool Runtimes, nine tools. The owner authorized on

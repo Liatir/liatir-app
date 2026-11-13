@@ -471,6 +471,7 @@ installs whose managed Ollama predates it. Test models were removed afterwards.
 - Branch review fixes, 2026-11-13: the Results size check now reserves room for two
   answers (the repair resends the first); a display timeout is re-checked once and never
   sent to the model as a repair; histograms, box plots and computed key numbers now say
-  how many rows had no number. Verified: `test:verify` (833 unit tests). Not yet run: the
-  real-app e2e specs and the real-model script. Still open: open one downloaded Stage page
-  in Safari and Firefox (the export was only tried in Chrome).
+  how many rows had no number. Verified: `test:verify` (833 unit tests), the real-app
+  workbench and Quenta specs (10 passed, 5 skipped as before). Not yet run: the real-model
+  script. Still open: open one downloaded Stage page in Safari and Firefox (the export was
+  only tried in Chrome).
