@@ -18,6 +18,8 @@
   import { toast } from '$lib/stores/toast.svelte';
   import QuentaProfilePicker from '$lib/components/quenta/QuentaProfilePicker.svelte';
   import QuentaModeSwitch from '$lib/components/quenta/QuentaModeSwitch.svelte';
+  import ResultPickerDialog from '$lib/components/quenta/ResultPickerDialog.svelte';
+  import { analysisRuns } from '$lib/stores/analysisRuns.svelte';
   import type {
     LiatirQuentaConversation,
     LiatirQuentaIntent,
@@ -99,8 +101,22 @@
         ? 'bg-brand/10 text-brand'
         : 'bg-amber-50 text-amber-600',
   );
+  // What is attached to the conversation, in words, for the composer chip.
+  let attachPickerOpen = $state(false);
+  const attachableResults = $derived(analysisRuns.runs.filter((run) => run.tool !== 'quenta-presentation'));
+  const attachment = $derived.by(() => {
+    const focus = currentConversation?.focus;
+    if (!focus) return null;
+    if (focus.kind === 'job') return { focus, failed: true, label: `Job ${focus.entityId.slice(0, 8)}` };
+    const run = analysisRuns.runs.find((item) => item.id === focus.entityId);
+    return { focus, failed: run ? run.status !== 'done' : selectedIntent === 'explain-failure', label: run?.label ?? 'A Result' };
+  });
+  // An attachment just added can be sent without typing: Quenta then explains it.
+  const canExplainAttachment = $derived(Boolean(attachment) && selectedIntent !== 'chat');
   const composerPlaceholder = $derived(
-    localAIReady
+    localAIReady && canExplainAttachment
+      ? 'Ask something about the attached item, or just send to get an explanation.'
+      : localAIReady
       ? quentaStore.composerSettings.enterToSend
         ? 'Ask about a result, job log, pipeline, AI model, API Connector request, or bioinformatics concept. Press Enter to send, Shift+Enter for a new line.'
         : 'Ask about a result, job log, pipeline, AI model, API Connector request, or bioinformatics concept. Press Cmd/Ctrl+Enter to send; Enter adds a new line.'
@@ -126,24 +142,6 @@
   const filteredConversations = $derived(
     quentaStore.conversations.filter((conversation) => conversationMatchesFilters(conversation)),
   );
-  // Intents the user can pick in the composer.
-  const intentOptions = [
-    {
-      value: 'chat',
-      label: 'Ask Quenta',
-      description: 'Ask a question using the current workspace context.',
-    },
-    {
-      value: 'explain-result',
-      label: 'Explain result',
-      description: 'Summarize observed outputs, limitations, and validation steps.',
-    },
-    {
-      value: 'explain-failure',
-      label: 'Explain failure',
-      description: 'Interpret status, logs, and likely causes without running anything.',
-    },
-  ];
 
   // True when the transcript is scrolled close enough to its bottom edge.
   function transcriptIsNearBottom() {
@@ -308,9 +306,8 @@
   function syncComposerFromConversation(conversation = currentConversation) {
     composerConversationId = conversation?.id ?? null;
     draft = conversation?.draft ?? '';
-    selectedIntent = conversation?.draftIntent
-      ?? conversation?.messages.at(-1)?.intent
-      ?? 'chat';
+    // Follow-ups are ordinary questions; only a freshly attached Result asks for an explanation.
+    selectedIntent = conversation?.draftIntent ?? 'chat';
   }
 
   // Re-syncs the composer when the selected conversation changes outside this page.
@@ -337,10 +334,19 @@
     await quentaStore.updateConversationDraft(currentConversation.id, draft, selectedIntent);
   }
 
-  // Updates the selected intent and persists it with the draft.
-  async function changeIntent(value: string) {
-    selectedIntent = value as LiatirQuentaIntent;
-    await persistCurrentDraft();
+  // Attaches a Result: a completed one is explained, a failed or cancelled one is diagnosed.
+  async function attachResult(ids: string[]) {
+    attachPickerOpen = false;
+    const run = analysisRuns.runs.find((item) => item.id === ids[0]);
+    if (!currentConversation || !run) return;
+    selectedIntent = run.status === 'done' ? 'explain-result' : 'explain-failure';
+    await quentaStore.setConversationFocus(currentConversation.id, { kind: 'result', entityId: run.id }, selectedIntent);
+  }
+
+  async function detachResult() {
+    if (!currentConversation) return;
+    selectedIntent = 'chat';
+    await quentaStore.setConversationFocus(currentConversation.id, null, 'chat');
   }
 
   // Opens Quenta in a dedicated window, deep-linking the current conversation.
@@ -393,13 +399,16 @@
 
   // Sends the composer draft to the current (or a new) conversation.
   async function sendDraft() {
-    const content = draft.trim();
-    if (!content) return;
     const conversation = currentConversation;
+    const focus = conversation?.focus;
+    const content = draft.trim() || (focus && canExplainAttachment ? quentaPromptForFocus(selectedIntent, focus) : '');
+    if (!content) return;
+    const intent = selectedIntent;
     draft = '';
-    await quentaStore.sendMessage(content, selectedIntent, {
+    selectedIntent = 'chat';
+    await quentaStore.sendMessage(content, intent, {
       conversationId: conversation?.id,
-      focus: conversation?.focus,
+      focus,
     });
   }
 
@@ -555,7 +564,7 @@
       selectedIntent = launch.intent;
       replaceState(consumedQuentaUrl(page.url), page.state);
     }
-    await quentaStore.init();
+    await Promise.all([quentaStore.init(), analysisRuns.init()]);
     let launchConversation: LiatirQuentaConversation | null = null;
     if (launch) {
       launchConversation = await prepareDeepLink(launch);
@@ -1261,17 +1270,33 @@
           <div class="border-t border-border bg-surface p-4 flex justify-center w-full">
             <div class="max-w-4xl w-full">
               <div class="rounded-2xl border border-border bg-surface shadow-sm transition-colors focus-within:border-brand/60 focus-within:ring-2 focus-within:ring-brand/10">
-                {#if currentConversation.focus}
-                  <div class="px-3 pt-3" data-testid="quenta-focus-context">
-                    <div class="inline-flex max-w-full items-center gap-2 rounded-full bg-brand/8 px-2.5 py-1 text-[10px] text-brand">
-                      <Icon icon={currentConversation.focus.kind === 'result' ? 'lucide:chart-no-axes-combined' : 'lucide:terminal'} class="h-3.5 w-3.5 shrink-0" />
-                      <span class="shrink-0 font-semibold">
-                        {currentConversation.focus.kind === 'result' ? 'Result' : 'Job'}
-                      </span>
-                      <span class="truncate text-text-muted">{currentConversation.focus.entityId}</span>
-                    </div>
-                  </div>
-                {/if}
+                <div class="flex flex-wrap items-center gap-1.5 px-3 pt-3" data-testid="quenta-focus-context">
+                  {#if attachment}
+                    <span
+                      class="inline-flex max-w-full items-center gap-1.5 rounded-full border py-0.5 pl-2.5 pr-1 text-[11px] {attachment.failed ? 'border-amber-500/40 bg-amber-500/10 text-amber-800' : 'border-brand/30 bg-brand/8 text-text'}"
+                      data-testid="quenta-attachment"
+                      data-kind={attachment.focus.kind}
+                      data-entity-id={attachment.focus.entityId}
+                    >
+                      <Icon icon={attachment.failed ? 'lucide:triangle-alert' : 'lucide:chart-no-axes-combined'} class="h-3.5 w-3.5 shrink-0" />
+                      <span class="shrink-0 font-semibold">{attachment.failed ? 'Failure' : 'Result'}</span>
+                      <span class="truncate">{attachment.label}</span>
+                      <button type="button" aria-label="Remove attachment" class="rounded-full p-0.5 opacity-60 hover:opacity-100" disabled={sending} onclick={detachResult}>
+                        <Icon icon="lucide:x" class="h-3 w-3" />
+                      </button>
+                    </span>
+                  {/if}
+                  <button
+                    type="button"
+                    data-testid="quenta-attach"
+                    disabled={sending}
+                    class="inline-flex items-center gap-1 rounded-full border border-dashed border-border-2 px-2.5 py-0.5 text-[11px] text-text-muted transition-colors hover:border-brand hover:text-brand disabled:opacity-50"
+                    onclick={() => attachPickerOpen = true}
+                  >
+                    <Icon icon="lucide:paperclip" class="h-3 w-3" />
+                    {attachment ? 'Change' : 'Attach a Result or failure (optional)'}
+                  </button>
+                </div>
                 <textarea
                   class="min-h-14 w-full resize-none border-0 bg-transparent px-4 pb-1 pt-3 text-sm leading-relaxed text-text outline-none placeholder:text-text-subtle disabled:cursor-not-allowed disabled:opacity-60"
                   rows="2"
@@ -1283,16 +1308,6 @@
                   data-testid="quenta-input"
                 ></textarea>
                 <div class="flex items-center gap-2 px-2 pb-2 pt-1">
-                  <Select
-                    value={selectedIntent}
-                    options={intentOptions}
-                    onchange={(value) => void changeIntent(value)}
-                    disabled={sending}
-                    placeholder="Choose task"
-                    class="w-44"
-                    buttonClass="!rounded-full !border-0 !bg-surface-2 !px-2.5 !py-1 !shadow-none focus:!ring-0"
-                    searchable={false}
-                  />
                   <button
                     type="button"
                     class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-medium transition {thinkingEnabledDraft ? 'bg-brand/10 text-brand' : 'text-text-muted hover:bg-surface-2'}"
@@ -1327,7 +1342,7 @@
                         type="button"
                         class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand text-white shadow-sm shadow-brand-shadow/30 transition hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-40"
                         onclick={sendDraft}
-                        disabled={!draft.trim() || !localAIReady}
+                        disabled={!(draft.trim() || canExplainAttachment) || !localAIReady}
                         aria-label="Send message"
                         title="Send message"
                         data-testid="quenta-send"
@@ -1350,3 +1365,14 @@
     </div>
   </main>
 </div>
+
+<ResultPickerDialog
+  open={attachPickerOpen}
+  results={attachableResults}
+  selected={attachment?.focus.kind === 'result' ? [attachment.focus.entityId] : []}
+  multiple={false}
+  title="Attach a Result or failure"
+  description="Quenta explains a completed Result, or helps understand why a run failed. Pick one."
+  onclose={() => attachPickerOpen = false}
+  onconfirm={attachResult}
+/>

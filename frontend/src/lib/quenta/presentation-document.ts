@@ -2,7 +2,7 @@ import type { LiatirQuentaPresentation } from '@liatir/core';
 import sandboxHtml from '../../../static/presentation-sandbox.html?raw';
 
 /** Export remains fully offline, with its own restrictive policy and embedded runtime. */
-export async function presentationHtml(presentation: LiatirQuentaPresentation): Promise<string> {
+export async function presentationHtml(presentation: LiatirQuentaPresentation & { runtimeSource: string }): Promise<string> {
   const encoded = JSON.stringify(presentation).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
   const html = sandboxHtml.replace('const initial = null;', () => `const initial = ${encoded};`);
   const script = html.match(/<script>([\s\S]*?)<\/script>/)?.[1];

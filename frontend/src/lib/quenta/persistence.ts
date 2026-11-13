@@ -29,6 +29,14 @@ export type QuentaConversationMutation =
     updatedAt: number;
   }
   | {
+    /** Attaches a Result or Job to the conversation, or detaches it with `null`. */
+    kind: 'focus';
+    conversationId: string;
+    focus: LiatirQuentaFocus | null;
+    draftIntent: LiatirQuentaIntent;
+    updatedAt: number;
+  }
+  | {
     kind: 'append-message';
     conversationId: string;
     message: LiatirQuentaMessage;
@@ -101,6 +109,14 @@ export function applyConversationMutation(
     }
     if (mutation.kind === 'tags') {
       return { ...conversation, tags: mutation.tags, updatedAt: mutation.updatedAt };
+    }
+    if (mutation.kind === 'focus') {
+      return {
+        ...conversation,
+        focus: mutation.focus ?? undefined,
+        draftIntent: mutation.draftIntent,
+        updatedAt: mutation.updatedAt,
+      };
     }
     if (mutation.kind === 'draft') {
       return {

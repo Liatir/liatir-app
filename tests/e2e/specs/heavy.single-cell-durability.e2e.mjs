@@ -58,7 +58,7 @@ export const tests = [{
   requiredEnv: ['LIATIR_STUDY_DURABILITY'],
   async run({ browser, expect, rootDir }) {
     await waitForLiatirBridge(browser);
-    if (process.env.LIATIR_STUDY_DEV_FRONTEND === '1') await hardNavigateInApp(browser, 'http://localhost:5173/');
+    if (process.env.LIATIR_STUDY_DEV_FRONTEND === '1') await hardNavigateInApp(browser, 'http://localhost:38173/');
     await openSandboxWorkspace(browser);
     const installed = pc ? JSON.parse(fs.readFileSync(path.join(rootDir, 'showcases/single-cell-foundation-benchmark/validation/scgpt-cuda-native-install.json'), 'utf8')).result
       : await browser.execute((request) => window.Liatir.invoke('lia_ai_runtime_box_install', request), {

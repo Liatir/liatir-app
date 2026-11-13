@@ -360,3 +360,111 @@ installs whose managed Ollama predates it. Test models were removed afterwards.
   selected (owner request). The prompt says the data is absent and requires the page
   to state it and mark numbers/charts as illustrative; the Create button needs
   Results or a description. Real-app coverage added to the workbench spec.
+- Presentations page: the long native-checkbox list became chips plus a
+  **Choose Results…** dialog (`PresentationResultsDialog`: search, app-styled
+  checkboxes, draft selection applied only on "Use selected"). Workbench spec
+  updated to the chips and the dialog; 3/3 pass.
+- **Presentations rebuilt as a chat with a Stage** (owner, 2026-11-12: "it must be a
+  chat, like ndoc's Stage, not a form"). `/quenta/presentations` is now a conversation
+  (left) and a Stage (right). Each message is a turn that runs the same fixed
+  workflow and saves a new version as a Result; a follow-up passes the newest version
+  to revise (`PresentationOptions.previous`). The chat shows live stages
+  (`PresentationStages`: preparing data → writing slides, with streamed character
+  count → checking → one repair if needed → saving). Conversations are per workspace
+  (`presentation-threads.svelte.ts`, `quenta/presentation-threads.json`); generation
+  runs in the store, so leaving the page does not stop it, and a turn left running by
+  a closed app reloads as "interrupted". Output is slides: the frame runtime
+  (`stage-runtime.ts`, bundled by the Vite plugin) adds `LiatirStage.Deck`, so the
+  model only writes `{ title, body }` slides.
+  Verified on the rebuilt app: workbench spec (Result-attached chat, one repair,
+  stage frame, follow-up revision, free-topic page) and Quenta specs pass (8/8).
+  Found while testing: the `?result=` link was handled again when a new Result
+  arrived (the effect tracked `results`, and `page.url` keeps the query after
+  `replaceState`), opening a second empty conversation; it is now consumed once.
+- Quenta Chat (owner request): the task dropdown (Ask / Explain result / Explain
+  failure) was removed. A chat starts with nothing attached; **Attach a Result or
+  failure** opens the shared `ResultPickerDialog` (renamed from the presentation
+  picker; single choice here, failed/cancelled marked) and sets the conversation
+  focus through a new `focus` persistence mutation, which can also detach. The intent
+  follows the attachment: a fresh completed Result → explain-result, a failed one →
+  explain-failure (sending without typing uses the focus prompt); follow-ups are plain
+  questions about it. Deep links from Results/Jobs still open a focused chat.
+- Dev server moved from 5173 to **38173** (owner request, 2026-11-12): on this Mac
+  VS Code ("Code Helper") was listening on 5173, so `npm run dev` could not start
+  its strictPort Vite server. Changed in `frontend/vite.config.ts`, the local-dev
+  Tauri template and capability (regenerated with `npm run localdevconf`), and the
+  two heavy specs that load the dev frontend. Also: the UI gate's
+  `test:tauri:prepare` runs `npm ci --prefix frontend` and builds in the shared
+  `src-tauri/target`, so it must not run while the owner is using `npm run dev`.
+- **Presentation Stage kit** (owner, 2026-11-12: "a clean library the model reuses, not
+  everything from scratch"; shadcn/ui + Tailwind + Chart.js chosen). `frontend/stage-kit/`
+  holds shadcn/ui (new-york-v4) copies, Liatir charts on Chart.js (with the matrix and
+  box-plot plugins), Tailwind's in-page compiler with Liatir's tokens and tw-animate. The
+  `liatir-presentation-runtime` Vite plugin bundles it into one script (~1.0 MB minified,
+  no `eval`); `stage-kit/build.mjs` is the single build definition, shared with the tests.
+  The runtime is stored once under `quenta/presentation-runtimes/<sha256>.js` and
+  re-hashed on every read; a presentation names it by `runtimeId`. The kit first targeted
+  Preact via `preact/compat`: Radix's Slider thumb never appeared under it, so the owner
+  switched the runtime to React 19. `stage-kit` is type-checked by `npm run check`
+  (`tsc -p stage-kit`), outside svelte-check.
+- **Presentations are decks, not code** (owner, 2026-11-13; see
+  [the decision](../../decisions/stage-pages-are-documents-not-code.md)). Measured first on
+  the code design with `qwen3.5:9b`: 5 of 5 answers (three requests, two repaired) were
+  React code with syntax errors, so nothing would have opened. Now the model fills in a
+  deck under an Ollama JSON-Schema grammar: 45 element types (words, data and charts,
+  diagrams, interactive, decoration, and four one-level containers) on per-slide grids of
+  1–4 columns with `span`, seven accents and five backgrounds; a cover from the deck's
+  title and a closing slide are added by the kit. Source Results become tables `T1…`
+  (`spec/tables.ts`), described to the model with a few rows; data elements name a table
+  and its columns, and each request's schema lists only its own tables and columns. The
+  kit writes the source under every data element, or "AI-entered"/"Illustrative" for typed
+  values. Elements size themselves to their own cell with container queries (a flow in a
+  narrow column stacks; a cycle becomes a list), found on real decks at Stage width.
+  Coverage: `tests/unit/stage-deck.test.ts` and `tests/fixtures/stage-gallery.json` (every
+  element; the check's wording; values read from tables), and a real-app spec that opens
+  the gallery in the presentation frame. `scripts/validate-quenta-presentations.mjs` runs
+  four real requests (topic in Italian, docking Results in Italian, scRNA topic, 60-gene
+  differential expression) through the app's own prompt, schema, check and single repair.
+- Real-app screenshots of the frame are unreliable when the e2e window is not visible
+  (display asleep, window covered): WKWebView then stops `requestAnimationFrame`, which
+  Chart.js needs to size and draw, so charts look blank while the DOM is correct. The
+  gallery spec therefore asserts that the frame reports "ready" (every slide mounted, no
+  error), not pixels; slides are inspected visually in headless Chrome.
+- Deck measurements, `qwen3.5:9b` on the 16 GB Mac, 2026-11-13, with
+  `scripts/validate-quenta-presentations.mjs`. First full run: 3 of 4 first answers
+  accepted; the 60-gene request asked twice for a histogram of fold change split by
+  Direction, which the histogram did not allow, so it now stacks groups in shared ranges
+  (the request was sensible; the element was too narrow). Final run after that and the
+  container-query fixes: **4 of 4 usable** — three first answers, one after the single
+  repair (a threshold with 4 values for 2 labels, named exactly and fixed). Each answer
+  took 91–125 s for 540–900 output tokens with a 1.7–2.3k-token prompt (the code design
+  needed ~1,100–2,200 output tokens and 160–270 s, and none opened). The model used 23 of
+  the 45 element types across the eight accepted decks (charts, tables, key numbers,
+  flows, quizzes, a threshold slider, cards, decoration).
+- **Stage is a page, not slides** (owner correction, 2026-11-13: "don't call them slides,
+  they must not be slides; I said to call it Stage, it is a page"). The deck became a
+  **Stage page**: `spec/page.ts` (`sections` instead of `slides`), `liatir/page.tsx` draws
+  one scrolling page — header with title, subtitle and an index of section buttons,
+  sections one under the other, closing summary — with no slide navigation; sections rise
+  into view with a CSS scroll-driven animation only where supported (nothing can stay
+  hidden elsewhere). The Quenta mode is labelled **Stage** (switch, page title, "Open in
+  Stage" on Results, chat steps "Writing the page"); stored identifiers keep
+  "presentation" (see the decision). The sandbox draws `presentation.page` with
+  `LiatirStage.showPage`; the few deck-format Results made in dev on 2026-11-13 no longer
+  open ("rendered no content") and can be deleted. **Download HTML** on the Stage saves the
+  shown version through `presentationToHtml` (`utils/export-result.ts`), the same file the
+  Results export writes; PDF was not added (owner allowed HTML only if PDF is complicated:
+  the sandboxed frame cannot print, and the exported page scrolls inside an iframe).
+  Headless Chrome screenshots do not follow a scroll inside the frame, so section photos
+  are taken by hiding the other sections.
+- Stage page measurements, `qwen3.5:9b`, 2026-11-13, after the page change: two full runs
+  of the four requests gave 3 of 4 usable on the first answer each time (91–135 s); the
+  scRNA topic page failed twice on the threshold. First its data form (labelled series)
+  did not fit "a slider over a list of numbers", so the threshold now takes `NUMBERS`
+  (`{ name, values, labels? }` or `{ table, column, label? }`) and groups more than 60
+  numbers into ranges. Then the repair returned the first answer **byte for byte**: the
+  previous answer was pasted at the end of the repair request, so the model read it last
+  and copied it. `repairMessages` now sends the answer as the model's own turn followed
+  by the problems only; rerun, the same request was fixed by the repair (8 sections).
+  Verified after the change: `test:verify` (832 unit tests), the real-app workbench and
+  Quenta specs (10 passed, 5 skipped as before), Stage gallery in headless Chrome.

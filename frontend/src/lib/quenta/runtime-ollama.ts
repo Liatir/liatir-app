@@ -145,6 +145,7 @@ export class OllamaQuentaRuntime implements QuentaRuntime {
       temperature: request.temperature,
       thinkingEnabled: request.thinkingEnabled ?? false,
       format: request.format ?? null,
+      maxOutputTokens: request.maxOutputTokens ?? null,
       onEvent: eventChannel,
     }) as {
       model?: string;

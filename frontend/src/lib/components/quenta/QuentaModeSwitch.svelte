@@ -1,6 +1,7 @@
 <!--
-  Quenta's two modes, side by side in the same place on both pages: Chat explains things; Presentations
-  turns selected Results into an interactive page. Plain links, so each mode keeps its own route.
+  Quenta's two modes, side by side in the same place on both pages: Chat explains things; Stage builds
+  an interactive page, about selected Results or any topic. Plain links, so each mode keeps its own
+  route (the Stage's route and identifiers keep their earlier name, presentations).
 -->
 <script lang="ts">
   import Icon from '@iconify/svelte';
@@ -9,7 +10,7 @@
 
   const modes = [
     { id: 'chat', label: 'Chat', icon: 'lucide:messages-square', href: '/quenta' },
-    { id: 'presentations', label: 'Presentations', icon: 'lucide:presentation', href: '/quenta/presentations' },
+    { id: 'presentations', label: 'Stage', icon: 'lucide:monitor-play', href: '/quenta/presentations' },
   ] as const;
 </script>
 

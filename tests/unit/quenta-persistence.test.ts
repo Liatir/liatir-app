@@ -49,6 +49,22 @@ describe('Quenta conversation persistence', () => {
     expect(events).toEqual(['create:start', 'create:end', 'delete']);
   });
 
+  it('attaches and detaches a Result, keeping the messages', () => {
+    const withMessage = applyConversationMutation([conversation], {
+      kind: 'append-message', conversationId: conversation.id,
+      message: { id: 'm', role: 'user', intent: 'chat', content: 'Hello', createdAt: 2 },
+    });
+    const attached = applyConversationMutation(withMessage, {
+      kind: 'focus', conversationId: conversation.id, focus: { kind: 'result', entityId: 'run-1' }, draftIntent: 'explain-failure', updatedAt: 3,
+    });
+    expect(attached[0]).toMatchObject({ focus: { kind: 'result', entityId: 'run-1' }, draftIntent: 'explain-failure' });
+    const detached = applyConversationMutation(attached, {
+      kind: 'focus', conversationId: conversation.id, focus: null, draftIntent: 'chat', updatedAt: 4,
+    });
+    expect(detached[0].focus).toBeUndefined();
+    expect(detached[0].messages).toHaveLength(1);
+  });
+
   it('continues after a failed write', async () => {
     const enqueue = createSerializedWriteQueue();
     const failed = enqueue(async () => { throw new Error('write failed'); });

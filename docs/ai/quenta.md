@@ -4,7 +4,7 @@ Quenta is a local, read-only AI inside Liatir. It helps explain app
 state, bioinformatics workflows, Results, Jobs, pipeline structure, and failure
 logs using local context.
 
-Chat provides guidance. A separate Presentations mode builds an offline HTML page from Results you select. It does not run scientific analyses.
+Chat provides guidance. A separate Stage mode builds an interactive offline page, about Results you select or about any topic. It does not run scientific analyses.
 
 ## What it can do
 
@@ -68,6 +68,13 @@ Quenta will open with that Result as its focus. Focused Results are forced
 into the retrieval context so the model sees the selected run metadata,
 structured output, output files, and recent logs.
 
+You can also attach one from inside a chat. By default you just talk to
+Quenta; choose **Attach a Result or failure** above the message box to pick a
+completed Result (Quenta explains it) or a failed or cancelled one (Quenta
+explains what went wrong). With something attached you can send without typing
+to get the explanation, or ask your own question about it. Remove it with the X
+on its label to go back to a plain chat.
+
 ## Explaining a Job
 
 Open **Jobs** and choose **Explain with Quenta**. Quenta uses
@@ -91,26 +98,48 @@ Good Quenta answers should:
 If a source is missing, Quenta should say what is missing instead of filling
 the gap.
 
-## Interactive presentations
+## Stage
 
 Quenta has two modes, switched at the top right of its pages: **Chat** and
-**Presentations**. Open **Presentations**, or choose **Create presentation** on a
-Result.
-Tick one or more completed Results and describe how the page should show them,
-or tick none and describe any topic, for example *how molecular docking works,
-explained simply with a diagram*. Quenta creates an interactive HTML page using
-Preact, a small page-building library that ships inside Liatir. A page about
-Results receives a saved copy of their structured outputs. A page about a topic
-is written from the model's general knowledge: it says so, and any numbers or
-charts on it are marked as illustrative examples, not measurements. Either way the
-page cannot reach the internet, external resources, your files or Liatir commands.
+**Stage**. Stage is also a chat: on the left you ask, on the right the **Stage**
+shows the page Quenta builds. Open **Stage**, or choose **Open in Stage** on a Result
+to start a conversation with that Result attached.
 
-Liatir checks that the page renders and allows one correction attempt on failure.
-A successful presentation is saved as its own Result with a standalone offline
-HTML file and the source snapshots/code. Reopen it from Results or export its
-HTML file. Original scientific Results are unchanged. Generation can be cancelled;
-failed or cancelled attempts retain their diagnostic Result.
+Write what you want in your own words, for example *explain how molecular docking
+works, simply, with a diagram*. Use **Add Results** to build the page on real data,
+or attach nothing for a page about any topic. While Quenta works, the chat shows
+each step: preparing the data, writing the page, checking it, and saving. The
+finished page appears on the Stage: one page that scrolls, with a header, a short
+index of its sections and a closing summary. Ask for changes in the next message,
+such as *make the chart larger*: Quenta revises the current version into a new one,
+and **Show on stage** brings back any earlier version. **Download HTML** saves the
+page on the Stage as one file that opens offline in any browser.
 
-The presentation's interpretation is AI-generated. Check its figures, units and
-conclusions against the cited source Results. The ordinary chat mode remains
-read-only; this dedicated mode saves only the presentation requested by you.
+Quenta does not write the page as program code. It fills in a description of it,
+section by section, choosing from more than forty ready-made elements that ship
+inside Liatir: text, lists, steps and timelines; charts (bars, lines, scatter, pies,
+histograms, box plots, heatmaps, funnels) and sortable tables; diagrams such as
+flows, cycles and overlapping circles; interactive pieces such as a threshold
+slider, quizzes, tabs, pop-ups, flip cards and step-by-step walkthroughs; and
+decoration such as banners, icons, drawings and backgrounds. Each section is a grid
+of up to four columns. Liatir draws the description, so every page has the same look
+and a small local model cannot produce a page that fails to open.
+
+A page about Results shows their numbers by reading them from the saved tables of
+those Results, never from the model's memory, and says under each chart or number
+which Result and table it comes from. A number the model types itself is marked
+**AI-entered**. A page about a topic is written from the model's general knowledge:
+any numbers or charts on it are marked **Illustrative**, not measurements. Either way
+the page cannot reach the internet, external resources, your files or Liatir
+commands.
+
+Liatir checks each version before showing it: that every element is complete, that
+every table and column it names exists, and that the page displays. If something is
+wrong, Quenta gets one chance to correct exactly the points found. Every version is
+saved as its own Result with a standalone offline HTML file and its sources and
+content; the conversations are kept per workspace. Original scientific Results are
+unchanged. **Stop** cancels a version in progress.
+
+The page's interpretation is AI-generated. Check its figures, units and conclusions
+against the cited source Results. The ordinary chat mode remains read-only; Stage
+saves only the page requested by you.

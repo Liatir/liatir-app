@@ -104,6 +104,8 @@ export interface LiatirQuentaChatRequest {
   temperature: number;
   thinkingEnabled?: boolean;
   format?: JsonValue;
+  /** Longest answer allowed, in tokens; presentations need more room than a chat reply. */
+  maxOutputTokens?: number;
 }
 
 export interface LiatirQuentaChatResponse {
@@ -165,7 +167,11 @@ export interface LiatirQuentaPresentationSource {
   output: JsonValue;
 }
 
-/** Frozen evidence and generated code; rendering has no authority over the app. */
+/**
+ * What Quenta builds on the Stage, saved as a Result: frozen evidence and the generated page. Named
+ * "presentation" in stored data and code; users see it as a Stage page. Rendering has no authority
+ * over the app.
+ */
 export interface LiatirQuentaPresentation {
   schemaVersion: 1;
   id: string;
@@ -174,7 +180,19 @@ export interface LiatirQuentaPresentation {
   createdAt: number;
   model: string;
   sources: LiatirQuentaPresentationSource[];
-  javascript: string;
-  css: string;
-  runtimeSource: string;
+  /**
+   * The Stage page as a document (the model fills in data, it writes no code). Its format belongs to
+   * the runtime named by `runtimeId`, which draws it; a later runtime never has to read an older page.
+   */
+  page?: JsonValue;
+  /** Generated page code. Only in presentations made before Stage pages; never generated any more. */
+  javascript?: string;
+  css?: string;
+  /**
+   * The frame runtime (React, the Stage kit, Tailwind) as script text. Embedded by presentations made
+   * before the runtime was stored once; newer ones name it with `runtimeId` instead.
+   */
+  runtimeSource?: string;
+  /** SHA-256 (hex) of the stored runtime script this presentation was made with. */
+  runtimeId?: string;
 }

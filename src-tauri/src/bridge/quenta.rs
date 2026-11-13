@@ -849,6 +849,7 @@ pub async fn lia_quenta_ollama_chat(
     temperature: f64,
     thinking_enabled: Option<bool>,
     format: Option<Value>,
+    max_output_tokens: Option<u32>,
     on_event: Channel<QuentaChatStreamEvent>,
 ) -> Result<Value, String> {
     if !request_id_is_safe(&request_id) {
@@ -882,7 +883,9 @@ pub async fn lia_quenta_ollama_chat(
         "options": {
             "temperature": temperature.clamp(0.0, 2.0),
             "num_ctx": 16384,
-            "num_predict": if thinking_enabled { 4096 } else { 2048 }
+            "num_predict": max_output_tokens
+                .map(|tokens| tokens.clamp(256, 8192))
+                .unwrap_or(if thinking_enabled { 4096 } else { 2048 })
         }
     });
     if let Some(format) = format {

@@ -1,3 +1,4 @@
+import type { LiatirQuentaPresentation } from '@liatir/core';
 import type { ToolOutput, ToolSection } from '$lib/types/tool-output';
 import type { AnalysisRunMeta } from '$lib/stores/analysisRuns.svelte';
 import { fmtDuration, fmtBytes } from '$lib/utils';
@@ -117,10 +118,18 @@ function renderSection(s: ToolSection, chartIdx: { n: number }): string {
   }
 }
 
+/** A Stage page as one standalone offline HTML file: the Stage's download and the Results export. */
+export async function presentationToHtml(presentation: LiatirQuentaPresentation): Promise<string> {
+  const { presentationHtml } = await import('$lib/quenta/presentation-document');
+  // Older pages embed their runtime; newer ones name a stored one, loaded only when needed.
+  const runtimeSource = presentation.runtimeSource
+    ?? await (await import('$lib/quenta/presentations')).loadPresentationRuntime(presentation);
+  return presentationHtml({ ...presentation, runtimeSource });
+}
+
 export async function exportToHtml(run: AnalysisRunMeta, output: ToolOutput): Promise<string> {
   if (output.sections.length === 1 && output.sections[0].type === 'html-presentation') {
-    const { presentationHtml } = await import('$lib/quenta/presentation-document');
-    return presentationHtml(output.sections[0].presentation);
+    return presentationToHtml(output.sections[0].presentation);
   }
   const toolLabel = run.tool.startsWith('script:') ? 'Python Script' : (TOOL_LABELS[run.tool] ?? run.tool);
   const date = new Date(run.startedAt).toLocaleString();

@@ -1,0 +1,79 @@
+/*
+  The presentation theme, compiled in the frame by the Tailwind browser compiler. Colours follow
+  Liatir's own tokens (frontend/src/app.css) and are exposed under shadcn's names, so the copied shadcn
+  components and the element renderers share one look. A page's accent overrides `--primary`, `--ring`
+  and `--accent` (liatir/theme.ts).
+*/
+/* Presentations are always light: shadcn's dark: styles would otherwise follow the viewer's OS
+   setting and mix with the light tokens below. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+:root {
+  color-scheme: light;
+  --radius: 0.625rem;
+  --background: #ffffff;
+  --foreground: #18181b;
+  --card: #ffffff;
+  --card-foreground: #18181b;
+  --popover: #ffffff;
+  --popover-foreground: #18181b;
+  --primary: #0a948b;
+  --primary-foreground: #ffffff;
+  --secondary: #f0f0f3;
+  --secondary-foreground: #18181b;
+  --muted: #f4f4f6;
+  --muted-foreground: #71717a;
+  --accent: #e6f4f3;
+  --accent-foreground: #012723;
+  --destructive: #dc2626;
+  --border: #e2e2e8;
+  --input: #e2e2e8;
+  --ring: #0a948b;
+}
+
+@layer base {
+  * { @apply border-border outline-ring/50; }
+  body { @apply bg-background text-foreground font-sans antialiased; }
+}
+
+/* Sections rise into view as the page scrolls, where the browser supports scroll-driven animations;
+   elsewhere (and with reduced motion) they are simply shown, so nothing can stay hidden. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    [data-reveal] {
+      animation: stage-reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 30%;
+    }
+  }
+}
+@keyframes stage-reveal {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: none; }
+}

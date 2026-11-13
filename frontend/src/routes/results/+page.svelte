@@ -258,8 +258,8 @@
       testId="result-present"
       onclick={() => goto(`/quenta/presentations?result=${encodeURIComponent(run.id)}`)}
     >
-      <Icon icon="lucide:presentation" class="h-3.5 w-3.5 shrink-0" />
-      Create presentation
+      <Icon icon="lucide:monitor-play" class="h-3.5 w-3.5 shrink-0" />
+      Open in Stage
     </Button>
   {/if}
 

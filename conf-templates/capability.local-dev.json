@@ -1,10 +1,10 @@
 {
   "identifier": "local-dev",
-  "description": "Authorizes the Vite dev server (devUrl http://localhost:5173) to use the same commands as local content. Only applied by localdevconf (npm run dev); never used by build:local or prod.",
+  "description": "Authorizes the Vite dev server (devUrl http://localhost:38173) to use the same commands as local content. Only applied by localdevconf (npm run dev); never used by build:local or prod.",
   "windows": ["*"],
   "webviews": ["*"],
   "remote": {
-    "urls": ["http://localhost:5173/*"]
+    "urls": ["http://localhost:38173/*"]
   },
   "permissions": [
     "core:default",

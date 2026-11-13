@@ -1,0 +1,153 @@
+{
+  "sources": [
+    {
+      "resultId": "gallery-docking",
+      "label": "Docking of 6 ligands",
+      "tool": "molecular-docking",
+      "endedAt": 1794400000000,
+      "output": {
+        "sections": [
+          {
+            "type": "table",
+            "label": "Best pose per ligand",
+            "headers": ["Ligand", "Vina score (kcal/mol)", "Poses", "Family", "Weight (Da)"],
+            "rows": [
+              ["imatinib", -11.2, 9, "kinase inhibitor", 493.6],
+              ["nilotinib", -10.4, 9, "kinase inhibitor", 529.5],
+              ["dasatinib", -9.1, 9, "kinase inhibitor", 488.0],
+              ["ponatinib", -10.9, 8, "kinase inhibitor", 532.6],
+              ["aspirin", -5.3, 9, "control", 180.2],
+              ["caffeine", -4.8, 7, "control", 194.2]
+            ]
+          },
+          { "type": "stats", "items": [{ "label": "Receptor", "value": "1IEP (ABL kinase)" }, { "label": "Exhaustiveness", "value": 8 }] },
+          { "type": "number", "label": "Search box edge", "value": 22, "unit": "Å" }
+        ]
+      }
+    },
+    {
+      "resultId": "gallery-reads",
+      "label": "Read filtering",
+      "tool": "fastp",
+      "endedAt": 1794400100000,
+      "output": {
+        "sections": [
+          { "type": "table", "label": "Reads per step", "headers": ["Step", "Reads"], "rows": [["Raw", 1200000], ["Trimmed", 1150000], ["Quality filtered", 980000], ["Deduplicated", 760000]] },
+          { "type": "text", "label": "Notes", "content": "Adapters were removed before quality filtering." }
+        ]
+      }
+    }
+  ],
+  "page": {
+    "title": "Stage kit gallery",
+    "subtitle": "Every element a Stage page can show",
+    "accent": "teal",
+    "sections": [
+      {
+        "title": "Words",
+        "columns": 2,
+        "blocks": [
+          { "type": "text", "text": "A paragraph with **bold**, *italic* and `code`.", "size": "large" },
+          { "type": "heading", "text": "A sub-heading" },
+          { "type": "bullets", "items": ["First point", "Second point", "Third point"], "marker": "check" },
+          { "type": "steps", "items": [{ "title": "Prepare", "text": "Clean the structure" }, { "title": "Dock" }, { "title": "Rank", "text": "Sort by score" }] },
+          { "type": "timeline", "items": [{ "when": "Day 1", "title": "Samples collected" }, { "when": "Day 3", "title": "Sequenced", "text": "Paired-end reads" }] },
+          { "type": "quote", "text": "All models are wrong, but some are useful.", "author": "George Box" },
+          { "type": "statement", "text": "One sentence that carries the section.", "span": 2 },
+          { "type": "callout", "tone": "warning", "text": "Scores rank poses; they are not measured affinities.", "title": "Limitation", "span": 2 }
+        ]
+      },
+      {
+        "title": "More words",
+        "columns": 2,
+        "background": "tint",
+        "blocks": [
+          { "type": "code", "code": "vina --receptor 1iep.pdbqt --ligand imatinib.pdbqt", "caption": "The command behind one run" },
+          { "type": "terms", "items": [{ "term": "Pose", "text": "One way the ligand sits in the pocket." }, { "term": "Score", "text": "An estimate of how well it fits." }] },
+          { "type": "comparison", "left": { "title": "Docking", "items": ["Fast", "Approximate"] }, "right": { "title": "Experiment", "items": ["Slow", "Measured"] }, "span": 2 },
+          { "type": "icon-cards", "items": [{ "icon": "atom", "title": "Structure", "text": "Where the atoms are" }, { "icon": "target", "title": "Pocket" }, { "icon": "scale", "title": "Score" }, { "icon": "microscope", "title": "Validation" }], "span": 2 },
+          { "type": "badges", "items": ["in silico", "ABL kinase", "AutoDock Vina"] },
+          { "type": "facts", "items": [{ "label": "Receptor", "value": "1IEP" }, { "label": "Ligands", "value": "6" }] }
+        ]
+      },
+      {
+        "title": "Numbers from the Results",
+        "subtitle": "Read from the saved tables, never retyped",
+        "columns": 3,
+        "blocks": [
+          { "type": "key-number", "label": "Best score", "value": { "table": "T1", "column": "Vina score (kcal/mol)", "stat": "min" }, "unit": "kcal/mol", "note": "lower is better", "trend": "down" },
+          { "type": "key-number", "label": "Ligands", "value": { "table": "T1", "column": "Ligand", "stat": "count" } },
+          { "type": "key-number", "label": "Typed value", "value": "42", "unit": "units" },
+          { "type": "bar-chart", "data": { "table": "T1", "x": "Ligand", "y": ["Vina score (kcal/mol)"], "sort": "ascending" }, "title": "Score by ligand", "unit": "kcal/mol", "span": 2 },
+          { "type": "progress", "items": [{ "label": "Kept", "percent": 63 }, { "label": "Removed", "percent": 37 }] },
+          { "type": "table", "data": { "table": "T1" }, "title": "All ligands", "span": 3 }
+        ]
+      },
+      {
+        "title": "Charts",
+        "columns": 3,
+        "blocks": [
+          { "type": "line-chart", "data": { "labels": ["0 ns", "10 ns", "20 ns", "30 ns"], "series": [{ "name": "RMSD (Å)", "values": [0, 1.2, 1.5, 1.4] }] }, "title": "Typed line", "area": true },
+          { "type": "pie-chart", "data": { "table": "T4", "x": "Step", "y": ["Reads"] }, "title": "Reads by step" },
+          { "type": "scatter-chart", "data": { "table": "T1", "x": "Weight (Da)", "y": "Vina score (kcal/mol)", "group": "Family" }, "title": "Weight against score" },
+          { "type": "histogram", "data": { "table": "T1", "y": ["Vina score (kcal/mol)"], "group": "Family" }, "title": "Score distribution by family", "bins": 4 },
+          { "type": "box-plot", "data": { "table": "T1", "y": ["Vina score (kcal/mol)"], "group": "Family" }, "title": "Score by family", "unit": "kcal/mol" },
+          { "type": "heatmap", "data": { "labels": ["Gene A", "Gene B", "Gene C"], "series": [{ "name": "Sample 1", "values": [1, 3, 2] }, { "name": "Sample 2", "values": [2, 0.5, 4] }] }, "title": "Typed heatmap" }
+        ]
+      },
+      {
+        "title": "Diagrams",
+        "columns": 2,
+        "background": "dots",
+        "blocks": [
+          { "type": "flow", "items": [{ "title": "Receptor", "text": "The protein" }, { "title": "Docking" }, { "title": "Ranked poses" }], "span": 2 },
+          { "type": "cycle", "items": [{ "title": "Design" }, { "title": "Dock" }, { "title": "Test" }, { "title": "Learn" }] },
+          { "type": "venn", "sets": ["Docked", "Soluble", "Selective"], "overlap": "Leads" },
+          { "type": "funnel", "data": { "table": "T4", "x": "Step", "y": ["Reads"] }, "title": "Reads kept", "unit": "reads", "span": 2 }
+        ]
+      },
+      {
+        "title": "Interactive",
+        "columns": 2,
+        "blocks": [
+          { "type": "threshold", "data": { "table": "T1", "column": "Vina score (kcal/mol)", "label": "Ligand" }, "label": "Score limit", "pass": "below", "unit": "kcal/mol", "span": 2 },
+          { "type": "accordion", "items": [{ "title": "What is a pose?", "text": "One placement of the ligand." }, { "title": "What is a score?", "text": "An estimate of fit." }] },
+          { "type": "quiz", "question": "Which score is better?", "options": ["-5.3", "-11.2"], "answer": 2, "explanation": "Lower means a better fit." },
+          { "type": "walkthrough", "items": [{ "title": "Open the Result", "text": "Start from the table." }, { "title": "Sort by score", "text": "The best pose comes first." }] },
+          { "type": "flip-cards", "items": [{ "front": "Ligand", "back": "The small molecule" }, { "front": "Receptor", "back": "The protein" }] },
+          { "type": "checklist", "items": ["Check the receptor", "Check the box", "Check the scores"] },
+          { "type": "reveal", "button": "Show the answer", "text": "Imatinib ranks first." },
+          { "type": "hint", "term": "Exhaustiveness", "text": "How hard the search looks for poses." }
+        ]
+      },
+      {
+        "title": "Decoration",
+        "columns": 3,
+        "background": "grid",
+        "blocks": [
+          { "type": "banner", "title": "A coloured panel", "text": "For the one message of a section.", "icon": "sparkles", "span": 3 },
+          { "type": "illustration", "name": "dna", "caption": "dna" },
+          { "type": "illustration", "name": "molecule", "caption": "molecule" },
+          { "type": "illustration", "name": "cells", "caption": "cells" },
+          { "type": "divider", "label": "A divider", "span": 3 },
+          { "type": "icon", "name": "flask", "label": "An icon" },
+          { "type": "spacer", "size": "small" },
+          { "type": "illustration", "name": "network" }
+        ]
+      },
+      {
+        "title": "Containers",
+        "columns": 2,
+        "background": "gradient",
+        "blocks": [
+          { "type": "card", "title": "A card", "columns": 2, "blocks": [{ "type": "illustration", "name": "waves" }, { "type": "illustration", "name": "rings" }] },
+          { "type": "grid", "columns": 2, "blocks": [{ "type": "key-number", "label": "Left", "value": "A" }, { "type": "key-number", "label": "Right", "value": "B" }] },
+          { "type": "tabs", "style": "buttons", "tabs": [{ "label": "Chart", "blocks": [{ "type": "bar-chart", "data": { "table": "T4", "x": "Step", "y": ["Reads"] }, "horizontal": true }] }, { "label": "Table", "blocks": [{ "type": "table", "data": { "columns": ["Name", "Role"], "rows": [["imatinib", "drug"], ["aspirin", "control"]] } }] }], "span": 2 },
+          { "type": "tabs", "style": "dropdown", "tabs": [{ "label": "First view", "blocks": [{ "type": "text", "text": "Chosen from a dropdown." }] }, { "label": "Second view", "blocks": [{ "type": "text", "text": "The other view." }] }] },
+          { "type": "popup", "button": "More detail", "title": "In a window", "blocks": [{ "type": "text", "text": "Shown above the page." }] }
+        ]
+      }
+    ],
+    "closing": { "title": "That is the whole kit", "text": "Forty-five elements, one consistent look." }
+  }
+}

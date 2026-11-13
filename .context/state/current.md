@@ -11,13 +11,21 @@ and in the plans under `history/`; the readiness of each product area, with its 
 not committed or published. Plugins are shared across workspaces (existing IDs kept);
 Python Scripts stay workspace-owned with mandatory SDK I/O validation, direct and
 pipeline execution and independent copies; seven simulation presets; Quenta's
-16 GB/32 GB profiles (download only on choice) and offline Preact presentations.
+16 GB/32 GB profiles (download only on choice) and Quenta's **Stage** mode: a chat beside
+a live Stage, where the model fills in a page document (one scrolling page of sections,
+45 element types, numbers read from the Results' tables) that the Stage kit draws —
+React, shadcn/ui, Chart.js, Tailwind — downloadable as HTML; see
+[Stage pages are documents](../decisions/stage-pages-are-documents-not-code.md).
 Direct runs survive a workspace switch; leaving with a running pipeline asks first.
 Root version 1.0.0, release notes in `docs/release-notes-v1.md`. Verify, Rust and
 UI gates pass (one cold-start test flake, passing on rerun). After a measured
 comparison the owner kept `qwen3.5:9b` for the 16 GB profile instead of
 `gemma4:12b`; the 32 GB profile is `qwen3.8:27b`. Excluded: long-workflow
 validation, publication. Evidence: [implementation ledger](./roadmap/liatir-1.0.md).
+
+**Next, in order (owner, 2026-11-12):** finish the Quenta presentation mode on a
+shadcn/ui + Tailwind + Chart.js component kit; then write and carry out the
+[shadcn migration of the app](./roadmap/shadcn-ui.md) with shadcn-svelte.
 
 **Scientific Simulation Suite** — the owner asked on 2026-11-03 for a local, validated suite of
 molecular docking and virtual screening (AutoDock Vina, RDKit, Meeko, PDBFixer, Ringtail), neural

@@ -29,6 +29,8 @@ Markdown and stays complete and meaningful without the tool.
 
 - [Liatir 1.0.0 implementation](./state/roadmap/liatir-1.0.md) — active workbench changes and verification evidence.
 
+- [shadcn/ui across Liatir](./state/roadmap/shadcn-ui.md) — planned after the Quenta presentation mode: shadcn-svelte for the app, shadcn/ui React in presentations.
+
 - [R and Native Plugin runtime implementation](./state/r-and-native-plugin-runtime-support.md).
 
 - [Website download click counts](./truth/download-click-tracking.md) — minimal

@@ -14,7 +14,7 @@ export const tests = [{
       await waitForLiatirBridge(browser);
       // Confirm the new document before routing; a cold local server can otherwise
       // replace the requested study page with its initial dashboard afterward.
-      await hardNavigateInApp(browser, 'http://localhost:5173/');
+      await hardNavigateInApp(browser, 'http://localhost:38173/');
     }
     await openSandboxWorkspace(browser);
     await navigateInApp(browser, '/tools/single-cell/benchmark');

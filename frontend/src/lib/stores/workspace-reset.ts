@@ -14,6 +14,7 @@ import { confirm } from './confirm.svelte';
 import { apiConnections } from './apiConnections.svelte';
 import { pipelineStore } from './pipeline.svelte';
 import { pythonScripts } from './python-scripts.svelte';
+import { presentationThreads } from './presentation-threads.svelte';
 import { savedScripts } from './savedScripts.svelte';
 import { dataFiles } from './dataFiles.svelte';
 import { analysisRuns } from './analysisRuns.svelte';
@@ -40,6 +41,7 @@ setResetFn((scope) => {
   else { executionRuns.reset(); pipelineStore.reset(); }
   savedScripts.reset();
   pythonScripts.reset();
+  presentationThreads.reset();
   dataFiles.reset();
   analysisRuns.reset();
   externalWorkflowsStore.reset();

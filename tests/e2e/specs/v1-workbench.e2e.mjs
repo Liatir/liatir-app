@@ -1,5 +1,7 @@
 import { buildSync } from 'esbuild';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
+import { stageRuntimeBuild } from '../../../frontend/stage-kit/build.mjs';
 import { createServer } from 'node:http';
 import { openSandboxWorkspace, reloadLiatirApp, navigateInApp, expectNoVisibleRuntimeError } from '../support/liatir-app.mjs';
 
@@ -52,12 +54,18 @@ export const tests = [
       if (request.url === '/api/chat') {
         let body = ''; for await (const chunk of request) body += chunk;
         requests.push(JSON.parse(body)); calls++;
-        const freeTopic = JSON.stringify(requests.at(-1).messages).includes('not about any Result');
-        const javascript = freeTopic
-          ? "const {h,render}=Preact;render(h('h1',null,'Docking, explained (illustrative)'),document.getElementById('root'));"
-          : calls === 1 ? 'throw new Error("repair this fixture");' : "const {h,render}=Preact;render(h('h1',null,'Measured value: '+LIATIR_RESULTS[0].output.sections[0].value),document.getElementById('root'));";
+        const text = JSON.stringify(requests.at(-1).messages);
+        const kind = text.includes('not about any Result') ? 'topic' : text.includes('CURRENT PAGE') ? 'revision' : 'results';
+        // The answer is a Stage page, as the real model gives: the app checks it and the bundled runtime draws it.
+        const stagePage = (title, blocks) => ({ title, subtitle: 'Fixture', accent: 'teal', closing: { title: 'Summary', text: 'Done.' },
+          sections: [{ title: 'Section one', columns: 1, blocks }, { title: 'Section two', columns: 1, blocks: [{ type: 'text', text: 'Summary' }] }] });
+        const measured = (y) => [{ type: 'bar-chart', data: { table: 'T1', x: 'Name', y: [y] } }, { type: 'key-number', label: 'Measured value', value: { table: 'T1', column: 'Value', stat: 'max' } }];
+        const answer = kind === 'topic' ? stagePage('Docking explained', [{ type: 'flow', items: [{ title: 'Pose' }, { title: 'Score' }] }])
+          : kind === 'revision' ? stagePage('Revised offline report', measured('Value'))
+          // The first answer charts a text column, which the page check rejects: one repair follows.
+          : stagePage('Generated offline report', measured(calls === 1 ? 'Name' : 'Value'));
         response.writeHead(200, { 'content-type': 'application/x-ndjson' });
-        response.end(JSON.stringify({ model: 'fixture-local', message: { role: 'assistant', content: JSON.stringify({ title: 'Generated offline report', javascript, css: '' }) }, done: true }) + '\n');
+        response.end(JSON.stringify({ model: 'fixture-local', message: { role: 'assistant', content: JSON.stringify(answer) }, done: true }) + '\n');
         return;
       }
       response.writeHead(200, { 'content-type': 'application/json' });
@@ -79,43 +87,93 @@ export const tests = [
         await window.Liatir.invoke('lia_app_write_text', { rel: 'workspaces/__test__/analysis-runs/index.json', content: JSON.stringify(runs), createDirs: true });
       }, port);
       await reloadLiatirApp(browser); await openSandboxWorkspace(browser);
-      // Presentations are a Quenta mode: reachable from the switch at the top of Quenta.
+      // Stage is a Quenta mode: reachable from the switch at the top of Quenta.
       await navigateInApp(browser, '/quenta');
       const presentationsMode = await browser.$('[data-testid="quenta-mode-presentations"]');
       await presentationsMode.waitForDisplayed({ timeout: 20000 }); await presentationsMode.click();
       await browser.waitUntil(() => browser.execute(() => window.location.pathname === '/quenta/presentations'), { timeout: 20000, timeoutMsg: 'The Presentations mode did not open' });
       expect(await browser.execute(() => document.querySelector('[data-testid="quenta-mode-presentations"]')?.getAttribute('aria-current'))).toBe('page');
+      // "Create presentation" on a Result opens a new chat with that Result attached.
       await navigateInApp(browser, '/quenta/presentations?result=v1-presentation-source');
-      const selection = await browser.$('input[value="v1-presentation-source"]'); await selection.waitForDisplayed({ timeout: 20000 });
-      await browser.waitUntil(() => browser.execute(() => document.querySelector('input[value="v1-presentation-source"]')?.checked), { timeout: 10000 });
-      await browser.execute(() => [...document.querySelectorAll('button')].find(button => button.textContent.trim() === 'Create presentation').click());
+      const selection = await browser.$('[data-testid="presentation-selected"][data-result-id="v1-presentation-source"]'); await selection.waitForDisplayed({ timeout: 20000 });
+      const ask = async (text) => {
+        await browser.execute((value) => {
+          const field = document.querySelector('[data-testid="presentation-input"]');
+          field.value = value; field.dispatchEvent(new Event('input', { bubbles: true }));
+        }, text);
+        await browser.execute(() => document.querySelector('[data-testid="presentation-send"]').click());
+      };
       const history = () => browser.execute(async () => JSON.parse(await window.Liatir.invoke('lia_app_read_text', { rel: 'workspaces/__test__/analysis-runs/index.json' })));
-      await browser.waitUntil(async () => (await history()).some(run => run.tool === 'quenta-presentation' && run.label === 'Generated offline report'), { timeout: 60000, interval: 200 });
-      const run = (await history()).find(run => run.tool === 'quenta-presentation' && run.label === 'Generated offline report');
+      const doneVersions = () => browser.execute(() => document.querySelectorAll('[data-testid="presentation-quenta-turn"][data-status="done"]').length);
+
+      await ask('Show this result simply');
+      // The chat shows the stages while Quenta works.
+      await browser.waitUntil(() => browser.execute(() => Boolean(document.querySelector('[data-testid="presentation-stages"]')) || document.querySelectorAll('[data-testid="presentation-quenta-turn"][data-status="done"]').length > 0), { timeout: 20000, timeoutMsg: 'The chat did not show the presentation stages' });
+      await browser.waitUntil(async () => (await doneVersions()) === 1, { timeout: 60000, interval: 200, timeoutMsg: 'The first version did not finish in the chat' });
+      const run = (await history()).find(item => item.tool === 'quenta-presentation' && item.label === 'Generated offline report');
       expect(run.status).toBe('done'); expect(calls).toBe(2);
       // A model outside the profiles keeps Quenta's long-standing context.
       expect(requests[0].options.num_ctx).toBe(16384);
-      expect(requests[0].messages[1].content).toContain('v1-presentation-source');
+      // The model is told about the Result's table and held to a schema naming exactly that table.
+      expect(requests[0].messages[1].content).toContain('Result "Measured source" (fixture)\nT1 "Key numbers": 1 row.');
+      expect(requests[0].messages[0].content).toContain('- bar-chart: ');
+      expect(JSON.stringify(requests[0].format)).toContain('"enum":["T1"]');
+      expect(requests[1].messages.at(-1).content).toContain('Section 1, element 1 (bar-chart): column "Name" of T1 holds text, not numbers.');
       const html = await browser.execute(async file => window.Liatir.invoke('lia_read_file_text', { path: file }), run.outputFiles.find(file => file.ext === 'html').path);
       expect(html).toContain('sandbox="allow-scripts"'); expect(html).toContain("frame-src blob:");
+      expect(html).toContain('Generated offline report'); expect(html).toContain('LiatirStage.showPage');
       expect(run.params.sourceResultIds).toEqual(['v1-presentation-source']);
+      // The new version is on the stage beside the chat.
+      await browser.waitUntil(() => browser.execute(() => Boolean(document.querySelector('[data-testid="presentation-stage"] iframe'))), { timeout: 20000, timeoutMsg: 'The stage did not show the presentation' });
 
-      // A free page about a topic: no Result selected, only a description.
-      await navigateInApp(browser, '/quenta/presentations');
-      await browser.waitUntil(() => browser.execute(() => document.querySelector('input[value="v1-presentation-source"]')?.checked === false), { timeout: 10000 });
-      await browser.execute(() => {
-        const field = document.querySelector('textarea');
-        field.value = 'Explain how molecular docking works, simply';
-        field.dispatchEvent(new Event('input', { bubbles: true }));
-      });
-      await browser.execute(() => [...document.querySelectorAll('button')].find(button => button.textContent.trim() === 'Create presentation').click());
-      await browser.waitUntil(async () => (await history()).filter(item => item.tool === 'quenta-presentation' && item.status === 'done').length === 2, { timeout: 60000, interval: 200 });
-      const free = (await history()).find(item => item.tool === 'quenta-presentation' && item.id !== run.id);
+      // A follow-up message revises the current version into a new one.
+      await ask('Make the value bigger');
+      await browser.waitUntil(async () => (await doneVersions()) === 2, { timeout: 60000, interval: 200, timeoutMsg: 'The revision did not finish' });
+      expect(requests.at(-1).messages[1].content).toContain('CURRENT PAGE:\n{"title":"Generated offline report"');
+      expect((await history()).some(item => item.label === 'Revised offline report' && item.params.revision === true)).toBe(true);
+
+      // A free page about a topic, in a new conversation with no Result.
+      await browser.execute(() => document.querySelector('[data-testid="presentation-new"]').click());
+      await browser.waitUntil(() => browser.execute(() => !document.querySelector('[data-testid="presentation-selected"]') && !document.querySelector('[data-testid="presentation-user-turn"]')), { timeout: 10000 });
+      // The picker lists the Result and keeps the chat's choice until confirmed.
+      await (await browser.$('[data-testid="presentation-results-open"]')).click();
+      await (await browser.$('[data-testid="presentation-result-option"][data-result-id="v1-presentation-source"]')).waitForDisplayed({ timeout: 10000 });
+      await browser.execute(() => document.querySelector('[data-testid="presentation-result-option"][data-result-id="v1-presentation-source"]').click());
+      await browser.execute(() => [...document.querySelectorAll('button')].find(button => button.textContent.trim() === 'Cancel').click());
+      expect(await browser.execute(() => Boolean(document.querySelector('[data-testid="presentation-selected"]')))).toBe(false);
+      await ask('Explain how molecular docking works, simply');
+      await browser.waitUntil(async () => (await history()).some(item => item.label === 'Docking explained' && item.status === 'done'), { timeout: 60000, interval: 200, timeoutMsg: 'The free-topic page was not created' });
+      const free = (await history()).find(item => item.label === 'Docking explained');
       expect(free.params.sourceResultIds).toEqual([]);
       expect(requests.at(-1).messages[1].content).toContain('This page is not about any Result');
-      expect(requests.at(-1).messages[0].content).toContain('illustrative example');
+      expect(requests.at(-1).messages[0].content).toContain('"Illustrative" label');
+      // With no Result there is no table to read, so the schema offers no way to name one.
+      expect(JSON.stringify(requests.at(-1).format)).not.toContain('"stat"');
       await expectNoVisibleRuntimeError(browser, expect);
     } finally { server.closeAllConnections?.(); await new Promise(resolve => server.close(resolve)); }
+  } },
+  { name: 'draws every element of the Stage kit in the real presentation frame', async run({ browser, expect, rootDir }) {
+    await openSandboxWorkspace(browser);
+    const gallery = JSON.parse(readFileSync(path.join(rootDir, 'tests/fixtures/stage-gallery.json'), 'utf8'));
+    const runtimeSource = buildSync(stageRuntimeBuild(path.join(rootDir, 'frontend'))).outputFiles[0].text;
+    await browser.execute(async (runtimeSource, gallery) => {
+      const id = 'v1-stage-gallery';
+      const presentation = { schemaVersion: 1, id, workspaceId: '__test__', title: gallery.page.title, model: 'fixture', createdAt: 1, runtimeSource, ...gallery };
+      await window.Liatir.invoke('lia_fs_write_text', { rel: `workspaces/__test__/runs/${id}/result.json`, contents: JSON.stringify({ sections: [{ type: 'html-presentation', label: presentation.title, presentation }] }), permanent: true, createDirs: true });
+      let history = [];
+      try { history = JSON.parse(await window.Liatir.invoke('lia_app_read_text', { rel: 'workspaces/__test__/analysis-runs/index.json' })); } catch {}
+      history = history.filter(run => run.id !== id);
+      history.unshift({ id, tool: 'quenta-presentation', label: presentation.title, inputs: [], params: {}, status: 'done', startedAt: 1, endedAt: 2, durationMs: 1, error: null });
+      await window.Liatir.invoke('lia_app_write_text', { rel: 'workspaces/__test__/analysis-runs/index.json', content: JSON.stringify(history), createDirs: true });
+    }, runtimeSource, gallery);
+    await reloadLiatirApp(browser); await openSandboxWorkspace(browser);
+    await navigateInApp(browser, '/results?run=v1-stage-gallery');
+    // The whole page is drawn at once, so "ready" means all 45 elements drew without an error.
+    const state = () => browser.execute(() => document.querySelector('[data-testid="quenta-presentation"]')?.getAttribute('data-state'));
+    await browser.waitUntil(async () => ['ready', 'error'].includes(await state()), { timeout: 30000, interval: 100, timeoutMsg: 'The gallery presentation did not open' });
+    expect(await browser.execute(() => document.querySelector('[data-testid="quenta-presentation"]').textContent.trim())).toMatch(/^AI-generated Stage page · 2 selected Results · Local and offline$/);
+    expect(await state()).toBe('ready');
+    await expectNoVisibleRuntimeError(browser, expect);
   } },
   { name: 'renders a saved Preact presentation and blocks network and native access from its opaque frame', async run({ browser, expect, rootDir }) {
     let requests = 0;
@@ -124,7 +182,8 @@ export const tests = [
     const address = server.address();
     try {
       await openSandboxWorkspace(browser);
-      const runtime = buildSync({ stdin: { contents: 'import * as Preact from "preact"; window.Preact = Preact;', resolveDir: path.join(rootDir, 'frontend') }, bundle: true, write: false, format: 'iife' }).outputFiles[0].text;
+      // A minimal embedded runtime, as older presentations carry: React exposed under the Preact name they use.
+      const runtime = buildSync({ stdin: { contents: 'import * as React from "react"; import { flushSync } from "react-dom"; import { createRoot } from "react-dom/client"; window.Preact = { h: React.createElement, render: (node, element) => flushSync(() => createRoot(element).render(node)) };', resolveDir: path.join(rootDir, 'frontend') }, bundle: true, write: false, format: 'iife', define: { 'process.env.NODE_ENV': '"production"' } }).outputFiles[0].text;
       await browser.execute(async (runtimeSource, port) => {
         const id = 'v1-saved-presentation';
         const javascript = `const {h,render}=Preact; render(h('p',null,'Frozen result: '+LIATIR_RESULTS[0].output.value),document.getElementById('root'));
@@ -147,6 +206,57 @@ export const tests = [
       await browser.waitUntil(() => browser.execute(() => window.__v1Isolation !== null), { timeout: 30000, interval: 100 });
       expect(await browser.execute(() => window.__v1Isolation)).toMatchObject({ native: 'undefined', frozen: true, rendered: true });
       expect(requests).toBe(0);
+      await expectNoVisibleRuntimeError(browser, expect);
+    } finally { server.closeAllConnections?.(); await new Promise(resolve => server.close(resolve)); }
+  } },
+  { name: 'chats with nothing attached by default, then attaches a failure and sends without typing', async run({ browser, expect }) {
+    const chats = [];
+    const server = createServer(async (request, response) => {
+      let body = ''; for await (const chunk of request) body += chunk;
+      if (request.url === '/api/chat') {
+        chats.push(JSON.parse(body));
+        response.writeHead(200, { 'content-type': 'application/x-ndjson' });
+        response.end(JSON.stringify({ model: 'fixture-local', message: { role: 'assistant', content: 'The run stopped because an input file was missing.' }, done: true }) + '\n');
+        return;
+      }
+      response.writeHead(200, { 'content-type': 'application/json' });
+      response.end(JSON.stringify(request.url === '/api/tags' ? { models: [{ name: 'fixture-local' }] } : { version: 'fixture' }));
+    });
+    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+    try {
+      await openSandboxWorkspace(browser);
+      await browser.execute(async port => {
+        await window.Liatir.invoke('lia_app_write_text', { rel: 'quenta/settings.json', createDirs: true, content: JSON.stringify({ config: { provider: 'ollama', baseUrl: `http://127.0.0.1:${port}`, model: 'fixture-local', temperature: 0.1 } }) });
+        await window.Liatir.invoke('lia_app_write_text', { rel: 'workspaces/__test__/quenta/conversations.json', createDirs: true, content: JSON.stringify({ revision: 0, conversations: [] }) });
+        let runs = [];
+        try { runs = JSON.parse(await window.Liatir.invoke('lia_app_read_text', { rel: 'workspaces/__test__/analysis-runs/index.json' })); } catch {}
+        runs = runs.filter(run => run.id !== 'v1-failed-run');
+        runs.unshift({ id: 'v1-failed-run', tool: 'fixture', label: 'Failed alignment', inputs: [], params: {}, status: 'error', startedAt: 1, endedAt: 2, durationMs: 1, error: 'input file missing' });
+        await window.Liatir.invoke('lia_app_write_text', { rel: 'workspaces/__test__/analysis-runs/index.json', createDirs: true, content: JSON.stringify(runs) });
+      }, server.address().port);
+      await reloadLiatirApp(browser); await openSandboxWorkspace(browser);
+      await navigateInApp(browser, '/quenta');
+      const newChat = await browser.$('[data-testid="quenta-empty-new-chat"]'); await newChat.waitForDisplayed({ timeout: 30000 }); await newChat.click();
+      await (await browser.$('[data-testid="quenta-attach"]')).waitForDisplayed({ timeout: 10000 });
+      // No task dropdown: the chat starts with nothing attached.
+      expect(await browser.execute(() => Boolean(document.querySelector('[data-testid="quenta-attachment"]')))).toBe(false);
+      await (await browser.$('[data-testid="quenta-attach"]')).click();
+      await (await browser.$('[data-testid="presentation-result-option"][data-result-id="v1-failed-run"]')).waitForDisplayed({ timeout: 10000 });
+      await browser.execute(() => document.querySelector('[data-testid="presentation-result-option"][data-result-id="v1-failed-run"]').click());
+      const chip = await browser.$('[data-testid="quenta-attachment"][data-entity-id="v1-failed-run"]'); await chip.waitForDisplayed({ timeout: 10000 });
+      expect(await chip.getText()).toContain('Failure');
+      // Attached and sent without typing: Quenta is asked to explain the failure.
+      await browser.waitUntil(() => browser.execute(() => !document.querySelector('[data-testid="quenta-send"]')?.disabled), { timeout: 10000, timeoutMsg: 'Send stayed disabled with an attachment' });
+      await browser.execute(() => document.querySelector('[data-testid="quenta-send"]').click());
+      await browser.waitUntil(() => chats.length > 0, { timeout: 30000, timeoutMsg: 'Quenta did not send the explanation request' });
+      expect(chats[0].messages.at(-1).content).toContain('Explain the failure thoroughly');
+      expect(chats[0].messages.at(-1).content).toContain('result:v1-failed-run');
+      await browser.waitUntil(() => browser.execute(() => document.body.innerText.includes('an input file was missing')), { timeout: 30000, timeoutMsg: 'The answer did not appear' });
+      // Removing the attachment returns to a plain chat.
+      await browser.execute(() => document.querySelector('[aria-label="Remove attachment"]').click());
+      await browser.waitUntil(() => browser.execute(() => !document.querySelector('[data-testid="quenta-attachment"]')), { timeout: 10000 });
+      const saved = await browser.execute(async () => JSON.parse(await window.Liatir.invoke('lia_app_read_text', { rel: 'workspaces/__test__/quenta/conversations.json' })).conversations[0]);
+      expect(saved.focus).toBeUndefined();
       await expectNoVisibleRuntimeError(browser, expect);
     } finally { server.closeAllConnections?.(); await new Promise(resolve => server.close(resolve)); }
   } },

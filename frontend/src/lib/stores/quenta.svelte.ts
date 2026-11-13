@@ -1437,6 +1437,18 @@ function createQuentaStore() {
       });
     },
 
+    /** Attaches a Result or Job to a conversation (or detaches it), with the intent its next message uses. */
+    async setConversationFocus(conversationId: string, focus: LiatirQuentaFocus | null, draftIntent: LiatirQuentaIntent) {
+      const updatedAt = now();
+      updateConversation(conversationId, (conversation) => ({
+        ...conversation,
+        focus: focus ?? undefined,
+        draftIntent,
+        updatedAt,
+      }));
+      await commitConversationMutation({ kind: 'focus', conversationId, focus, draftIntent, updatedAt });
+    },
+
     async startFocusedConversation(intent: LiatirQuentaIntent, focus: LiatirQuentaFocus, autoSend = true) {
       await quentaStore.init();
       const prompt = quentaPromptForFocus(intent, focus);

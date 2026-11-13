@@ -39,11 +39,14 @@ settings are left to you; a preset is not a validated study.
 - **No unnecessary engine downloads.** When Quenta is set to an Ollama address
   other than the standard one and it does not answer, Liatir now reports it
   instead of downloading and starting its own engine there.
-- **Presentations.** Quenta writes an interactive page about the Results you
-  select, or about any topic you describe (numbers on a topic page are marked as
-  illustrative examples). The page runs without internet, external resources or access
-  to your files and app commands, and is saved as a new Result with its sources
-  and a standalone HTML file.
+- **Stage.** A chat beside a live Stage: ask for an interactive page about the
+  Results you attach or about any topic, watch each step as Quenta works, and ask
+  for changes in the next message to get a new version. The page is built from more
+  than forty ready-made elements (charts, tables, diagrams, quizzes, sliders, tabs,
+  pop-ups and more), and numbers about your Results are read from their saved
+  tables, with the source shown under each one. The page runs without internet,
+  external resources or access to your files and app commands, is saved as a new
+  Result with its sources, and can be downloaded as one HTML file.
 
 ### Why the Standard profile uses Qwen 3.5 9B
 

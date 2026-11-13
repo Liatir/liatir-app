@@ -35,11 +35,18 @@ Accepted by the owner on 2026-11-11 for Liatir 1.0.0.
 - **Presentations are a separate fixed workflow.** Read only selected scientific
   Result snapshots or, by owner request (2026-11-12), none: a free page about a
   described topic, written from general knowledge, stating so and marking every
-  number or chart as an illustrative example. Generate Preact JavaScript/CSS,
-  check rendering, and allow one repair. Do not introduce an autonomous agent or tools that execute analyses.
-  Save the source snapshots, model identity, code/runtime and standalone HTML.
-- **Generated code runs only in an opaque frame.** Supply local Preact and frozen
-  source data. No app bridge, file gateway, external scripts/resources or network
+  number or chart as an illustrative example. The model fills in a Stage page
+  document (one scrolling page, not slides; the mode is called Stage) drawn by the
+  Stage kit (React with shadcn/ui, Chart.js and Tailwind) — since 2026-11-13 not code:
+  see [Stage pages are documents](./stage-pages-are-documents-not-code.md); before
+  that, Preact and then React page code. Check the page and its rendering, and allow
+  one repair. The mode is a chat (owner, 2026-11-12):
+  each message runs this workflow once and saves a new version; a follow-up revises
+  the newest version. Do not introduce an autonomous agent or tools that execute analyses.
+  Save the source snapshots, model identity, deck (code, for older versions), runtime and standalone HTML.
+- **Generated code runs only in an opaque frame.** Supply the local Stage kit
+  runtime (local Preact until 2026-11-12) and frozen source data. The runtime is stored once under its SHA-256 and
+  verified on every read; presentations name it by that ID instead of embedding it. No app bridge, file gateway, external scripts/resources or network
   access. Restrict the parent frame policy too, since the child's policy alone
   cannot reliably prevent self-navigation. Standalone HTML carries both layers.
   Transfer plain JSON rather than reactive proxies and key previews by immutable
