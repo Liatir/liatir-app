@@ -143,6 +143,19 @@ Runtime Box or GPU workflow, or force-push is authorized.
   `~/.tauri/liatir-updater.key.pub`; no v1.0.0 exists; the live 0.4.0 feed (`c3540347…`) was saved
   to the ignored `tests/.artifacts/release-1.0.0/` first. `origin/main` (`cd914e6e`) is an ancestor
   of the branch, so `main` moves by fast-forward.
+- [x] `main` fast-forwarded to `a7296d61` (equal to `liatir-1.0`); Sync public SDK run 43464598165
+  succeeded. `targets=all` dispatched as
+  [run 43464607934](https://github.com/Liatir/liatir-app/actions/runs/43464607934) at that SHA:
+  Native Tools and Linux succeeded; macOS and Store failed. Nothing from it is used.
+- **Defect: macOS notarization refused.** Apple answered `403 A required agreement is missing or
+  has expired` after signing. Not a code problem: the owner must accept the current agreement in
+  the Apple Developer account, then the macOS job is run again. No retry before that.
+- **Defect: the Store job failed `test:verify` on Windows.** `presentation-document.test.ts`
+  hashes the sandbox page's inline script and finds it in the CSP; the Windows checkout turned the
+  file's line breaks into CRLF, so the hash differed. (The app itself would still match: the HTML
+  parser normalizes line breaks before CSP hashing.) `.gitattributes` now keeps that file LF on
+  every checkout, so the shipped file is byte-identical across platforms. Coverage is the same test,
+  which the Store job runs on Windows. Retry limit: one Store build at the fixed revision.
 
 ## 0.4.0 release checkpoint (2026-11-06)
 

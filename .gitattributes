@@ -12,6 +12,10 @@
 *.yml text eol=lf
 *.yaml text eol=lf
 
+# The Stage sandbox page allows its own inline script by SHA-256 in its CSP. A CRLF checkout changes
+# the file the tests hash and the app ships, so the Windows release build failed its hash test.
+frontend/static/presentation-sandbox.html text eol=lf
+
 # Runtime Box locks and legal inputs are byte-pinned and must not be rewritten by Git for Windows.
 runtime-boxes/recipes/**/requirements.lock text eol=lf
 runtime-boxes/recipes/**/pixi.lock text eol=lf
