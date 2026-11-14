@@ -1,14 +1,16 @@
 # Current project status
 
-Last updated 2026-11-11. This page says where Liatir stands and what comes next. How each piece got
+Last updated 2026-11-14. This page says where Liatir stands and what comes next. How each piece got
 here is in the [status log, July to September 2026](../history/status-log-2026-07-to-2026-09.md)
 and in the plans under `history/`; the readiness of each product area, with its evidence, is in
 [Beta 1 readiness](./roadmap/beta-readiness.md).
 
 ## Active implementation
 
-**Liatir 1.0.0 workbench** — authorized 2026-11-11, implemented and verified locally,
-not committed or published. Plugins are shared across workspaces (existing IDs kept);
+**Liatir 1.0.0 workbench** — authorized 2026-11-11, on `main` since 2026-11-13 and
+**published for macOS and Linux on 2026-11-14** (GitHub release v1.0.0 and the update feed);
+the MSIX is handed to the owner for Partner Center. Evidence: the
+[1.0.0 release checkpoint](./roadmap/release-signed-distribution.md#100-release-checkpoint-2026-11-13). Plugins are shared across workspaces (existing IDs kept);
 Python Scripts stay workspace-owned with mandatory SDK I/O validation, direct and
 pipeline execution and independent copies; seven simulation presets; Quenta's
 16 GB/32 GB profiles (download only on choice) and Quenta's **Stage** mode: a chat beside
@@ -21,10 +23,9 @@ Root version 1.0.0, release notes in `docs/release-notes-v1.md`. Verify, Rust an
 UI gates pass (one cold-start test flake, passing on rerun). After a measured
 comparison the owner kept `qwen3.5:9b` for the 16 GB profile instead of
 `gemma4:12b`; the 32 GB profile is `qwen3.8:27b`. Excluded: long-workflow
-validation, publication. Evidence: [implementation ledger](./roadmap/liatir-1.0.md).
+validation. Evidence: [implementation ledger](./roadmap/liatir-1.0.md).
 
-**Next, in order (owner, 2026-11-12):** finish the Quenta presentation mode on a
-shadcn/ui + Tailwind + Chart.js component kit; then write and carry out the
+**Next (owner, 2026-11-12):** write and carry out the
 [shadcn migration of the app](./roadmap/shadcn-ui.md) with shadcn-svelte.
 
 **Scientific Simulation Suite** — the owner asked on 2026-11-03 for a local, validated suite of

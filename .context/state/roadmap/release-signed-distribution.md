@@ -1,6 +1,6 @@
 # Release gate — signed public distribution
 
-Status: **Open — 0.4.0 published for macOS/Linux on 2026-11-06; its MSIX is handed to the owner for
+Status: **Open — 1.0.0 published for macOS/Linux on 2026-11-14; its MSIX is handed to the owner for
 Partner Center.** The 0.3.0 MSIX must not be
 submitted (its WSL2 consumer fails the status check of every installed Runtime Box, fixed in
 `3eb5963c` — see [the OpenMM record](../../history/openmm-cuda-publication.md)). Store
@@ -156,6 +156,34 @@ Runtime Box or GPU workflow, or force-push is authorized.
   parser normalizes line breaks before CSP hashing.) `.gitattributes` now keeps that file LF on
   every checkout, so the shipped file is byte-identical across platforms. Coverage is the same test,
   which the Store job runs on Windows. Retry limit: one Store build at the fixed revision.
+- [x] Fix committed as `a6841c29`; `main` fast-forwarded to it. `linux-and-store` dispatched as
+  [run 43468699625](https://github.com/Liatir/liatir-app/actions/runs/43468699625): Native Tools,
+  Linux and Store succeeded (the Store job's `test:verify` passed on Windows). After the owner
+  accepted Apple's agreement on 2026-11-14, `macos` dispatched at the same SHA as
+  [run 43547313611](https://github.com/Liatir/liatir-app/actions/runs/43547313611), first attempt
+  green. All three platforms come from `a6841c29`.
+- [x] Artifacts downloaded by ID and their GitHub digests checked: Linux `14060893385`, Store
+  `14061751370`, macOS `14095850196`. Both updater signatures verified against
+  `TAURI_SIGNING_PUBLIC_KEY` with Node's crypto (file and trusted comment, key ID `d21d16a461aaa7d9`
+  — printed in the reverse byte order by the scratch verifier), one-byte corruption rejected. App in
+  the updater archive and in the DMG: `codesign --verify --deep --strict`, `stapler validate`,
+  `spctl` Notarized Developer ID, team `UC22LVU6ZY`, version 1.0.0. DMG: `spctl`, `stapler
+  validate`, `hdiutil verify`.
+- [x] Published [v1.0.0](https://github.com/Liatir/liatir-releases/releases/tag/v1.0.0), release ID
+  `444975982`, `2026-11-14T03:08:59Z`, latest, target `4aa8693d` as before. All seven GitHub digests
+  matched the verified files in the draft before publishing; all seven public URLs answer
+  anonymously with the right length; the anonymous API names v1.0.0 latest; the homepage shows
+  1.0.0.
+- [x] Replaced `liatir-updates/desktop/latest.json` after those URLs answered. Public response
+  (`application/json`, `no-cache`) and R2 readback are byte-identical to the generated file, SHA-256
+  `da1afbc75f4cd1365ba52aee152085b67df71a76f3bffe7cc7f51c5314e2d80c`. The previous 0.4.0 feed is
+  kept in the ignored `tests/.artifacts/release-1.0.0/`.
+- **Store handoff:** artifact `liatir-1.0.0-microsoft-store` (ID `14061751370`) in run 43468699625,
+  kept until 2026-11-27, and in the ignored `tests/.artifacts/release-1.0.0/store/` on the
+  maintainer's Mac. File `Liatir_1.0.0_x64.msix`, 273,001,847 bytes, SHA-256
+  `2f879330826b5f3046dbd6b6e3c3003a7bac3a8a405808a0733523b7b053feae`, identity `Desktopr.Liatir`,
+  publisher `CN=B27DF8BD-5700-47C4-9719-CA85B3F0938A`, version `1.0.0.0`, x64, unsigned, no updater.
+- **Not done:** the MSIX was not sideloaded on Windows (the session ran on the Mac).
 
 ## 0.4.0 release checkpoint (2026-11-06)
 
